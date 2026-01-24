@@ -17,6 +17,7 @@ import { HeaderIconButton } from '@/components/ui/HeaderIconButton'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { StyledDropdownMenuContent, StyledDropdownMenuItem, StyledDropdownMenuSeparator } from '@/components/ui/styled-dropdown'
 import { useAppShellContext, usePendingPermission, usePendingCredential, useSessionOptionsFor, useSession as useSessionData } from '@/context/AppShellContext'
+import { useT } from '@/context/LocaleContext'
 import { rendererPerf } from '@/lib/perf'
 import { routes } from '@/lib/navigate'
 import { ensureSessionMessagesLoadedAtom, loadedSessionsAtom, sessionMetaMapAtom } from '@/atoms/sessions'
@@ -27,6 +28,8 @@ export interface ChatPageProps {
 }
 
 const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
+  const t = useT()
+  
   // Diagnostic: mark when component runs
   React.useLayoutEffect(() => {
     rendererPerf.markSessionSwitch(sessionId, 'panel.mounted')
@@ -209,7 +212,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
 
   // Get display title for header - use getSessionTitle for consistent fallback logic with SessionList
   // Priority: name > first user message > preview > "New chat"
-  const displayTitle = session ? getSessionTitle(session) : (sessionMeta ? getSessionTitle(sessionMeta) : 'Chat')
+  const displayTitle = session ? getSessionTitle(session) : (sessionMeta ? getSessionTitle(sessionMeta) : t('聊天'))
   const isFlagged = session?.isFlagged || sessionMeta?.isFlagged || false
   const sharedUrl = session?.sharedUrl || sessionMeta?.sharedUrl || null
   const currentTodoState = session?.todoState || sessionMeta?.todoState || 'todo'
@@ -273,12 +276,12 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'shareToViewer' }) as { success: boolean; url?: string; error?: string } | undefined
     if (result?.success && result.url) {
       await navigator.clipboard.writeText(result.url)
-      toast.success('Link copied to clipboard', {
+      toast.success(t('链接已复制到剪贴板'), {
         description: result.url,
-        action: { label: 'Open', onClick: () => window.electronAPI.openUrl(result.url!) },
+        action: { label: t('打开'), onClick: () => window.electronAPI.openUrl(result.url!) },
       })
     } else {
-      toast.error('Failed to share', { description: result?.error || 'Unknown error' })
+      toast.error(t('分享失败'), { description: result?.error || t('未知错误') })
     }
   }, [sessionId])
 
@@ -289,27 +292,27 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
   const handleCopyLink = React.useCallback(async () => {
     if (sharedUrl) {
       await navigator.clipboard.writeText(sharedUrl)
-      toast.success('Link copied to clipboard')
+      toast.success(t('链接已复制到剪贴板'))
     }
-  }, [sharedUrl])
+  }, [sharedUrl, t])
 
   const handleUpdateShare = React.useCallback(async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'updateShare' }) as { success: boolean; error?: string } | undefined
     if (result?.success) {
-      toast.success('Share updated')
+      toast.success(t('分享已更新'))
     } else {
-      toast.error('Failed to update share', { description: result?.error })
+      toast.error(t('更新分享失败'), { description: result?.error })
     }
-  }, [sessionId])
+  }, [sessionId, t])
 
   const handleRevokeShare = React.useCallback(async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'revokeShare' }) as { success: boolean; error?: string } | undefined
     if (result?.success) {
-      toast.success('Sharing stopped')
+      toast.success(t('已停止分享'))
     } else {
-      toast.error('Failed to stop sharing', { description: result?.error })
+      toast.error(t('停止分享失败'), { description: result?.error })
     }
-  }, [sessionId])
+  }, [sessionId, t])
 
   // Share button with dropdown menu rendered in PanelHeader actions slot
   const shareButton = React.useMemo(() => (
@@ -332,25 +335,25 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
           <>
             <StyledDropdownMenuItem onClick={handleOpenInBrowser}>
               <Globe className="h-3.5 w-3.5" />
-              <span className="flex-1">Open in Browser</span>
+              <span className="flex-1">{t('在浏览器中打开')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuItem onClick={handleCopyLink}>
               <Copy className="h-3.5 w-3.5" />
-              <span className="flex-1">Copy Link</span>
+              <span className="flex-1">{t('复制链接')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuItem onClick={handleUpdateShare}>
               <RefreshCw className="h-3.5 w-3.5" />
-              <span className="flex-1">Update Share</span>
+              <span className="flex-1">{t('更新分享')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuSeparator />
             <StyledDropdownMenuItem onClick={handleRevokeShare} variant="destructive">
               <Link2Off className="h-3.5 w-3.5" />
-              <span className="flex-1">Stop Sharing</span>
+              <span className="flex-1">{t('停止分享')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuSeparator />
             <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs/go-further/sharing')}>
               <Info className="h-3.5 w-3.5" />
-              <span className="flex-1">Learn More</span>
+              <span className="flex-1">{t('了解更多')}</span>
             </StyledDropdownMenuItem>
           </>
         ) : (
@@ -359,12 +362,12 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M8 8.53809C6.74209 8.60866 5.94798 8.80911 5.37868 9.37841C4.5 10.2571 4.5 11.6713 4.5 14.4997V15.4997C4.5 18.3282 4.5 19.7424 5.37868 20.6211C6.25736 21.4997 7.67157 21.4997 10.5 21.4997H13.5C16.3284 21.4997 17.7426 21.4997 18.6213 20.6211C19.5 19.7424 19.5 18.3282 19.5 15.4997V14.4997C19.5 11.6713 19.5 10.2571 18.6213 9.37841C18.052 8.80911 17.2579 8.60866 16 8.53809M12 14V3.5M9.5 5.5C9.99903 4.50411 10.6483 3.78875 11.5606 3.24093C11.7612 3.12053 11.8614 3.06033 12 3.06033C12.1386 3.06033 12.2388 3.12053 12.4394 3.24093C13.3517 3.78875 14.001 4.50411 14.5 5.5" />
               </svg>
-              <span className="flex-1">Share Online</span>
+              <span className="flex-1">{t('在线分享')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuSeparator />
             <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs/go-further/sharing')}>
               <Info className="h-3.5 w-3.5" />
-              <span className="flex-1">Learn More</span>
+              <span className="flex-1">{t('了解更多')}</span>
             </StyledDropdownMenuItem>
           </>
         )}
@@ -466,11 +469,11 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
           <RenameDialog
             open={renameDialogOpen}
             onOpenChange={setRenameDialogOpen}
-            title="Rename Chat"
+            title={t('重命名聊天')}
             value={renameName}
             onValueChange={setRenameName}
             onSubmit={handleRenameSubmit}
-            placeholder="Enter chat name..."
+            placeholder={t('输入聊天名称...')}
           />
         </>
       )
@@ -479,10 +482,10 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
     // Session truly doesn't exist
     return (
       <div className="h-full flex flex-col">
-        <PanelHeader  title="Chat" rightSidebarButton={rightSidebarButton} />
+        <PanelHeader  title={t('聊天')} rightSidebarButton={rightSidebarButton} />
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
           <AlertCircle className="h-10 w-10" />
-          <p className="text-sm">This session no longer exists</p>
+          <p className="text-sm">{t('此会话已不存在')}</p>
         </div>
       </div>
     )
@@ -534,11 +537,11 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
       <RenameDialog
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
-        title="Rename Chat"
+        title={t('重命名聊天')}
         value={renameName}
         onValueChange={setRenameName}
         onSubmit={handleRenameSubmit}
-        placeholder="Enter chat name..."
+        placeholder={t('输入聊天名称...')}
       />
     </>
   )

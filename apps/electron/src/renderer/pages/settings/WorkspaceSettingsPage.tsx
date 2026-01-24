@@ -17,6 +17,7 @@ import { PanelHeader } from '@/components/app-shell/PanelHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { useAppShellContext } from '@/context/AppShellContext'
+import { useT } from '@/context/LocaleContext'
 import { cn } from '@/lib/utils'
 import { routes } from '@/lib/navigate'
 import { Spinner } from '@creator-flow/ui'
@@ -44,6 +45,7 @@ export const meta: DetailsPageMeta = {
 // ============================================
 
 export default function WorkspaceSettingsPage() {
+  const t = useT()
   // Get model, onModelChange, and active workspace from context
   const appShellContext = useAppShellContext()
   const onModelChange = appShellContext.onModelChange
@@ -285,9 +287,9 @@ export default function WorkspaceSettingsPage() {
   if (!activeWorkspaceId) {
     return (
       <div className="h-full flex flex-col">
-        <PanelHeader title="Workspace Settings" actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
+        <PanelHeader title={t('工作区设置')} actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">No workspace selected</p>
+          <p className="text-sm text-muted-foreground">{t('未选择工作区')}</p>
         </div>
       </div>
     )
@@ -297,7 +299,7 @@ export default function WorkspaceSettingsPage() {
   if (isLoadingWorkspace) {
     return (
       <div className="h-full flex flex-col">
-        <PanelHeader title="Workspace Settings" actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
+        <PanelHeader title={t('工作区设置')} actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
         <div className="flex-1 flex items-center justify-center">
           <Spinner className="text-muted-foreground" />
         </div>
@@ -307,17 +309,17 @@ export default function WorkspaceSettingsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <PanelHeader title="Workspace Settings" actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
+      <PanelHeader title={t('工作区设置')} actions={<HeaderMenu route={routes.view.settings('workspace')} helpFeature="workspaces" />} />
       <div className="flex-1 min-h-0 mask-fade-y">
         <ScrollArea className="h-full">
           <div className="px-5 py-7 max-w-3xl mx-auto">
           <div className="space-y-8">
             {/* Workspace Info */}
-            <SettingsSection title="Workspace Info">
+            <SettingsSection title={t('工作区信息')}>
               <SettingsCard>
                 <SettingsRow
-                  label="Name"
-                  description={wsName || 'Untitled'}
+                  label={t('名称')}
+                  description={wsName || t('未命名')}
                   action={
                     <button
                       type="button"
@@ -327,12 +329,12 @@ export default function WorkspaceSettingsPage() {
                       }}
                       className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors"
                     >
-                      Edit
+                      {t('编辑')}
                     </button>
                   }
                 />
                 <SettingsRow
-                  label="Icon"
+                  label={t('图标')}
                   action={
                     <label className="cursor-pointer">
                       <input
@@ -343,7 +345,7 @@ export default function WorkspaceSettingsPage() {
                         disabled={isUploadingIcon}
                       />
                       <span className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors">
-                        {isUploadingIcon ? 'Uploading...' : 'Change'}
+                        {isUploadingIcon ? t('上传中...') : t('更改')}
                       </span>
                     </label>
                   }
@@ -370,7 +372,7 @@ export default function WorkspaceSettingsPage() {
               <RenameDialog
                 open={renameDialogOpen}
                 onOpenChange={setRenameDialogOpen}
-                title="Rename workspace"
+                title={t('重命名工作区')}
                 value={wsNameEditing}
                 onValueChange={setWsNameEditing}
                 onSubmit={() => {
@@ -382,37 +384,37 @@ export default function WorkspaceSettingsPage() {
                   }
                   setRenameDialogOpen(false)
                 }}
-                placeholder="Enter workspace name..."
+                placeholder={t('输入工作区名称...')}
               />
             </SettingsSection>
 
             {/* Model */}
-            <SettingsSection title="Model">
+            <SettingsSection title={t('模型')}>
               <SettingsCard>
                 {/* When a custom API connection is active, model is fixed — show info instead of selector */}
                 {customModel ? (
                   <SettingsRow
-                    label="Default model"
-                    description="Set via API connection"
+                    label={t('默认模型')}
+                    description={t('通过 API 连接设置')}
                   >
                     <span className="text-sm text-muted-foreground">{customModel}</span>
                   </SettingsRow>
                 ) : (
                   <SettingsMenuSelectRow
-                    label="Default model"
-                    description="AI model for new chats"
+                    label={t('默认模型')}
+                    description={t('新聊天的 AI 模型')}
                     value={wsModel}
                     onValueChange={handleModelChange}
                     options={[
-                      { value: 'claude-opus-4-5-20251101', label: 'Opus 4.5', description: 'Most capable for complex work' },
-                      { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5', description: 'Best for everyday tasks' },
-                      { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', description: 'Fastest for quick answers' },
+                      { value: 'claude-opus-4-5-20251101', label: 'Opus 4.5', description: t('最适合复杂工作') },
+                      { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5', description: t('最适合日常任务') },
+                      { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', description: t('最快的快速回答') },
                     ]}
                   />
                 )}
                 <SettingsMenuSelectRow
-                  label="Thinking level"
-                  description="Reasoning depth for new chats"
+                  label={t('思考级别')}
+                  description={t('新聊天的推理深度')}
                   value={wsThinkingLevel}
                   onValueChange={(v) => handleThinkingLevelChange(v as ThinkingLevel)}
                   options={THINKING_LEVELS.map(({ id, name, description }) => ({
@@ -425,17 +427,17 @@ export default function WorkspaceSettingsPage() {
             </SettingsSection>
 
             {/* Permissions */}
-            <SettingsSection title="Permissions">
+            <SettingsSection title={t('权限')}>
               <SettingsCard>
                 <SettingsMenuSelectRow
-                  label="Default mode"
-                  description="Control what AI can do"
+                  label={t('默认模式')}
+                  description={t('控制 AI 可以做什么')}
                   value={permissionMode}
                   onValueChange={(v) => handlePermissionModeChange(v as PermissionMode)}
                   options={[
-                    { value: 'safe', label: PERMISSION_MODE_CONFIG['safe'].shortName, description: 'Read-only, no changes allowed' },
-                    { value: 'ask', label: PERMISSION_MODE_CONFIG['ask'].shortName, description: 'Prompts before making edits' },
-                    { value: 'allow-all', label: PERMISSION_MODE_CONFIG['allow-all'].shortName, description: 'Full autonomous execution' },
+                    { value: 'safe', label: PERMISSION_MODE_CONFIG['safe'].shortName, description: t('只读，不允许更改') },
+                    { value: 'ask', label: PERMISSION_MODE_CONFIG['ask'].shortName, description: t('编辑前提示') },
+                    { value: 'allow-all', label: PERMISSION_MODE_CONFIG['allow-all'].shortName, description: t('完全自主执行') },
                   ]}
                 />
               </SettingsCard>
@@ -443,8 +445,8 @@ export default function WorkspaceSettingsPage() {
 
             {/* Mode Cycling */}
             <SettingsSection
-              title="Mode Cycling"
-              description="Select which modes to cycle through with Shift+Tab"
+              title={t('模式循环')}
+              description={t('选择使用 Shift+Tab 循环的模式')}
             >
               <SettingsCard>
                 {(['safe', 'ask', 'allow-all'] as const).map((m) => {
@@ -477,11 +479,11 @@ export default function WorkspaceSettingsPage() {
             </SettingsSection>
 
             {/* Advanced */}
-            <SettingsSection title="Advanced">
+            <SettingsSection title={t('高级')}>
               <SettingsCard>
                 <SettingsRow
-                  label="Default Working Directory"
-                  description={workingDirectory || 'Not set (uses session folder)'}
+                  label={t('默认工作目录')}
+                  description={workingDirectory || t('未设置（使用会话文件夹）')}
                   action={
                     <div className="flex items-center gap-2">
                       {workingDirectory && (
@@ -490,7 +492,7 @@ export default function WorkspaceSettingsPage() {
                           onClick={handleClearWorkingDirectory}
                           className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors text-foreground/60 hover:text-foreground"
                         >
-                          Clear
+                          {t('清除')}
                         </button>
                       )}
                       <button
@@ -498,14 +500,14 @@ export default function WorkspaceSettingsPage() {
                         onClick={handleChangeWorkingDirectory}
                         className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors"
                       >
-                        Change...
+                        {t('更改...')}
                       </button>
                     </div>
                   }
                 />
                 <SettingsToggle
-                  label="Local MCP Servers"
-                  description="Enable stdio subprocess servers"
+                  label={t('本地 MCP 服务器')}
+                  description={t('启用 stdio 子进程服务器')}
                   checked={localMcpEnabled}
                   onCheckedChange={handleLocalMcpEnabledChange}
                 />

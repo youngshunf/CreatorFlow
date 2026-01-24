@@ -14,6 +14,7 @@ import { SourceMenu } from '@/components/app-shell/SourceMenu'
 import { cn } from '@/lib/utils'
 import { routes, navigate } from '@/lib/navigate'
 import { useNavigation } from '@/contexts/NavigationContext'
+import { useT } from '@/context/LocaleContext'
 import { toast } from 'sonner'
 import {
   Info_Page,
@@ -39,8 +40,8 @@ interface SourceInfoPageProps {
 /**
  * Format timestamp to relative time
  */
-function formatRelativeTime(timestamp?: number): string {
-  if (!timestamp) return 'Never'
+function formatRelativeTime(timestamp: number | undefined, t: (key: string) => string): string {
+  if (!timestamp) return t('从未')
 
   const now = Date.now()
   const diff = now - timestamp
@@ -48,10 +49,10 @@ function formatRelativeTime(timestamp?: number): string {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
-  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
-  return `${days} day${days !== 1 ? 's' : ''} ago`
+  if (minutes < 1) return t('刚刚')
+  if (minutes < 60) return t('{count}分钟前').replace('{count}', String(minutes))
+  if (hours < 24) return t('{count}小时前').replace('{count}', String(hours))
+  return t('{count}天前').replace('{count}', String(days))
 }
 
 /**
@@ -134,40 +135,41 @@ function buildToolsData(tools: McpToolWithPermission[]): ToolRow[] {
 /**
  * Get contextual description for Connection section based on source type
  */
-function getConnectionDescription(source: LoadedSource): string {
+function getConnectionDescription(source: LoadedSource, t: (key: string) => string): string {
   const { type, mcp } = source.config
 
   if (type === 'mcp') {
     if (mcp?.transport === 'stdio') {
-      return 'Local command that spawns this MCP server.'
+      return t('启动此 MCP 服务器的本地命令')
     }
-    return 'Server URL and connection status.'
+    return t('服务器 URL 和连接状态')
   }
   if (type === 'api') {
-    return 'Base URL for API requests.'
+    return t('API 请求的基础 URL')
   }
   if (type === 'local') {
-    return 'Filesystem path for this source.'
+    return t('此数据源的文件系统路径')
   }
-  return 'Connection details.'
+  return t('连接详情')
 }
 
 /**
  * Get contextual description for Permissions section based on source type
  */
-function getPermissionsDescription(source: LoadedSource): string {
+function getPermissionsDescription(source: LoadedSource, t: (key: string) => string): string {
   const { type } = source.config
 
   if (type === 'mcp') {
-    return 'Tool patterns allowed in Explore mode.'
+    return t('探索模式下允许的工具模式')
   }
   if (type === 'api') {
-    return 'API endpoints allowed in Explore mode.'
+    return t('探索模式下允许的 API 端点')
   }
-  return 'Access rules for Explore mode.'
+  return t('探索模式的访问规则')
 }
 
 export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: SourceInfoPageProps) {
+  const t = useT()
   const { navigateToSource } = useNavigation()
   const [source, setSource] = useState<LoadedSource | null>(null)
   const [loading, setLoading] = useState(true)
@@ -361,15 +363,15 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
     if (!source) return
     try {
       await window.electronAPI.deleteSource(workspaceId, sourceSlug)
-      toast.success(`Deleted source: ${source.config.name}`)
+      toast.success(t('已删除数据源') + `: ${source.config.name}`)
       navigateToSource() // Navigate to source list, preserving filter
       onDelete?.()
     } catch (err) {
-      toast.error('Failed to delete source', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error(t('删除数据源失败'), {
+        description: err instanceof Error ? err.message : t('未知错误'),
       })
     }
-  }, [source, workspaceId, sourceSlug, onDelete, navigateToSource])
+  }, [source, workspaceId, sourceSlug, onDelete, navigateToSource, t])
 
   // Handle opening in new window
   const handleOpenInNewWindow = useCallback(() => {
@@ -383,7 +385,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
     <Info_Page
       loading={loading}
       error={error ?? undefined}
-      empty={!source && !loading && !error ? 'Source not found' : undefined}
+      empty={!source && !loading && !error ? t('未找到数据源') : undefined}
     >
       <Info_Page.Header
         title={sourceName}
@@ -410,25 +412,24 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
           {/* Disabled Warning */}
           {source.config.mcp?.transport === 'stdio' && !localMcpEnabled && (
             <Info_Alert variant="warning" icon={<AlertCircle className="h-4 w-4" />}>
-              <Info_Alert.Title>Source Disabled</Info_Alert.Title>
+              <Info_Alert.Title>{t('数据源已禁用')}</Info_Alert.Title>
               <Info_Alert.Description>
-                Local MCP servers are disabled in Settings &gt; Advanced.
-                Enable them to use this source.
+                {t('本地 MCP 服务器已在设置 > 高级中禁用。启用它们以使用此数据源。')}
               </Info_Alert.Description>
             </Info_Alert>
           )}
 
           {/* Connection */}
           <Info_Section
-            title="Connection"
-            description={getConnectionDescription(source)}
+            title={t('连接')}
+            description={getConnectionDescription(source, t)}
             actions={
               // EditPopover for AI-assisted config.json editing with "Edit File" as secondary action
               <EditPopover
                 trigger={<EditButton />}
                 {...getEditConfig('source-config', source.folderPath)}
                 secondaryAction={{
-                  label: 'Edit File',
+                  label: t('编辑文件'),
                   onClick: handleEditConfig,
                 }}
               />
@@ -444,7 +445,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
                 </div>
               )}
             >
-              <Info_Table.Row label="Type" value={source.config.type.toUpperCase()} />
+              <Info_Table.Row label={t('类型')} value={source.config.type.toUpperCase()} />
               {sourceUrl && (
                 <Info_Table.Row label="URL">
                   <button
@@ -455,43 +456,43 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
                   </button>
                 </Info_Table.Row>
               )}
-              <Info_Table.Row label="Last Tested" value={formatRelativeTime(source.config.lastTestedAt)} />
+              <Info_Table.Row label={t('上次测试')} value={formatRelativeTime(source.config.lastTestedAt, t)} />
             </Info_Table>
           </Info_Section>
 
           {/* Permissions - for API and local sources */}
           {source.config.type !== 'mcp' && permissionsConfig && apiPermissionsData.length > 0 && (
             <Info_Section
-              title="Permissions"
-              description={getPermissionsDescription(source)}
+              title={t('权限')}
+              description={getPermissionsDescription(source, t)}
               actions={
                 // EditPopover for AI-assisted permissions.json editing
                 <EditPopover
                   trigger={<EditButton />}
                   {...getEditConfig('source-permissions', source.folderPath)}
                   secondaryAction={{
-                    label: 'Edit File',
+                    label: t('编辑文件'),
                     onClick: handleEditPermissions,
                   }}
                 />
               }
             >
-              <PermissionsDataTable data={apiPermissionsData} fullscreen fullscreenTitle="Permissions" />
+              <PermissionsDataTable data={apiPermissionsData} fullscreen fullscreenTitle={t('权限')} />
             </Info_Section>
           )}
 
           {/* Tools - for MCP sources */}
           {source.config.type === 'mcp' && (
             <Info_Section
-              title="Tools"
-              description="Operations exposed by this server."
+              title={t('工具')}
+              description={t('此服务器提供的操作')}
               actions={
                 // EditPopover for AI-assisted tool permissions editing
                 <EditPopover
                   trigger={<EditButton />}
                   {...getEditConfig('source-tool-permissions', source.folderPath)}
                   secondaryAction={{
-                    label: 'Edit File',
+                    label: t('编辑文件'),
                     onClick: handleEditPermissions,
                   }}
                 />
@@ -508,36 +509,36 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
           {/* Permissions - for MCP sources */}
           {source.config.type === 'mcp' && permissionsConfig && mcpPermissionsData.length > 0 && (
             <Info_Section
-              title="Permissions"
-              description={getPermissionsDescription(source)}
+              title={t('权限')}
+              description={getPermissionsDescription(source, t)}
               actions={
                 // EditPopover for AI-assisted permissions.json editing
                 <EditPopover
                   trigger={<EditButton />}
                   {...getEditConfig('source-permissions', source.folderPath)}
                   secondaryAction={{
-                    label: 'Edit File',
+                    label: t('编辑文件'),
                     onClick: handleEditPermissions,
                   }}
                 />
               }
             >
-              <PermissionsDataTable data={mcpPermissionsData} hideTypeColumn fullscreen fullscreenTitle="Permissions" />
+              <PermissionsDataTable data={mcpPermissionsData} hideTypeColumn fullscreen fullscreenTitle={t('权限')} />
             </Info_Section>
           )}
 
           {/* Documentation */}
           {source.guide?.raw && (
             <Info_Section
-              title="Documentation"
-              description="Context and guidelines for the agent."
+              title={t('文档')}
+              description={t('智能体的上下文和指南')}
               actions={
                 // EditPopover for AI-assisted guide.md editing with "Edit File" as secondary action
                 <EditPopover
                   trigger={<EditButton />}
                   {...getEditConfig('source-guide', source.folderPath)}
                   secondaryAction={{
-                    label: 'Edit File',
+                    label: t('编辑文件'),
                     onClick: handleEditGuide,
                   }}
                 />
