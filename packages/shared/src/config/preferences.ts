@@ -22,15 +22,54 @@ export interface UserPreferences {
 
 const PREFERENCES_FILE = join(CONFIG_DIR, 'preferences.json');
 
+/**
+ * Default preferences for new users
+ */
+const DEFAULT_PREFERENCES: UserPreferences = {
+  language: '中文',
+  timezone: 'Asia/Shanghai',
+  location: {
+    country: '中国',
+  },
+};
+
+/**
+ * Get default preferences
+ */
+export function getDefaultPreferences(): UserPreferences {
+  return { ...DEFAULT_PREFERENCES };
+}
+
+/**
+ * Initialize preferences file with defaults if it doesn't exist.
+ * Called during app startup to ensure preferences.json exists.
+ */
+export function initPreferences(): void {
+  if (!existsSync(PREFERENCES_FILE)) {
+    savePreferences({ ...DEFAULT_PREFERENCES });
+  }
+}
+
 export function loadPreferences(): UserPreferences {
   try {
     if (!existsSync(PREFERENCES_FILE)) {
-      return {};
+      // Auto-create with defaults
+      savePreferences({ ...DEFAULT_PREFERENCES });
+      return { ...DEFAULT_PREFERENCES };
     }
     const content = readFileSync(PREFERENCES_FILE, 'utf-8');
-    return JSON.parse(content) as UserPreferences;
+    const stored = JSON.parse(content) as UserPreferences;
+    // Merge with defaults (stored values take precedence)
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...stored,
+      location: {
+        ...DEFAULT_PREFERENCES.location,
+        ...stored.location,
+      },
+    };
   } catch {
-    return {};
+    return { ...DEFAULT_PREFERENCES };
   }
 }
 
