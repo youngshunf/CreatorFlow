@@ -4,6 +4,7 @@ import { Brain, Check } from 'lucide-react'
 import { Icon_Folder } from '@creator-flow/ui'
 import { cn } from '@/lib/utils'
 import { PERMISSION_MODE_CONFIG, PERMISSION_MODE_ORDER, type PermissionMode } from '@creator-flow/shared/agent/modes'
+import { useT } from '@/context/LocaleContext'
 
 // ============================================================================
 // Types
@@ -78,7 +79,46 @@ function PermissionModeIcon({ mode, className }: PermissionModeIconProps) {
 // Icon size constant
 const MENU_ICON_SIZE = 'h-3.5 w-3.5'
 
-// Generate permission mode commands from centralized config
+/**
+ * Permission mode translation mapping for UI display.
+ * These provide localized labels and descriptions for permission modes.
+ */
+const PERMISSION_MODE_TRANSLATIONS: Record<PermissionMode, { label: string; description: string }> = {
+  'safe': { label: '探索模式', description: '只读模式，禁止写入，不会提示' },
+  'ask': { label: '询问模式', description: '编辑前先询问' },
+  'allow-all': { label: '执行模式', description: '自动执行，不会提示' },
+}
+
+/**
+ * Get localized permission mode commands.
+ * Uses translation mapping for Chinese UI while keeping original IDs.
+ */
+export function getPermissionModeCommands(t: (text: string) => string): SlashCommand[] {
+  return PERMISSION_MODE_ORDER.map(mode => {
+    const config = PERMISSION_MODE_CONFIG[mode]
+    const translation = PERMISSION_MODE_TRANSLATIONS[mode]
+    return {
+      id: mode as SlashCommandId,
+      label: t(translation.label),
+      description: t(translation.description),
+      icon: <PermissionModeIcon mode={mode} className={MENU_ICON_SIZE} />,
+    }
+  })
+}
+
+/**
+ * Get localized ultrathink command.
+ */
+export function getUltrathinkCommand(t: (text: string) => string): SlashCommand {
+  return {
+    id: 'ultrathink',
+    label: t('深度思考'),
+    description: t('用于复杂问题的扩展推理'),
+    icon: <Brain className={MENU_ICON_SIZE} />,
+  }
+}
+
+// Static versions for backward compatibility (English defaults)
 const permissionModeCommands: SlashCommand[] = PERMISSION_MODE_ORDER.map(mode => {
   const config = PERMISSION_MODE_CONFIG[mode]
   return {
@@ -105,6 +145,17 @@ export const DEFAULT_SLASH_COMMAND_GROUPS: CommandGroup[] = [
   { id: 'modes', commands: permissionModeCommands },
   { id: 'features', commands: [ultrathinkCommand] },
 ]
+
+/**
+ * Get localized command groups.
+ * Use this instead of DEFAULT_SLASH_COMMAND_GROUPS for localized UI.
+ */
+export function getLocalizedCommandGroups(t: (text: string) => string): CommandGroup[] {
+  return [
+    { id: 'modes', commands: getPermissionModeCommands(t) },
+    { id: 'features', commands: [getUltrathinkCommand(t)] },
+  ]
+}
 
 // ============================================================================
 // Shared Styles
@@ -162,11 +213,16 @@ function flattenSections(sections: SlashSection[]): (SlashCommand | SlashFolderI
 // Shared: Command Item Content
 // ============================================================================
 
-function CommandItemContent({ command, isActive }: { command: SlashCommand; isActive: boolean }) {
+function CommandItemContent({ command, isActive, showDescription = false }: { command: SlashCommand; isActive: boolean; showDescription?: boolean }) {
   return (
     <>
       <div className="shrink-0 text-muted-foreground">{command.icon}</div>
-      <div className="flex-1 min-w-0">{command.label}</div>
+      <div className="flex-1 min-w-0">
+        <div>{command.label}</div>
+        {showDescription && command.description && (
+          <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{command.description}</div>
+        )}
+      </div>
       {isActive && (
         <div className="shrink-0 h-4 w-4 rounded-full bg-current flex items-center justify-center">
           <Check className="h-2.5 w-2.5 text-white dark:text-black" strokeWidth={3} />
@@ -189,6 +245,8 @@ export interface SlashCommandMenuProps {
   onSelect: (commandId: SlashCommandId) => void
   showFilter?: boolean
   filterPlaceholder?: string
+  /** Show description for each command item */
+  showDescription?: boolean
   className?: string
 }
 
@@ -198,10 +256,13 @@ export function SlashCommandMenu({
   activeCommands = [],
   onSelect,
   showFilter = false,
-  filterPlaceholder = 'Search commands...',
+  filterPlaceholder,
+  showDescription = false,
   className,
 }: SlashCommandMenuProps) {
+  const t = useT()
   const [filter, setFilter] = React.useState('')
+  const effectivePlaceholder = filterPlaceholder ?? t('搜索命令...')
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   // If groups provided, filter within each group; otherwise use flat commands
@@ -250,10 +311,11 @@ export function SlashCommandMenu({
         className={cn(
           MENU_ITEM_STYLE,
           'outline-none',
-          'data-[selected=true]:bg-foreground/5'
+          'data-[selected=true]:bg-foreground/5',
+          showDescription && 'py-2' // More padding when showing descriptions
         )}
       >
-        <CommandItemContent command={cmd} isActive={isActive} />
+        <CommandItemContent command={cmd} isActive={isActive} showDescription={showDescription} />
       </CommandPrimitive.Item>
     )
   }
@@ -270,7 +332,7 @@ export function SlashCommandMenu({
             ref={inputRef}
             value={filter}
             onValueChange={setFilter}
-            placeholder={filterPlaceholder}
+            placeholder={effectivePlaceholder}
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -278,7 +340,7 @@ export function SlashCommandMenu({
       <CommandPrimitive.List className={MENU_LIST_STYLE}>
         {allFilteredCommands.length === 0 ? (
           <CommandPrimitive.Empty className="py-4 text-center text-sm text-muted-foreground">
-            No commands found
+            {t('未找到命令')}
           </CommandPrimitive.Empty>
         ) : filteredGroups ? (
           // Group-based rendering with smart separators
@@ -327,6 +389,7 @@ export function InlineSlashCommand({
   position,
   className,
 }: InlineSlashCommandProps) {
+  const t = useT()
   const menuRef = React.useRef<HTMLDivElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
@@ -426,7 +489,7 @@ export function InlineSlashCommand({
           <React.Fragment key={section.id}>
             {/* Section header */}
             <div className={MENU_SECTION_HEADER}>
-              {section.label}
+              {translateSectionLabel(section.label, t)}
             </div>
 
             {/* Section items */}
@@ -482,10 +545,24 @@ export function InlineSlashCommand({
       {/* Always-visible footer hint for @ mentions */}
       <div className="h-px bg-border/50 mx-2" />
       <div className="px-3 py-2.5 select-none text-xs text-muted-foreground">
-        Use @ for skills and files
+        {t('使用 @ 来引用技能和文件')}
       </div>
     </div>
   )
+}
+
+// ============================================================================
+// Hook: Section label translations
+// ============================================================================
+
+const SECTION_LABEL_TRANSLATIONS: Record<string, string> = {
+  'Modes': '模式',
+  'Features': '功能',
+  'Recent Working Directories': '最近工作目录',
+}
+
+function translateSectionLabel(label: string, t: (text: string) => string): string {
+  return SECTION_LABEL_TRANSLATIONS[label] ? t(SECTION_LABEL_TRANSLATIONS[label]) : label
 }
 
 // ============================================================================
@@ -547,6 +624,7 @@ export function useInlineSlashCommand({
   recentFolders = [],
   homeDir,
 }: UseInlineSlashCommandOptions): UseInlineSlashCommandReturn {
+  const t = useT()
   const [isOpen, setIsOpen] = React.useState(false)
   const [filter, setFilter] = React.useState('')
   const [position, setPosition] = React.useState({ x: 0, y: 0 })
@@ -554,22 +632,22 @@ export function useInlineSlashCommand({
   // Store current input state for handleSelect
   const currentInputRef = React.useRef({ value: '', cursorPosition: 0 })
 
-  // Build sections from commands and folders
+  // Build sections from commands and folders with localized labels
   const sections = React.useMemo((): SlashSection[] => {
     const result: SlashSection[] = []
 
-    // Modes section
+    // Modes section - use localized commands
     result.push({
       id: 'modes',
-      label: 'Modes',
-      items: permissionModeCommands,
+      label: 'Modes', // Will be translated in InlineSlashCommand via translateSectionLabel
+      items: getPermissionModeCommands(t),
     })
 
-    // Features section
+    // Features section - use localized command
     result.push({
       id: 'features',
-      label: 'Features',
-      items: [ultrathinkCommand],
+      label: 'Features', // Will be translated in InlineSlashCommand via translateSectionLabel
+      items: [getUltrathinkCommand(t)],
     })
 
     // Recent folders section - sorted alphabetically by folder name, show all
@@ -583,7 +661,7 @@ export function useInlineSlashCommand({
 
       result.push({
         id: 'folders',
-        label: 'Recent Working Directories',
+        label: 'Recent Working Directories', // Will be translated in InlineSlashCommand via translateSectionLabel
         items: sortedFolders.map(path => ({
           id: path,
           type: 'folder' as const,
@@ -595,7 +673,7 @@ export function useInlineSlashCommand({
     }
 
     return result
-  }, [recentFolders, homeDir])
+  }, [recentFolders, homeDir, t])
 
   const handleInputChange = React.useCallback((value: string, cursorPosition: number) => {
     // Store current state for handleSelect

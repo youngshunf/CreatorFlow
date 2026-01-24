@@ -173,25 +173,30 @@ export function useT() {
 }
 
 /**
- * use$T Hook
+ * useParamT Hook
  * 
  * 获取带参数的翻译函数
  * 
  * @example
  * ```tsx
- * const $t = use$T();
+ * const $t = useParamT();
  * return <div>{$t('欢迎{name}', { name: '用户' })}</div>;
  * ```
  */
-export function use$T() {
+export function useParamT() {
   const context = useContext(LocaleContext);
   
   if (!context) {
-    throw new Error('use$T must be used within a LocaleProvider');
+    throw new Error('useParamT must be used within a LocaleProvider');
   }
   
   return context.$t;
 }
+
+/**
+ * @deprecated Use useParamT instead
+ */
+export const use$T = useParamT;
 
 /**
  * useTranslation Hook

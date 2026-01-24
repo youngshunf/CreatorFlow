@@ -1,248 +1,1510 @@
 [
-  ["{count}分钟前", "{count} minutes ago"],
-  ["{count}天前", "{count} days ago"],
-  ["{count}小时前", "{count} hours ago"],
-  ["安装更新", "Install Update"],
-  ["版本", "Version"],
-  ["帮助", "Help"],
-  ["帮助 CreatorFlow 为您提供个性化响应", "Help CreatorFlow provide personalized responses"],
-  ["保存", "Save"],
-  ["备注", "Notes"],
-  ["本地 MCP 服务器", "Local MCP Servers"],
-  ["本地 MCP 服务器已在设置 > 高级中禁用。启用它们以使用此数据源。", "Local MCP servers are disabled in Settings > Advanced. Enable them to use this source."],
-  ["必填项", "Required"],
-  ["编辑", "Edit"],
-  ["编辑前提示", "Prompts before edits"],
-  ["编辑文件", "Edit File"],
-  ["标签", "Labels"],
-  ["标签帮助您用彩色标记组织会话。使用它们按项目、主题或优先级对对话进行分类，方便以后筛选和查找相关会话。", "Labels help you organize sessions with colored tags. Use them to categorize conversations by project, topic, or priority."],
-  ["标签层级", "Label Hierarchy"],
-  ["标签可以由智能体创建或通过编辑工作区中的 labels/config.json 文件创建。", "Labels can be created by the agent or by editing labels/config.json in your workspace."],
-  ["标签值功能尚未在 UI 上完全实现，即将推出。", "Label values are not yet fully implemented in the UI, coming soon."],
-  ["标识", "Slug"],
-  ["操作成功", "Success"],
-  ["操作失败", "Failed"],
-  ["查看键盘快捷键参考", "View keyboard shortcut reference"],
-  ["撤销", "Undo"],
-  ["城市", "City"],
-  ["此服务器提供的操作", "Operations exposed by this server"],
-  ["此工作区配置的所有标签。标签可以嵌套以形成分组。", "All labels configured for this workspace. Labels can be nested to form groups."],
-  ["此会话已不存在", "This session no longer exists"],
-  ["此数据源的文件系统路径", "Filesystem path for this source"],
-  ["从未", "Never"],
-  ["打开", "Open"],
-  ["打开设置", "Open settings"],
-  ["当 AI 完成聊天任务时发送通知", "Send notification when AI completes a chat task"],
-  ["当用户消息匹配正则模式时自动应用标签。", "Automatically apply labels when user messages match regex patterns."],
-  ["导出", "Export"],
-  ["导航", "Navigation"],
-  ["导入", "Import"],
-  ["第{current}页，共{total}页", "Page {current} of {total}"],
-  ["发送匿名使用数据以帮助改进产品", "Send anonymous usage data to help improve the product"],
-  ["发送消息", "Send message"],
-  ["反馈", "Feedback"],
-  ["分享失败", "Share failed"],
-  ["分享已更新", "Share updated"],
-  ["服务器 URL 和连接状态", "Server URL and connection status"],
-  ["复制", "Copy"],
-  ["复制链接", "Copy Link"],
-  ["刚刚", "Just now"],
-  ["高级", "Advanced"],
-  ["格式错误", "Invalid format"],
-  ["跟随系统", "Follow System"],
-  ["更改", "Change"],
-  ["更改...", "Change..."],
-  ["更新到", "Update to"],
-  ["更新分享", "Update Share"],
-  ["更新分享失败", "Failed to update share"],
-  ["工具", "Tools"],
-  ["工作区", "Workspace"],
-  ["工作区设置", "Workspace Settings"],
-  ["工作区信息", "Workspace Info"],
-  ["工作区自定义", "Workspace Customizations"],
-  ["共{count}条记录", "{count} records"],
-  ["关闭", "Close"],
-  ["关闭对话框 / 取消输入焦点", "Close dialog / blur input"],
-  ["关于", "About"],
-  ["关于标签", "About Labels"],
-  ["关于权限", "About Permissions"],
-  ["管理账户和订阅", "Manage account and subscription"],
-  ["国家", "Country"],
-  ["欢迎{name}", "Welcome {name}"],
-  ["欢迎回来，{name}", "Welcome back, {name}"],
-  ["欢迎使用 CreatorFlow", "Welcome to CreatorFlow"],
-  ["换行", "New line"],
-  ["会话", "Session"],
-  ["会话列表", "Session List"],
-  ["会话设置", "Session Settings"],
-  ["基本信息", "Basic Info"],
-  ["记住上次打开的工作区", "Remember last opened workspace"],
-  ["加载中", "Loading"],
-  ["加载中...", "Loading..."],
-  ["剪切", "Cut"],
-  ["检查更新", "Check for Updates"],
-  ["检查中...", "Checking..."],
-  ["界面语言", "Interface Language"],
-  ["聚焦侧边栏", "Focus sidebar"],
-  ["聚焦会话列表", "Focus session list"],
-  ["聚焦聊天输入框", "Focus chat input"],
-  ["控制 AI 可以做什么", "Control what AI can do"],
-  ["快捷键", "Shortcuts"],
-  ["扩展上述应用默认值的工作区级模式。", "Workspace-level patterns that extend the app defaults above."],
-  ["了解更多", "Learn More"],
-  ["类型", "Type"],
-  ["立即检查", "Check Now"],
-  ["例如：上海", "e.g. Shanghai"],
-  ["例如：中国", "e.g. China"],
-  ["例如：中文", "e.g. Chinese"],
-  ["例如：Asia/Shanghai", "e.g. Asia/Shanghai"],
-  ["连接", "Connection"],
-  ["连接类型", "Connection Type"],
-  ["连接详情", "Connection Details"],
-  ["链接已复制到剪贴板", "Link copied to clipboard"],
-  ["聊天", "Chat"],
-  ["每个标签可以选择性地携带特定类型（文本、数字或枚举）的值。这使标签成为结构化元数据。", "Each label can optionally carry a value with a specific type (text, number, or enum). This turns labels into structured metadata."],
-  ["描述", "Description"],
-  ["名称", "Name"],
-  ["模式循环", "Mode Cycling"],
-  ["模型", "Model"],
-  ["默认", "Default"],
-  ["默认工作目录", "Default Working Directory"],
-  ["默认模式", "Default Mode"],
-  ["默认模型", "Default Model"],
-  ["默认权限", "Default Permissions"],
-  ["默认权限应位于", "Default permissions should be at"],
-  ["您的城市，用于本地信息和上下文", "Your city, for local information and context"],
-  ["您的国家，用于地区格式和上下文", "Your country, for regional format and context"],
-  ["您的姓名", "Your name"],
-  ["配置通用选项和行为", "Configure general options and behavior"],
-  ["偏好设置", "Preferences"],
-  ["启动此 MCP 服务器的本地命令", "Local command that spawns this MCP server"],
-  ["启动时自动恢复之前的工作区", "Automatically restore the previous workspace on startup"],
-  ["启用 stdio 子进程服务器", "Enable stdio subprocess servers"],
-  ["启用声音", "Enable Sound"],
-  ["启用天气、本地时间和地区上下文等位置感知响应", "Enable location-aware responses like weather, local time, and regional context"],
-  ["浅色", "Light"],
-  ["浅色模式", "Light Mode"],
-  ["切换侧边栏", "Toggle sidebar"],
-  ["切换权限模式", "Cycle permission mode"],
-  ["切换语言", "Switch Language"],
-  ["清除", "Clear"],
-  ["请求编辑", "Ask to Edit"],
-  ["请输入", "Please enter"],
-  ["取消", "Cancel"],
-  ["全局", "Global"],
-  ["全选", "Select All"],
-  ["权限", "Permissions"],
-  ["权限控制您的智能体拥有多大的自主权。在探索模式下，智能体只能读取和研究，非常适合在提交更改之前理解问题。", "Permissions control how much autonomy your agent has. In Explore mode, the agent can only read and research — perfect for understanding a problem before committing to changes."],
-  ["权限模式", "Permission Modes"],
-  ["确认", "Confirm"],
-  ["任何您希望 CreatorFlow 了解的额外信息...", "Any additional information you want CreatorFlow to know..."],
-  ["删除", "Delete"],
-  ["删除会话", "Delete session"],
-  ["删除技能失败", "Failed to delete skill"],
-  ["删除数据源失败", "Failed to delete source"],
-  ["上传中...", "Uploading..."],
-  ["上次测试", "Last Tested"],
-  ["上次登录时间：{time}", "Last login: {time}"],
-  ["设置", "Settings"],
-  ["深色", "Dark"],
-  ["深色模式", "Dark Mode"],
-  ["时区", "Timezone"],
-  ["输入工作区名称...", "Enter workspace name..."],
-  ["输入聊天名称...", "Enter chat name..."],
-  ["数据源已禁用", "Source Disabled"],
-  ["思考级别", "Thinking Level"],
-  ["搜索", "Search"],
-  ["探索", "Explore"],
-  ["探索模式的访问规则", "Access rules for Explore mode"],
-  ["探索模式下允许的 API 端点", "API endpoints allowed in Explore mode"],
-  ["探索模式下允许的工具模式", "Tool patterns allowed in Explore mode"],
-  ["探索模式下允许的应用级模式。不在此列表中的命令将被阻止。", "App-level patterns allowed in Explore mode. Commands not on this list are blocked."],
-  ["跳到第一项", "Go to first item"],
-  ["跳到最后一项", "Go to last item"],
-  ["停止分享", "Stop Sharing"],
-  ["停止分享失败", "Failed to stop sharing"],
-  ["通过 API 连接设置", "Set via API connection"],
-  ["通用设置", "General Settings"],
-  ["通知", "Notifications"],
-  ["图标", "Icon"],
-  ["推荐的工作流程：先在探索模式下让智能体调查，审查提议的计划，然后自信地执行。", "A good workflow: start in Explore to let the agent investigate, review the proposed plan, then execute with confidence."],
-  ["退出", "Quit"],
-  ["外观", "Appearance"],
-  ["完全自主执行", "Full autonomous execution"],
-  ["未命名", "Untitled"],
-  ["未配置", "Not configured"],
-  ["未配置标签", "No labels configured"],
-  ["未配置自定义权限", "No custom permissions configured"],
-  ["未设置（使用会话文件夹）", "Not set (uses session folder)"],
-  ["未提供指令", "No instructions provided"],
-  ["未选择工作区", "No workspace selected"],
-  ["未找到技能", "Skill not found"],
-  ["未找到默认权限", "No default permissions found"],
-  ["未找到数据源", "Source not found"],
-  ["未知错误", "Unknown error"],
-  ["位置", "Location"],
-  ["文档", "Documentation"],
-  ["文件", "File"],
-  ["无影响 — 所有工具已自动批准", "No effect — all tools already auto-approved"],
-  ["系统字体", "System Font"],
-  ["新建", "New"],
-  ["新建会话", "New Session"],
-  ["新建聊天", "New chat"],
-  ["新聊天的 AI 模型", "AI model for new chats"],
-  ["新聊天的推理深度", "Reasoning depth for new chats"],
-  ["姓名", "Name"],
-  ["选择使用 Shift+Tab 循环的模式", "Select which modes to cycle through with Shift+Tab"],
-  ["选择应用显示语言", "Select the language for the app"],
-  ["颜色主题", "Color Theme"],
-  ["移动到下一个区域", "Move to next zone"],
-  ["已删除技能", "Deleted skill"],
-  ["已删除数据源", "Deleted source"],
-  ["已停止分享", "Sharing stopped"],
-  ["已阻止 — 无论如何都会阻止写入工具", "Blocked — write tools blocked regardless"],
-  ["隐私设置", "Privacy Settings"],
-  ["应用设置", "App Settings"],
-  ["用于\"明天\"或\"下周\"等相对日期", "For relative dates like \"tomorrow\" or \"next week\""],
-  ["语言", "Language"],
-  ["元数据", "Metadata"],
-  ["允许播放通知声音", "Allow playing notification sounds"],
-  ["允许遥测", "Allow telemetry"],
-  ["在工作区中创建 permissions.json 文件以添加自定义规则。", "Create a permissions.json file in your workspace to add custom rules."],
-  ["在列表中导航", "Navigate items in list"],
-  ["在浏览器中打开", "Open in Browser"],
-  ["在区域之间移动（在列表中）", "Move between zones (in lists)"],
-  ["在线分享", "Share Online"],
-  ["在新窗口打开", "Open in New Window"],
-  ["暂无数据", "No Data"],
-  ["粘贴", "Paste"],
-  ["账户", "Account"],
-  ["只读，不允许更改", "Read-only, no changes allowed"],
-  ["指令", "Instructions"],
-  ["智能体的上下文和指南", "Context and guidelines for the agent"],
-  ["重命名工作区", "Rename Workspace"],
-  ["重命名聊天", "Rename Chat"],
-  ["重启并更新", "Restart and Update"],
-  ["重做", "Redo"],
-  ["主题模式", "Theme Mode"],
-  ["桌面通知", "Desktop Notifications"],
-  ["字体", "Font"],
-  ["自定义应用外观和语言", "Customize app appearance and language"],
-  ["自动", "Auto"],
-  ["自动批准 — 允许的工具无需确认", "Auto-approved — no prompts for allowed tools"],
-  ["自动应用规则", "Auto-Apply Rules"],
-  ["自动应用规则在消息匹配正则模式时自动分配标签。", "Auto-apply rules assign labels automatically when a message matches a regex pattern."],
-  ["自由格式的上下文，帮助 CreatorFlow 了解您的偏好", "Free-form context to help CreatorFlow understand your preferences"],
-  ["最快的快速回答", "Fastest for quick answers"],
-  ["最适合复杂工作", "Most capable for complex work"],
-  ["最适合日常任务", "Best for everyday tasks"],
-  ["AI 代理连接语言模型的方式", "How AI agent connects to language model"],
-  ["AI 响应语言", "AI Response Language"],
-  ["API 连接", "API Connection"],
-  ["API 请求的基础 URL", "Base URL for API requests"],
-  ["API Key — Anthropic、OpenRouter 或兼容 API", "API Key — Anthropic, OpenRouter, or compatible API"],
-  ["Claude Pro/Max — 使用您的 Claude 订阅", "Claude Pro/Max — Use your Claude subscription"],
-  ["CreatorFlow 响应的首选语言", "Preferred language for CreatorFlow responses"],
-  ["CreatorFlow 应如何称呼您", "How CreatorFlow should address you"],
-  ["\"始终允许的工具\"与权限模式的交互方式", "How \"Always Allowed Tools\" interacts with permission modes"]
+  [
+    "{count}分钟前",
+    "{count} minutes ago"
+  ],
+  [
+    "{count}天前",
+    "{count} days ago"
+  ],
+  [
+    "{count}小时前",
+    "{count} hours ago"
+  ],
+  [
+    "1 个文件",
+    "1 file"
+  ],
+  [
+    "安装更新",
+    "Install update"
+  ],
+  [
+    "版本",
+    "Version"
+  ],
+  [
+    "帮助 CreatorFlow 为您提供个性化响应",
+    "Help CreatorFlow provide personalized responses for you"
+  ],
+  [
+    "帮助与文档",
+    "Help & Documentation"
+  ],
+  [
+    "备注",
+    "Notes"
+  ],
+  [
+    "本地",
+    "Local"
+  ],
+  [
+    "本地 MCP 服务器",
+    "Local MCP servers"
+  ],
+  [
+    "本地 MCP 服务器已在设置 > 高级中禁用。启用它们以使用此数据源。",
+    "Local MCP servers are disabled in Settings > Advanced. Enable them to use this data source."
+  ],
+  [
+    "本地文件夹",
+    "Local Folder"
+  ],
+  [
+    "编辑",
+    "Edit"
+  ],
+  [
+    "编辑标签",
+    "Edit Tags"
+  ],
+  [
+    "编辑前提示",
+    "Edit Prompt"
+  ],
+  [
+    "编辑视图",
+    "Edit View"
+  ],
+  [
+    "编辑文件",
+    "Edit File"
+  ],
+  [
+    "标记",
+    "Mark"
+  ],
+  [
+    "标记为未读",
+    "Mark as Unread"
+  ],
+  [
+    "标记已移除",
+    "Label Removed"
+  ],
+  [
+    "标签",
+    "Labels"
+  ],
+  [
+    "标签帮助您用彩色标记组织会话。使用它们按项目、主题或优先级对对话进行分类，方便以后筛选和查找相关会话。",
+    "Labels help you organize sessions with colored tags. Use them to categorize conversations by project, topic, or priority for easy filtering and finding relevant sessions later."
+  ],
+  [
+    "标签层级",
+    "Label Hierarchy"
+  ],
+  [
+    "标签可以由智能体创建或通过编辑工作区中的 labels/config.json 文件创建。",
+    "Labels can be created by the agent or by editing the labels/config.json file in your workspace."
+  ],
+  [
+    "标签值功能尚未在 UI 上完全实现，即将推出。",
+    "Label value functionality is not yet fully implemented in the UI, coming soon."
+  ],
+  [
+    "标识",
+    "Identifier"
+  ],
+  [
+    "标题已刷新",
+    "Title Refreshed"
+  ],
+  [
+    "查看支持的模型",
+    "View Supported Models"
+  ],
+  [
+    "撤销",
+    "Undo"
+  ],
+  [
+    "城市",
+    "City"
+  ],
+  [
+    "创建",
+    "Create"
+  ],
+  [
+    "创建工作区",
+    "Create workspace"
+  ],
+  [
+    "创建中...",
+    "Creating..."
+  ],
+  [
+    "此操作无法撤销。",
+    "This action cannot be undone."
+  ],
+  [
+    "此服务器提供的操作",
+    "Actions provided by this server"
+  ],
+  [
+    "此工作区配置的所有标签。标签可以嵌套以形成分组。",
+    "All labels configured for this workspace. Labels can be nested to form groups."
+  ],
+  [
+    "此会话已不存在",
+    "This session no longer exists"
+  ],
+  [
+    "此数据源的文件系统路径",
+    "File system path for this data source"
+  ],
+  [
+    "从空白工作区开始。",
+    "Start with a blank workspace."
+  ],
+  [
+    "从浏览器页面复制授权码并粘贴到下方。",
+    "Copy the authorization code from the browser page and paste it below."
+  ],
+  [
+    "从未",
+    "Never"
+  ],
+  [
+    "打开",
+    "Open"
+  ],
+  [
+    "打开上下文菜单",
+    "Open context menu"
+  ],
+  [
+    "打开设置",
+    "Open settings"
+  ],
+  [
+    "打开文件夹",
+    "Open folder"
+  ],
+  [
+    "打开中...",
+    "Opening..."
+  ],
+  [
+    "当 AI 完成聊天任务时发送通知",
+    "Send notification when AI completes chat task"
+  ],
+  [
+    "当用户消息匹配正则模式时自动应用标签。",
+    "Automatically apply tags when user message matches regex pattern."
+  ],
+  [
+    "导航",
+    "Navigation"
+  ],
+  [
+    "等待当前操作完成",
+    "Wait for current operation to complete"
+  ],
+  [
+    "点击压缩",
+    "Click to compress"
+  ],
+  [
+    "对话已标记",
+    "Conversation marked"
+  ],
+  [
+    "对话已删除",
+    "Conversation deleted"
+  ],
+  [
+    "发送消息",
+    "Send message"
+  ],
+  [
+    "返回",
+    "Back"
+  ],
+  [
+    "分享",
+    "Share"
+  ],
+  [
+    "分享失败",
+    "Share failed"
+  ],
+  [
+    "分享已更新",
+    "Share updated"
+  ],
+  [
+    "分支",
+    "Branch"
+  ],
+  [
+    "服务器 URL 和连接状态",
+    "Server URL and connection status"
+  ],
+  [
+    "复制链接",
+    "Copy link"
+  ],
+  [
+    "复制路径",
+    "Copy path"
+  ],
+  [
+    "刚刚",
+    "Just now"
+  ],
+  [
+    "高级",
+    "Advanced"
+  ],
+  [
+    "格式：",
+    "Format:"
+  ],
+  [
+    "个数据源",
+    "data sources"
+  ],
+  [
+    "个文件",
+    "files"
+  ],
+  [
+    "跟随系统",
+    "Follow System"
+  ],
+  [
+    "更改",
+    "Change"
+  ],
+  [
+    "更改...",
+    "Change..."
+  ],
+  [
+    "更新到",
+    "Update to"
+  ],
+  [
+    "更新分享",
+    "Update share"
+  ],
+  [
+    "更新分享失败",
+    "Failed to update share"
+  ],
+  [
+    "更新您的 API 连接或更改设置。",
+    "Update your API connection or change settings."
+  ],
+  [
+    "更新设置",
+    "Update settings"
+  ],
+  [
+    "工具",
+    "Tools"
+  ],
+  [
+    "工作目录",
+    "Working Directory"
+  ],
+  [
+    "工作区名称",
+    "Workspace name"
+  ],
+  [
+    "工作区设置",
+    "Workspace settings"
+  ],
+  [
+    "工作区信息",
+    "Workspace info"
+  ],
+  [
+    "工作区自定义",
+    "Workspace customization"
+  ],
+  [
+    "共{count}条记录",
+    "{count} records in total"
+  ],
+  [
+    "关闭对话框 / 取消输入焦点",
+    "Close dialog / Cancel input focus"
+  ],
+  [
+    "关闭搜索",
+    "Close search"
+  ],
+  [
+    "关于",
+    "About"
+  ],
+  [
+    "关于标签",
+    "About tags"
+  ],
+  [
+    "关于权限",
+    "About permissions"
+  ],
+  [
+    "国家",
+    "Country"
+  ],
+  [
+    "欢迎{name}",
+    "Welcome {name}"
+  ],
+  [
+    "欢迎使用 CreatorFlow",
+    "Welcome to CreatorFlow"
+  ],
+  [
+    "换行",
+    "Line break"
+  ],
+  [
+    "会话列表",
+    "Session List"
+  ],
+  [
+    "或使用其他账户登录",
+    "Or sign in with another account"
+  ],
+  [
+    "基本信息",
+    "Basic information"
+  ],
+  [
+    "基础 URL",
+    "Base URL"
+  ],
+  [
+    "计划",
+    "Plan"
+  ],
+  [
+    "技能",
+    "Skills"
+  ],
+  [
+    "技能是可重复使用的指令，用于教导您的智能体专门化行为。",
+    "Skills are reusable instructions that teach your agent specialized behaviors."
+  ],
+  [
+    "继续",
+    "Continue"
+  ],
+  [
+    "加载中...",
+    "Loading..."
+  ],
+  [
+    "检查更新",
+    "Check for Updates"
+  ],
+  [
+    "检查中...",
+    "Checking..."
+  ],
+  [
+    "键盘快捷键",
+    "Keyboard Shortcuts"
+  ],
+  [
+    "界面语言",
+    "Interface Language"
+  ],
+  [
+    "今天",
+    "Today"
+  ],
+  [
+    "聚焦侧边栏",
+    "Focus Sidebar"
+  ],
+  [
+    "聚焦会话列表",
+    "Focus Conversation List"
+  ],
+  [
+    "聚焦聊天输入框",
+    "Focus Chat Input"
+  ],
+  [
+    "开始使用",
+    "Get started"
+  ],
+  [
+    "开始一个聊天，开始工作吧。",
+    "Start a chat and get to work."
+  ],
+  [
+    "可选",
+    "Optional"
+  ],
+  [
+    "控制 AI 可以做什么",
+    "Control what AI can do"
+  ],
+  [
+    "快捷键",
+    "Shortcuts"
+  ],
+  [
+    "扩展上述应用默认值的工作区级模式。",
+    "Workspace-level patterns that extend the app defaults above."
+  ],
+  [
+    "扩展推理深度",
+    "Extended Reasoning Depth"
+  ],
+  [
+    "拉取的任何模型。无需 API 密钥。",
+    "Any pulled model. No API key required."
+  ],
+  [
+    "了解更多",
+    "Learn more"
+  ],
+  [
+    "了解更多关于 API",
+    "Learn more about API"
+  ],
+  [
+    "了解更多关于 MCP",
+    "Learn more about MCP"
+  ],
+  [
+    "了解更多关于本地文件夹",
+    "Learn more about local folders"
+  ],
+  [
+    "了解更多关于数据源",
+    "Learn more about data sources"
+  ],
+  [
+    "类型",
+    "Type"
+  ],
+  [
+    "立即检查",
+    "Check Now"
+  ],
+  [
+    "例如：上海",
+    "e.g., Shanghai"
+  ],
+  [
+    "例如：中国",
+    "e.g., China"
+  ],
+  [
+    "例如：中文",
+    "e.g., Chinese"
+  ],
+  [
+    "例如：Asia/Shanghai",
+    "e.g., Asia/Shanghai"
+  ],
+  [
+    "连接",
+    "Connect"
+  ],
+  [
+    "连接 Claude 账户",
+    "Connect Claude Account"
+  ],
+  [
+    "连接类型",
+    "Connection Type"
+  ],
+  [
+    "连接详情",
+    "Connection Details"
+  ],
+  [
+    "连接中...",
+    "Connecting..."
+  ],
+  [
+    "链接已复制到剪贴板",
+    "Link copied to clipboard"
+  ],
+  [
+    "聊天",
+    "Chat"
+  ],
+  [
+    "浏览",
+    "Browse"
+  ],
+  [
+    "浏览模型",
+    "Browse Models"
+  ],
+  [
+    "留空时默认使用 Anthropic 模型名称 (Opus, Sonnet, Haiku)",
+    "Defaults to Anthropic model names (Opus, Sonnet, Haiku) when left blank"
+  ],
+  [
+    "路径已复制到剪贴板",
+    "Path copied to clipboard"
+  ],
+  [
+    "每个标签可以选择性地携带特定类型（文本、数字或枚举）的值。这使标签成为结构化元数据。",
+    "Each label can optionally carry a value of a specific type (text, number, or enum). This makes labels structured metadata."
+  ],
+  [
+    "描述",
+    "Description"
+  ],
+  [
+    "名称",
+    "Name"
+  ],
+  [
+    "模式循环",
+    "Mode Cycle"
+  ],
+  [
+    "模型",
+    "Model"
+  ],
+  [
+    "默认",
+    "Default"
+  ],
+  [
+    "默认工作目录",
+    "Default Working Directory"
+  ],
+  [
+    "默认模式",
+    "Default Mode"
+  ],
+  [
+    "默认模型",
+    "Default Model"
+  ],
+  [
+    "默认权限",
+    "Default Permissions"
+  ],
+  [
+    "默认权限应位于",
+    "Default permissions should be at"
+  ],
+  [
+    "默认位置",
+    "Default Location"
+  ],
+  [
+    "你想做什么？",
+    "What would you like to do?"
+  ],
+  [
+    "您的城市，用于本地信息和上下文",
+    "Your city, for local information and context"
+  ],
+  [
+    "您的国家，用于地区格式和上下文",
+    "Your country, for regional format and context"
+  ],
+  [
+    "您的姓名",
+    "Your name"
+  ],
+  [
+    "配置状态",
+    "Configuration Status"
+  ],
+  [
+    "偏好设置",
+    "Preferences"
+  ],
+  [
+    "启动此 MCP 服务器的本地命令",
+    "Local command to start this MCP server"
+  ],
+  [
+    "启用 stdio 子进程服务器",
+    "Enable stdio subprocess server"
+  ],
+  [
+    "启用天气、本地时间和地区上下文等位置感知响应",
+    "Enable location-aware responses such as weather, local time, and regional context"
+  ],
+  [
+    "浅色",
+    "Light"
+  ],
+  [
+    "切换侧边栏",
+    "Toggle sidebar"
+  ],
+  [
+    "清除",
+    "Clear"
+  ],
+  [
+    "清除搜索",
+    "Clear Search"
+  ],
+  [
+    "请计算以确认：",
+    "Please calculate to confirm:"
+  ],
+  [
+    "请求编辑",
+    "Request Edit"
+  ],
+  [
+    "请先备份重要数据！",
+    "Please backup important data first!"
+  ],
+  [
+    "请在设置中添加数据源。",
+    "Please add data sources in settings."
+  ],
+  [
+    "取消",
+    "Cancel"
+  ],
+  [
+    "取消标记",
+    "Unmark"
+  ],
+  [
+    "全部文档",
+    "All Documents"
+  ],
+  [
+    "全局",
+    "Global"
+  ],
+  [
+    "权限",
+    "Permissions"
+  ],
+  [
+    "权限控制您的智能体拥有多大的自主权。在探索模式下，智能体只能读取和研究，非常适合在提交更改之前理解问题。",
+    "Permissions control how much autonomy your agent has. In explore mode, the agent can only read and research, perfect for understanding issues before committing changes."
+  ],
+  [
+    "权限模式",
+    "Permission Mode"
+  ],
+  [
+    "让您的想法与实现它们的工具相遇。",
+    "Where your ideas meet the tools to make them happen."
+  ],
+  [
+    "任何您希望 CreatorFlow 了解的额外信息...",
+    "Any additional information you'd like CreatorFlow to know..."
+  ],
+  [
+    "日常任务的最佳选择",
+    "Best for everyday tasks"
+  ],
+  [
+    "筛选对话",
+    "Filter Conversations"
+  ],
+  [
+    "筛选文件夹...",
+    "Filter folders..."
+  ],
+  [
+    "删除",
+    "Delete"
+  ],
+  [
+    "删除标签",
+    "Delete tag"
+  ],
+  [
+    "删除会话",
+    "Delete session"
+  ],
+  [
+    "删除技能失败",
+    "Failed to delete skill"
+  ],
+  [
+    "删除视图",
+    "Delete view"
+  ],
+  [
+    "删除数据源失败",
+    "Failed to delete data source"
+  ],
+  [
+    "上传中...",
+    "Uploading..."
+  ],
+  [
+    "上次测试",
+    "Last tested"
+  ],
+  [
+    "上下文",
+    "Context"
+  ],
+  [
+    "上下文已使用",
+    "Context used"
+  ],
+  [
+    "设置",
+    "Settings"
+  ],
+  [
+    "设置 API 连接",
+    "Set up API Connection"
+  ],
+  [
+    "设置...",
+    "Settings..."
+  ],
+  [
+    "深度思考",
+    "Deep Thinking"
+  ],
+  [
+    "深色",
+    "Dark"
+  ],
+  [
+    "时区",
+    "Time zone"
+  ],
+  [
+    "使用 @ 来引用技能和文件",
+    "Use @ to reference skills and files"
+  ],
+  [
+    "使用 Claude 登录",
+    "Sign in with Claude"
+  ],
+  [
+    "使用您的 Claude 订阅来支持多智能体工作流。",
+    "Use your Claude subscription to power multi-agent workflows."
+  ],
+  [
+    "使用通过",
+    "Use via"
+  ],
+  [
+    "使用现有令牌",
+    "Use existing token"
+  ],
+  [
+    "视图",
+    "View"
+  ],
+  [
+    "授权码",
+    "Authorization code"
+  ],
+  [
+    "输入答案",
+    "Enter Answer"
+  ],
+  [
+    "输入工作区名称...",
+    "Enter workspace name..."
+  ],
+  [
+    "输入聊天名称...",
+    "Enter chat name..."
+  ],
+  [
+    "输入名称...",
+    "Enter name..."
+  ],
+  [
+    "输入名称并选择工作区的存储位置。",
+    "Enter a name and select a storage location for the workspace."
+  ],
+  [
+    "输入您的 API 密钥。可选择性地配置 OpenRouter、Ollama 或兼容 API 的自定义端点。",
+    "Enter your API key. Optionally configure OpenRouter, Ollama, or custom endpoints compatible with the API."
+  ],
+  [
+    "输入授权码",
+    "Enter Authorization Code"
+  ],
+  [
+    "数据源",
+    "Data Sources"
+  ],
+  [
+    "数据源将您的智能体连接到外部数据 — MCP 服务器、REST API 和本地文件夹。",
+    "Data sources connect your agent to external data — MCP servers, REST APIs, and local folders."
+  ],
+  [
+    "数据源已禁用",
+    "Data source disabled"
+  ],
+  [
+    "刷新标题失败",
+    "Failed to refresh title"
+  ],
+  [
+    "思考级别",
+    "Thinking level"
+  ],
+  [
+    "搜索",
+    "Search"
+  ],
+  [
+    "搜索对话...",
+    "Search conversations..."
+  ],
+  [
+    "搜索命令...",
+    "Search commands..."
+  ],
+  [
+    "搜索数据源...",
+    "Search data sources..."
+  ],
+  [
+    "所有对话",
+    "All Conversations"
+  ],
+  [
+    "所有工作区及其设置",
+    "All workspaces and their settings"
+  ],
+  [
+    "所有技能",
+    "All Skills"
+  ],
+  [
+    "所有偏好设置和会话数据",
+    "All preferences and session data"
+  ],
+  [
+    "所有凭据和 API 密钥",
+    "All credentials and API keys"
+  ],
+  [
+    "探索",
+    "Explore"
+  ],
+  [
+    "探索模式的访问规则",
+    "Access rules for exploration mode"
+  ],
+  [
+    "探索模式下允许的 API 端点",
+    "Allowed API endpoints in explore mode"
+  ],
+  [
+    "探索模式下允许的工具模式",
+    "Allowed tool patterns in explore mode"
+  ],
+  [
+    "探索模式下允许的应用级模式。不在此列表中的命令将被阻止。",
+    "Allowed app-level patterns in explore mode. Commands not in this list will be blocked."
+  ],
+  [
+    "添加附件",
+    "Add Attachment"
+  ],
+  [
+    "添加工作区",
+    "Add Workspace"
+  ],
+  [
+    "添加工作区...",
+    "Add Workspace..."
+  ],
+  [
+    "添加技能",
+    "Add Skill"
+  ],
+  [
+    "添加数据源",
+    "Add Data Source"
+  ],
+  [
+    "添加新标签",
+    "Add New Label"
+  ],
+  [
+    "跳到第一项",
+    "Jump to First Item"
+  ],
+  [
+    "跳到最后一项",
+    "Jump to Last Item"
+  ],
+  [
+    "停止分享",
+    "Stop sharing"
+  ],
+  [
+    "停止分享失败",
+    "Failed to stop sharing"
+  ],
+  [
+    "通过 API 连接设置",
+    "Connect via API Settings"
+  ],
+  [
+    "通知",
+    "Notifications"
+  ],
+  [
+    "图标",
+    "Icon"
+  ],
+  [
+    "推荐",
+    "Recommended"
+  ],
+  [
+    "推荐的工作流程：先在探索模式下让智能体调查，审查提议的计划，然后自信地执行。",
+    "Recommended workflow: Let the agent investigate in exploration mode first, review the proposed plan, then execute with confidence."
+  ],
+  [
+    "外观",
+    "Appearance"
+  ],
+  [
+    "完全自主执行",
+    "Fully autonomous execution"
+  ],
+  [
+    "为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需,尽在此处!",
+    "Give your agents the UX they deserve. Connect any service. Organize your sessions. Everything you need, right here!"
+  ],
+  [
+    "为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需，尽在此处！",
+    "Provide the user experience your agents deserve. Connect any service. Organize your conversations. Everything you need, right here!"
+  ],
+  [
+    "未测试",
+    "Untested"
+  ],
+  [
+    "未命名",
+    "Untitled"
+  ],
+  [
+    "未配置",
+    "Not configured"
+  ],
+  [
+    "未配置标签",
+    "No labels configured"
+  ],
+  [
+    "未配置技能",
+    "No Skills Configured"
+  ],
+  [
+    "未配置数据源",
+    "No Data Sources Configured"
+  ],
+  [
+    "未配置数据源。",
+    "No data sources configured."
+  ],
+  [
+    "未配置自定义权限",
+    "No custom permissions configured"
+  ],
+  [
+    "未设置（使用会话文件夹）",
+    "Not set (use session folder)"
+  ],
+  [
+    "未提供指令",
+    "No instructions provided"
+  ],
+  [
+    "未选择工作区",
+    "No workspace selected"
+  ],
+  [
+    "未选择文件夹",
+    "No folder selected"
+  ],
+  [
+    "未找到对话",
+    "Conversation not found"
+  ],
+  [
+    "未找到技能",
+    "Skill not found"
+  ],
+  [
+    "未找到命令",
+    "No commands found"
+  ],
+  [
+    "未找到默认权限",
+    "Default permissions not found"
+  ],
+  [
+    "未找到数据源",
+    "Data source not found"
+  ],
+  [
+    "未找到文件夹",
+    "No folders found"
+  ],
+  [
+    "未知错误",
+    "Unknown error"
+  ],
+  [
+    "位置",
+    "Location"
+  ],
+  [
+    "文档",
+    "Documents"
+  ],
+  [
+    "文件夹",
+    "Folder"
+  ],
+  [
+    "我的工作区",
+    "My workspace"
+  ],
+  [
+    "无影响 — 所有工具已自动批准",
+    "No impact — all tools auto-approved"
+  ],
+  [
+    "系统字体",
+    "System Font"
+  ],
+  [
+    "显示此对话框",
+    "Show this dialog"
+  ],
+  [
+    "新",
+    "New"
+  ],
+  [
+    "新建",
+    "New"
+  ],
+  [
+    "新建窗口",
+    "New window"
+  ],
+  [
+    "新建对话",
+    "New conversation"
+  ],
+  [
+    "新建聊天",
+    "New chat"
+  ],
+  [
+    "新聊天的 AI 模型",
+    "AI model for new chats"
+  ],
+  [
+    "新聊天的推理深度",
+    "Reasoning depth for new chats"
+  ],
+  [
+    "姓名",
+    "Name"
+  ],
+  [
+    "需要认证",
+    "Authentication Required"
+  ],
+  [
+    "选择工作目录",
+    "Select Working Directory"
+  ],
+  [
+    "选择工作区",
+    "Select Workspace"
+  ],
+  [
+    "选择您希望如何为 AI 智能体提供支持。",
+    "Choose how you want to power your AI agent."
+  ],
+  [
+    "选择任意文件夹作为工作区。",
+    "Select any folder as a workspace."
+  ],
+  [
+    "选择使用 Shift+Tab 循环的模式",
+    "Select mode to cycle through with Shift+Tab"
+  ],
+  [
+    "选择数据源",
+    "Select Data Source"
+  ],
+  [
+    "选择位置",
+    "Select Location"
+  ],
+  [
+    "选择文件夹...",
+    "Select folder..."
+  ],
+  [
+    "选择现有文件夹",
+    "Select Existing Folder"
+  ],
+  [
+    "选择现有文件夹作为工作区。",
+    "Select an existing folder as a workspace."
+  ],
+  [
+    "选择新工作区的存储位置。",
+    "Select a storage location for the new workspace."
+  ],
+  [
+    "颜色主题",
+    "Color Theme"
+  ],
+  [
+    "验证中...",
+    "Verifying..."
+  ],
+  [
+    "一切就绪！",
+    "All set!"
+  ],
+  [
+    "移除",
+    "Remove"
+  ],
+  [
+    "移动到上一个区域",
+    "Move to Previous Section"
+  ],
+  [
+    "移动到下一个区域",
+    "Move to Next Section"
+  ],
+  [
+    "已标记",
+    "Marked"
+  ],
+  [
+    "已从标记列表移除",
+    "Removed from marked list"
+  ],
+  [
+    "已存储的用户偏好",
+    "Saved user preferences"
+  ],
+  [
+    "已断开",
+    "Disconnected"
+  ],
+  [
+    "已分享",
+    "Shared"
+  ],
+  [
+    "已禁用",
+    "Disabled"
+  ],
+  [
+    "已删除技能",
+    "Skill deleted"
+  ],
+  [
+    "已删除数据源",
+    "Data source deleted"
+  ],
+  [
+    "已添加到标记列表",
+    "Added to marked list"
+  ],
+  [
+    "已停止分享",
+    "Sharing stopped"
+  ],
+  [
+    "已阻止 — 无论如何都会阻止写入工具",
+    "Blocked — write tools will be blocked anyway"
+  ],
+  [
+    "以下内容：",
+    "The following:"
+  ],
+  [
+    "应用设置",
+    "App settings"
+  ],
+  [
+    "永久删除",
+    "Delete Permanently"
+  ],
+  [
+    "用于复杂问题的扩展推理",
+    "Extended reasoning for complex problems"
+  ],
+  [
+    "右键点击",
+    "Right-click"
+  ],
+  [
+    "与智能体的对话将显示在这里。开始一个新对话吧。",
+    "Conversations with agents will appear here. Start a new conversation."
+  ],
+  [
+    "元数据",
+    "Metadata"
+  ],
+  [
+    "在 .creator-flow 文件夹下",
+    "Under .creator-flow folder"
+  ],
+  [
+    "在此处粘贴您的授权码",
+    "Paste your authorization code here"
+  ],
+  [
+    "在访达中查看",
+    "Show in Finder"
+  ],
+  [
+    "在工作区中创建 permissions.json 文件以添加自定义规则。",
+    "Create a permissions.json file in the workspace to add custom rules."
+  ],
+  [
+    "在列表中导航",
+    "Navigate in list"
+  ],
+  [
+    "在浏览器中打开",
+    "Open in browser"
+  ],
+  [
+    "在区域之间移动（在列表中）",
+    "Move between sections (in list)"
+  ],
+  [
+    "在线分享",
+    "Share online"
+  ],
+  [
+    "在新窗口打开",
+    "Open in new window"
+  ],
+  [
+    "暂无对话",
+    "No conversations yet"
+  ],
+  [
+    "展开文件夹",
+    "Expand folder"
+  ],
+  [
+    "找到现有的 Claude 令牌。使用它或使用其他账户登录。",
+    "Found existing Claude token. Use it or sign in with another account."
+  ],
+  [
+    "折叠文件夹",
+    "Collapse folder"
+  ],
+  [
+    "这将",
+    "This will"
+  ],
+  [
+    "正在保存您的配置...",
+    "Saving your configuration..."
+  ],
+  [
+    "正在设置...",
+    "Setting up..."
+  ],
+  [
+    "只读，不允许更改",
+    "Read-only, changes not allowed"
+  ],
+  [
+    "指令",
+    "Instructions"
+  ],
+  [
+    "智能体的上下文和指南",
+    "Agent context and guidelines"
+  ],
+  [
+    "智能体树",
+    "Agent tree"
+  ],
+  [
+    "重命名",
+    "Rename"
+  ],
+  [
+    "重命名对话",
+    "Rename Conversation"
+  ],
+  [
+    "重命名工作区",
+    "Rename Workspace"
+  ],
+  [
+    "重命名会话",
+    "Rename Session"
+  ],
+  [
+    "重命名聊天",
+    "Rename Chat"
+  ],
+  [
+    "重启并更新",
+    "Restart and Update"
+  ],
+  [
+    "重新生成标题",
+    "Regenerate Title"
+  ],
+  [
+    "重置",
+    "Reset"
+  ],
+  [
+    "重置应用",
+    "Reset App"
+  ],
+  [
+    "重置应用...",
+    "Reset App..."
+  ],
+  [
+    "主题模式",
+    "Theme Mode"
+  ],
+  [
+    "状态",
+    "Status"
+  ],
+  [
+    "桌面通知",
+    "Desktop Notifications"
+  ],
+  [
+    "字体",
+    "Font"
+  ],
+  [
+    "自定义 API 连接",
+    "Custom API Connection"
+  ],
+  [
+    "自动",
+    "Auto"
+  ],
+  [
+    "自动批准 — 允许的工具无需确认",
+    "Auto-approve — Allowed tools without confirmation"
+  ],
+  [
+    "自动应用规则",
+    "Auto-apply Rules"
+  ],
+  [
+    "自动应用规则在消息匹配正则模式时自动分配标签。",
+    "Auto-apply rules automatically assign tags when messages match regex patterns."
+  ],
+  [
+    "自由格式的上下文，帮助 CreatorFlow 了解您的偏好",
+    "Free-form context to help CreatorFlow understand your preferences"
+  ],
+  [
+    "最快的快速回答",
+    "Fastest for quick answers"
+  ],
+  [
+    "最快速，适合快速回答",
+    "Fastest, ideal for quick answers"
+  ],
+  [
+    "最强大，适合复杂工作",
+    "Most powerful, ideal for complex work"
+  ],
+  [
+    "最适合复杂工作",
+    "Best for complex work"
+  ],
+  [
+    "最适合日常任务",
+    "Best for everyday tasks"
+  ],
+  [
+    "昨天",
+    "Yesterday"
+  ],
+  [
+    "AI 代理连接语言模型的方式",
+    "How AI agents connect to language models"
+  ],
+  [
+    "AI 响应语言",
+    "AI Response Language"
+  ],
+  [
+    "API 服务",
+    "API Service"
+  ],
+  [
+    "API 连接",
+    "API Connection"
+  ],
+  [
+    "API 密钥",
+    "API Key"
+  ],
+  [
+    "API 配置",
+    "API Configuration"
+  ],
+  [
+    "API 请求的基础 URL",
+    "Base URL for API requests"
+  ],
+  [
+    "API Key — Anthropic、OpenRouter 或兼容 API",
+    "API Key — Anthropic, OpenRouter, or Compatible API"
+  ],
+  [
+    "Claude 模型请留空。仅在使用非 Claude 模型时设置。",
+    "Leave empty for Claude models. Only set when using non-Claude models."
+  ],
+  [
+    "Claude Pro/Max — 使用您的 Claude 订阅",
+    "Claude Pro/Max — Use your Claude subscription"
+  ],
+  [
+    "CreatorFlow 响应的首选语言",
+    "Preferred language for CreatorFlow responses"
+  ],
+  [
+    "CreatorFlow 应如何称呼您",
+    "How should CreatorFlow address you"
+  ],
+  [
+    "MCP 服务",
+    "MCP Service"
+  ]
 ]

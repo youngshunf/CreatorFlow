@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/styled-dropdown"
 import { cn } from "@/lib/utils"
 import { Check, ChevronDown, Eye, EyeOff } from "lucide-react"
+import { useT } from "@/context/LocaleContext"
 
 export type ApiKeyStatus = 'idle' | 'validating' | 'success' | 'error'
 
@@ -71,6 +72,7 @@ export function ApiKeyInput({
   formId = "api-key-form",
   disabled,
 }: ApiKeyInputProps) {
+  const t = useT()
   const [apiKey, setApiKey] = useState('')
   const [showValue, setShowValue] = useState(false)
   const [baseUrl, setBaseUrl] = useState(PRESETS[0].url)
@@ -117,7 +119,7 @@ export function ApiKeyInput({
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
       {/* API Key */}
       <div className="space-y-2">
-        <Label htmlFor="api-key">API Key</Label>
+        <Label htmlFor="api-key">{t('API 密钥')}</Label>
         <div className={cn(
           "relative rounded-md shadow-minimal transition-colors",
           "bg-foreground-2 focus-within:bg-background"
@@ -153,7 +155,7 @@ export function ApiKeyInput({
       {/* Base URL with Preset Dropdown */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="base-url">Base URL</Label>
+          <Label htmlFor="base-url">{t('基础 URL')}</Label>
           <DropdownMenu>
             <DropdownMenuTrigger
               disabled={isDisabled}
@@ -196,7 +198,7 @@ export function ApiKeyInput({
       {activePreset !== 'anthropic' && (
         <div className="space-y-2">
           <Label htmlFor="custom-model" className="text-muted-foreground font-normal">
-            Model <span className="text-foreground/30">· optional</span>
+            {t('模型')} <span className="text-foreground/30">· {t('可选')}</span>
           </Label>
           <div className={cn(
             "rounded-md shadow-minimal transition-colors",
@@ -215,32 +217,32 @@ export function ApiKeyInput({
           {/* Contextual help links for providers that need model format guidance */}
           {activePreset === 'openrouter' && (
             <p className="text-xs text-foreground/30">
-              Leave empty for Claude models. Only set for non-Claude models.
+              {t('Claude 模型请留空。仅在使用非 Claude 模型时设置。')}
               <br />
-              Format: <code className="text-foreground/40">provider/model-name</code>.{' '}
+              {t('格式：')}<code className="text-foreground/40">provider/model-name</code>{' '}
               <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-foreground/50 underline hover:text-foreground/70">
-                Browse models
+                {t('浏览模型')}
               </a>
             </p>
           )}
           {activePreset === 'vercel' && (
             <p className="text-xs text-foreground/30">
-              Leave empty for Claude models. Only set for non-Claude models.
+              {t('Claude 模型请留空。仅在使用非 Claude 模型时设置。')}
               <br />
-              Format: <code className="text-foreground/40">provider/model-name</code>.{' '}
+              {t('格式：')}<code className="text-foreground/40">provider/model-name</code>{' '}
               <a href="https://vercel.com/docs/ai-gateway" target="_blank" rel="noopener noreferrer" className="text-foreground/50 underline hover:text-foreground/70">
-                View supported models
+                {t('查看支持的模型')}
               </a>
             </p>
           )}
           {activePreset === 'ollama' && (
             <p className="text-xs text-foreground/30">
-              Use any model pulled via <code className="text-foreground/40">ollama pull</code>. No API key required.
+              {t('使用通过')} <code className="text-foreground/40">ollama pull</code> {t('拉取的任何模型。无需 API 密钥。')}
             </p>
           )}
           {(activePreset === 'custom' || !activePreset) && (
             <p className="text-xs text-foreground/30">
-              Defaults to Anthropic model names (Opus, Sonnet, Haiku) when empty
+              {t('留空时默认使用 Anthropic 模型名称 (Opus, Sonnet, Haiku)')}
             </p>
           )}
         </div>

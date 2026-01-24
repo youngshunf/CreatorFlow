@@ -15,6 +15,7 @@ import {
   OAuthConnect,
   type OAuthStatus,
 } from "../apisetup"
+import { useT } from "@/context/LocaleContext"
 
 export type CredentialStatus = ApiKeyStatus | OAuthStatus
 
@@ -48,6 +49,7 @@ export function CredentialsStep({
   onSubmitAuthCode,
   onCancelOAuth,
 }: CredentialsStepProps) {
+  const t = useT()
   const isOAuth = apiSetupMethod === 'claude_oauth'
 
   // --- OAuth flow ---
@@ -58,17 +60,17 @@ export function CredentialsStep({
     if (isWaitingForCode) {
       return (
         <StepFormLayout
-          title="Enter Authorization Code"
-          description="Copy the code from the browser page and paste it below."
+          title={t('输入授权码')}
+          description={t('从浏览器页面复制授权码并粘贴到下方。')}
           actions={
             <>
-              <BackButton onClick={onCancelOAuth} disabled={status === 'validating'}>Cancel</BackButton>
+              <BackButton onClick={onCancelOAuth} disabled={status === 'validating'}>{t('取消')}</BackButton>
               <ContinueButton
                 type="submit"
                 form="auth-code-form"
                 disabled={false}
                 loading={status === 'validating'}
-                loadingText="Connecting..."
+                loadingText={t('连接中...')}
               />
             </>
           }
@@ -90,12 +92,12 @@ export function CredentialsStep({
     // Static layout matching the API key step pattern:
     // Fixed title/description, button shows loading, error below content
     const description = hasExistingToken
-      ? 'Found an existing Claude token. Use it or sign in with a different account.'
-      : 'Use your Claude subscription to power multi-agent workflows.'
+      ? t('找到现有的 Claude 令牌。使用它或使用其他账户登录。')
+      : t('使用您的 Claude 订阅来支持多智能体工作流。')
 
     return (
       <StepFormLayout
-        title="Connect Claude Account"
+        title={t('连接 Claude 账户')}
         description={description}
         actions={
           <>
@@ -105,20 +107,20 @@ export function CredentialsStep({
                 onClick={onUseExistingClaudeToken}
                 className="gap-2"
                 loading={status === 'validating'}
-                loadingText="Connecting..."
+                loadingText={t('连接中...')}
               >
                 <CheckCircle2 className="size-4" />
-                Use Existing Token
+                {t('使用现有令牌')}
               </ContinueButton>
             ) : (
               <ContinueButton
                 onClick={onStartOAuth}
                 className="gap-2"
                 loading={status === 'validating'}
-                loadingText="Connecting..."
+                loadingText={t('连接中...')}
               >
                 <ExternalLink className="size-4" />
-                Sign in with Claude
+                {t('使用 Claude 登录')}
               </ContinueButton>
             )}
           </>
@@ -141,8 +143,8 @@ export function CredentialsStep({
   // --- API Key flow ---
   return (
     <StepFormLayout
-      title="API Configuration"
-      description="Enter your API key. Optionally configure a custom endpoint for OpenRouter, Ollama, or compatible APIs."
+      title={t('API 配置')}
+      description={t('输入您的 API 密钥。可选择性地配置 OpenRouter、Ollama 或兼容 API 的自定义端点。')}
       actions={
         <>
           <BackButton onClick={onBack} disabled={status === 'validating'} />
@@ -151,7 +153,7 @@ export function CredentialsStep({
             form="api-key-form"
             disabled={false}
             loading={status === 'validating'}
-            loadingText="Validating..."
+            loadingText={t('验证中...')}
           />
         </>
       }

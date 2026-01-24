@@ -11,6 +11,7 @@ import { CreatorFlowSymbol } from "./icons/CreatorFlowSymbol"
 import { SquarePenRounded } from "./icons/SquarePenRounded"
 import { PanelLeftRounded } from "./icons/PanelLeftRounded"
 import { TopBarButton } from "./ui/TopBarButton"
+import { useT } from "@/context/LocaleContext"
 
 interface AppMenuProps {
   onNewChat: () => void
@@ -45,6 +46,7 @@ export function AppMenu({
   onToggleSidebar,
   isSidebarVisible = true,
 }: AppMenuProps) {
+  const t = useT()
   return (
     <div className="flex items-center gap-[5px] w-full">
       {/* Craft Logo Menu */}
@@ -58,7 +60,7 @@ export function AppMenu({
           {/* Primary action */}
           <StyledDropdownMenuItem onClick={onNewChat}>
             <SquarePenRounded className="h-3.5 w-3.5" />
-            New Chat
+            {t('新建聊天')}
             <DropdownMenuShortcut className="pl-6">⌘N</DropdownMenuShortcut>
           </StyledDropdownMenuItem>
 
@@ -67,17 +69,17 @@ export function AppMenu({
           {/* Settings and preferences */}
           <StyledDropdownMenuItem onClick={onOpenSettings}>
             <Settings className="h-3.5 w-3.5" />
-            Settings...
+            {t('设置...')}
             <DropdownMenuShortcut className="pl-6">⌘,</DropdownMenuShortcut>
           </StyledDropdownMenuItem>
           <StyledDropdownMenuItem onClick={onOpenKeyboardShortcuts}>
             <Keyboard className="h-3.5 w-3.5" />
-            Keyboard Shortcuts
+            {t('键盘快捷键')}
             <DropdownMenuShortcut className="pl-6">⌘/</DropdownMenuShortcut>
           </StyledDropdownMenuItem>
           <StyledDropdownMenuItem onClick={onOpenStoredUserPreferences}>
             <User className="h-3.5 w-3.5" />
-            Stored User Preferences
+            {t('已存储的用户偏好')}
           </StyledDropdownMenuItem>
 
           <StyledDropdownMenuSeparator />
@@ -85,7 +87,7 @@ export function AppMenu({
           {/* Help */}
           <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs')}>
             <HelpCircle className="h-3.5 w-3.5" />
-            Help & Documentation
+            {t('帮助与文档')}
             <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
           </StyledDropdownMenuItem>
 
@@ -94,7 +96,7 @@ export function AppMenu({
           {/* Reset App */}
           <StyledDropdownMenuItem onClick={onReset} variant="destructive">
             <RotateCcw className="h-3.5 w-3.5" />
-            Reset App...
+            {t('重置应用...')}
           </StyledDropdownMenuItem>
         </StyledDropdownMenuContent>
       </DropdownMenu>

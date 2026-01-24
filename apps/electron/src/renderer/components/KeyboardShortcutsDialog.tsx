@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -5,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useRegisterModal } from "@/context/ModalContext"
+import { useT } from "@/context/LocaleContext"
 
 interface KeyboardShortcutsDialogProps {
   open: boolean
@@ -24,57 +26,59 @@ interface ShortcutSection {
 const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
 const cmdKey = isMac ? '⌘' : 'Ctrl'
 
-const sections: ShortcutSection[] = [
-  {
-    title: 'Global',
-    shortcuts: [
-      { keys: [cmdKey, '1'], description: 'Focus sidebar' },
-      { keys: [cmdKey, '2'], description: 'Focus session list' },
-      { keys: [cmdKey, '3'], description: 'Focus chat input' },
-      { keys: [cmdKey, 'N'], description: 'New chat' },
-      { keys: [cmdKey, 'Shift', 'N'], description: 'New window' },
-      { keys: [cmdKey, '\\'], description: 'Toggle sidebar' },
-      { keys: [cmdKey, ','], description: 'Open settings' },
-      { keys: [cmdKey, '/'], description: 'Show this dialog' },
-    ],
-  },
-  {
-    title: 'Navigation',
-    shortcuts: [
-      { keys: ['Tab'], description: 'Move to next zone' },
-      { keys: ['Shift', 'Tab'], description: 'Move to previous zone' },
-      { keys: ['←', '→'], description: 'Move between zones (in lists)' },
-      { keys: ['↑', '↓'], description: 'Navigate items in list' },
-      { keys: ['Home'], description: 'Go to first item' },
-      { keys: ['End'], description: 'Go to last item' },
-      { keys: ['Esc'], description: 'Close dialog / blur input' },
-    ],
-  },
-  {
-    title: 'Session List',
-    shortcuts: [
-      { keys: ['Enter'], description: 'Focus chat input' },
-      { keys: ['Delete'], description: 'Delete session' },
-      { keys: ['R'], description: 'Rename session' },
-      { keys: ['Right-click'], description: 'Open context menu' },
-    ],
-  },
-  {
-    title: 'Agent Tree',
-    shortcuts: [
-      { keys: ['←'], description: 'Collapse folder' },
-      { keys: ['→'], description: 'Expand folder' },
-    ],
-  },
-  {
-    title: 'Chat',
-    shortcuts: [
-      { keys: ['Enter'], description: 'Send message' },
-      { keys: ['Shift', 'Enter'], description: 'New line' },
-      { keys: [cmdKey, 'Enter'], description: 'Send message' },
-    ],
-  },
-]
+function useSections(t: (text: string) => string): ShortcutSection[] {
+  return useMemo(() => [
+    {
+      title: t('全局'),
+      shortcuts: [
+        { keys: [cmdKey, '1'], description: t('聚焦侧边栏') },
+        { keys: [cmdKey, '2'], description: t('聚焦会话列表') },
+        { keys: [cmdKey, '3'], description: t('聚焦聊天输入框') },
+        { keys: [cmdKey, 'N'], description: t('新建聊天') },
+        { keys: [cmdKey, 'Shift', 'N'], description: t('新建窗口') },
+        { keys: [cmdKey, '\\'], description: t('切换侧边栏') },
+        { keys: [cmdKey, ','], description: t('打开设置') },
+        { keys: [cmdKey, '/'], description: t('显示此对话框') },
+      ],
+    },
+    {
+      title: t('导航'),
+      shortcuts: [
+        { keys: ['Tab'], description: t('移动到下一个区域') },
+        { keys: ['Shift', 'Tab'], description: t('移动到上一个区域') },
+        { keys: ['←', '→'], description: t('在区域之间移动（在列表中）') },
+        { keys: ['↑', '↓'], description: t('在列表中导航') },
+        { keys: ['Home'], description: t('跳到第一项') },
+        { keys: ['End'], description: t('跳到最后一项') },
+        { keys: ['Esc'], description: t('关闭对话框 / 取消输入焦点') },
+      ],
+    },
+    {
+      title: t('会话列表'),
+      shortcuts: [
+        { keys: ['Enter'], description: t('聚焦聊天输入框') },
+        { keys: ['Delete'], description: t('删除会话') },
+        { keys: ['R'], description: t('重命名会话') },
+        { keys: [t('右键点击')], description: t('打开上下文菜单') },
+      ],
+    },
+    {
+      title: t('智能体树'),
+      shortcuts: [
+        { keys: ['←'], description: t('折叠文件夹') },
+        { keys: ['→'], description: t('展开文件夹') },
+      ],
+    },
+    {
+      title: t('聊天'),
+      shortcuts: [
+        { keys: ['Enter'], description: t('发送消息') },
+        { keys: ['Shift', 'Enter'], description: t('换行') },
+        { keys: [cmdKey, 'Enter'], description: t('发送消息') },
+      ],
+    },
+  ], [t])
+}
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
@@ -85,6 +89,9 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcutsDialogProps) {
+  const t = useT()
+  const sections = useSections(t)
+  
   // Register with modal context so X button / Cmd+W closes this dialog first
   useRegisterModal(open, () => onOpenChange(false))
 
@@ -92,7 +99,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcut
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogTitle>{t('键盘快捷键')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-2">
           {sections.map((section) => (

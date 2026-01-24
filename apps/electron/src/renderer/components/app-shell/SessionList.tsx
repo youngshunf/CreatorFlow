@@ -49,7 +49,41 @@ import { useFocusContext } from "@/context/FocusContext"
 import { getSessionTitle } from "@/utils/session"
 import type { SessionMeta } from "@/atoms/sessions"
 import type { ViewConfig } from "@creator-flow/shared/views"
-import { PERMISSION_MODE_CONFIG, type PermissionMode } from "@creator-flow/shared/agent/modes"
+import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@creator-flow/shared/agent/modes'
+import { useT } from "@/context/LocaleContext"
+
+// ============================================================================
+// Translation Mappings
+// ============================================================================
+
+/**
+ * Permission mode short name translations for UI.
+ */
+const PERMISSION_MODE_SHORT_NAMES: Record<PermissionMode, string> = {
+  'safe': '探索',
+  'ask': '询问',
+  'allow-all': '执行',
+}
+
+/**
+ * Label name translation mapping for existing workspaces with English labels.
+ */
+const LABEL_NAME_TRANSLATIONS: Record<string, string> = {
+  'Development': '开发',
+  'Code': '代码',
+  'Bug': '缺陷',
+  'Automation': '自动化',
+  'Content': '内容',
+  'Writing': '写作',
+  'Research': '研究',
+  'Design': '设计',
+  'Priority': '优先级',
+  'Project': '项目',
+}
+
+function translateLabelName(name: string): string {
+  return LABEL_NAME_TRANSLATIONS[name] ?? name
+}
 
 // Pagination constants
 const INITIAL_DISPLAY_LIMIT = 20
@@ -76,9 +110,9 @@ const shortTimeLocale: Pick<Locale, 'formatDistance'> = {
  * Format a date for the date header
  * Returns "Today", "Yesterday", or formatted date like "Dec 19"
  */
-function formatDateHeader(date: Date): string {
-  if (isToday(date)) return "Today"
-  if (isYesterday(date)) return "Yesterday"
+function formatDateHeader(date: Date, t: (text: string) => string): string {
+  if (isToday(date)) return t("今天")
+  if (isYesterday(date)) return t("昨天")
   return format(date, "MMM d")
 }
 
@@ -86,7 +120,7 @@ function formatDateHeader(date: Date): string {
  * Group sessions by date (day boundary)
  * Returns array of { date, sessions } sorted by date descending
  */
-function groupSessionsByDate(sessions: SessionMeta[]): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
+function groupSessionsByDate(sessions: SessionMeta[], t: (text: string) => string): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
   const groups = new Map<string, { date: Date; sessions: SessionMeta[] }>()
 
   for (const session of sessions) {
@@ -105,7 +139,7 @@ function groupSessionsByDate(sessions: SessionMeta[]): Array<{ date: Date; label
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(group => ({
       ...group,
-      label: formatDateHeader(group.date),
+      label: formatDateHeader(group.date, t),
     }))
 }
 
@@ -220,6 +254,7 @@ function SessionItem({
   todoStates,
   flatLabels,
 }: SessionItemProps) {
+  const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [todoMenuOpen, setTodoMenuOpen] = useState(false)
@@ -348,7 +383,7 @@ function SessionItem({
               )}
               {!item.isProcessing && hasUnreadMessages(item) && (
                 <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent text-white">
-                  New
+                  {t('新')}
                 </span>
               )}
 
@@ -365,7 +400,7 @@ function SessionItem({
                 )}
                 {item.lastMessageRole === 'plan' && (
                   <span className="shrink-0 h-[18px] px-1.5 text-[10px] font-medium rounded bg-success/10 text-success flex items-center whitespace-nowrap">
-                    Plan
+                    {t('计划')}
                   </span>
                 )}
                 {permissionMode && (
@@ -377,7 +412,7 @@ function SessionItem({
                       permissionMode === 'allow-all' && "bg-accent/10 text-accent"
                     )}
                   >
-                    {PERMISSION_MODE_CONFIG[permissionMode].shortName}
+                    {t(PERMISSION_MODE_SHORT_NAMES[permissionMode])}
                   </span>
                 )}
                 {/* Label badges — solid color via color-mix in sRGB */}
@@ -395,7 +430,7 @@ function SessionItem({
                         color: 'rgba(var(--foreground-rgb), 0.6)',
                       }}
                     >
-                      {label.name}
+                      {translateLabelName(label.name)}
                     </span>
                   )
                 })}
@@ -412,37 +447,37 @@ function SessionItem({
                     <StyledDropdownMenuContent align="start">
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(item.sharedUrl!)}>
                         <Globe />
-                        Open in Browser
+                        {t('在浏览器中打开')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         await navigator.clipboard.writeText(item.sharedUrl!)
-                        toast.success('Link copied to clipboard')
+                        toast.success(t('链接已复制到剪贴板'))
                       }}>
                         <Copy />
-                        Copy Link
+                        {t('复制链接')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'updateShare' })
                         if (result?.success) {
-                          toast.success('Share updated')
+                          toast.success(t('分享已更新'))
                         } else {
-                          toast.error('Failed to update share', { description: result?.error })
+                          toast.error(t('更新分享失败'), { description: result?.error })
                         }
                       }}>
                         <RefreshCw />
-                        Update Share
+                        {t('更新分享')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuSeparator />
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'revokeShare' })
                         if (result?.success) {
-                          toast.success('Sharing stopped')
+                          toast.success(t('已停止分享'))
                         } else {
-                          toast.error('Failed to stop sharing', { description: result?.error })
+                          toast.error(t('停止分享失败'), { description: result?.error })
                         }
                       }} variant="destructive">
                         <Link2Off />
-                        Stop Sharing
+                        {t('停止分享')}
                       </StyledDropdownMenuItem>
                     </StyledDropdownMenuContent>
                   </DropdownMenu>
@@ -615,6 +650,7 @@ export function SessionList({
   evaluateViews,
   labels = [],
 }: SessionListProps) {
+  const t = useT()
   const [session] = useSession()
   const { navigate } = useNavigation()
   const navState = useNavigationState()
@@ -693,7 +729,7 @@ export function SessionList({
   }, [hasMore, loadMore])
 
   // Group sessions by date (use paginated items)
-  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems), [paginatedItems])
+  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems, t), [paginatedItems, t])
 
   // Create flat list for keyboard navigation (maintains order across groups)
   const flatItems = useMemo(() => {
@@ -736,36 +772,36 @@ export function SessionList({
   const handleFlagWithToast = useCallback((sessionId: string) => {
     if (!onFlag) return
     onFlag(sessionId)
-    toast('Conversation flagged', {
-      description: 'Added to your flagged items',
+    toast(t('对话已标记'), {
+      description: t('已添加到标记列表'),
       action: onUnflag ? {
-        label: 'Undo',
+        label: t('撤销'),
         onClick: () => onUnflag(sessionId),
       } : undefined,
     })
-  }, [onFlag, onUnflag])
+  }, [onFlag, onUnflag, t])
 
   const handleUnflagWithToast = useCallback((sessionId: string) => {
     if (!onUnflag) return
     onUnflag(sessionId)
-    toast('Flag removed', {
-      description: 'Removed from flagged items',
+    toast(t('标记已移除'), {
+      description: t('已从标记列表移除'),
       action: onFlag ? {
-        label: 'Undo',
+        label: t('撤销'),
         onClick: () => onFlag(sessionId),
       } : undefined,
     })
-  }, [onFlag, onUnflag])
+  }, [onFlag, onUnflag, t])
 
   const handleDeleteWithToast = useCallback(async (sessionId: string): Promise<boolean> => {
     // Confirmation dialog is shown by handleDeleteSession in App.tsx
     // We await so toast only shows after successful deletion (if user confirmed)
     const deleted = await onDelete(sessionId)
     if (deleted) {
-      toast('Conversation deleted')
+      toast(t('对话已删除'))
     }
     return deleted
-  }, [onDelete])
+  }, [onDelete, t])
 
   // Roving tabindex for keyboard navigation
   const {
@@ -851,9 +887,9 @@ export function SessionList({
           <EmptyMedia variant="icon">
             <Inbox />
           </EmptyMedia>
-          <EmptyTitle>No conversations yet</EmptyTitle>
+          <EmptyTitle>{t('暂无对话')}</EmptyTitle>
           <EmptyDescription>
-            Conversations with your agent appear here. Start one to get going.
+            {t('与智能体的对话将显示在这里。开始一个新对话吧。')}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -861,7 +897,7 @@ export function SessionList({
             onClick={() => onFocusChatInput?.()}
             className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
           >
-            New Conversation
+            {t('新建对话')}
           </button>
         </EmptyContent>
       </Empty>
@@ -883,13 +919,13 @@ export function SessionList({
                 value={searchQuery}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search conversations..."
+                placeholder={t('搜索对话...')}
                 className="w-full h-8 pl-8 pr-8 text-sm bg-foreground/5 border-0 rounded-[8px] outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
               />
               <button
                 onClick={onSearchClose}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-foreground/10 rounded"
-                title="Close search"
+                title={t('关闭搜索')}
               >
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -906,12 +942,12 @@ export function SessionList({
           {/* No results message when searching */}
           {searchActive && searchQuery && flatItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-              <p className="text-sm text-muted-foreground">No conversations found</p>
+              <p className="text-sm text-muted-foreground">{t('未找到对话')}</p>
               <button
                 onClick={() => onSearchChange?.('')}
                 className="text-xs text-foreground hover:underline mt-1"
               >
-                Clear search
+                {t('清除搜索')}
               </button>
             </div>
           )}
@@ -975,11 +1011,11 @@ export function SessionList({
       <RenameDialog
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
-        title="Rename conversation"
+        title={t('重命名对话')}
         value={renameName}
         onValueChange={setRenameName}
         onSubmit={handleRenameSubmit}
-        placeholder="Enter a name..."
+        placeholder={t('输入名称...')}
       />
     </>
   )

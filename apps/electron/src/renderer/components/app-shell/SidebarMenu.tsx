@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useMenuComponents } from '@/components/ui/menu-context'
 import { getDocUrl, type DocFeature } from '@creator-flow/shared/docs/doc-links'
+import { useT } from '@/context/LocaleContext'
 
 export type SidebarMenuType = 'allChats' | 'flagged' | 'status' | 'sources' | 'skills' | 'labels' | 'views' | 'newChat'
 
@@ -76,6 +77,7 @@ export function SidebarMenu({
   viewId,
   onDeleteView,
 }: SidebarMenuProps) {
+  const t = useT()
   // Get menu components from context (works with both DropdownMenu and ContextMenu)
   const { MenuItem, Separator } = useMenuComponents()
 
@@ -84,7 +86,7 @@ export function SidebarMenu({
     return (
       <MenuItem onClick={() => window.electronAPI.openUrl('craftagents://action/new-chat?window=focused')}>
         <AppWindow className="h-3.5 w-3.5" />
-        <span className="flex-1">Open in New Window</span>
+        <span className="flex-1">{t('在新窗口打开')}</span>
       </MenuItem>
     )
   }
@@ -94,7 +96,7 @@ export function SidebarMenu({
     return (
       <MenuItem onClick={onConfigureStatuses}>
         <Settings2 className="h-3.5 w-3.5" />
-        <span className="flex-1">Configure Statuses</span>
+        <span className="flex-1">{t('配置状态')}</span>
       </MenuItem>
     )
   }
@@ -108,13 +110,13 @@ export function SidebarMenu({
         {onAddLabel && (
           <MenuItem onClick={() => onAddLabel(labelId)}>
             <Plus className="h-3.5 w-3.5" />
-            <span className="flex-1">Add New Label</span>
+            <span className="flex-1">{t('添加新标签')}</span>
           </MenuItem>
         )}
         {onConfigureLabels && (
           <MenuItem onClick={onConfigureLabels}>
             <Settings2 className="h-3.5 w-3.5" />
-            <span className="flex-1">Edit Labels</span>
+            <span className="flex-1">{t('编辑标签')}</span>
           </MenuItem>
         )}
         {labelId && onDeleteLabel && (
@@ -122,7 +124,7 @@ export function SidebarMenu({
             <Separator />
             <MenuItem onClick={() => onDeleteLabel(labelId)}>
               <Trash2 className="h-3.5 w-3.5" />
-              <span className="flex-1">Delete Label</span>
+              <span className="flex-1">{t('删除标签')}</span>
             </MenuItem>
           </>
         )}
@@ -137,7 +139,7 @@ export function SidebarMenu({
         {onConfigureViews && (
           <MenuItem onClick={onConfigureViews}>
             <Settings2 className="h-3.5 w-3.5" />
-            <span className="flex-1">Edit Views</span>
+            <span className="flex-1">{t('编辑视图')}</span>
           </MenuItem>
         )}
         {viewId && onDeleteView && (
@@ -145,7 +147,7 @@ export function SidebarMenu({
             <Separator />
             <MenuItem onClick={() => onDeleteView(viewId)}>
               <Trash2 className="h-3.5 w-3.5" />
-              <span className="flex-1">Delete View</span>
+              <span className="flex-1">{t('删除视图')}</span>
             </MenuItem>
           </>
         )}
@@ -162,19 +164,19 @@ export function SidebarMenu({
 
     // Display label varies by source type
     const learnMoreLabel = sourceType === 'api'
-      ? 'Learn More about APIs'
+      ? t('了解更多关于 API')
       : sourceType === 'mcp'
-        ? 'Learn More about MCP'
+        ? t('了解更多关于 MCP')
         : sourceType === 'local'
-          ? 'Learn More about Local Folders'
-          : 'Learn More about Sources'
+          ? t('了解更多关于本地文件夹')
+          : t('了解更多关于数据源')
 
     return (
       <>
         {onAddSource && (
           <MenuItem onClick={onAddSource}>
             <Plus className="h-3.5 w-3.5" />
-            <span className="flex-1">Add Source</span>
+            <span className="flex-1">{t('添加数据源')}</span>
           </MenuItem>
         )}
         <Separator />
@@ -191,7 +193,7 @@ export function SidebarMenu({
     return (
       <MenuItem onClick={onAddSkill}>
         <Plus className="h-3.5 w-3.5" />
-        <span className="flex-1">Add Skill</span>
+        <span className="flex-1">{t('添加技能')}</span>
       </MenuItem>
     )
   }

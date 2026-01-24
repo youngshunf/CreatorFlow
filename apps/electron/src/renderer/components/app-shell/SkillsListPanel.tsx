@@ -27,6 +27,7 @@ import { DropdownMenuProvider, ContextMenuProvider } from '@/components/ui/menu-
 import { SkillMenu } from './SkillMenu'
 import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { cn } from '@/lib/utils'
+import { useT } from '@/context/LocaleContext'
 import type { LoadedSkill } from '../../../shared/types'
 
 export interface SkillsListPanelProps {
@@ -49,6 +50,8 @@ export function SkillsListPanel({
   workspaceRootPath,
   className,
 }: SkillsListPanelProps) {
+  const t = useT()
+
   // Empty state - rendered outside ScrollArea for proper vertical centering
   if (skills.length === 0) {
     return (
@@ -57,9 +60,9 @@ export function SkillsListPanel({
           <EmptyMedia variant="icon">
             <Zap />
           </EmptyMedia>
-          <EmptyTitle>No skills configured</EmptyTitle>
+          <EmptyTitle>{t('未配置技能')}</EmptyTitle>
           <EmptyDescription>
-            Skills are reusable instructions that teach your agent specialized behaviors.
+            {t('技能是可重复使用的指令，用于教导您的智能体专门化行为。')}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -67,14 +70,14 @@ export function SkillsListPanel({
             onClick={() => window.electronAPI.openUrl(getDocUrl('skills'))}
             className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-foreground/[0.02] shadow-minimal hover:bg-foreground/[0.05] transition-colors"
           >
-            Learn more
+            {t('了解更多')}
           </button>
           {workspaceRootPath && (
             <EditPopover
               align="center"
               trigger={
                 <button className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors">
-                  Add Skill
+                  {t('添加技能')}
                 </button>
               }
               {...getEditConfig('add-skill', workspaceRootPath)}

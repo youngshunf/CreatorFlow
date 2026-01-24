@@ -63,6 +63,7 @@ import { PERMISSION_MODE_ORDER } from '@creator-flow/shared/agent/modes'
 import { type ThinkingLevel, THINKING_LEVELS, getThinkingLevelName } from '@creator-flow/shared/agent/thinking-levels'
 import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
 import { EscapeInterruptOverlay } from './EscapeInterruptOverlay'
+import { useT } from '@/context/LocaleContext'
 
 /**
  * Format token count for display (e.g., 1500 -> "1.5k", 200000 -> "200k")
@@ -78,7 +79,15 @@ function formatTokenCount(tokens: number): string {
 }
 
 /** Default rotating placeholders for onboarding/empty state */
-const DEFAULT_PLACEHOLDERS = [
+const DEFAULT_PLACEHOLDERS_ZH = [
+  '你想做什么？',
+  '使用 Shift + Tab 在探索和执行模式之间切换',
+  '输入 @ 提及文件、文件夹或技能',
+  '输入 # 为此对话添加标签',
+  '按 Shift + Enter 换行',
+]
+
+const DEFAULT_PLACEHOLDERS_EN = [
   'What would you like to work on?',
   'Use Shift + Tab to switch between Explore and Execute',
   'Type @ to mention files, folders, or skills',
@@ -189,7 +198,7 @@ export interface FreeFormInputProps {
  * - Active option badges
  */
 export function FreeFormInput({
-  placeholder = DEFAULT_PLACEHOLDERS,
+  placeholder,
   disabled = false,
   isProcessing = false,
   onSubmit,
@@ -225,10 +234,17 @@ export function FreeFormInput({
   isEmptySession = false,
   contextStatus,
 }: FreeFormInputProps) {
+  const t = useT()
+
   // Read custom model and workspace info from context.
   // Uses optional variant so playground (no provider) doesn't crash.
   const appShellCtx = useOptionalAppShellContext()
   const customModel = appShellCtx?.customModel ?? null
+
+  // Get locale-aware placeholders
+  const defaultPlaceholders = t('你想做什么？') !== '你想做什么？'
+    ? DEFAULT_PLACEHOLDERS_EN
+    : DEFAULT_PLACEHOLDERS_ZH
   // Resolve workspace rootPath for "Add New Label" deep link
   const workspaceRootPath = React.useMemo(() => {
     if (!appShellCtx || !workspaceId) return null
@@ -236,9 +252,10 @@ export function FreeFormInput({
   }, [appShellCtx, workspaceId])
 
   // Shuffle placeholder order once per mount so each session feels fresh
+  const effectivePlaceholder = placeholder ?? defaultPlaceholders
   const shuffledPlaceholder = React.useMemo(
-    () => Array.isArray(placeholder) ? shuffleArray(placeholder) : placeholder,
-    [] // eslint-disable-line react-hooks/exhaustive-deps -- intentionally shuffle only on mount
+    () => Array.isArray(effectivePlaceholder) ? shuffleArray(effectivePlaceholder) : effectivePlaceholder,
+    [effectivePlaceholder] // Re-shuffle if language changes
   )
 
   // Performance optimization: Always use internal state for typing to avoid parent re-renders
@@ -1187,15 +1204,15 @@ export function FreeFormInput({
             // Show count ("1 file" / "X files") instead of filename for cleaner UI
             label={attachments.length > 0
               ? attachments.length === 1
-                ? "1 file"
-                : `${attachments.length} files`
-              : "Attach Files"
+                ? t('1 个文件')
+                : `${attachments.length} ${t('个文件')}`
+              : t('添加附件')
             }
             isExpanded={isEmptySession}
             hasSelection={attachments.length > 0}
             showChevron={false}
             onClick={handleAttachClick}
-            tooltip="Attach files"
+            tooltip={t('添加附件')}
             disabled={disabled}
           />
 
@@ -1240,12 +1257,12 @@ export function FreeFormInput({
                 }
                 label={
                   optimisticSourceSlugs.length === 0
-                    ? "Choose Sources"
+                    ? t('选择数据源')
                     : (() => {
                         const enabledSources = sources.filter(s => optimisticSourceSlugs.includes(s.config.slug))
                         if (enabledSources.length === 1) return enabledSources[0].config.name
                         if (enabledSources.length === 2) return enabledSources.map(s => s.config.name).join(', ')
-                        return `${enabledSources.length} sources`
+                        return `${enabledSources.length} ${t('个数据源')}`
                       })()
                 }
                 isExpanded={isEmptySession}
@@ -1269,7 +1286,7 @@ export function FreeFormInput({
                   }
                   setSourceDropdownOpen(!sourceDropdownOpen)
                 }}
-                tooltip="Sources"
+                tooltip={t('数据源')}
               />
               {sourceDropdownOpen && sourceDropdownPosition && ReactDOM.createPortal(
                 <>
@@ -1290,9 +1307,9 @@ export function FreeFormInput({
                   >
                     {sources.length === 0 ? (
                       <div className="text-xs text-muted-foreground p-3 select-none">
-                        No sources configured.
+                        {t('未配置数据源。')}
                         <br />
-                        Add sources in Settings.
+                        {t('请在设置中添加数据源。')}
                       </div>
                     ) : (
                       <CommandPrimitive
@@ -1304,7 +1321,7 @@ export function FreeFormInput({
                             ref={sourceFilterInputRef}
                             value={sourceFilter}
                             onValueChange={setSourceFilter}
-                            placeholder="Search sources..."
+                            placeholder={t('搜索数据源...')}
                             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground placeholder:select-none"
                           />
                         </div>
@@ -1390,7 +1407,7 @@ export function FreeFormInput({
                   </button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="top">Model</TooltipContent>
+              <TooltipContent side="top">{t('模型')}</TooltipContent>
             </Tooltip>
             <StyledDropdownMenuContent side="top" align="end" sideOffset={8} className="min-w-[240px]">
               {/* When custom model is active, show it as a static item instead of Anthropic options */}
@@ -1401,7 +1418,7 @@ export function FreeFormInput({
                 >
                   <div className="text-left">
                     <div className="font-medium text-sm">{customModel}</div>
-                    <div className="text-xs text-muted-foreground">Custom API connection</div>
+                    <div className="text-xs text-muted-foreground">{t('自定义 API 连接')}</div>
                   </div>
                   <Check className="h-4 w-4 text-foreground shrink-0 ml-3" />
                 </StyledDropdownMenuItem>
@@ -1410,9 +1427,9 @@ export function FreeFormInput({
                 MODELS.map((model) => {
                   const isSelected = currentModel === model.id
                   const descriptions: Record<string, string> = {
-                    'claude-opus-4-5-20251101': 'Most capable for complex work',
-                    'claude-sonnet-4-5-20250929': 'Best for everyday tasks',
-                    'claude-haiku-4-5-20251001': 'Fastest for quick answers',
+                    'claude-opus-4-5-20251101': t('最强大，适合复杂工作'),
+                    'claude-sonnet-4-5-20250929': t('日常任务的最佳选择'),
+                    'claude-haiku-4-5-20251001': t('最快速，适合快速回答'),
                   }
                   return (
                     <StyledDropdownMenuItem
@@ -1441,7 +1458,7 @@ export function FreeFormInput({
                     <StyledDropdownMenuSubTrigger className="flex items-center justify-between px-2 py-2 rounded-lg">
                       <div className="text-left flex-1">
                         <div className="font-medium text-sm">{getThinkingLevelName(thinkingLevel)}</div>
-                        <div className="text-xs text-muted-foreground">Extended reasoning depth</div>
+                        <div className="text-xs text-muted-foreground">{t('扩展推理深度')}</div>
                       </div>
                     </StyledDropdownMenuSubTrigger>
                     <StyledDropdownMenuSubContent className="min-w-[220px]">
@@ -1474,7 +1491,7 @@ export function FreeFormInput({
                   <StyledDropdownMenuSeparator className="my-1" />
                   <div className="px-2 py-1.5 select-none">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Context</span>
+                      <span>{t('上下文')}</span>
                       <span className="flex items-center gap-1.5">
                         {contextStatus.isCompacting && (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -1539,8 +1556,8 @@ export function FreeFormInput({
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   {isProcessing
-                    ? `${usagePercent}% context used — wait for current operation`
-                    : `${usagePercent}% context used — click to compact`
+                    ? `${usagePercent}% ${t('上下文已使用')} — ${t('等待当前操作完成')}`
+                    : `${usagePercent}% ${t('上下文已使用')} — ${t('点击压缩')}`
                   }
                 </TooltipContent>
               </Tooltip>
@@ -1616,6 +1633,7 @@ function WorkingDirectoryBadge({
   sessionFolderPath?: string
   isEmptySession?: boolean
 }) {
+  const t = useT()
   const [recentDirs, setRecentDirs] = React.useState<string[]>([])
   const [popoverOpen, setPopoverOpen] = React.useState(false)
   const [homeDir, setHomeDir] = React.useState<string>('')
@@ -1692,7 +1710,7 @@ function WorkingDirectoryBadge({
 
   // Determine label - "Work in Folder" if not set or at session root, otherwise folder name
   const hasFolder = !!workingDirectory && workingDirectory !== sessionFolderPath
-  const folderName = hasFolder ? (workingDirectory.split('/').pop() || 'Folder') : 'Work in Folder'
+  const folderName = hasFolder ? (workingDirectory.split('/').pop() || t('文件夹')) : t('选择工作目录')
 
   // Show reset option when a folder is selected and it differs from session folder
   const showReset = hasFolder && sessionFolderPath && sessionFolderPath !== workingDirectory
@@ -1716,11 +1734,11 @@ function WorkingDirectoryBadge({
             tooltip={
               hasFolder ? (
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-medium">Working directory</span>
+                  <span className="font-medium">{t('工作目录')}</span>
                   <span className="text-xs opacity-70">{formatPathForDisplay(workingDirectory, homeDir)}</span>
-                  {gitBranch && <span className="text-xs opacity-70">on {gitBranch}</span>}
+                  {gitBranch && <span className="text-xs opacity-70">{t('分支')}: {gitBranch}</span>}
                 </span>
-              ) : "Choose working directory"
+              ) : t('选择工作目录')
             }
           />
         </span>
@@ -1734,7 +1752,7 @@ function WorkingDirectoryBadge({
                 ref={inputRef}
                 value={filter}
                 onValueChange={setFilter}
-                placeholder="Filter folders..."
+                placeholder={t('筛选文件夹...')}
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 placeholder:select-none"
               />
             </div>
@@ -1784,7 +1802,7 @@ function WorkingDirectoryBadge({
             {/* Empty state when filtering */}
             {showFilter && (
               <CommandPrimitive.Empty className="py-3 text-center text-sm text-muted-foreground">
-                No folders found
+                {t('未找到文件夹')}
               </CommandPrimitive.Empty>
             )}
           </CommandPrimitive.List>
@@ -1796,7 +1814,7 @@ function WorkingDirectoryBadge({
               onClick={handleChooseFolder}
               className={cn(MENU_ITEM_STYLE, 'w-full hover:bg-foreground/5')}
             >
-              Choose Folder...
+              {t('选择文件夹...')}
             </button>
             {showReset && (
               <button
@@ -1804,7 +1822,7 @@ function WorkingDirectoryBadge({
                 onClick={handleReset}
                 className={cn(MENU_ITEM_STYLE, 'w-full hover:bg-foreground/5')}
               >
-                Reset
+                {t('重置')}
               </button>
             )}
           </div>

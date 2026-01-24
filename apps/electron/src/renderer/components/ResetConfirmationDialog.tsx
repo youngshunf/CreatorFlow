@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AlertTriangle } from "lucide-react"
 import { useRegisterModal } from "@/context/ModalContext"
+import { useT } from "@/context/LocaleContext"
 
 interface ResetConfirmationDialogProps {
   open: boolean
@@ -29,6 +30,7 @@ export function ResetConfirmationDialog({
   onConfirm,
   onCancel,
 }: ResetConfirmationDialogProps) {
+  const t = useT()
   const [answer, setAnswer] = useState("")
 
   // Register with modal context so X button / Cmd+W closes this dialog first
@@ -61,35 +63,35 @@ export function ResetConfirmationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Reset App
+            {t('重置应用')}
           </DialogTitle>
           <DialogDescription className="text-left pt-2">
-            This will <strong>permanently delete</strong>:
+            {t('这将')}<strong>{t('永久删除')}</strong>{t('以下内容：')}
           </DialogDescription>
         </DialogHeader>
 
         <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-2">
-          <li>All workspaces and their settings</li>
-          <li>All credentials and API keys</li>
-          <li>All preferences and session data</li>
+          <li>{t('所有工作区及其设置')}</li>
+          <li>{t('所有凭据和 API 密钥')}</li>
+          <li>{t('所有偏好设置和会话数据')}</li>
         </ul>
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-md p-3 text-sm">
-          <strong className="text-amber-600 dark:text-amber-400">Back up any important data first!</strong>
+          <strong className="text-amber-600 dark:text-amber-400">{t('请先备份重要数据！')}</strong>
           <p className="text-muted-foreground mt-1">
-            This action cannot be undone.
+            {t('此操作无法撤销。')}
           </p>
         </div>
 
         <div className="space-y-2 pt-2">
           <label className="text-sm font-medium">
-            To confirm, solve: {problem.a} + {problem.b} =
+            {t('请计算以确认：')} {problem.a} + {problem.b} =
           </label>
           <Input
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            placeholder="Enter answer"
+            placeholder={t('输入答案')}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             onKeyDown={(e) => {
@@ -103,14 +105,14 @@ export function ResetConfirmationDialog({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={handleCancel}>
-            Cancel
+            {t('取消')}
           </Button>
           <Button
             variant="destructive"
             disabled={!isCorrect}
             onClick={handleConfirm}
           >
-            Reset App
+            {t('重置应用')}
           </Button>
         </DialogFooter>
       </DialogContent>

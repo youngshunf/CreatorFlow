@@ -1,5 +1,6 @@
 import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
 import { StepFormLayout, ContinueButton } from "./primitives"
+import { useT } from "@/context/LocaleContext"
 
 interface WelcomeStepProps {
   onContinue: () => void
@@ -18,6 +19,7 @@ export function WelcomeStep({
   onContinue,
   isExistingUser = false
 }: WelcomeStepProps) {
+  const t = useT()
   return (
     <StepFormLayout
       iconElement={
@@ -25,15 +27,15 @@ export function WelcomeStep({
           <CreatorFlowSymbol className="size-10 text-accent" />
         </div>
       }
-      title={isExistingUser ? 'Update Settings' : 'Welcome to CreatorFlow'}
+      title={isExistingUser ? t('更新设置') : t('欢迎使用 CreatorFlow')}
       description={
         isExistingUser
-          ? 'Update your API connection or change your setup.'
-          : 'Agents with the UX they deserve. Connect anything. Organize your sessions. Everything you need to do the work of your life!'
+          ? t('更新您的 API 连接或更改设置。')
+          : t('为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需，尽在此处！')
       }
       actions={
         <ContinueButton onClick={onContinue} className="w-full">
-          {isExistingUser ? 'Continue' : 'Get Started'}
+          {isExistingUser ? t('继续') : t('开始使用')}
         </ContinueButton>
       }
     />

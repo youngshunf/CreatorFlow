@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@creator-flow/ui"
 import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
 import { StepFormLayout } from "./primitives"
+import { useT } from "@/context/LocaleContext"
 
 interface CompletionStepProps {
   status: 'saving' | 'complete'
@@ -21,6 +22,7 @@ export function CompletionStep({
   spaceName,
   onFinish
 }: CompletionStepProps) {
+  const t = useT()
   const isSaving = status === 'saving'
 
   return (
@@ -34,18 +36,18 @@ export function CompletionStep({
           <CreatorFlowSymbol className="size-10 text-accent" />
         </div>
       )}
-      title={isSaving ? 'Setting up...' : "You're all set!"}
+      title={isSaving ? t('正在设置...') : t('一切就绪！')}
       description={
         isSaving ? (
-          'Saving your configuration...'
+          t('正在保存您的配置...')
         ) : (
-          'Just start a chat and get to work.'
+          t('开始一个聊天，开始工作吧。')
         )
       }
       actions={
         status === 'complete' ? (
           <Button onClick={onFinish} className="w-full max-w-[320px] bg-background shadow-minimal text-foreground hover:bg-foreground/5 rounded-lg" size="lg">
-            Get Started
+            {t('开始使用')}
           </Button>
         ) : undefined
       }

@@ -16,6 +16,7 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { useT } from "@/context/LocaleContext"
 
 export type OAuthStatus = 'idle' | 'validating' | 'success' | 'error'
 
@@ -49,6 +50,7 @@ export function OAuthConnect({
   onSubmitAuthCode,
   formId = "auth-code-form",
 }: OAuthConnectProps) {
+  const t = useT()
   const [authCode, setAuthCode] = useState('')
 
   const hasExistingToken = !!existingClaudeToken
@@ -65,7 +67,7 @@ export function OAuthConnect({
     return (
       <form id={formId} onSubmit={handleAuthCodeSubmit}>
         <div className="space-y-2">
-          <Label htmlFor="auth-code">Authorization Code</Label>
+          <Label htmlFor="auth-code">{t('授权码')}</Label>
           <div className={cn(
             "relative rounded-md shadow-minimal transition-colors",
             "bg-foreground-2 focus-within:bg-background"
@@ -75,7 +77,7 @@ export function OAuthConnect({
               type="text"
               value={authCode}
               onChange={(e) => setAuthCode(e.target.value)}
-              placeholder="Paste your authorization code here"
+              placeholder={t('在此处粘贴您的授权码')}
               className={cn(
                 "border-0 bg-transparent shadow-none font-mono text-sm",
                 status === 'error' && "focus-visible:ring-destructive"
@@ -108,7 +110,7 @@ export function OAuthConnect({
             onClick={onStartOAuth}
             className="text-sm text-muted-foreground hover:text-foreground underline"
           >
-            Or sign in with a different account
+            {t('或使用其他账户登录')}
           </button>
         </div>
       )}

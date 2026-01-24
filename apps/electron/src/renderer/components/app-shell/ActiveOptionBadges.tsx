@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { SlashCommandMenu, DEFAULT_SLASH_COMMAND_GROUPS, type SlashCommandId } from '@/components/ui/slash-command-menu'
+import { SlashCommandMenu, getLocalizedCommandGroups, type SlashCommandId } from '@/components/ui/slash-command-menu'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -19,6 +19,40 @@ import { flattenLabels, extractLabelId } from '@creator-flow/shared/labels'
 import { resolveEntityColor } from '@creator-flow/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { useDynamicStack } from '@/hooks/useDynamicStack'
+import { useT } from '@/context/LocaleContext'
+
+// ============================================================================
+// Translation Mappings
+// ============================================================================
+
+/**
+ * Permission mode display name translations for UI.
+ */
+const PERMISSION_MODE_DISPLAY_NAMES: Record<PermissionMode, string> = {
+  'safe': '探索模式',
+  'ask': '询问模式',
+  'allow-all': '执行模式',
+}
+
+/**
+ * Label name translation mapping for existing workspaces with English labels.
+ */
+const LABEL_NAME_TRANSLATIONS: Record<string, string> = {
+  'Development': '开发',
+  'Code': '代码',
+  'Bug': '缺陷',
+  'Automation': '自动化',
+  'Content': '内容',
+  'Writing': '写作',
+  'Research': '研究',
+  'Design': '设计',
+  'Priority': '优先级',
+  'Project': '项目',
+}
+
+function translateLabelName(name: string): string {
+  return LABEL_NAME_TRANSLATIONS[name] ?? name
+}
 
 // ============================================================================
 // Permission Mode Icon Component
@@ -122,19 +156,7 @@ export function ActiveOptionBadges({
       )}
 
       {/* Ultrathink Badge */}
-      {ultrathinkEnabled && (
-        <button
-          type="button"
-          onClick={() => onUltrathinkChange?.(false)}
-          className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
-          style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
-        >
-          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Ultrathink
-          </span>
-          <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
-        </button>
-      )}
+      <UltrathinkBadge enabled={ultrathinkEnabled} onToggle={onUltrathinkChange} />
 
       {/* Label Badges Container — dynamic stacking with equal visible strips.
        * useDynamicStack sets per-child marginLeft directly via ResizeObserver.
@@ -169,6 +191,29 @@ export function ActiveOptionBadges({
 }
 
 // ============================================================================
+// Ultrathink Badge Component
+// ============================================================================
+
+function UltrathinkBadge({ enabled, onToggle }: { enabled: boolean; onToggle?: (enabled: boolean) => void }) {
+  const t = useT()
+  if (!enabled) return null
+  
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle?.(false)}
+      className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
+      style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
+    >
+      <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+        {t('深度思考')}
+      </span>
+      <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
+    </button>
+  )
+}
+
+// ============================================================================
 // Label Badge Component
 // ============================================================================
 
@@ -185,6 +230,7 @@ function LabelBadge({
   label: LabelConfig
   onRemove: () => void
 }) {
+  const t = useT()
   const { isDark } = useTheme()
   // Resolve label color to CSS value for tinting bg (3%) and text (10%).
   // Falls back to foreground if no color — produces near-invisible neutral tint.
@@ -211,7 +257,7 @@ function LabelBadge({
           style={{ '--badge-color': resolvedColor } as React.CSSProperties}
         >
           <LabelIcon label={label} size="sm" />
-          <span className="whitespace-nowrap ml-2">{label.name}</span>
+          <span className="whitespace-nowrap ml-2">{translateLabelName(label.name)}</span>
           <ChevronDown className="h-3 w-3 opacity-40 ml-1 shrink-0" />
         </button>
       </DropdownMenuTrigger>
@@ -221,7 +267,7 @@ function LabelBadge({
           className="flex items-center gap-2 text-destructive cursor-pointer"
         >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
-          <span>Remove</span>
+          <span>{t('移除')}</span>
         </StyledDropdownMenuItem>
       </StyledDropdownMenuContent>
     </DropdownMenu>
@@ -236,6 +282,7 @@ interface PermissionModeDropdownProps {
 }
 
 function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onPermissionModeChange, onUltrathinkChange }: PermissionModeDropdownProps) {
+  const t = useT()
   const [open, setOpen] = React.useState(false)
   // Optimistic local state - updates immediately, syncs with prop
   const [optimisticMode, setOptimisticMode] = React.useState(permissionMode)
@@ -299,7 +346,7 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
           style={{ '--shadow-color': currentStyle.shadowVar } as React.CSSProperties}
         >
           <PermissionModeIcon mode={optimisticMode} className="h-3.5 w-3.5" />
-          <span>{config.displayName}</span>
+          <span>{t(PERMISSION_MODE_DISPLAY_NAMES[optimisticMode])}</span>
           <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </button>
       </PopoverTrigger>
@@ -315,10 +362,11 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
         }}
       >
         <SlashCommandMenu
-          commandGroups={DEFAULT_SLASH_COMMAND_GROUPS}
+          commandGroups={getLocalizedCommandGroups(t)}
           activeCommands={activeCommands}
           onSelect={handleSelect}
           showFilter
+          showDescription
         />
       </PopoverContent>
     </Popover>

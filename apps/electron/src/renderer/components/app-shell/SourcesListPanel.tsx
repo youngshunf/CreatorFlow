@@ -29,6 +29,7 @@ import { DropdownMenuProvider, ContextMenuProvider } from '@/components/ui/menu-
 import { SourceMenu } from './SourceMenu'
 import { EditPopover, getEditConfig, type EditContextKey } from '@/components/ui/EditPopover'
 import { cn } from '@/lib/utils'
+import { useT } from '@/context/LocaleContext'
 import type { LoadedSource, SourceConnectionStatus, SourceFilter } from '../../../shared/types'
 
 export interface SourcesListPanelProps {
@@ -48,14 +49,14 @@ export interface SourcesListPanelProps {
 /**
  * Get user-friendly label for source type filter (for empty state messages)
  */
-function getSourceTypeFilterLabel(sourceType: 'api' | 'mcp' | 'local'): string {
+function getSourceTypeFilterLabel(sourceType: 'api' | 'mcp' | 'local', t: (key: string) => string): string {
   switch (sourceType) {
     case 'api':
       return 'API'
     case 'mcp':
       return 'MCP'
     case 'local':
-      return 'local folder'
+      return t('本地文件夹')
     default:
       return sourceType
   }
@@ -71,6 +72,8 @@ export function SourcesListPanel({
   localMcpEnabled = true,
   className,
 }: SourcesListPanelProps) {
+  const t = useT()
+
   // Filter sources based on type filter if active
   const filteredSources = React.useMemo(() => {
     if (!sourceFilter) {
@@ -83,10 +86,10 @@ export function SourcesListPanel({
   // Build empty state message based on filter
   const emptyMessage = React.useMemo(() => {
     if (sourceFilter?.kind === 'type') {
-      return `No ${getSourceTypeFilterLabel(sourceFilter.sourceType)} sources configured.`
+      return t('未配置') + ' ' + getSourceTypeFilterLabel(sourceFilter.sourceType, t) + ' ' + t('数据源')
     }
-    return 'No sources configured.'
-  }, [sourceFilter])
+    return t('未配置数据源')
+  }, [sourceFilter, t])
 
   // Empty state - rendered outside ScrollArea for proper vertical centering
   if (filteredSources.length === 0) {
@@ -98,7 +101,7 @@ export function SourcesListPanel({
           </EmptyMedia>
           <EmptyTitle>{emptyMessage}</EmptyTitle>
           <EmptyDescription>
-            Sources connect your agent to external data — MCP servers, REST APIs, and local folders.
+            {t('数据源将您的智能体连接到外部数据 — MCP 服务器、REST API 和本地文件夹。')}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -106,14 +109,14 @@ export function SourcesListPanel({
             onClick={() => window.electronAPI.openUrl(getDocUrl('sources'))}
             className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-foreground/[0.02] shadow-minimal hover:bg-foreground/[0.05] transition-colors"
           >
-            Learn more
+            {t('了解更多')}
           </button>
           {workspaceRootPath && (
             <EditPopover
               align="center"
               trigger={
-                <button className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors">
-                  Add Source
+              <button className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors">
+                  {t('添加数据源')}
                 </button>
               }
               {...getEditConfig(
@@ -160,14 +163,14 @@ interface SourceItemProps {
 /**
  * Get display label for source type
  */
-function getSourceTypeLabel(type: string): string {
+function getSourceTypeLabel(type: string, t: (key: string) => string): string {
   switch (type) {
     case 'mcp':
       return 'MCP'
     case 'api':
       return 'API'
     case 'local':
-      return 'Local'
+      return t('本地')
     default:
       return type
   }
@@ -193,18 +196,18 @@ function getSourceTypeBadgeClasses(type: string): string {
  * Get status badge info for non-connected sources
  * Returns null if source is connected (no badge needed)
  */
-function getStatusBadge(status: SourceConnectionStatus): { label: string; classes: string } | null {
+function getStatusBadge(status: SourceConnectionStatus, t: (key: string) => string): { label: string; classes: string } | null {
   switch (status) {
     case 'connected':
       return null // No badge for connected sources
     case 'needs_auth':
-      return { label: 'Auth Required', classes: 'bg-warning/10 text-warning' }
+      return { label: t('需要认证'), classes: 'bg-warning/10 text-warning' }
     case 'failed':
-      return { label: 'Disconnected', classes: 'bg-destructive/10 text-destructive' }
+      return { label: t('已断开'), classes: 'bg-destructive/10 text-destructive' }
     case 'untested':
-      return { label: 'Not Tested', classes: 'bg-foreground/10 text-foreground/50' }
+      return { label: t('未测试'), classes: 'bg-foreground/10 text-foreground/50' }
     case 'local_disabled':
-      return { label: 'Disabled', classes: 'bg-foreground/10 text-foreground/50' }
+      return { label: t('已禁用'), classes: 'bg-foreground/10 text-foreground/50' }
     default:
       return null
   }
@@ -214,13 +217,14 @@ function SourceItem({ source, isSelected, isFirst, localMcpEnabled, onClick, onD
   const [menuOpen, setMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const { config } = source
+  const t = useT()
 
   // Build subtitle text: provider or tagline
   const subtitle = config.tagline || config.provider || ''
 
   // Get connection status and badge info (pass localMcpEnabled for stdio sources)
   const connectionStatus = deriveConnectionStatus(source, localMcpEnabled)
-  const statusBadge = getStatusBadge(connectionStatus)
+  const statusBadge = getStatusBadge(connectionStatus, t)
 
   return (
     <div className="source-item" data-selected={isSelected || undefined} data-tutorial={isFirst ? "source-item-first" : undefined}>
@@ -265,7 +269,7 @@ function SourceItem({ source, isSelected, isFirst, localMcpEnabled, onClick, onD
                 "shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded",
                 getSourceTypeBadgeClasses(config.type)
               )}>
-                {getSourceTypeLabel(config.type)}
+                {getSourceTypeLabel(config.type, t)}
               </span>
               {/* Status badge with tooltip showing connection error details on hover */}
               {statusBadge && (

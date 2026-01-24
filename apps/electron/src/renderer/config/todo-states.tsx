@@ -7,6 +7,30 @@ import { StatusIcon } from '@/components/ui/status-icon'
 import { iconCache } from '@/lib/icon-cache'
 
 // ============================================================================
+// Status Label Translation (for existing workspaces with English labels)
+// ============================================================================
+
+/**
+ * Translation mapping for known English status labels.
+ * This ensures existing workspaces with English labels display in Chinese.
+ */
+const STATUS_LABEL_TRANSLATIONS: Record<string, string> = {
+  'Backlog': '待处理',
+  'Todo': '进行中',
+  'Needs Review': '待审核',
+  'Done': '已完成',
+  'Cancelled': '已取消',
+}
+
+/**
+ * Translate status label if it's a known English label.
+ * Returns the original label if no translation found.
+ */
+function translateStatusLabel(label: string): string {
+  return STATUS_LABEL_TRANSLATIONS[label] ?? label
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -67,7 +91,7 @@ export function statusConfigToTodoState(
 
   return {
     id: config.id,
-    label: config.label,
+    label: translateStatusLabel(config.label),
     color: config.color,
     resolvedColor,
     icon: (
