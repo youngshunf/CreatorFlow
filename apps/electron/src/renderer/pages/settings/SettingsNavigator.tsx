@@ -116,6 +116,7 @@ const ShieldIcon = ({ className }: { className?: string }) => (
 )
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
+import { useT } from '@/context/LocaleContext'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 import type { SettingsSubpage } from '../../../shared/types'
 
@@ -133,47 +134,47 @@ interface SettingsNavigatorProps {
 
 interface SettingsItem {
   id: SettingsSubpage
-  label: string
+  labelKey: string
   icon: React.ComponentType<{ className?: string }>
-  description: string
+  descriptionKey: string
 }
 
 const settingsItems: SettingsItem[] = [
   {
     id: 'app',
-    label: 'App',
+    labelKey: '应用',
     icon: AppSettingsIcon,
-    description: 'Appearance, notifications, API connection',
+    descriptionKey: '外观、通知、API 连接',
   },
   {
     id: 'workspace',
-    label: 'Workspace',
+    labelKey: '工作区',
     icon: WorkspaceIcon,
-    description: 'Model, mode cycling, advanced',
+    descriptionKey: '模型、模式切换、高级设置',
   },
   {
     id: 'permissions',
-    label: 'Permissions',
+    labelKey: '权限',
     icon: ShieldIcon,
-    description: 'Allowed commands in Explore mode',
+    descriptionKey: '探索模式中允许的命令',
   },
   {
     id: 'labels',
-    label: 'Labels',
+    labelKey: '标签',
     icon: LabelsIcon,
-    description: 'Label hierarchy and auto-apply rules',
+    descriptionKey: '标签层次和自动应用规则',
   },
   {
     id: 'shortcuts',
-    label: 'Shortcuts',
+    labelKey: '快捷键',
     icon: KeyboardIcon,
-    description: 'Keyboard shortcuts reference',
+    descriptionKey: '键盘快捷键参考',
   },
   {
     id: 'preferences',
-    label: 'Preferences',
+    labelKey: '偏好设置',
     icon: PreferencesIcon,
-    description: 'Your personal preferences',
+    descriptionKey: '您的个人偏好',
   },
 ]
 
@@ -182,13 +183,14 @@ interface SettingsItemRowProps {
   isSelected: boolean
   isFirst: boolean
   onSelect: () => void
+  t: (text: string) => string
 }
 
 /**
  * SettingsItemRow - Individual settings item with dropdown menu
  * Tracks menu open state to keep "..." button visible when menu is open
  */
-function SettingsItemRow({ item, isSelected, isFirst, onSelect }: SettingsItemRowProps) {
+function SettingsItemRow({ item, isSelected, isFirst, onSelect, t }: SettingsItemRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const Icon = item.icon
 
@@ -239,10 +241,10 @@ function SettingsItemRow({ item, isSelected, isFirst, onSelect }: SettingsItemRo
                 isSelected ? 'text-foreground' : 'text-foreground/80'
               )}
             >
-              {item.label}
+              {t(item.labelKey)}
             </span>
             <span className="text-xs text-foreground/60 line-clamp-1">
-              {item.description}
+              {t(item.descriptionKey)}
             </span>
           </div>
         </button>
@@ -264,7 +266,7 @@ function SettingsItemRow({ item, isSelected, isFirst, onSelect }: SettingsItemRo
                 <DropdownMenuProvider>
                   <StyledDropdownMenuItem onClick={handleOpenInNewWindow}>
                     <AppWindow className="h-3.5 w-3.5" />
-                    <span className="flex-1">Open in New Window</span>
+                    <span className="flex-1">{t('在新窗口打开')}</span>
                   </StyledDropdownMenuItem>
                 </DropdownMenuProvider>
               </StyledDropdownMenuContent>
@@ -280,6 +282,8 @@ export default function SettingsNavigator({
   selectedSubpage,
   onSelectSubpage,
 }: SettingsNavigatorProps) {
+  const t = useT()
+  
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
@@ -291,6 +295,7 @@ export default function SettingsNavigator({
               isSelected={selectedSubpage === item.id}
               isFirst={index === 0}
               onSelect={() => onSelectSubpage(item.id)}
+              t={t}
             />
           ))}
         </div>

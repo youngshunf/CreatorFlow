@@ -57,7 +57,10 @@
     "build": "bun run scripts/build.ts",
     "release": "bun run scripts/release.ts",
     "check-version": "bun run scripts/check-version.ts",
-    "oss:sync": "bun run scripts/oss-sync.ts"
+    "oss:sync": "bun run scripts/oss-sync.ts",
+    "i18n:scan": "bun run scripts/i18n-translate.ts --scan",
+    "i18n:translate": "bun run scripts/i18n-translate.ts --translate",
+    "i18n:translate:all": "bun run scripts/i18n-translate.ts --translate --all"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.947.0",

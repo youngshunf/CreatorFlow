@@ -15,8 +15,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { useTheme } from '@/context/ThemeContext'
+import { useLocale, useT } from '@/context/LocaleContext'
 import { routes } from '@/lib/navigate'
-import { Monitor, Sun, Moon, X } from 'lucide-react'
+import { Monitor, Sun, Moon, X, Globe } from 'lucide-react'
 import { Spinner, FullscreenOverlayBase } from '@creator-flow/ui'
 import { useSetAtom } from 'jotai'
 import { fullscreenOverlayOpenAtom } from '@/atoms/overlay'
@@ -48,6 +49,8 @@ export const meta: DetailsPageMeta = {
 
 export default function AppSettingsPage() {
   const { mode, setMode, colorTheme, setColorTheme, font, setFont } = useTheme()
+  const { locale, setLocale, languages } = useLocale()
+  const t = useT()
   const { refreshCustomModel } = useAppShellContext()
 
   // Preset themes state
@@ -155,59 +158,70 @@ export default function AppSettingsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <PanelHeader title="App Settings" actions={<HeaderMenu route={routes.view.settings('app')} helpFeature="app-settings" />} />
+      <PanelHeader title={t('应用设置')} actions={<HeaderMenu route={routes.view.settings('app')} helpFeature="app-settings" />} />
       <div className="flex-1 min-h-0 mask-fade-y">
         <ScrollArea className="h-full">
           <div className="px-5 py-7 max-w-3xl mx-auto">
           <div className="space-y-8">
             {/* Appearance */}
-            <SettingsSection title="Appearance">
+            <SettingsSection title={t('外观')}>
               <SettingsCard>
-                <SettingsRow label="Mode">
+                <SettingsRow label={t('主题模式')}>
                   <SettingsSegmentedControl
                     value={mode}
                     onValueChange={setMode}
                     options={[
-                      { value: 'system', label: 'System', icon: <Monitor className="w-4 h-4" /> },
-                      { value: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
-                      { value: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
+                      { value: 'system', label: t('跟随系统'), icon: <Monitor className="w-4 h-4" /> },
+                      { value: 'light', label: t('浅色'), icon: <Sun className="w-4 h-4" /> },
+                      { value: 'dark', label: t('深色'), icon: <Moon className="w-4 h-4" /> },
                     ]}
                   />
                 </SettingsRow>
-                <SettingsRow label="Color theme">
+                <SettingsRow label={t('颜色主题')}>
                   <SettingsMenuSelect
                     value={colorTheme}
                     onValueChange={setColorTheme}
                     options={[
-                      { value: 'default', label: 'Default' },
+                      { value: 'default', label: t('默认') },
                       ...presetThemes
-                        .filter(t => t.id !== 'default')
-                        .map(t => ({
-                          value: t.id,
-                          label: t.theme.name || t.id,
+                        .filter(theme => theme.id !== 'default')
+                        .map(theme => ({
+                          value: theme.id,
+                          label: theme.theme.name || theme.id,
                         })),
                     ]}
                   />
                 </SettingsRow>
-                <SettingsRow label="Font">
+                <SettingsRow label={t('字体')}>
                   <SettingsSegmentedControl
                     value={font}
                     onValueChange={setFont}
                     options={[
                       { value: 'inter', label: 'Inter' },
-                      { value: 'system', label: 'System' },
+                      { value: 'system', label: t('系统字体') },
                     ]}
+                  />
+                </SettingsRow>
+                <SettingsRow label={t('界面语言')}>
+                  <SettingsSegmentedControl
+                    value={locale}
+                    onValueChange={setLocale}
+                    options={languages.map(lang => ({
+                      value: lang.code,
+                      label: lang.nativeName,
+                      icon: <Globe className="w-4 h-4" />,
+                    }))}
                   />
                 </SettingsRow>
               </SettingsCard>
             </SettingsSection>
 
             {/* Notifications */}
-            <SettingsSection title="Notifications">
+            <SettingsSection title={t('通知')}>
               <SettingsCard>
                 <SettingsToggle
-                  label="Desktop notifications"
-                  description="Get notified when AI finishes working in a chat."
+                  label={t('桌面通知')}
+                  description={t('当 AI 完成聊天任务时发送通知')}
                   checked={notificationsEnabled}
                   onCheckedChange={handleNotificationsEnabledChange}
                 />
@@ -215,16 +229,16 @@ export default function AppSettingsPage() {
             </SettingsSection>
 
             {/* API Connection */}
-            <SettingsSection title="API Connection" description="How your AI agents connect to language models.">
+            <SettingsSection title={t('API 连接')} description={t('AI 代理连接语言模型的方式')}>
               <SettingsCard>
                 <SettingsRow
-                  label="Connection type"
+                  label={t('连接类型')}
                   description={
                     authType === 'oauth_token' && hasCredential
-                      ? 'Claude Pro/Max — using your Claude subscription'
+                      ? t('Claude Pro/Max — 使用您的 Claude 订阅')
                       : authType === 'api_key' && hasCredential
-                        ? 'API Key — Anthropic, OpenRouter, or compatible API'
-                        : 'Not configured'
+                        ? t('API Key — Anthropic、OpenRouter 或兼容 API')
+                        : t('未配置')
                   }
                 >
                   <Button
@@ -232,7 +246,7 @@ export default function AppSettingsPage() {
                     size="sm"
                     onClick={openApiSetup}
                   >
-                    Edit
+                    {t('编辑')}
                   </Button>
                 </SettingsRow>
               </SettingsCard>
@@ -276,12 +290,12 @@ export default function AppSettingsPage() {
             </FullscreenOverlayBase>
 
             {/* About */}
-            <SettingsSection title="About">
+            <SettingsSection title={t('关于')}>
               <SettingsCard>
-                <SettingsRow label="Version">
+                <SettingsRow label={t('版本')}>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">
-                      {updateChecker.updateInfo?.currentVersion ?? 'Loading...'}
+                      {updateChecker.updateInfo?.currentVersion ?? t('加载中...')}
                     </span>
                     {updateChecker.updateAvailable && updateChecker.updateInfo?.latestVersion && (
                       <Button
@@ -289,12 +303,12 @@ export default function AppSettingsPage() {
                         size="sm"
                         onClick={updateChecker.installUpdate}
                       >
-                        Update to {updateChecker.updateInfo.latestVersion}
+                        {t('更新到')} {updateChecker.updateInfo.latestVersion}
                       </Button>
                     )}
                   </div>
                 </SettingsRow>
-                <SettingsRow label="Check for updates">
+                <SettingsRow label={t('检查更新')}>
                   <Button
                     variant="outline"
                     size="sm"
@@ -304,20 +318,20 @@ export default function AppSettingsPage() {
                     {isCheckingForUpdates ? (
                       <>
                         <Spinner className="mr-1.5" />
-                        Checking...
+                        {t('检查中...')}
                       </>
                     ) : (
-                      'Check Now'
+                      t('立即检查')
                     )}
                   </Button>
                 </SettingsRow>
                 {updateChecker.isReadyToInstall && (
-                  <SettingsRow label="Install update">
+                  <SettingsRow label={t('安装更新')}>
                     <Button
                       size="sm"
                       onClick={updateChecker.installUpdate}
                     >
-                      Restart to Update
+                      {t('重启并更新')}
                     </Button>
                   </SettingsRow>
                 )}

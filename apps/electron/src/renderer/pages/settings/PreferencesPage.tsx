@@ -15,6 +15,7 @@ import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { routes } from '@/lib/navigate'
 import { Spinner } from '@creator-flow/ui'
+import { useT } from '@/context/LocaleContext'
 import {
   SettingsSection,
   SettingsCard,
@@ -86,6 +87,7 @@ function serializePreferences(state: PreferencesFormState): string {
 }
 
 export default function PreferencesPage() {
+  const t = useT()
   const [formState, setFormState] = useState<PreferencesFormState>(emptyFormState)
   const [isLoading, setIsLoading] = useState(true)
   const [preferencesPath, setPreferencesPath] = useState<string | null>(null)
@@ -196,38 +198,38 @@ export default function PreferencesPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <PanelHeader title="Preferences" actions={<HeaderMenu route={routes.view.settings('preferences')} helpFeature="preferences" />} />
+      <PanelHeader title={t('偏好设置')} actions={<HeaderMenu route={routes.view.settings('preferences')} helpFeature="preferences" />} />
       <div className="flex-1 min-h-0 mask-fade-y">
         <ScrollArea className="h-full">
           <div className="px-5 py-7 max-w-3xl mx-auto space-y-8">
           {/* Basic Info */}
           <SettingsSection
-            title="Basic Info"
-            description="Help CreatorFlow personalize responses to you."
+            title={t('基本信息')}
+            description={t('帮助 CreatorFlow 为您提供个性化响应')}
           >
             <SettingsCard divided>
               <SettingsInput
-                label="Name"
-                description="How CreatorFlow should address you."
+                label={t('姓名')}
+                description={t('CreatorFlow 应如何称呼您')}
                 value={formState.name}
                 onChange={(v) => updateField('name', v)}
-                placeholder="Your name"
+                placeholder={t('您的姓名')}
                 inCard
               />
               <SettingsInput
-                label="Timezone"
-                description="Used for relative dates like 'tomorrow' or 'next week'."
+                label={t('时区')}
+                description={t("用于“明天”或“下周”等相对日期")}
                 value={formState.timezone}
                 onChange={(v) => updateField('timezone', v)}
-                placeholder="e.g., America/New_York"
+                placeholder={t('例如：Asia/Shanghai')}
                 inCard
               />
               <SettingsInput
-                label="Language"
-                description="Preferred language for CreatorFlow's responses."
+                label={t('AI 响应语言')}
+                description={t('CreatorFlow 响应的首选语言')}
                 value={formState.language}
                 onChange={(v) => updateField('language', v)}
-                placeholder="e.g., English"
+                placeholder={t('例如：中文')}
                 inCard
               />
             </SettingsCard>
@@ -235,24 +237,24 @@ export default function PreferencesPage() {
 
           {/* Location */}
           <SettingsSection
-            title="Location"
-            description="Enables location-aware responses like weather, local time, and regional context."
+            title={t('位置')}
+            description={t('启用天气、本地时间和地区上下文等位置感知响应')}
           >
             <SettingsCard divided>
               <SettingsInput
-                label="City"
-                description="Your city for local information and context."
+                label={t('城市')}
+                description={t('您的城市，用于本地信息和上下文')}
                 value={formState.city}
                 onChange={(v) => updateField('city', v)}
-                placeholder="e.g., New York"
+                placeholder={t('例如：上海')}
                 inCard
               />
               <SettingsInput
-                label="Country"
-                description="Your country for regional formatting and context."
+                label={t('国家')}
+                description={t('您的国家，用于地区格式和上下文')}
                 value={formState.country}
                 onChange={(v) => updateField('country', v)}
-                placeholder="e.g., USA"
+                placeholder={t('例如：中国')}
                 inCard
               />
             </SettingsCard>
@@ -260,8 +262,8 @@ export default function PreferencesPage() {
 
           {/* Notes */}
           <SettingsSection
-            title="Notes"
-            description="Free-form context that helps CreatorFlow understand your preferences."
+            title={t('备注')}
+            description={t('自由格式的上下文，帮助 CreatorFlow 了解您的偏好')}
             action={
               // EditPopover for AI-assisted notes editing with "Edit File" as secondary action
               preferencesPath ? (
@@ -269,7 +271,7 @@ export default function PreferencesPage() {
                   trigger={<EditButton />}
                   {...getEditConfig('preferences-notes', preferencesPath)}
                   secondaryAction={{
-                    label: 'Edit File',
+                    label: t('编辑文件'),
                     onClick: handleEditPreferences,
                   }}
                 />
@@ -280,7 +282,7 @@ export default function PreferencesPage() {
               <SettingsTextarea
                 value={formState.notes}
                 onChange={(v) => updateField('notes', v)}
-                placeholder="Any additional context you'd like CreatorFlow to know..."
+                placeholder={t('任何您希望 CreatorFlow 了解的额外信息...')}
                 rows={5}
                 inCard
               />
