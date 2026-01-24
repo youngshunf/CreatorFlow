@@ -12,7 +12,7 @@
  */
 
 import type { ReactNode } from 'react'
-import type { StoredAttachment, ContentBadge } from '@craft-agent/core'
+import type { StoredAttachment, ContentBadge } from '@creator-flow/core'
 import { cn } from '../../lib/utils'
 import { Markdown } from '../markdown'
 import { FileTypeIcon, getFileTypeLabel } from './attachment-helpers'
@@ -183,10 +183,10 @@ function InlineFileBadge({
   badge: ContentBadge
   onFileClick?: (path: string) => void
 }) {
-  // Strip .craft-agent workspace/session path prefix for cleaner tooltip display
+  // Strip .creator-flow workspace/session path prefix for cleaner tooltip display
   // e.g. "/Users/.../workspaces/{id}/sessions/{id}/plans/foo.md" → "plans/foo.md"
   const rawPath = badge.filePath || badge.label
-  const tooltipPath = rawPath.replace(/^.*\.craft-agent\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
+  const tooltipPath = rawPath.replace(/^.*\.creator-flow\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
   const isClickable = !!badge.filePath && !!onFileClick
 
   const badgeContent = (

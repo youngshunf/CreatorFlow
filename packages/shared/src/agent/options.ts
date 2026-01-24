@@ -43,7 +43,7 @@ export function getDefaultOptions(): Partial<Options> {
     // Without this, Bun loads .env from the subprocess cwd (user's working directory),
     // which can inject ANTHROPIC_API_KEY and override our OAuth auth — silently charging
     // the user's API key instead of their Max subscription.
-    // See: https://github.com/lukilabs/craft-agents-oss/issues/39
+    // See: https://github.com/lukilabs/creator-flows-oss/issues/39
     const envFileFlag = '--env-file=/dev/null';
 
     // If custom path is set (e.g., for Electron), use it with minimal options

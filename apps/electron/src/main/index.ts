@@ -11,12 +11,12 @@ import { registerIpcHandlers } from './ipc'
 import { createApplicationMenu } from './menu'
 import { WindowManager } from './window-manager'
 import { loadWindowState, saveWindowState } from './window-state'
-import { getWorkspaces } from '@craft-agent/shared/config'
-import { initializeDocs } from '@craft-agent/shared/docs'
-import { ensureDefaultPermissions } from '@craft-agent/shared/agent/permissions-config'
+import { getWorkspaces } from '@creator-flow/shared/config'
+import { initializeDocs } from '@creator-flow/shared/docs'
+import { ensureDefaultPermissions } from '@creator-flow/shared/agent/permissions-config'
 import { handleDeepLink } from './deep-link'
 import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
-import { setPerfEnabled, enableDebug } from '@craft-agent/shared/utils'
+import { setPerfEnabled, enableDebug } from '@creator-flow/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
 import { checkForUpdatesOnLaunch, setWindowManager as setAutoUpdateWindowManager, isUpdating } from './auto-update'
 
@@ -41,8 +41,8 @@ let sessionManager: SessionManager | null = null
 let pendingDeepLink: string | null = null
 
 // Set app name early (before app.whenReady) to ensure correct macOS menu bar title
-// Supports multi-instance dev: CRAFT_APP_NAME env var (e.g., "Craft Agents [1]")
-app.setName(process.env.CRAFT_APP_NAME || 'Craft Agents')
+// Supports multi-instance dev: CRAFT_APP_NAME env var (e.g., "CreatorFlow [1]")
+app.setName(process.env.CRAFT_APP_NAME || 'CreatorFlow')
 
 // Register as default protocol client for craftagents:// URLs
 // This must be done before app.whenReady() on some platforms

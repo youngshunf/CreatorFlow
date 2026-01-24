@@ -1,6 +1,6 @@
 # Skills Configuration Guide
 
-This guide explains how to create and configure skills in Craft Agent.
+This guide explains how to create and configure skills in CreatorFlow.
 
 ## What Are Skills?
 
@@ -14,13 +14,13 @@ Skills are specialized instructions that extend Claude's capabilities for specif
 
 ## Same Format as Claude Code SDK
 
-Craft Agent uses **the identical SKILL.md format** as the Claude Code SDK. This means:
+CreatorFlow uses **the identical SKILL.md format** as the Claude Code SDK. This means:
 
-1. **Format compatibility**: Any skill written for Claude Code works in Craft Agent
+1. **Format compatibility**: Any skill written for Claude Code works in CreatorFlow
 2. **Same frontmatter fields**: `name`, `description`, `globs`, `alwaysAllow`
 3. **Same content structure**: Markdown body with instructions for Claude
 
-**What Craft Agent adds:**
+**What CreatorFlow adds:**
 - **Visual icons**: Display custom icons in the UI for each skill
 - **Workspace organization**: Skills are scoped to workspaces
 - **UI management**: Browse, edit, and validate skills through the interface

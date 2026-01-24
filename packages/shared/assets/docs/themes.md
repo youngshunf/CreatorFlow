@@ -1,10 +1,10 @@
 # Theme Configuration Guide
 
-This guide explains how to customize the visual theme of Craft Agent.
+This guide explains how to customize the visual theme of CreatorFlow.
 
 ## Overview
 
-Craft Agent uses a 6-color theme system. You can override specific colors or install preset themes with complete visual styles.
+CreatorFlow uses a 6-color theme system. You can override specific colors or install preset themes with complete visual styles.
 
 - **Theme overrides**: `~/.craft-agent/theme.json` - Override specific colors
 - **Preset themes**: `~/.craft-agent/themes/{name}.json` - Complete theme packages

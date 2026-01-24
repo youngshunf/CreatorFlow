@@ -24,7 +24,7 @@ export interface OAuthCallbacks {
 const CALLBACK_PORT_START = 8914;
 const CALLBACK_PORT_END = 8924;
 const CALLBACK_PATH = '/oauth/callback';
-const CLIENT_NAME = 'Craft Agent';
+const CLIENT_NAME = 'CreatorFlow';
 
 /**
  * Find an available port in the configured range for the OAuth callback server.
@@ -277,7 +277,7 @@ export class CraftOAuth {
       }
     } else {
       // Use a default client ID for public clients
-      clientId = 'craft-agent';
+      clientId = 'creator-flow';
       this.callbacks.onStatus(`Using default client ID: ${clientId}`);
     }
 

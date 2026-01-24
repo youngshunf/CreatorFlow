@@ -15,11 +15,11 @@
 
 import { autoUpdater } from 'electron-updater'
 import { mainLog } from './logger'
-import { getAppVersion } from '@craft-agent/shared/version'
+import { getAppVersion } from '@creator-flow/shared/version'
 import {
   getDismissedUpdateVersion,
   clearDismissedUpdateVersion,
-} from '@craft-agent/shared/config'
+} from '@creator-flow/shared/config'
 import type { UpdateInfo } from '../shared/types'
 import type { WindowManager } from './window-manager'
 

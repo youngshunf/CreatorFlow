@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
-import type { ToolDisplayMeta } from '@craft-agent/core'
+import type { ToolDisplayMeta } from '@creator-flow/core'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ChevronRight,

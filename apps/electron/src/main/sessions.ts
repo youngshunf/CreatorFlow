@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CraftAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@craft-agent/shared/agent'
+import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -14,8 +14,8 @@ import {
   getAnthropicBaseUrl,
   resolveModelId,
   type Workspace,
-} from '@craft-agent/shared/config'
-import { loadWorkspaceConfig } from '@craft-agent/shared/workspaces'
+} from '@creator-flow/shared/config'
+import { loadWorkspaceConfig } from '@creator-flow/shared/workspaces'
 import {
   // Session persistence functions
   listSessions as listStoredSessions,
@@ -38,21 +38,21 @@ import {
   type StoredMessage,
   type SessionMetadata,
   type TodoState,
-} from '@craft-agent/shared/sessions'
-import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS } from '@craft-agent/shared/sources'
-import { ConfigWatcher, type ConfigWatcherCallbacks } from '@craft-agent/shared/config'
-import { getAuthState } from '@craft-agent/shared/auth'
-import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@craft-agent/shared/agent'
-import { getCredentialManager } from '@craft-agent/shared/credentials'
-import { CraftMcpClient } from '@craft-agent/shared/mcp'
+} from '@creator-flow/shared/sessions'
+import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS } from '@creator-flow/shared/sources'
+import { ConfigWatcher, type ConfigWatcherCallbacks } from '@creator-flow/shared/config'
+import { getAuthState } from '@creator-flow/shared/auth'
+import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@creator-flow/shared/agent'
+import { getCredentialManager } from '@creator-flow/shared/credentials'
+import { CraftMcpClient } from '@creator-flow/shared/mcp'
 import { type Session, type Message, type SessionEvent, type FileAttachment, type StoredAttachment, type SendMessageOptions, IPC_CHANNELS, generateMessageId } from '../shared/types'
-import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient } from '@craft-agent/shared/utils'
-import { loadWorkspaceSkills, type LoadedSkill } from '@craft-agent/shared/skills'
-import type { ToolDisplayMeta } from '@craft-agent/core/types'
-import { DEFAULT_MODEL } from '@craft-agent/shared/config'
-import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@craft-agent/shared/agent/thinking-levels'
-import { evaluateAutoLabels } from '@craft-agent/shared/labels/auto'
-import { listLabels } from '@craft-agent/shared/labels/storage'
+import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient } from '@creator-flow/shared/utils'
+import { loadWorkspaceSkills, type LoadedSkill } from '@creator-flow/shared/skills'
+import type { ToolDisplayMeta } from '@creator-flow/core/types'
+import { DEFAULT_MODEL } from '@creator-flow/shared/config'
+import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels'
+import { evaluateAutoLabels } from '@creator-flow/shared/labels/auto'
+import { listLabels } from '@creator-flow/shared/labels/storage'
 
 /**
  * Sanitize message content for use as session title.
@@ -246,7 +246,7 @@ function resolveToolDisplayMeta(
 interface ManagedSession {
   id: string
   workspace: Workspace
-  agent: CraftAgent | null  // Lazy-loaded - null until first message
+  agent: CreatorFlowAgent | null  // Lazy-loaded - null until first message
   messages: Message[]
   isProcessing: boolean
   lastMessageAt: number
@@ -547,7 +547,7 @@ export class SessionManager {
       onSkillChange: async (slug, skill) => {
         sessionLog.info(`Skill '${slug}' changed:`, skill ? 'updated' : 'deleted')
         // Broadcast updated list to UI
-        const { loadWorkspaceSkills } = await import('@craft-agent/shared/skills')
+        const { loadWorkspaceSkills } = await import('@creator-flow/shared/skills')
         const skills = loadWorkspaceSkills(workspaceRootPath)
         this.broadcastSkillsChanged(skills)
       },
@@ -638,7 +638,7 @@ export class SessionManager {
   /**
    * Broadcast app theme changed event to all windows
    */
-  private broadcastAppThemeChanged(theme: import('@craft-agent/shared/config').ThemeOverrides | null): void {
+  private broadcastAppThemeChanged(theme: import('@creator-flow/shared/config').ThemeOverrides | null): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting app theme changed`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.THEME_APP_CHANGED, theme)
@@ -647,7 +647,7 @@ export class SessionManager {
   /**
    * Broadcast skills changed event to all windows
    */
-  private broadcastSkillsChanged(skills: import('@craft-agent/shared/skills').LoadedSkill[]): void {
+  private broadcastSkillsChanged(skills: import('@creator-flow/shared/skills').LoadedSkill[]): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting skills changed (${skills.length} skills)`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.SKILLS_CHANGED, skills)
@@ -655,7 +655,7 @@ export class SessionManager {
 
   /**
    * Broadcast default permissions changed event to all windows
-   * Triggered when ~/.craft-agent/permissions/default.json changes
+   * Triggered when ~/.creator-flow/permissions/default.json changes
    */
   private broadcastDefaultPermissionsChanged(): void {
     if (!this.windowManager) return
@@ -674,7 +674,7 @@ export class SessionManager {
     const workspaceRootPath = managed.workspace.rootPath
     sessionLog.info(`Reloading sources for session ${managed.id}`)
 
-    // Reload all sources from disk (craft-agents-docs is always available as MCP server)
+    // Reload all sources from disk (creator-flows-docs is always available as MCP server)
     const allSources = loadAllSources(workspaceRootPath)
     managed.agent.setAllSources(allSources)
 
@@ -698,7 +698,7 @@ export class SessionManager {
    * Bun's automatic .env loading is disabled in the subprocess (--env-file=/dev/null)
    * to prevent a user's project .env from injecting ANTHROPIC_API_KEY and overriding
    * OAuth auth — Claude Code prioritizes API key over OAuth token when both are set.
-   * See: https://github.com/lukilabs/craft-agents-oss/issues/39
+   * See: https://github.com/lukilabs/creator-flows-oss/issues/39
    */
   async reinitializeAuth(): Promise<void> {
     try {
@@ -1164,7 +1164,7 @@ export class SessionManager {
       }
 
       // Update source config to mark as authenticated
-      const { markSourceAuthenticated } = await import('@craft-agent/shared/sources')
+      const { markSourceAuthenticated } = await import('@creator-flow/shared/sources')
       markSourceAuthenticated(managed.workspace.rootPath, request.sourceSlug)
 
       // Mark source as unseen so fresh guide is injected on next message
@@ -1416,11 +1416,11 @@ export class SessionManager {
   /**
    * Get or create agent for a session (lazy loading)
    */
-  private async getOrCreateAgent(managed: ManagedSession): Promise<CraftAgent> {
+  private async getOrCreateAgent(managed: ManagedSession): Promise<CreatorFlowAgent> {
     if (!managed.agent) {
       const end = perf.start('agent.create', { sessionId: managed.id })
       const config = loadStoredConfig()
-      managed.agent = new CraftAgent({
+      managed.agent = new CreatorFlowAgent({
         workspace: managed.workspace,
         // Session model takes priority, fallback to global config, then resolve with customModel override
         model: resolveModelId(managed.model || config?.model || DEFAULT_MODEL),
@@ -1492,7 +1492,7 @@ export class SessionManager {
       }
 
       // Note: Credential requests now flow through onAuthRequest (unified auth flow)
-      // The legacy onCredentialRequest callback has been removed from CraftAgent
+      // The legacy onCredentialRequest callback has been removed from CreatorFlowAgent
 
       // Set up mode change handlers
       managed.agent.onPermissionModeChange = (mode) => {
@@ -1833,7 +1833,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@craft-agent/shared/branding')
+      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1897,7 +1897,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@craft-agent/shared/branding')
+      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api/${managed.sharedId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1942,7 +1942,7 @@ export class SessionManager {
     this.sendEvent({ type: 'async_operation', sessionId, isOngoing: true }, managed.workspace.id)
 
     try {
-      const { VIEWER_URL } = await import('@craft-agent/shared/branding')
+      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
       const response = await fetch(
         `${VIEWER_URL}/s/api/${managed.sharedId}`,
         { method: 'DELETE' }
@@ -2523,7 +2523,7 @@ export class SessionManager {
 
       // Skills mentioned via @mentions are handled by the SDK's Skill tool.
       // The UI layer (extractBadges in mentions.ts) injects fully-qualified names
-      // in the rawText, and canUseTool in craft-agent.ts provides a fallback
+      // in the rawText, and canUseTool in creator-flow.ts provides a fallback
       // to qualify short names. No transformation needed here.
 
       sendSpan.mark('chat.starting')
@@ -3116,7 +3116,7 @@ To view this task's output:
         const PARENT_TOOLS = ['Task', 'TaskOutput']
         const isParentTool = PARENT_TOOLS.includes(event.toolName)
 
-        // Use parentToolUseId from the event - CraftAgent computes this correctly
+        // Use parentToolUseId from the event - CreatorFlowAgent computes this correctly
         // using the SDK's parent_tool_use_id (authoritative for parallel Tasks)
         // Only fall back to stack heuristic if event doesn't provide parent
         let parentToolUseId: string | undefined
@@ -3124,7 +3124,7 @@ To view this task's output:
           // Parent tools don't have a parent themselves
           parentToolUseId = undefined
         } else if (event.parentToolUseId) {
-          // CraftAgent provided the correct parent from SDK - use it
+          // CreatorFlowAgent provided the correct parent from SDK - use it
           parentToolUseId = event.parentToolUseId
         } else if (managed.parentToolStack.length > 0) {
           // Fallback: use stack heuristic for edge cases
@@ -3462,7 +3462,7 @@ To view this task's output:
         break
 
       case 'complete':
-        // Complete event from CraftAgent - accumulate usage from this turn
+        // Complete event from CreatorFlowAgent - accumulate usage from this turn
         // Actual 'complete' sent to renderer comes from the finally block in sendMessage
         if (event.usage) {
           // Initialize tokenUsage if not set

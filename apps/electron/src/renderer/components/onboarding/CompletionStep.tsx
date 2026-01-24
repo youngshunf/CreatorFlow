@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@craft-agent/ui"
-import { CraftAgentsSymbol } from "@/components/icons/CraftAgentsSymbol"
+import { Spinner } from "@creator-flow/ui"
+import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
 import { StepFormLayout } from "./primitives"
 
 interface CompletionStepProps {
@@ -31,7 +31,7 @@ export function CompletionStep({
         </div>
       ) : (
         <div className="flex size-16 items-center justify-center">
-          <CraftAgentsSymbol className="size-10 text-accent" />
+          <CreatorFlowSymbol className="size-10 text-accent" />
         </div>
       )}
       title={isSaving ? 'Setting up...' : "You're all set!"}

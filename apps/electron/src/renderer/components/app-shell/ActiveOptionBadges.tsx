@@ -11,12 +11,12 @@ import {
   StyledDropdownMenuItem,
 } from '@/components/ui/styled-dropdown'
 import { ChevronDown, Trash2, X } from 'lucide-react'
-import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@craft-agent/shared/agent/modes'
+import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@creator-flow/shared/agent/modes'
 import { ActiveTasksBar, type BackgroundTask } from './ActiveTasksBar'
 import { LabelIcon } from '@/components/ui/label-icon'
-import type { LabelConfig } from '@craft-agent/shared/labels'
-import { flattenLabels, extractLabelId } from '@craft-agent/shared/labels'
-import { resolveEntityColor } from '@craft-agent/shared/colors'
+import type { LabelConfig } from '@creator-flow/shared/labels'
+import { flattenLabels, extractLabelId } from '@creator-flow/shared/labels'
+import { resolveEntityColor } from '@creator-flow/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { useDynamicStack } from '@/hooks/useDynamicStack'
 

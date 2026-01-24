@@ -1,14 +1,14 @@
 import craftLogo from "@/assets/craft_logo_c.svg"
 
-interface CraftAppIconProps {
+interface CreatorFlowAppIconProps {
   className?: string
   size?: number
 }
 
 /**
- * CraftAppIcon - Displays the Craft logo (colorful "C" icon)
+ * CreatorFlowAppIcon - Displays the Craft logo (colorful "C" icon)
  */
-export function CraftAppIcon({ className, size = 64 }: CraftAppIconProps) {
+export function CreatorFlowAppIcon({ className, size = 64 }: CreatorFlowAppIconProps) {
   return (
     <img
       src={craftLogo}

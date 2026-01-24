@@ -6,11 +6,11 @@ import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
 import { rendererPerf } from "@/lib/perf"
-import type { LabelConfig } from "@craft-agent/shared/labels"
-import { flattenLabels, extractLabelId } from "@craft-agent/shared/labels"
-import { resolveEntityColor } from "@craft-agent/shared/colors"
+import type { LabelConfig } from "@creator-flow/shared/labels"
+import { flattenLabels, extractLabelId } from "@creator-flow/shared/labels"
+import { resolveEntityColor } from "@creator-flow/shared/colors"
 import { useTheme } from "@/context/ThemeContext"
-import { Spinner, Tooltip, TooltipTrigger, TooltipContent } from "@craft-agent/ui"
+import { Spinner, Tooltip, TooltipTrigger, TooltipContent } from "@creator-flow/ui"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
@@ -48,8 +48,8 @@ import { useNavigation, useNavigationState, routes, isChatsNavigation } from "@/
 import { useFocusContext } from "@/context/FocusContext"
 import { getSessionTitle } from "@/utils/session"
 import type { SessionMeta } from "@/atoms/sessions"
-import type { ViewConfig } from "@craft-agent/shared/views"
-import { PERMISSION_MODE_CONFIG, type PermissionMode } from "@craft-agent/shared/agent/modes"
+import type { ViewConfig } from "@creator-flow/shared/views"
+import { PERMISSION_MODE_CONFIG, type PermissionMode } from "@creator-flow/shared/agent/modes"
 
 // Pagination constants
 const INITIAL_DISPLAY_LIMIT = 20

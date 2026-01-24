@@ -1,21 +1,21 @@
 # Trademark Policy
 
-This trademark policy governs the use of the "Craft" and "Craft Agents" names, logos, and branding in connection with the Craft Agents open source project.
+This trademark policy governs the use of the "Craft" and "CreatorFlow" names, logos, and branding in connection with the CreatorFlow open source project.
 
 ## Trademarks
 
 The following are trademarks of Craft Docs Ltd.:
 
 - **Craft** (word mark)
-- **Craft Agents** (word mark)
+- **CreatorFlow** (word mark)
 - The Craft logo and icon
-- The Craft Agents logo and icon
+- The CreatorFlow logo and icon
 
 ## What You Can Do
 
 ### Use the Code Freely
 
-The Craft Agents source code is licensed under the Apache License 2.0. You are free to:
+The CreatorFlow source code is licensed under the Apache License 2.0. You are free to:
 
 - Use, modify, and distribute the code
 - Create derivative works
@@ -25,14 +25,14 @@ The Craft Agents source code is licensed under the Apache License 2.0. You are f
 
 You may make accurate, factual statements about your relationship to the project:
 
-- "Based on Craft Agents"
-- "Built with Craft Agents technology"
-- "Compatible with Craft Agents"
-- "Fork of Craft Agents"
+- "Based on CreatorFlow"
+- "Built with CreatorFlow technology"
+- "Compatible with CreatorFlow"
+- "Fork of CreatorFlow"
 
 ### Contribute to the Project
 
-Contributors to the official Craft Agents repository may use the trademarks when discussing their contributions.
+Contributors to the official CreatorFlow repository may use the trademarks when discussing their contributions.
 
 ## What You Cannot Do
 
@@ -49,7 +49,7 @@ If you create a fork or derivative work, you **must**:
 
 You may not:
 
-- Use "Craft" or "Craft Agents" as your product name
+- Use "Craft" or "CreatorFlow" as your product name
 - Use the Craft logo as your application icon
 - Suggest that your fork is the official version
 - Imply that Craft Docs Ltd. or Craft endorses your product
@@ -59,8 +59,8 @@ You may not:
 You may not use the trademarks in any way that:
 
 - Suggests your product is created by or affiliated with Craft Docs Ltd.
-- Could cause confusion between your product and the official Craft Agents
-- Disparages Craft Docs Ltd. or the Craft Agents project
+- Could cause confusion between your product and the official CreatorFlow
+- Disparages Craft Docs Ltd. or the CreatorFlow project
 
 ## Branding Locations
 
@@ -76,15 +76,15 @@ For those creating forks, the following files contain branding that should be up
 
 ### Acceptable
 
-- "MyAgent - based on Craft Agents"
-- "This project is a fork of Craft Agents"
-- "Compatible with the Craft Agents ecosystem"
+- "MyAgent - based on CreatorFlow"
+- "This project is a fork of CreatorFlow"
+- "Compatible with the CreatorFlow ecosystem"
 
 ### Not Acceptable
 
-- "Craft Agents Pro"
-- "Craft Agent for Linux"
-- "Better Craft Agents"
+- "CreatorFlow Pro"
+- "CreatorFlow for Linux"
+- "Better CreatorFlow"
 - Using the Craft logo for your fork
 
 ## Questions

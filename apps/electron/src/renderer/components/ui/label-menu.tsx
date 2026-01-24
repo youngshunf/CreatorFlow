@@ -2,8 +2,8 @@ import * as React from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LabelIcon } from './label-icon'
-import type { LabelConfig } from '@craft-agent/shared/labels'
-import { flattenLabels } from '@craft-agent/shared/labels'
+import type { LabelConfig } from '@creator-flow/shared/labels'
+import { flattenLabels } from '@creator-flow/shared/labels'
 
 // ============================================================================
 // Types

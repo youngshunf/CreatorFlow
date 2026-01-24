@@ -1,5 +1,5 @@
 /**
- * Utility functions for @craft-agent/ui
+ * Utility functions for @creator-flow/ui
  */
 
 import { type ClassValue, clsx } from 'clsx'

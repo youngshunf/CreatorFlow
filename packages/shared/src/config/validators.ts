@@ -705,7 +705,7 @@ export function validateSkillContent(markdownContent: string, slug: string): Val
         path: 'frontmatter',
         message: `Invalid YAML frontmatter: ${e instanceof Error ? e.message : 'Unknown error'}`,
         severity: 'error',
-        suggestion: 'See ~/.craft-agent/docs/skills.md for SKILL.md format reference',
+        suggestion: 'See ~/.creator-flow/docs/skills.md for SKILL.md format reference',
       }],
       warnings: [],
     };

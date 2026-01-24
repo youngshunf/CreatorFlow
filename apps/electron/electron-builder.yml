@@ -1,6 +1,6 @@
-appId: com.lukilabs.craft-agent
-productName: Craft Agents
-copyright: Copyright © 2025 Craft Docs Ltd.
+appId: com.creatorflow.app
+productName: 创流 CreatorFlow
+copyright: Copyright © 2025 CreatorFlow
 
 electronVersion: "39.2.7"
 
@@ -31,10 +31,10 @@ files:
 extraMetadata:
   main: dist/main.cjs
 
-# Auto-update: electron-updater fetches from this URL for update manifests (.yml files)
-publish:
-  provider: generic
-  url: https://agents.craft.do/electron/latest
+# Auto-update: disabled for now
+# publish:
+#   provider: generic
+#   url: https://example.com/electron/latest
 
 # Disable ASAR to avoid decompression overhead and click delays
 asar: false
@@ -65,15 +65,15 @@ mac:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
   # Use predictable naming for macOS packages (applies to zip; dmg uses its own config below)
-  artifactName: "Craft-Agent-${arch}.${ext}"
+  artifactName: "CreatorFlow-${arch}.${ext}"
   # Code signing & notarization (disabled by default for local builds)
   # To enable: set CSC_LINK, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
   # notarize:
   #   teamId: ${APPLE_TEAM_ID}
 
 dmg:
-  # Use predictable naming: Craft-Agent-arm64.dmg, Craft-Agent-x64.dmg
-  artifactName: "Craft-Agent-${arch}.dmg"
+  # Use predictable naming: CreatorFlow-arm64.dmg, CreatorFlow-x64.dmg
+  artifactName: "CreatorFlow-${arch}.dmg"
   contents:
     - x: 130
       y: 220
@@ -91,8 +91,8 @@ win:
     - target: nsis
       arch:
         - x64
-  # Use predictable naming: Craft-Agent-x64.exe
-  artifactName: "Craft-Agent-${arch}.${ext}"
+  # Use predictable naming: CreatorFlow-x64.exe
+  artifactName: "CreatorFlow-${arch}.${ext}"
   files:
     # Exclude ripgrep binaries for other platforms
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-linux"
@@ -120,12 +120,12 @@ nsis:
 linux:
   icon: resources/icon.png
   category: Utility
-  maintainer: "Craft Docs Ltd. <support@craft.do>"
+  maintainer: "CreatorFlow <support@creatorflow.app>"
   target:
     - target: AppImage
       arch:
         - x64
-  artifactName: "Craft-Agent-${arch}.${ext}"
+  artifactName: "CreatorFlow-${arch}.${ext}"
   # Exclude ripgrep binaries for other platforms
   files:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-darwin"

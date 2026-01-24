@@ -1,7 +1,7 @@
 /**
- * Craft Agent Session Viewer
+ * CreatorFlow Session Viewer
  *
- * A minimal web app for viewing Craft Agent session transcripts.
+ * A minimal web app for viewing CreatorFlow session transcripts.
  * Users can upload session JSON files or view shared sessions via URL.
  *
  * Routes:
@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import type { StoredSession } from '@craft-agent/core'
+import type { StoredSession } from '@creator-flow/core'
 import {
   SessionViewer,
   GenericOverlay,
@@ -22,7 +22,7 @@ import {
   type PlatformActions,
   type ActivityItem,
   type OverlayData,
-} from '@craft-agent/ui'
+} from '@creator-flow/ui'
 import { SessionUpload } from './components/SessionUpload'
 import { Header } from './components/Header'
 

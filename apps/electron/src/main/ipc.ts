@@ -10,12 +10,12 @@ import { ipcLog, windowLog } from './logger'
 import { WindowManager } from './window-manager'
 import { registerOnboardingHandlers } from './onboarding'
 import { IPC_CHANNELS, type FileAttachment, type StoredAttachment, type AuthType, type ApiSetupInfo, type SendMessageOptions } from '../shared/types'
-import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@craft-agent/shared/utils'
-import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, type Workspace, SUMMARIZATION_MODEL } from '@craft-agent/shared/config'
-import { getSessionAttachmentsPath } from '@craft-agent/shared/sessions'
-import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@craft-agent/shared/sources'
-import { isValidThinkingLevel } from '@craft-agent/shared/agent/thinking-levels'
-import { getCredentialManager } from '@craft-agent/shared/credentials'
+import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@creator-flow/shared/utils'
+import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, type Workspace, SUMMARIZATION_MODEL } from '@creator-flow/shared/config'
+import { getSessionAttachmentsPath } from '@creator-flow/shared/sessions'
+import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@creator-flow/shared/sources'
+import { isValidThinkingLevel } from '@creator-flow/shared/agent/thinking-levels'
+import { getCredentialManager } from '@creator-flow/shared/credentials'
 import { MarkItDown } from 'markitdown-js'
 
 /**
@@ -147,7 +147,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Check if a workspace slug already exists (for validation before creation)
   ipcMain.handle(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, async (_event, slug: string) => {
-    const defaultWorkspacesDir = join(homedir(), '.craft-agent', 'workspaces')
+    const defaultWorkspacesDir = join(homedir(), '.creator-flow', 'workspaces')
     const workspacePath = join(defaultWorkspacesDir, slug)
     const exists = existsSync(workspacePath)
     return { exists, path: workspacePath }
@@ -805,13 +805,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Dismiss update for this version (persists across restarts)
   ipcMain.handle(IPC_CHANNELS.UPDATE_DISMISS, async (_event, version: string) => {
-    const { setDismissedUpdateVersion } = await import('@craft-agent/shared/config')
+    const { setDismissedUpdateVersion } = await import('@creator-flow/shared/config')
     setDismissedUpdateVersion(version)
   })
 
   // Get dismissed version
   ipcMain.handle(IPC_CHANNELS.UPDATE_GET_DISMISSED, async () => {
-    const { getDismissedUpdateVersion } = await import('@craft-agent/shared/config')
+    const { getDismissedUpdateVersion } = await import('@creator-flow/shared/config')
     return getDismissedUpdateVersion()
   })
 
@@ -925,7 +925,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       }
 
       // Delete the config file
-      const configPath = join(homedir(), '.craft-agent', 'config.json')
+      const configPath = join(homedir(), '.creator-flow', 'config.json')
       await unlink(configPath).catch(() => {
         // Ignore if file doesn't exist
       })
@@ -1018,7 +1018,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         await manager.setApiKey(credential)
       } else if (authType === 'oauth_token') {
         // Import full credentials including refresh token and expiry from Claude CLI
-        const { getExistingClaudeCredentials } = await import('@craft-agent/shared/auth')
+        const { getExistingClaudeCredentials } = await import('@creator-flow/shared/auth')
         const cliCreds = getExistingClaudeCredentials()
         if (cliCreds) {
           await manager.setClaudeOAuthCredentials({
@@ -1153,7 +1153,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         (lowerMsg.includes('tool') && lowerMsg.includes('not') && lowerMsg.includes('support'))
       if (isToolSupportError) {
         const displayModel = modelName?.trim() || SUMMARIZATION_MODEL
-        return { success: false, error: `Model "${displayModel}" does not support tool/function calling. Craft Agent requires a model with tool support (e.g. Claude, GPT-4, Gemini).` }
+        return { success: false, error: `Model "${displayModel}" does not support tool/function calling. CreatorFlow requires a model with tool support (e.g. Claude, GPT-4, Gemini).` }
       }
 
       // Model not found — always a failure. Since onboarding is the only place
@@ -1229,7 +1229,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     }
 
     // Load workspace config
-    const { loadWorkspaceConfig } = await import('@craft-agent/shared/workspaces')
+    const { loadWorkspaceConfig } = await import('@creator-flow/shared/workspaces')
     const config = loadWorkspaceConfig(workspace.rootPath)
 
     return {
@@ -1254,7 +1254,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       throw new Error(`Invalid workspace setting key: ${key}. Valid keys: ${validKeys.join(', ')}`)
     }
 
-    const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@craft-agent/shared/workspaces')
+    const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@creator-flow/shared/workspaces')
     const config = loadWorkspaceConfig(workspace.rootPath)
     if (!config) {
       throw new Error(`Failed to load workspace config: ${workspaceId}`)
@@ -1505,10 +1505,10 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Create a new source
-  ipcMain.handle(IPC_CHANNELS.SOURCES_CREATE, async (_event, workspaceId: string, config: Partial<import('@craft-agent/shared/sources').CreateSourceInput>) => {
+  ipcMain.handle(IPC_CHANNELS.SOURCES_CREATE, async (_event, workspaceId: string, config: Partial<import('@creator-flow/shared/sources').CreateSourceInput>) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
-    const { createSource } = await import('@craft-agent/shared/sources')
+    const { createSource } = await import('@creator-flow/shared/sources')
     return createSource(workspace.rootPath, {
       name: config.name || 'New Source',
       provider: config.provider || 'custom',
@@ -1524,7 +1524,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   ipcMain.handle(IPC_CHANNELS.SOURCES_DELETE, async (_event, workspaceId: string, sourceSlug: string) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
-    const { deleteSource } = await import('@craft-agent/shared/sources')
+    const { deleteSource } = await import('@creator-flow/shared/sources')
     deleteSource(workspace.rootPath, sourceSlug)
   })
 
@@ -1535,7 +1535,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       if (!workspace) {
         return { success: false, error: `Workspace not found: ${workspaceId}` }
       }
-      const { loadSource, getSourceCredentialManager } = await import('@craft-agent/shared/sources')
+      const { loadSource, getSourceCredentialManager } = await import('@creator-flow/shared/sources')
 
       const source = loadSource(workspace.rootPath, sourceSlug)
       if (!source || source.config.type !== 'mcp' || !source.config.mcp?.url) {
@@ -1570,7 +1570,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   ipcMain.handle(IPC_CHANNELS.SOURCES_SAVE_CREDENTIALS, async (_event, workspaceId: string, sourceSlug: string, credential: string) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
-    const { loadSource, getSourceCredentialManager } = await import('@craft-agent/shared/sources')
+    const { loadSource, getSourceCredentialManager } = await import('@creator-flow/shared/sources')
 
     const source = loadSource(workspace.rootPath, sourceSlug)
     if (!source) {
@@ -1591,7 +1591,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     // Load raw JSON file (not normalized) for UI display
     const { existsSync, readFileSync } = await import('fs')
-    const { getSourcePermissionsPath } = await import('@craft-agent/shared/agent')
+    const { getSourcePermissionsPath } = await import('@creator-flow/shared/agent')
     const path = getSourcePermissionsPath(workspace.rootPath, sourceSlug)
 
     if (!existsSync(path)) return null
@@ -1612,7 +1612,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     // Load raw JSON file (not normalized) for UI display
     const { existsSync, readFileSync } = await import('fs')
-    const { getWorkspacePermissionsPath } = await import('@craft-agent/shared/agent')
+    const { getWorkspacePermissionsPath } = await import('@creator-flow/shared/agent')
     const path = getWorkspacePermissionsPath(workspace.rootPath)
 
     if (!existsSync(path)) return null
@@ -1626,11 +1626,11 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     }
   })
 
-  // Get default permissions from ~/.craft-agent/permissions/default.json
+  // Get default permissions from ~/.creator-flow/permissions/default.json
   // Returns raw JSON for UI display (patterns with comments), plus the file path
   ipcMain.handle(IPC_CHANNELS.DEFAULT_PERMISSIONS_GET, async () => {
     const { existsSync, readFileSync } = await import('fs')
-    const { getAppPermissionsDir } = await import('@craft-agent/shared/agent')
+    const { getAppPermissionsDir } = await import('@creator-flow/shared/agent')
     const { join } = await import('path')
 
     const defaultPath = join(getAppPermissionsDir(), 'default.json')
@@ -1670,7 +1670,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       }
 
       // Create unified MCP client for both stdio and HTTP transports
-      const { CraftMcpClient } = await import('@craft-agent/shared/mcp')
+      const { CraftMcpClient } = await import('@creator-flow/shared/mcp')
       let client: InstanceType<typeof CraftMcpClient>
 
       if (source.config.mcp.transport === 'stdio') {
@@ -1714,7 +1714,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       await client.close()
 
       // Load permissions patterns
-      const { loadSourcePermissionsConfig, permissionsConfigCache } = await import('@craft-agent/shared/agent')
+      const { loadSourcePermissionsConfig, permissionsConfigCache } = await import('@creator-flow/shared/agent')
       const permissionsConfig = loadSourcePermissionsConfig(workspace.rootPath, sourceSlug)
 
       // Get merged permissions config
@@ -1761,7 +1761,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       ipcLog.error(`SKILLS_GET: Workspace not found: ${workspaceId}`)
       return []
     }
-    const { loadWorkspaceSkills } = await import('@craft-agent/shared/skills')
+    const { loadWorkspaceSkills } = await import('@creator-flow/shared/skills')
     const skills = loadWorkspaceSkills(workspace.rootPath)
     ipcLog.info(`SKILLS_GET: Loaded ${skills.length} skills from ${workspace.rootPath}`)
     return skills
@@ -1777,7 +1777,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     const { join } = await import('path')
     const { readdirSync, statSync } = await import('fs')
-    const { getWorkspaceSkillsPath } = await import('@craft-agent/shared/workspaces')
+    const { getWorkspaceSkillsPath } = await import('@creator-flow/shared/workspaces')
 
     const skillsDir = getWorkspaceSkillsPath(workspace.rootPath)
     const skillDir = join(skillsDir, skillSlug)
@@ -1830,7 +1830,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { deleteSkill } = await import('@craft-agent/shared/skills')
+    const { deleteSkill } = await import('@creator-flow/shared/skills')
     deleteSkill(workspace.rootPath, skillSlug)
     ipcLog.info(`Deleted skill: ${skillSlug}`)
   })
@@ -1842,7 +1842,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     const { join } = await import('path')
     const { shell } = await import('electron')
-    const { getWorkspaceSkillsPath } = await import('@craft-agent/shared/workspaces')
+    const { getWorkspaceSkillsPath } = await import('@creator-flow/shared/workspaces')
 
     const skillsDir = getWorkspaceSkillsPath(workspace.rootPath)
     const skillFile = join(skillsDir, skillSlug, 'SKILL.md')
@@ -1856,7 +1856,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     const { join } = await import('path')
     const { shell } = await import('electron')
-    const { getWorkspaceSkillsPath } = await import('@craft-agent/shared/workspaces')
+    const { getWorkspaceSkillsPath } = await import('@creator-flow/shared/workspaces')
 
     const skillsDir = getWorkspaceSkillsPath(workspace.rootPath)
     const skillDir = join(skillsDir, skillSlug)
@@ -1872,7 +1872,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { listStatuses } = await import('@craft-agent/shared/statuses')
+    const { listStatuses } = await import('@creator-flow/shared/statuses')
     return listStatuses(workspace.rootPath)
   })
 
@@ -1882,7 +1882,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { reorderStatuses } = await import('@craft-agent/shared/statuses')
+    const { reorderStatuses } = await import('@creator-flow/shared/statuses')
     reorderStatuses(workspace.rootPath, orderedIds)
   })
 
@@ -1895,16 +1895,16 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { listLabels } = await import('@craft-agent/shared/labels/storage')
+    const { listLabels } = await import('@creator-flow/shared/labels/storage')
     return listLabels(workspace.rootPath)
   })
 
   // Create a new label in a workspace
-  ipcMain.handle(IPC_CHANNELS.LABELS_CREATE, async (_event, workspaceId: string, input: import('@craft-agent/shared/labels').CreateLabelInput) => {
+  ipcMain.handle(IPC_CHANNELS.LABELS_CREATE, async (_event, workspaceId: string, input: import('@creator-flow/shared/labels').CreateLabelInput) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { createLabel } = await import('@craft-agent/shared/labels/crud')
+    const { createLabel } = await import('@creator-flow/shared/labels/crud')
     const label = createLabel(workspace.rootPath, input)
     windowManager.broadcastToAll(IPC_CHANNELS.LABELS_CHANGED, workspaceId)
     return label
@@ -1915,7 +1915,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { deleteLabel } = await import('@craft-agent/shared/labels/crud')
+    const { deleteLabel } = await import('@creator-flow/shared/labels/crud')
     const result = deleteLabel(workspace.rootPath, labelId)
     windowManager.broadcastToAll(IPC_CHANNELS.LABELS_CHANGED, workspaceId)
     return result
@@ -1926,16 +1926,16 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { listViews } = await import('@craft-agent/shared/views/storage')
+    const { listViews } = await import('@creator-flow/shared/views/storage')
     return listViews(workspace.rootPath)
   })
 
   // Save views (replaces full array)
-  ipcMain.handle(IPC_CHANNELS.VIEWS_SAVE, async (_event, workspaceId: string, views: import('@craft-agent/shared/views').ViewConfig[]) => {
+  ipcMain.handle(IPC_CHANNELS.VIEWS_SAVE, async (_event, workspaceId: string, views: import('@creator-flow/shared/views').ViewConfig[]) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { saveViews } = await import('@craft-agent/shared/views/storage')
+    const { saveViews } = await import('@creator-flow/shared/views/storage')
     saveViews(workspace.rootPath, views)
     // Broadcast labels changed since views are used alongside labels in sidebar
     windowManager.broadcastToAll(IPC_CHANNELS.LABELS_CHANGED, workspaceId)
@@ -2077,30 +2077,30 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // ============================================================
 
   ipcMain.handle(IPC_CHANNELS.THEME_GET_APP, async () => {
-    const { loadAppTheme } = await import('@craft-agent/shared/config/storage')
+    const { loadAppTheme } = await import('@creator-flow/shared/config/storage')
     return loadAppTheme()
   })
 
   // Preset themes (app-level)
   ipcMain.handle(IPC_CHANNELS.THEME_GET_PRESETS, async () => {
-    const { loadPresetThemes } = await import('@craft-agent/shared/config/storage')
+    const { loadPresetThemes } = await import('@creator-flow/shared/config/storage')
     // Pass bundled themes path from Electron resources (dist/resources/themes)
     const bundledThemesDir = join(__dirname, 'resources/themes')
     return loadPresetThemes(bundledThemesDir)
   })
 
   ipcMain.handle(IPC_CHANNELS.THEME_LOAD_PRESET, async (_event, themeId: string) => {
-    const { loadPresetTheme } = await import('@craft-agent/shared/config/storage')
+    const { loadPresetTheme } = await import('@creator-flow/shared/config/storage')
     return loadPresetTheme(themeId)
   })
 
   ipcMain.handle(IPC_CHANNELS.THEME_GET_COLOR_THEME, async () => {
-    const { getColorTheme } = await import('@craft-agent/shared/config/storage')
+    const { getColorTheme } = await import('@creator-flow/shared/config/storage')
     return getColorTheme()
   })
 
   ipcMain.handle(IPC_CHANNELS.THEME_SET_COLOR_THEME, async (_event, themeId: string) => {
-    const { setColorTheme } = await import('@craft-agent/shared/config/storage')
+    const { setColorTheme } = await import('@creator-flow/shared/config/storage')
     setColorTheme(themeId)
   })
 
@@ -2120,7 +2120,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Logo URL resolution (uses Node.js filesystem cache for provider domains)
   ipcMain.handle(IPC_CHANNELS.LOGO_GET_URL, async (_event, serviceUrl: string, provider?: string) => {
-    const { getLogoUrl } = await import('@craft-agent/shared/utils/logo')
+    const { getLogoUrl } = await import('@creator-flow/shared/utils/logo')
     const result = getLogoUrl(serviceUrl, provider)
     console.log(`[logo] getLogoUrl("${serviceUrl}", "${provider}") => "${result}"`)
     return result
@@ -2138,13 +2138,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Get notifications enabled setting
   ipcMain.handle(IPC_CHANNELS.NOTIFICATION_GET_ENABLED, async () => {
-    const { getNotificationsEnabled } = await import('@craft-agent/shared/config/storage')
+    const { getNotificationsEnabled } = await import('@creator-flow/shared/config/storage')
     return getNotificationsEnabled()
   })
 
   // Set notifications enabled setting (also triggers permission request if enabling)
   ipcMain.handle(IPC_CHANNELS.NOTIFICATION_SET_ENABLED, async (_event, enabled: boolean) => {
-    const { setNotificationsEnabled } = await import('@craft-agent/shared/config/storage')
+    const { setNotificationsEnabled } = await import('@creator-flow/shared/config/storage')
     setNotificationsEnabled(enabled)
 
     // If enabling, trigger a notification to request macOS permission

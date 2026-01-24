@@ -1,20 +1,20 @@
 /**
- * @craft-agent/shared
+ * @creator-flow/shared
  *
- * Shared business logic for Craft Agent.
+ * Shared business logic for CreatorFlow.
  * Used by the Electron app.
  *
  * Import specific modules via subpath exports:
- *   import { CraftAgent } from '@craft-agent/shared/agent';
- *   import { loadStoredConfig } from '@craft-agent/shared/config';
- *   import { getCredentialManager } from '@craft-agent/shared/credentials';
- *   import { CraftMcpClient } from '@craft-agent/shared/mcp';
- *   import { debug } from '@craft-agent/shared/utils';
- *   import { loadSource, createSource, getSourceCredentialManager } from '@craft-agent/shared/sources';
- *   import { createWorkspace, loadWorkspace } from '@craft-agent/shared/workspaces';
+ *   import { CreatorFlowAgent } from '@creator-flow/shared/agent';
+ *   import { loadStoredConfig } from '@creator-flow/shared/config';
+ *   import { getCredentialManager } from '@creator-flow/shared/credentials';
+ *   import { CraftMcpClient } from '@creator-flow/shared/mcp';
+ *   import { debug } from '@creator-flow/shared/utils';
+ *   import { loadSource, createSource, getSourceCredentialManager } from '@creator-flow/shared/sources';
+ *   import { createWorkspace, loadWorkspace } from '@creator-flow/shared/workspaces';
  *
  * Available modules:
- *   - agent: CraftAgent SDK wrapper, plan tools
+ *   - agent: CreatorFlowAgent SDK wrapper, plan tools
  *   - auth: OAuth, token management, auth state
  *   - clients: Craft API client
  *   - config: Storage, models, preferences

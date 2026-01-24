@@ -24,7 +24,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { useMenuComponents } from '@/components/ui/menu-context'
-import { getDocUrl, type DocFeature } from '@craft-agent/shared/docs/doc-links'
+import { getDocUrl, type DocFeature } from '@creator-flow/shared/docs/doc-links'
 
 export type SidebarMenuType = 'allChats' | 'flagged' | 'status' | 'sources' | 'skills' | 'labels' | 'views' | 'newChat'
 

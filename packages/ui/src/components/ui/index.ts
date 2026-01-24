@@ -1,5 +1,5 @@
 /**
- * UI primitives for @craft-agent/ui
+ * UI primitives for @creator-flow/ui
  */
 
 export { Spinner, type SpinnerProps, LoadingIndicator, type LoadingIndicatorProps } from './LoadingIndicator'

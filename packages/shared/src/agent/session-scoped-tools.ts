@@ -14,7 +14,7 @@
  * - source_credential_prompt: Prompt user for API credentials
  *
  * Source and Skill CRUD is done via standard file editing tools (Read/Write/Edit).
- * See ~/.craft-agent/docs/ for config format documentation.
+ * See ~/.creator-flow/docs/ for config format documentation.
  */
 
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
@@ -187,7 +187,7 @@ const sessionScopedToolCallbackRegistry = new Map<string, SessionScopedToolCallb
 
 /**
  * Register callbacks for a session's tools.
- * Called by CraftAgent when initializing.
+ * Called by CreatorFlowAgent when initializing.
  */
 export function registerSessionScopedToolCallbacks(
   sessionId: string,
@@ -199,7 +199,7 @@ export function registerSessionScopedToolCallbacks(
 
 /**
  * Unregister callbacks for a session.
- * Called by CraftAgent on dispose.
+ * Called by CreatorFlowAgent on dispose.
  */
 export function unregisterSessionScopedToolCallbacks(sessionId: string): void {
   sessionScopedToolCallbackRegistry.delete(sessionId);
@@ -355,16 +355,16 @@ Brief description of what this plan accomplishes.
 export function createConfigValidateTool(sessionId: string, workspaceRootPath: string) {
   return tool(
     'config_validate',
-    `Validate Craft Agent configuration files.
+    `Validate CreatorFlow configuration files.
 
 Use this after editing configuration files to check for errors before they take effect.
 Returns structured validation results with errors, warnings, and suggestions.
 
 **Targets:**
-- \`config\`: Validates ~/.craft-agent/config.json (workspaces, model, settings)
-- \`sources\`: Validates all sources in ~/.craft-agent/workspaces/{workspace}/sources/*/config.json
-- \`statuses\`: Validates ~/.craft-agent/workspaces/{workspace}/statuses/config.json (workflow states)
-- \`preferences\`: Validates ~/.craft-agent/preferences.json (user preferences)
+- \`config\`: Validates ~/.creator-flow/config.json (workspaces, model, settings)
+- \`sources\`: Validates all sources in ~/.creator-flow/workspaces/{workspace}/sources/*/config.json
+- \`statuses\`: Validates ~/.creator-flow/workspaces/{workspace}/statuses/config.json (workflow states)
+- \`preferences\`: Validates ~/.creator-flow/preferences.json (user preferences)
 - \`permissions\`: Validates permissions.json files (workspace, source, and app-level default)
 - \`all\`: Validates all configuration files
 
@@ -769,7 +769,7 @@ After creating or editing a source's config.json, run this tool to:
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found.\n\nCreate the source folder at:\n\`~/.craft-agent/workspaces/{workspace}/sources/${args.sourceSlug}/config.json\`\n\nSee \`${DOC_REFS.sources}\` for config format.`,
+              text: `Source '${args.sourceSlug}' not found.\n\nCreate the source folder at:\n\`~/.creator-flow/workspaces/{workspace}/sources/${args.sourceSlug}/config.json\`\n\nSee \`${DOC_REFS.sources}\` for config format.`,
             }],
             isError: true,
           };
@@ -1272,7 +1272,7 @@ A browser window will open for the user to complete authentication.
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.craft-agent/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1402,7 +1402,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.craft-agent/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1542,7 +1542,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.craft-agent/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1697,7 +1697,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.craft-agent/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1852,7 +1852,7 @@ source_credential_prompt({
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.craft-agent/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1926,7 +1926,7 @@ const sessionScopedToolsCache = new Map<string, ReturnType<typeof createSdkMcpSe
  * Creates and caches the provider if it doesn't exist.
  *
  * @param sessionId - Unique session identifier
- * @param workspaceRootPath - Absolute path to workspace folder (e.g., ~/.craft-agent/workspaces/xxx)
+ * @param workspaceRootPath - Absolute path to workspace folder (e.g., ~/.creator-flow/workspaces/xxx)
  */
 export function getSessionScopedTools(sessionId: string, workspaceRootPath: string): ReturnType<typeof createSdkMcpServer> {
   const cacheKey = `${sessionId}::${workspaceRootPath}`;
@@ -1934,7 +1934,7 @@ export function getSessionScopedTools(sessionId: string, workspaceRootPath: stri
   if (!cached) {
     // Create session-scoped tools that capture the sessionId and workspaceRootPath in their closures
     // Note: Source CRUD is done via standard file editing tools (Read/Write/Edit).
-    // See ~/.craft-agent/docs/ for config format documentation.
+    // See ~/.creator-flow/docs/ for config format documentation.
     cached = createSdkMcpServer({
       name: 'session',
       version: '1.0.0',

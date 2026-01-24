@@ -5,14 +5,14 @@
  */
 import { ipcMain } from 'electron'
 import { mainLog } from './logger'
-import { getAuthState, getSetupNeeds } from '@craft-agent/shared/auth'
-import { getCredentialManager } from '@craft-agent/shared/credentials'
-import { saveConfig, loadStoredConfig, generateWorkspaceId, type AuthType, type StoredConfig } from '@craft-agent/shared/config'
-import { getDefaultWorkspacesDir, generateUniqueWorkspacePath } from '@craft-agent/shared/workspaces'
-import { CraftOAuth, getMcpBaseUrl } from '@craft-agent/shared/auth'
-import { validateMcpConnection } from '@craft-agent/shared/mcp'
-import { getExistingClaudeToken, getExistingClaudeCredentials, isClaudeCliInstalled, runClaudeSetupToken, startClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState } from '@craft-agent/shared/auth'
-import { getCredentialManager as getCredentialManagerFn } from '@craft-agent/shared/credentials'
+import { getAuthState, getSetupNeeds } from '@creator-flow/shared/auth'
+import { getCredentialManager } from '@creator-flow/shared/credentials'
+import { saveConfig, loadStoredConfig, generateWorkspaceId, type AuthType, type StoredConfig } from '@creator-flow/shared/config'
+import { getDefaultWorkspacesDir, generateUniqueWorkspacePath } from '@creator-flow/shared/workspaces'
+import { CraftOAuth, getMcpBaseUrl } from '@creator-flow/shared/auth'
+import { validateMcpConnection } from '@creator-flow/shared/mcp'
+import { getExistingClaudeToken, getExistingClaudeCredentials, isClaudeCliInstalled, runClaudeSetupToken, startClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState } from '@creator-flow/shared/auth'
+import { getCredentialManager as getCredentialManagerFn } from '@creator-flow/shared/credentials'
 import {
   IPC_CHANNELS,
   type OnboardingSaveResult,

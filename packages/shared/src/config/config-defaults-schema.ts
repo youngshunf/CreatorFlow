@@ -3,7 +3,7 @@
  * This file contains the default values for all configuration options.
  */
 
-import type { AuthType } from '@craft-agent/core/types';
+import type { AuthType } from '@creator-flow/core/types';
 import type { PermissionMode } from '../agent/mode-manager.ts';
 import type { ThinkingLevel } from '../agent/thinking-levels.ts';
 
@@ -31,7 +31,7 @@ export interface ConfigDefaults {
  */
 export const BUNDLED_CONFIG_DEFAULTS: ConfigDefaults = {
   version: '1.0',
-  description: 'Default configuration values for Craft Agent',
+  description: 'Default configuration values for CreatorFlow',
   defaults: {
     authType: 'api_key',
     notificationsEnabled: true,

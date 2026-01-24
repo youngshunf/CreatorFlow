@@ -13,7 +13,7 @@ import type { AppShellContextType } from '@/context/AppShellContext'
 import { OnboardingWizard, ReauthScreen } from '@/components/onboarding'
 import { ResetConfirmationDialog } from '@/components/ResetConfirmationDialog'
 import { SplashScreen } from '@/components/SplashScreen'
-import { TooltipProvider } from '@craft-agent/ui'
+import { TooltipProvider } from '@creator-flow/ui'
 import { FocusProvider } from '@/context/FocusContext'
 import { ModalProvider } from '@/context/ModalContext'
 import { useGlobalShortcuts } from '@/hooks/keyboard'
@@ -41,7 +41,7 @@ import { sourcesAtom } from '@/atoms/sources'
 import { skillsAtom } from '@/atoms/skills'
 import { extractBadges } from '@/lib/mentions'
 import { getDefaultStore } from 'jotai'
-import { ShikiThemeProvider, PlatformProvider } from '@craft-agent/ui'
+import { ShikiThemeProvider, PlatformProvider } from '@creator-flow/ui'
 
 type AppState = 'loading' | 'onboarding' | 'reauth' | 'ready'
 
@@ -1215,7 +1215,7 @@ export default function App() {
     openNewChat,
   ])
 
-  // Platform actions for @craft-agent/ui components (overlays, etc.)
+  // Platform actions for @creator-flow/ui components (overlays, etc.)
   // Memoized to prevent re-renders when these callbacks don't change
   // NOTE: Must be defined before early returns to maintain consistent hook order
   const platformActions = useMemo(() => ({

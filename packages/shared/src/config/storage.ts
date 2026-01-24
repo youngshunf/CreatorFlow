@@ -12,7 +12,7 @@ import { findIconFile } from '../utils/icon.ts';
 import { initializeDocs } from '../docs/index.ts';
 import { expandPath, toPortablePath } from '../utils/paths.ts';
 import { CONFIG_DIR } from './paths.ts';
-import type { StoredAttachment, StoredMessage } from '@craft-agent/core/types';
+import type { StoredAttachment, StoredMessage } from '@creator-flow/core/types';
 import type { Plan } from '../agent/plan-types.ts';
 import type { PermissionMode } from '../agent/mode-manager.ts';
 import { BUNDLED_CONFIG_DEFAULTS, type ConfigDefaults } from './config-defaults-schema.ts';
@@ -26,10 +26,10 @@ export type {
   McpAuthType,
   AuthType,
   OAuthCredentials,
-} from '@craft-agent/core/types';
+} from '@creator-flow/core/types';
 
 // Import for local use
-import type { Workspace, AuthType } from '@craft-agent/core/types';
+import type { Workspace, AuthType } from '@creator-flow/core/types';
 
 // Config stored in JSON file (credentials stored in encrypted file, not here)
 export interface StoredConfig {
@@ -97,7 +97,7 @@ export function ensureConfigDir(bundledResourcesDir?: string): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
-  // Initialize bundled docs (creates ~/.craft-agent/docs/ with sources.md, agents.md, permissions.md)
+  // Initialize bundled docs (creates ~/.creator-flow/docs/ with sources.md, agents.md, permissions.md)
   initializeDocs();
 
   // Initialize config defaults
@@ -536,7 +536,7 @@ function ensureWorkspaceDir(workspaceId: string): string {
 
 
 // Re-export types from core for convenience
-export type { StoredAttachment, StoredMessage } from '@craft-agent/core/types';
+export type { StoredAttachment, StoredMessage } from '@creator-flow/core/types';
 
 export interface WorkspaceConversation {
   messages: StoredMessage[];
@@ -763,7 +763,7 @@ const APP_THEMES_DIR = join(CONFIG_DIR, 'themes');
 
 /**
  * Get the app-level themes directory.
- * Preset themes are stored at ~/.craft-agent/themes/
+ * Preset themes are stored at ~/.creator-flow/themes/
  */
 export function getAppThemesDir(): string {
   return APP_THEMES_DIR;

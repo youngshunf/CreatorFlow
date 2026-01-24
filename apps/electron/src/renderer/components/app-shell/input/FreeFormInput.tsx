@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Loader2,
 } from 'lucide-react'
-import { Icon_Home, Icon_Folder } from '@craft-agent/ui'
+import { Icon_Home, Icon_Folder } from '@creator-flow/ui'
 
 import * as storage from '@/lib/local-storage'
 
@@ -31,10 +31,10 @@ import {
   InlineLabelMenu,
   useInlineLabelMenu,
 } from '@/components/ui/label-menu'
-import type { LabelConfig } from '@craft-agent/shared/labels'
+import type { LabelConfig } from '@creator-flow/shared/labels'
 import { parseMentions } from '@/lib/mentions'
 import { RichTextInput, type RichTextInputHandle } from '@/components/ui/rich-text-input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@craft-agent/ui'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@creator-flow/ui'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -58,9 +58,9 @@ import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { FreeFormInputContextBadge } from './FreeFormInputContextBadge'
 import type { FileAttachment, LoadedSource, LoadedSkill } from '../../../../shared/types'
-import type { PermissionMode } from '@craft-agent/shared/agent/modes'
-import { PERMISSION_MODE_ORDER } from '@craft-agent/shared/agent/modes'
-import { type ThinkingLevel, THINKING_LEVELS, getThinkingLevelName } from '@craft-agent/shared/agent/thinking-levels'
+import type { PermissionMode } from '@creator-flow/shared/agent/modes'
+import { PERMISSION_MODE_ORDER } from '@creator-flow/shared/agent/modes'
+import { type ThinkingLevel, THINKING_LEVELS, getThinkingLevelName } from '@creator-flow/shared/agent/thinking-levels'
 import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
 import { EscapeInterruptOverlay } from './EscapeInterruptOverlay'
 

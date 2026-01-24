@@ -47,7 +47,7 @@ export interface AppShellContextType {
   /** All skills for this workspace - provided by AppShell component (for @mentions) */
   skills?: LoadedSkill[]
   /** All label configs (tree) for label menu and badge display */
-  labels?: import('@craft-agent/shared/labels').LabelConfig[]
+  labels?: import('@creator-flow/shared/labels').LabelConfig[]
   /** Callback when session labels change */
   onSessionLabelsChange?: (sessionId: string, labels: string[]) => void
   /** Enabled permission modes for Shift+Tab cycling */

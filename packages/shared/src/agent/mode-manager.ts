@@ -160,7 +160,7 @@ class ModeManager {
 
     debug(`[Mode] Set permission mode to ${mode} for session ${sessionId}`);
 
-    // Notify callbacks (for CraftAgent internal sync)
+    // Notify callbacks (for CreatorFlowAgent internal sync)
     const callbacks = this.callbacks.get(sessionId);
     if (callbacks?.onStateChange) {
       callbacks.onStateChange(newState);
@@ -1347,7 +1347,7 @@ export function shouldAllowToolInMode(
   // Handle MCP tools - allow read-only, block write operations
   if (toolName.startsWith('mcp__')) {
     // Always allow preferences and documentation tools (read-only, always available)
-    if (toolName.startsWith('mcp__preferences__') || toolName.startsWith('mcp__craft-agents-docs__')) {
+    if (toolName.startsWith('mcp__preferences__') || toolName.startsWith('mcp__creator-flows-docs__')) {
       return { allowed: true };
     }
 

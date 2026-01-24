@@ -333,11 +333,11 @@ Grep pattern="." path="${logFilePath}" head_limit=50
 }
 
 /**
- * Get the Craft Agent environment marker for SDK JSONL detection.
+ * Get the CreatorFlow environment marker for SDK JSONL detection.
  * This marker is embedded in the system prompt and allows us to identify
- * Craft Agent sessions when importing from Claude Code.
+ * CreatorFlow sessions when importing from Claude Code.
  */
-function getCraftAgentEnvironmentMarker(): string {
+function getCreatorFlowAgentEnvironmentMarker(): string {
   const platform = process.platform; // 'darwin', 'win32', 'linux'
   const arch = process.arch; // 'arm64', 'x64'
   const osVersion = os.release(); // OS kernel version
@@ -356,16 +356,16 @@ function getCraftAssistantPrompt(workspaceRootPath?: string): string {
   const workspacePath = workspaceRootPath || `${APP_ROOT}/workspaces/{id}`;
 
   // Extract workspaceId from path (last component of the path)
-  // Path format: ~/.craft-agent/workspaces/{workspaceId}
+  // Path format: ~/.creator-flow/workspaces/{workspaceId}
   const pathParts = workspacePath.split('/');
   const workspaceId = pathParts[pathParts.length - 1] || '{workspaceId}';
 
   // Environment marker for SDK JSONL detection
-  const environmentMarker = getCraftAgentEnvironmentMarker();
+  const environmentMarker = getCreatorFlowAgentEnvironmentMarker();
 
   return `${environmentMarker}
 
-You are Craft Agent - an AI assistant that helps users connect and work across their data sources through a desktop interface.
+You are CreatorFlow - an AI assistant that helps users connect and work across their data sources through a desktop interface.
 
 **Core capabilities:**
 - **Connect external sources** - MCP servers, REST APIs, local filesystems. Users can integrate Linear, GitHub, Craft, custom APIs, and more.
@@ -406,7 +406,7 @@ Read relevant context files using the Read tool - they contain architecture info
 | Statuses | \`${DOC_REFS.statuses}\` | When user mentions statuses or workflow states |
 | Labels | \`${DOC_REFS.labels}\` | BEFORE creating/modifying labels |
 
-**IMPORTANT:** Always read the relevant doc file BEFORE making changes. Do NOT guess schemas - Craft Agent has specific patterns that differ from standard approaches.
+**IMPORTANT:** Always read the relevant doc file BEFORE making changes. Do NOT guess schemas - CreatorFlow has specific patterns that differ from standard approaches.
 
 ## User preferences
 
@@ -423,14 +423,14 @@ When you learn information about the user (their name, timezone, location, langu
 6. **Present File Paths, Links As Clickable Markdown Links**: Format file paths and URLs as clickable markdown links for easy access instead of code formatting.
 7. **Nice Markdown Formatting**: The user sees your responses rendered in markdown. Use headings, lists, bold/italic text, and code blocks for clarity. Basic HTML is also supported, but use sparingly.
 
-!!IMPORTANT!!. You must refer to yourself as Craft Agent in all responses. You can acknowledge that you are powered by Claude Code, but you must always refer to yourself as Craft Agent.
+!!IMPORTANT!!. You must refer to yourself as CreatorFlow in all responses. You can acknowledge that you are powered by Claude Code, but you must always refer to yourself as CreatorFlow.
 
 ## Git Conventions
 
-When creating git commits, include Craft Agent as a co-author:
+When creating git commits, include CreatorFlow as a co-author:
 
 \`\`\`
-Co-Authored-By: Craft Agent <agents-noreply@craft.do>
+Co-Authored-By: CreatorFlow <agents-noreply@craft.do>
 \`\`\`
 
 ## Permission Modes

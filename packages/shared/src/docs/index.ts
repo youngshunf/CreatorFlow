@@ -4,7 +4,7 @@
  * Provides access to built-in documentation that Claude can reference
  * when performing configuration tasks (sources, agents, permissions, etc.).
  *
- * Docs are stored at ~/.craft-agent/docs/ and copied on first run.
+ * Docs are stored at ~/.creator-flow/docs/ and copied on first run.
  * Source content lives in packages/shared/assets/docs/*.md for easier editing.
  */
 
@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 
 import { isDebugEnabled } from '../utils/debug.ts';
 import { getAppVersion } from '../version/app-version.ts';
 
-const CONFIG_DIR = join(homedir(), '.craft-agent');
+const CONFIG_DIR = join(homedir(), '.creator-flow');
 const DOCS_DIR = join(CONFIG_DIR, 'docs');
 
 // Track if docs have been initialized this session (prevents re-init on hot reload)
@@ -95,7 +95,7 @@ export function getDocPath(filename: string): string {
 
 // App root path reference for use in prompts
 // Using ~ for display since actual path varies per system/instance
-export const APP_ROOT = '~/.craft-agent';
+export const APP_ROOT = '~/.creator-flow';
 
 /**
  * Documentation file references for use in error messages and tool descriptions.
