@@ -218,7 +218,7 @@ export default function PreferencesPage() {
               />
               <SettingsInput
                 label={t('时区')}
-                description={t("用于“明天”或“下周”等相对日期")}
+                description={t('用于"明天"或"下周"等相对日期')}
                 value={formState.timezone}
                 onChange={(v) => updateField('timezone', v)}
                 placeholder={t('例如：Asia/Shanghai')}

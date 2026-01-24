@@ -203,7 +203,7 @@
   ["已阻止 — 无论如何都会阻止写入工具", "Blocked — write tools blocked regardless"],
   ["隐私设置", "Privacy Settings"],
   ["应用设置", "App Settings"],
-  ["用于"明天"或"下周"等相对日期", "For relative dates like \"tomorrow\" or \"next week\""],
+  ["用于\"明天\"或\"下周\"等相对日期", "For relative dates like \"tomorrow\" or \"next week\""],
   ["语言", "Language"],
   ["元数据", "Metadata"],
   ["允许播放通知声音", "Allow playing notification sounds"],

@@ -210,7 +210,7 @@ ${JSON.stringify(texts, null, 2)}
 
 请只返回 JSON 数组，不要其他内容。`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('http://localhost:62311/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
