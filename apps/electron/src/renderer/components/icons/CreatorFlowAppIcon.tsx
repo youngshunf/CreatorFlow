@@ -1,4 +1,4 @@
-import craftLogo from "@/assets/craft_logo_c.svg"
+import logoIcon from "@/assets/logo-icon.svg"
 
 interface CreatorFlowAppIconProps {
   className?: string
@@ -6,13 +6,13 @@ interface CreatorFlowAppIconProps {
 }
 
 /**
- * CreatorFlowAppIcon - Displays the Craft logo (colorful "C" icon)
+ * CreatorFlowAppIcon - 显示创流 App 图标
  */
 export function CreatorFlowAppIcon({ className, size = 64 }: CreatorFlowAppIconProps) {
   return (
     <img
-      src={craftLogo}
-      alt="Craft"
+      src={logoIcon}
+      alt="创流"
       width={size}
       height={size}
       className={className}
