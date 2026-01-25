@@ -264,6 +264,10 @@
     "Branch"
   ],
   [
+    "访问",
+    "Access"
+  ],
+  [
     "补充限流文档",
     "Add rate limit documentation"
   ],
@@ -422,6 +426,10 @@
   [
     "换行",
     "Line break"
+  ],
+  [
+    "模式",
+    "Pattern"
   ],
   [
     "仅允许只读操作（list、get、search）",
@@ -1044,6 +1052,10 @@
     "Search data sources..."
   ],
   [
+    "搜索模式...",
+    "Search patterns..."
+  ],
+  [
     "所有对话",
     "All Conversations"
   ],
@@ -1234,6 +1246,10 @@
   [
     "未配置自定义权限",
     "No custom permissions configured"
+  ],
+  [
+    "未配置权限",
+    "No permissions configured"
   ],
   [
     "未配置自动应用规则",
@@ -1614,6 +1630,10 @@
   [
     "指令",
     "Instructions"
+  ],
+  [
+    "注释",
+    "Comment"
   ],
   [
     "智能体的上下文和指南",
