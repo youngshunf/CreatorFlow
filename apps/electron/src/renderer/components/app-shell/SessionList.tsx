@@ -391,7 +391,7 @@ function SessionItem({
                       permissionMode === 'allow-all' && "bg-accent/10 text-accent"
                     )}
                   >
-                    {PERMISSION_MODE_CONFIG[permissionMode].shortName}
+                    {permissionMode === 'safe' ? t('探索') : permissionMode === 'ask' ? t('询问') : t('执行')}
                   </span>
                 )}
                 {/* Label badges — each badge opens its own LabelValuePopover for
@@ -477,37 +477,37 @@ function SessionItem({
                     <StyledDropdownMenuContent align="start">
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(item.sharedUrl!)}>
                         <Globe />
-                        Open in Browser
+                        {t('在浏览器中打开')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         await navigator.clipboard.writeText(item.sharedUrl!)
-                        toast.success('Link copied to clipboard')
+                        toast.success(t('链接已复制到剪贴板'))
                       }}>
                         <Copy />
-                        Copy Link
+                        {t('复制链接')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'updateShare' })
                         if (result?.success) {
-                          toast.success('Share updated')
+                          toast.success(t('分享已更新'))
                         } else {
-                          toast.error('Failed to update share', { description: result?.error })
+                          toast.error(t('更新分享失败'), { description: result?.error })
                         }
                       }}>
                         <RefreshCw />
-                        Update Share
+                        {t('更新分享')}
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuSeparator />
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'revokeShare' })
                         if (result?.success) {
-                          toast.success('Sharing stopped')
+                          toast.success(t('已停止分享'))
                         } else {
-                          toast.error('Failed to stop sharing', { description: result?.error })
+                          toast.error(t('停止分享失败'), { description: result?.error })
                         }
                       }} variant="destructive">
                         <Link2Off />
-                        Stop Sharing
+                        {t('停止分享')}
                       </StyledDropdownMenuItem>
                     </StyledDropdownMenuContent>
                   </DropdownMenu>
