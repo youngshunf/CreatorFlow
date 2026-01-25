@@ -419,6 +419,7 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
           activeCommands={activeCommands}
           onSelect={handleSelect}
           showFilter
+          showDescription
         />
       </PopoverContent>
     </Popover>
