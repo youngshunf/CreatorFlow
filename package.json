@@ -60,7 +60,18 @@
     "oss:sync": "bun run scripts/oss-sync.ts",
     "i18n:scan": "bun run scripts/i18n-translate.ts --scan",
     "i18n:translate": "bun run scripts/i18n-translate.ts --translate",
-    "i18n:translate:all": "bun run scripts/i18n-translate.ts --translate --all"
+    "i18n:translate:all": "bun run scripts/i18n-translate.ts --translate --all",
+    "server:dev": "cd apps/server && bun run dev",
+    "server:start": "cd apps/server && bun run start",
+    "server:build": "cd apps/server && bun run build",
+    "server:db:generate": "cd apps/server && bun run db:generate",
+    "server:db:migrate": "cd apps/server && bun run db:migrate",
+    "server:db:push": "cd apps/server && bun run db:push",
+    "server:db:studio": "cd apps/server && bun run db:studio",
+    "server:typecheck": "cd apps/server && bun run typecheck",
+    "admin:dev": "cd apps/admin && bun run dev",
+    "admin:build": "cd apps/admin && bun run build",
+    "admin:preview": "cd apps/admin && bun run preview"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.947.0",
