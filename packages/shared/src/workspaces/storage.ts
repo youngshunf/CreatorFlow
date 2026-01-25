@@ -33,6 +33,9 @@ import type {
 const CONFIG_DIR = join(homedir(), '.creator-flow');
 const DEFAULT_WORKSPACES_DIR = join(CONFIG_DIR, 'workspaces');
 
+/** Subdirectory name for workspace internal data (sessions, sources, skills, config) */
+const WORKSPACE_DATA_DIR = '.creator-flow';
+
 // ============================================================
 // Path Utilities
 // ============================================================
@@ -63,11 +66,19 @@ export function getWorkspacePath(workspaceId: string): string {
 }
 
 /**
+ * Get path to workspace data directory (.creator-flow)
+ * @param rootPath - Absolute path to workspace root folder
+ */
+export function getWorkspaceDataPath(rootPath: string): string {
+  return join(rootPath, WORKSPACE_DATA_DIR);
+}
+
+/**
  * Get path to workspace sources directory
  * @param rootPath - Absolute path to workspace root folder
  */
 export function getWorkspaceSourcesPath(rootPath: string): string {
-  return join(rootPath, 'sources');
+  return join(rootPath, WORKSPACE_DATA_DIR, 'sources');
 }
 
 /**
@@ -75,7 +86,7 @@ export function getWorkspaceSourcesPath(rootPath: string): string {
  * @param rootPath - Absolute path to workspace root folder
  */
 export function getWorkspaceSessionsPath(rootPath: string): string {
-  return join(rootPath, 'sessions');
+  return join(rootPath, WORKSPACE_DATA_DIR, 'sessions');
 }
 
 /**
@@ -83,7 +94,7 @@ export function getWorkspaceSessionsPath(rootPath: string): string {
  * @param rootPath - Absolute path to workspace root folder
  */
 export function getWorkspaceSkillsPath(rootPath: string): string {
-  return join(rootPath, 'skills');
+  return join(rootPath, WORKSPACE_DATA_DIR, 'skills');
 }
 
 // ============================================================
@@ -91,11 +102,19 @@ export function getWorkspaceSkillsPath(rootPath: string): string {
 // ============================================================
 
 /**
+ * Get path to workspace config.json
+ * @param rootPath - Absolute path to workspace root folder
+ */
+function getWorkspaceConfigPath(rootPath: string): string {
+  return join(rootPath, WORKSPACE_DATA_DIR, 'config.json');
+}
+
+/**
  * Load workspace config.json from a workspace folder
  * @param rootPath - Absolute path to workspace root folder
  */
 export function loadWorkspaceConfig(rootPath: string): WorkspaceConfig | null {
-  const configPath = join(rootPath, 'config.json');
+  const configPath = getWorkspaceConfigPath(rootPath);
   if (!existsSync(configPath)) return null;
 
   try {
@@ -117,8 +136,9 @@ export function loadWorkspaceConfig(rootPath: string): WorkspaceConfig | null {
  * @param rootPath - Absolute path to workspace root folder
  */
 export function saveWorkspaceConfig(rootPath: string, config: WorkspaceConfig): void {
-  if (!existsSync(rootPath)) {
-    mkdirSync(rootPath, { recursive: true });
+  const dataPath = getWorkspaceDataPath(rootPath);
+  if (!existsSync(dataPath)) {
+    mkdirSync(dataPath, { recursive: true });
   }
 
   // Convert paths to portable form for cross-machine compatibility
@@ -134,7 +154,7 @@ export function saveWorkspaceConfig(rootPath: string, config: WorkspaceConfig): 
     };
   }
 
-  writeFileSync(join(rootPath, 'config.json'), JSON.stringify(storageConfig, null, 2));
+  writeFileSync(getWorkspaceConfigPath(rootPath), JSON.stringify(storageConfig, null, 2));
 }
 
 // ============================================================
@@ -275,13 +295,14 @@ export function createWorkspaceAtPath(
   const globalDefaults = loadConfigDefaults();
 
   // Merge global defaults with provided defaults
+  // Set workingDirectory to rootPath by default (workspace folder is the default working directory)
   const workspaceDefaults: WorkspaceConfig['defaults'] = {
     model: DEFAULT_MODEL,
     permissionMode: globalDefaults.workspaceDefaults.permissionMode,
     cyclablePermissionModes: globalDefaults.workspaceDefaults.cyclablePermissionModes,
     thinkingLevel: globalDefaults.workspaceDefaults.thinkingLevel,
     enabledSourceSlugs: [],
-    workingDirectory: undefined,
+    workingDirectory: rootPath, // Default to workspace root path
     ...defaults, // User-provided defaults override global defaults
   };
 
@@ -295,8 +316,9 @@ export function createWorkspaceAtPath(
     updatedAt: now,
   };
 
-  // Create workspace directory structure
+  // Create workspace directory structure (all under .creator-flow)
   mkdirSync(rootPath, { recursive: true });
+  mkdirSync(getWorkspaceDataPath(rootPath), { recursive: true });
   mkdirSync(getWorkspaceSourcesPath(rootPath), { recursive: true });
   mkdirSync(getWorkspaceSessionsPath(rootPath), { recursive: true });
   mkdirSync(getWorkspaceSkillsPath(rootPath), { recursive: true });
@@ -318,14 +340,17 @@ export function createWorkspaceAtPath(
 }
 
 /**
- * Delete a workspace folder and all its contents
+ * Delete a workspace data folder (.creator-flow) and its contents.
+ * Only removes the .creator-flow subdirectory, preserving user's project files.
  * @param rootPath - Absolute path to workspace root folder
  */
 export function deleteWorkspaceFolder(rootPath: string): boolean {
-  if (!existsSync(rootPath)) return false;
+  const dataPath = getWorkspaceDataPath(rootPath);
+  if (!existsSync(dataPath)) return false;
 
   try {
-    rmSync(rootPath, { recursive: true });
+    // Only delete the .creator-flow data directory, not the user's project folder
+    rmSync(dataPath, { recursive: true });
     return true;
   } catch {
     return false;
@@ -337,7 +362,7 @@ export function deleteWorkspaceFolder(rootPath: string): boolean {
  * @param rootPath - Absolute path to check
  */
 export function isValidWorkspace(rootPath: string): boolean {
-  return existsSync(join(rootPath, 'config.json'));
+  return existsSync(getWorkspaceConfigPath(rootPath));
 }
 
 /**
@@ -431,7 +456,8 @@ export function isLocalMcpEnabled(rootPath: string): boolean {
  * @param workspaceName - Display name for the workspace (used in plugin name)
  */
 export function ensurePluginManifest(rootPath: string, workspaceName: string): void {
-  const pluginDir = join(rootPath, '.claude-plugin');
+  const dataPath = getWorkspaceDataPath(rootPath);
+  const pluginDir = join(dataPath, '.claude-plugin');
   const manifestPath = join(pluginDir, 'plugin.json');
 
   if (existsSync(manifestPath)) return;

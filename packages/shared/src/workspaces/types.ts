@@ -4,11 +4,16 @@
  * Workspaces are the top-level organizational unit. Everything (sources, sessions)
  * is scoped to a workspace.
  *
- * Directory structure:
- * ~/.creator-flow/workspaces/{slug}/
- *   ├── config.json      - Workspace settings
- *   ├── sources/         - Data sources (MCP, API, local)
- *   └── sessions/        - Conversation sessions
+ * Directory structure (all workspace data is under .creator-flow/ to avoid mixing with user files):
+ * {workspaceRoot}/
+ *   └── .creator-flow/       - All workspace data (hidden from user's project files)
+ *       ├── config.json      - Workspace settings
+ *       ├── sources/         - Data sources (MCP, API, local)
+ *       ├── sessions/        - Conversation sessions
+ *       ├── skills/          - Agent skills
+ *       ├── statuses/        - Status configuration and icons
+ *       ├── labels/          - Label configuration
+ *       └── permissions.json - Workspace-level permissions
  */
 
 import type { PermissionMode } from '../agent/mode-manager.ts';

@@ -18,6 +18,7 @@ export {
   getDefaultWorkspacesDir,
   ensureDefaultWorkspacesDir,
   getWorkspacePath,
+  getWorkspaceDataPath,
   getWorkspaceSourcesPath,
   getWorkspaceSessionsPath,
   getWorkspaceSkillsPath,

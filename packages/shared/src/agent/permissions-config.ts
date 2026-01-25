@@ -281,7 +281,7 @@ export function validatePermissionsConfig(config: PermissionsConfigFile): string
  * Get path to workspace permissions.json
  */
 export function getWorkspacePermissionsPath(workspaceRootPath: string): string {
-  return join(workspaceRootPath, 'permissions.json');
+  return join(workspaceRootPath, '.creator-flow', 'permissions.json');
 }
 
 /**

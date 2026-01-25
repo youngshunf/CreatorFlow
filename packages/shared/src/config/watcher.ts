@@ -9,10 +9,13 @@
  * - ~/.creator-flow/preferences.json - User preferences
  * - ~/.creator-flow/theme.json - App-level theme overrides
  * - ~/.creator-flow/themes/*.json - Preset theme files (app-level)
- * - ~/.creator-flow/workspaces/{slug}/ - Workspace directory (recursive)
+ * - {workspaceRoot}/.creator-flow/ - Workspace data directory (recursive)
+ *   - config.json - Workspace configuration
  *   - sources/{slug}/config.json, guide.md, permissions.json
  *   - skills/{slug}/SKILL.md, icon.*
  *   - sessions/{id}/session.jsonl (header metadata only)
+ *   - statuses/config.json, statuses/icons/*
+ *   - labels/config.json
  *   - permissions.json
  */
 
@@ -341,23 +344,33 @@ export class ConfigWatcher {
 
   /**
    * Handle a file change within the workspace directory
+   * All workspace data is under .creator-flow/ subdirectory
    */
   private handleWorkspaceFileChange(relativePath: string, eventType: string): void {
     const parts = relativePath.split('/');
 
-    // Workspace-level permissions.json
-    if (relativePath === 'permissions.json') {
+    // All workspace data is now under .creator-flow/
+    // Skip if not in the data directory
+    if (parts[0] !== '.creator-flow') {
+      return;
+    }
+
+    // Remove the .creator-flow prefix for easier matching
+    const dataParts = parts.slice(1);
+
+    // Workspace-level permissions.json (.creator-flow/permissions.json)
+    if (dataParts.length === 1 && dataParts[0] === 'permissions.json') {
       this.debounce('workspace-permissions', () => this.handleWorkspacePermissionsChange());
       return;
     }
 
-    // Sources changes: sources/{slug}/...
-    if (parts[0] === 'sources' && parts.length >= 2) {
-      const slug = parts[1]!;  // Safe: checked parts.length >= 2
-      const file = parts[2];
+    // Sources changes: .creator-flow/sources/{slug}/...
+    if (dataParts[0] === 'sources' && dataParts.length >= 2) {
+      const slug = dataParts[1]!;  // Safe: checked dataParts.length >= 2
+      const file = dataParts[2];
 
       // Directory-level changes (new/removed source folders)
-      if (parts.length === 2) {
+      if (dataParts.length === 2) {
         this.debounce('sources-dir', () => this.handleSourcesDirChange());
         return;
       }
@@ -373,13 +386,13 @@ export class ConfigWatcher {
       return;
     }
 
-    // Skills changes: skills/{slug}/...
-    if (parts[0] === 'skills' && parts.length >= 2) {
-      const slug = parts[1]!;  // Safe: checked parts.length >= 2
-      const file = parts[2];
+    // Skills changes: .creator-flow/skills/{slug}/...
+    if (dataParts[0] === 'skills' && dataParts.length >= 2) {
+      const slug = dataParts[1]!;  // Safe: checked dataParts.length >= 2
+      const file = dataParts[2];
 
       // Directory-level changes (new/removed skill folders)
-      if (parts.length === 2) {
+      if (dataParts.length === 2) {
         this.debounce('skills-dir', () => this.handleSkillsDirChange());
         return;
       }
@@ -394,12 +407,12 @@ export class ConfigWatcher {
       return;
     }
 
-    // Session metadata changes: sessions/{id}/session.jsonl
+    // Session metadata changes: .creator-flow/sessions/{id}/session.jsonl
     // Detects external modifications (other instances, scripts, manual edits).
     // Only reads line 1 (header) — lightweight even during active streaming.
-    if (parts[0] === 'sessions' && parts.length >= 3) {
-      const sessionId = parts[1]!;
-      const file = parts[2];
+    if (dataParts[0] === 'sessions' && dataParts.length >= 3) {
+      const sessionId = dataParts[1]!;
+      const file = dataParts[2];
 
       // Only watch actual session files, ignore .tmp (atomic write intermediates)
       if (file === 'session.jsonl') {
@@ -408,9 +421,9 @@ export class ConfigWatcher {
       return;
     }
 
-    // Statuses changes: statuses/...
-    if (parts[0] === 'statuses' && parts.length >= 2) {
-      const file = parts[1];
+    // Statuses changes: .creator-flow/statuses/...
+    if (dataParts[0] === 'statuses' && dataParts.length >= 2) {
+      const file = dataParts[1];
 
       // config.json change
       if (file === 'config.json') {
@@ -418,9 +431,9 @@ export class ConfigWatcher {
         return;
       }
 
-      // Icon file changes: statuses/icons/*.svg, *.png, etc.
-      if (file === 'icons' && parts.length >= 3) {
-        const iconFilename = parts[2];
+      // Icon file changes: .creator-flow/statuses/icons/*.svg, *.png, etc.
+      if (file === 'icons' && dataParts.length >= 3) {
+        const iconFilename = dataParts[2];
         if (iconFilename) {
           this.debounce(`statuses-icon:${iconFilename}`, () => {
             this.handleStatusIconChange(iconFilename);
@@ -430,9 +443,9 @@ export class ConfigWatcher {
       }
     }
 
-    // Labels changes: labels/...
-    if (parts[0] === 'labels' && parts.length >= 2) {
-      const file = parts[1];
+    // Labels changes: .creator-flow/labels/...
+    if (dataParts[0] === 'labels' && dataParts.length >= 2) {
+      const file = dataParts[1];
 
       // config.json change
       if (file === 'config.json') {

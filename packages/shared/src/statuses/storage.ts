@@ -24,9 +24,9 @@ import {
 import { migrateStatusColors } from '../colors/migrate.ts';
 import { debug } from '../utils/debug.ts';
 
-const STATUS_CONFIG_DIR = 'statuses';
-const STATUS_CONFIG_FILE = 'statuses/config.json';
-const STATUS_ICONS_DIR = 'statuses/icons';
+const STATUS_CONFIG_DIR = '.creator-flow/statuses';
+const STATUS_CONFIG_FILE = '.creator-flow/statuses/config.json';
+const STATUS_ICONS_DIR = '.creator-flow/statuses/icons';
 
 /**
  * Get default status configuration (matches current hardcoded behavior)
