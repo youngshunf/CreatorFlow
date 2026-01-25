@@ -35,6 +35,8 @@ import type {
   AuthRequestEvent,
   AuthCompletedEvent,
   UsageUpdateEvent,
+  InteractiveRequestEvent,
+  InteractiveCompletedEvent,
 } from '../types'
 import type { Message } from '../../../shared/types'
 import { generateMessageId, appendMessage } from '../helpers'
@@ -777,6 +779,61 @@ export function handleUsageUpdate(
       session: {
         ...session,
         tokenUsage: updatedTokenUsage,
+      },
+      streaming,
+    },
+    effects: [],
+  }
+}
+
+/**
+ * Handle interactive_request - return effect for parent to handle
+ * Similar to permission_request, prompts user for interactive input
+ */
+export function handleInteractiveRequest(
+  state: SessionState,
+  event: InteractiveRequestEvent
+): ProcessResult {
+  return {
+    state,
+    effects: [{
+      type: 'interactive_request',
+      request: event.request,
+    }]
+  }
+}
+
+/**
+ * Handle interactive_completed - update interactive-ui message status
+ * Called when user completes the interactive UI
+ */
+export function handleInteractiveCompleted(
+  state: SessionState,
+  event: InteractiveCompletedEvent
+): ProcessResult {
+  const { session, streaming } = state
+
+  // Update the interactive-ui message status
+  const updatedMessages = session.messages.map(m => {
+    if (
+      m.role === 'interactive-ui' &&
+      m.interactiveId === event.requestId &&
+      m.interactiveStatus === 'pending'
+    ) {
+      return {
+        ...m,
+        interactiveStatus: 'completed' as const,
+        interactiveResponse: event.response,
+      }
+    }
+    return m
+  })
+
+  return {
+    state: {
+      session: {
+        ...session,
+        messages: updatedMessages,
       },
       streaming,
     },

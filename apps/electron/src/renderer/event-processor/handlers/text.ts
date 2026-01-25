@@ -75,12 +75,32 @@ export function handleTextDelta(
  * Sets isStreaming: false, isPending: false.
  * If message not found, CREATES it (fixes race condition bug).
  * Uses complete text from SDK (event.text), not accumulated content.
+ * Uses messageId from main process to ensure consistency with persisted data.
  */
 export function handleTextComplete(
   state: SessionState,
   event: TextCompleteEvent
 ): SessionState {
   const { session } = state
+
+  // First, check if a message with this messageId already exists (from lazy loading)
+  // This prevents duplicates when disk-persisted messages are loaded
+  if (event.messageId) {
+    const existingByIdIndex = session.messages.findIndex(m => m.id === event.messageId)
+    if (existingByIdIndex !== -1) {
+      // Message already exists (loaded from disk) - just update it
+      const shouldUpdateTimestamp = !event.isIntermediate
+      const updatedSession = updateMessageAt(session, existingByIdIndex, {
+        content: event.text,
+        isStreaming: false,
+        isPending: false,
+        isIntermediate: event.isIntermediate,
+        turnId: event.turnId,
+        parentToolUseId: event.parentToolUseId,
+      }, shouldUpdateTimestamp)
+      return { session: updatedSession, streaming: null }
+    }
+  }
 
   // Find message by turnId (try streaming first, then any assistant)
   let msgIndex = findStreamingMessage(session.messages, event.turnId)
@@ -93,6 +113,8 @@ export function handleTextComplete(
     // Only update lastMessageAt for final (non-intermediate) messages
     const shouldUpdateTimestamp = !event.isIntermediate
     const updatedSession = updateMessageAt(session, msgIndex, {
+      // Update the ID to match main process's ID for consistency
+      id: event.messageId ?? session.messages[msgIndex].id,
       content: event.text,  // Complete text from SDK
       isStreaming: false,
       isPending: false,
@@ -106,8 +128,9 @@ export function handleTextComplete(
   // Message not found - CREATE IT
   // This handles the race condition where text_complete arrives
   // before text_delta's setSessions has been processed
+  // Use messageId from main process if available to ensure consistency
   const newMessage: Message = {
-    id: generateMessageId(),
+    id: event.messageId ?? generateMessageId(),
     role: 'assistant',
     content: event.text,
     timestamp: Date.now(),

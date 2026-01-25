@@ -158,3 +158,44 @@ For Warp-based automation or new features, the primary extension points are:
 - `apps/electron/src/main/sessions.ts` and `renderer` hooks/components for wiring new capabilities into the desktop UI.
 
 Future agents working in this repo should prefer using these existing layers and conventions rather than introducing parallel mechanisms for configuration, permissions, or session management.
+
+## Internationalization (i18n)
+
+### Overview
+The project uses a custom i18n system with Chinese text as translation keys. All user-facing text should be wrapped with the `t()` function.
+
+### Usage patterns
+
+**In `packages/ui` and `packages/shared`:**
+```typescript
+import { t } from '@creator-flow/shared/locale'
+
+// Usage
+{t('中文文本')}
+```
+
+**In `apps/electron` renderer (React components):**
+```typescript
+import { useT } from '../../hooks/useT'  // adjust path as needed
+
+const MyComponent = () => {
+  const t = useT()
+  return <div>{t('中文文本')}</div>
+}
+```
+
+### Translation files
+- **Source locale (Chinese):** `apps/electron/src/renderer/locales/zh.json` - Chinese keys map to themselves
+- **Target locales:** `apps/electron/src/renderer/locales/en.json`, etc. - Chinese keys map to translated values
+
+### Adding new translations
+1. Use `t('新的中文文本')` in your code
+2. Run the translation script to auto-extract and translate:
+   ```bash
+   bun run scripts/i18n-translate.ts --translate --lang=en
+   ```
+
+### Translation script
+- **Location:** `scripts/i18n-translate.ts`
+- **Scanned directories:** `apps/electron/src`, `packages/shared/src`, `packages/ui/src`
+- If translations are missing, check that the source directory is included in the `scanDirs` array in the script

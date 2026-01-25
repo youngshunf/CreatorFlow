@@ -17,6 +17,7 @@ import * as React from 'react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion, type Variants } from 'motion/react'
 import { File, Folder, FolderOpen, FileText, Image, FileCode, ChevronRight } from 'lucide-react'
+import { t } from '@creator-flow/shared/locale'
 import type { SessionFile } from '../../../shared/types'
 import { cn } from '@/lib/utils'
 import * as storage from '@/lib/local-storage'
@@ -370,7 +371,7 @@ export function SessionFilesSection({ sessionId, className }: SessionFilesSectio
     <div className={cn('flex flex-col h-full min-h-0', className)}>
       {/* Header - matches sidebar styling with select-none, extra top padding for visual balance */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 select-none">
-        <span className="text-xs font-medium text-muted-foreground">Files</span>
+        <span className="text-xs font-medium text-muted-foreground">{t('文件')}</span>
       </div>
 
       {/* File tree - px-2 is on nav to match LeftSidebar exactly (constrains grid width) */}
@@ -379,7 +380,7 @@ export function SessionFilesSection({ sessionId, className }: SessionFilesSectio
         {files.length === 0 ? (
           <div className="px-4 text-muted-foreground select-none">
             <p className="text-xs">
-              {isLoading ? 'Loading...' : 'Files attached or created by this chat will appear here.'}
+              {isLoading ? t('加载中...') : t('此聊天附加或创建的文件将显示在这里。')}
             </p>
           </div>
         ) : (

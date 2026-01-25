@@ -33,6 +33,7 @@ const CONFIG = {
   scanDirs: [
     'apps/electron/src/renderer',
     'packages/shared/src',
+    'packages/ui/src',
   ],
   
   // 文件扩展名

@@ -462,6 +462,8 @@ export class SessionManager {
   private configWatchers: Map<string, ConfigWatcher> = new Map()
   // Pending credential request resolvers (keyed by requestId)
   private pendingCredentialResolvers: Map<string, (response: import('../shared/types').CredentialResponse) => void> = new Map()
+  // Pending interactive UI request resolvers (keyed by requestId)
+  private pendingInteractiveResolvers: Map<string, (response: import('@creator-flow/shared/interactive-ui').InteractiveResponse) => void> = new Map()
   // Promise deduplication for lazy-loading messages (prevents race conditions)
   private messageLoadingPromises: Map<string, Promise<void>> = new Map()
   /**
@@ -2949,6 +2951,39 @@ To view this task's output:
   }
 
   /**
+   * Respond to a pending interactive UI request
+   * Returns true if the response was delivered, false if no pending request found
+   */
+  respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): boolean {
+    const managed = this.sessions.get(sessionId)
+    if (!managed) {
+      sessionLog.warn(`Cannot respond to interactive - session not found: ${sessionId}`)
+      return false
+    }
+
+    // Check for pending interactive resolver
+    const resolver = this.pendingInteractiveResolvers.get(requestId)
+    if (resolver) {
+      sessionLog.info(`Interactive response for ${requestId}: type=${response.type}`)
+      resolver(response)
+      this.pendingInteractiveResolvers.delete(requestId)
+
+      // Send completed event to renderer
+      this.sendEvent({
+        type: 'interactive_completed',
+        sessionId,
+        requestId,
+        response,
+      }, managed.workspace.id)
+
+      return true
+    } else {
+      sessionLog.warn(`Cannot respond to interactive - no pending request for ${requestId}`)
+      return false
+    }
+  }
+
+  /**
    * Set the permission mode for a session ('safe', 'ask', 'allow-all')
    */
   setSessionPermissionMode(sessionId: string, mode: PermissionMode): void {
@@ -3081,7 +3116,7 @@ To view this task's output:
           managed.lastFinalMessageId = assistantMessage.id
         }
 
-        this.sendEvent({ type: 'text_complete', sessionId, text: event.text, isIntermediate: event.isIntermediate, turnId: event.turnId, parentToolUseId: textParentToolUseId }, workspaceId)
+        this.sendEvent({ type: 'text_complete', sessionId, messageId: assistantMessage.id, text: event.text, isIntermediate: event.isIntermediate, turnId: event.turnId, parentToolUseId: textParentToolUseId }, workspaceId)
 
         // Persist session after complete message to prevent data loss on quit
         this.persistSession(managed)

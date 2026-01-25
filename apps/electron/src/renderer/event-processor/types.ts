@@ -6,6 +6,7 @@
  */
 
 import type { Session, Message, PermissionRequest, CredentialRequest, TypedError, PermissionMode, TodoState, AuthRequest, ToolDisplayMeta } from '../../shared/types'
+import type { InteractiveRequest } from '@creator-flow/shared/interactive-ui'
 
 /**
  * Streaming state for a session - replaces streamingTextRef
@@ -40,6 +41,8 @@ export interface TextDeltaEvent {
 export interface TextCompleteEvent {
   type: 'text_complete'
   sessionId: string
+  /** Message ID from main process - use this to avoid duplicate messages */
+  messageId?: string
   text: string
   turnId?: string
   isIntermediate?: boolean
@@ -401,6 +404,25 @@ export interface UsageUpdateEvent {
 }
 
 /**
+ * Interactive request event - agent requests user interaction via UI
+ */
+export interface InteractiveRequestEvent {
+  type: 'interactive_request'
+  sessionId: string
+  request: InteractiveRequest
+}
+
+/**
+ * Interactive completed event - user completed the interactive UI
+ */
+export interface InteractiveCompletedEvent {
+  type: 'interactive_completed'
+  sessionId: string
+  requestId: string
+  response: import('@creator-flow/shared/interactive-ui').InteractiveResponse
+}
+
+/**
  * Union of all agent events
  */
 export type AgentEvent =
@@ -440,6 +462,8 @@ export type AgentEvent =
   | AuthCompletedEvent
   | SourceActivatedEvent
   | UsageUpdateEvent
+  | InteractiveRequestEvent
+  | InteractiveCompletedEvent
 
 /**
  * Side effects that need to be handled outside the pure processor
@@ -447,6 +471,7 @@ export type AgentEvent =
 export type Effect =
   | { type: 'permission_request'; request: PermissionRequest }
   | { type: 'credential_request'; request: CredentialRequest }
+  | { type: 'interactive_request'; request: InteractiveRequest }
   | { type: 'generate_title'; sessionId: string; userMessage: string }
   | { type: 'permission_mode_changed'; sessionId: string; permissionMode: PermissionMode }
   | { type: 'auto_retry'; sessionId: string; originalMessage: string; sourceSlug: string }

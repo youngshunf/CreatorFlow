@@ -50,7 +50,8 @@
     "./network-interceptor": "./src/network-interceptor.ts",
     "./locale": "./src/locale/index.ts",
     "./locale/types": "./src/locale/types.ts",
-    "./locale/storage": "./src/locale/storage.ts"
+    "./locale/storage": "./src/locale/storage.ts",
+    "./interactive-ui": "./src/interactive-ui/index.ts"
   },
   "dependencies": {
     "@creator-flow/core": "workspace:*",

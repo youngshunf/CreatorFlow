@@ -1,6 +1,8 @@
 import type { PermissionRequest as PermissionRequestType, CredentialRequest as CredentialRequestType } from '../../../../shared/types'
+import type { InteractiveRequest as InteractiveRequestType } from '@creator-flow/shared/interactive-ui'
 import { PermissionRequest } from './structured/PermissionRequest'
 import { CredentialRequest } from './structured/CredentialRequest'
+import { InteractiveRequest } from './structured/InteractiveRequest'
 import type { StructuredInputState, StructuredResponse } from './structured/types'
 
 interface StructuredInputProps {
@@ -16,6 +18,7 @@ interface StructuredInputProps {
  * Routes to the appropriate component based on the input type:
  * - permission: PermissionRequest (bash command approval)
  * - credential: CredentialRequest (secure auth input)
+ * - interactive: InteractiveRequest (agent interactive UI)
  */
 export function StructuredInput({ state, onResponse, unstyled = false }: StructuredInputProps) {
   switch (state.type) {
@@ -31,6 +34,14 @@ export function StructuredInput({ state, onResponse, unstyled = false }: Structu
       return (
         <CredentialRequest
           request={state.data as CredentialRequestType}
+          onResponse={onResponse}
+          unstyled={unstyled}
+        />
+      )
+    case 'interactive':
+      return (
+        <InteractiveRequest
+          request={state.data as InteractiveRequestType}
           onResponse={onResponse}
           unstyled={unstyled}
         />

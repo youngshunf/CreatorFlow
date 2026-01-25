@@ -10,6 +10,7 @@
 
 import * as React from 'react'
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { t } from '@creator-flow/shared/locale'
 import { PanelHeader } from '../app-shell/PanelHeader'
 import { useSession as useSessionData, useAppShellContext } from '@/context/AppShellContext'
 import { Input } from '../ui/input'
@@ -161,9 +162,9 @@ export function SessionMetadataPanel({ sessionId, closeButton }: SessionMetadata
   if (!sessionId) {
     return (
       <div className="h-full flex flex-col">
-        <PanelHeader title="Chat Info" actions={closeButton} />
+        <PanelHeader title={t('聊天信息')} actions={closeButton} />
         <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">
-          <p className="text-sm text-center">No session selected</p>
+          <p className="text-sm text-center">{t('未选择会话')}</p>
         </div>
       </div>
     )
@@ -172,9 +173,9 @@ export function SessionMetadataPanel({ sessionId, closeButton }: SessionMetadata
   if (!session) {
     return (
       <div className="h-full flex flex-col">
-        <PanelHeader title="Chat Info" actions={closeButton} />
+        <PanelHeader title={t('聊天信息')} actions={closeButton} />
         <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">
-          <p className="text-sm text-center">Loading session...</p>
+          <p className="text-sm text-center">{t('正在加载会话...')}</p>
         </div>
       </div>
     )
@@ -182,7 +183,7 @@ export function SessionMetadataPanel({ sessionId, closeButton }: SessionMetadata
 
   return (
     <div ref={containerRef} className="h-full flex flex-col">
-      <PanelHeader title="Chat Info" actions={closeButton} />
+      <PanelHeader title={t('聊天信息')} actions={closeButton} />
 
       {/* Metadata section (Name + Notes) - fixed height based on state */}
       <div
@@ -192,13 +193,13 @@ export function SessionMetadataPanel({ sessionId, closeButton }: SessionMetadata
         {/* Name */}
         <div>
           <label className="text-xs font-medium text-muted-foreground block mb-1.5 select-none">
-            Name
+            {t('名称')}
           </label>
           <div className="rounded-lg bg-foreground-2 has-[:focus]:bg-background shadow-minimal transition-colors">
             <Input
               value={name}
               onChange={handleNameChange}
-              placeholder="Untitled"
+              placeholder={t('未命名')}
               className="h-9 py-2 text-sm border-0 shadow-none bg-transparent focus-visible:ring-0"
             />
           </div>
@@ -207,13 +208,13 @@ export function SessionMetadataPanel({ sessionId, closeButton }: SessionMetadata
         {/* Notes */}
         <div>
           <label className="text-xs font-medium text-muted-foreground block mb-1.5 select-none">
-            Notes
+            {t('备注')}
           </label>
           <div className="rounded-lg bg-foreground-2 has-[:focus]:bg-background shadow-minimal transition-colors">
             <Textarea
               value={notes}
               onChange={handleNotesChange}
-              placeholder={notesLoaded ? 'Add notes...' : 'Loading...'}
+              placeholder={notesLoaded ? t('添加备注...') : t('加载中...')}
               disabled={!notesLoaded}
               spellCheck={false}
               className="text-sm min-h-[80px] py-2 resize-y border-0 shadow-none bg-transparent focus-visible:ring-0 placeholder:select-none"

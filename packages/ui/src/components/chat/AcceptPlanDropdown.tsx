@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as ReactDOM from 'react-dom'
 import { Check, ChevronDown } from 'lucide-react'
+import { t } from '@creator-flow/shared/locale'
 import { cn } from '../../lib/utils'
 
 /**
@@ -157,7 +158,7 @@ export function AcceptPlanDropdown({
           style={{ '--shadow-color': '34, 136, 82' } as React.CSSProperties}
         >
           <Check className="h-3.5 w-3.5" />
-          <span>Accept Plan</span>
+          <span>{t('接受计划')}</span>
           <ChevronDown className={cn(
             "h-3 w-3 transition-transform duration-150",
             isOpen && "rotate-180"
@@ -186,9 +187,9 @@ export function AcceptPlanDropdown({
               "transition-colors"
             )}
           >
-            <span className="text-[13px] font-medium">Accept</span>
+            <span className="text-[13px] font-medium">{t('接受')}</span>
             <span className="text-xs text-muted-foreground">
-              Execute the plan immediately
+              {t('立即执行计划')}
             </span>
           </button>
 
@@ -202,9 +203,9 @@ export function AcceptPlanDropdown({
               "transition-colors"
             )}
           >
-            <span className="text-[13px] font-medium">Accept & Compact</span>
+            <span className="text-[13px] font-medium">{t('接受并压缩')}</span>
             <span className="text-xs text-muted-foreground">
-              Works best for complex, longer plans
+              {t('适合复杂的长计划')}
             </span>
           </button>
         </div>,

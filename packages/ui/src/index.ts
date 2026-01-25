@@ -183,3 +183,14 @@ export {
   Icon_Inbox,
   type IconProps,
 } from './components/icons'
+
+// Interactive UI
+export {
+  InteractiveFormRenderer,
+  InteractiveUIRenderer,
+  InteractiveUIParser,
+  hasInteractiveUI,
+  type InteractiveUIParserProps,
+  type InteractiveUIElement,
+  type InteractiveResponse,
+} from './components/interactive-ui'

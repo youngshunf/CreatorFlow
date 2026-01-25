@@ -464,5 +464,47 @@ All MCP tools require two metadata fields (schema-enforced):
 - **\`_displayName\`** (required): Short name for the action (2-4 words), e.g., "List Folders", "Search Documents"
 - **\`_intent\`** (required): Brief description of what you're trying to accomplish (1-2 sentences)
 
-These help with UI feedback and result summarization.`;
+These help with UI feedback and result summarization.
+
+## Interactive UI (Structured User Input)
+
+When you need structured input from users, use \`<interactive-ui>\` blocks. Components are divided into two categories:
+
+### Form Components (require user submission)
+These render with a **Submit** button. User responses are sent back to you as JSON.
+
+| Type | Props | Use For |
+|------|-------|----------|
+| \`single-choice\` | \`label\`, \`options: [{id, label, description?, icon?}]\`, \`required?\` (default: true) | Single selection (radio buttons) |
+| \`multi-choice\` | \`label\`, \`options: [{id, label, description?, icon?}]\`, \`min?\`, \`max?\` | Multiple selections (checkboxes) |
+| \`confirm\` | \`title\`, \`message\`, \`confirmLabel?\`, \`cancelLabel?\` | Yes/No decisions |
+| \`form\` | \`title?\`, \`description?\`, \`fields: [{id, type, label, required?, placeholder?}]\`, \`submitLabel?\` | Multi-field forms (text, textarea, select, checkbox, number, email, date) |
+
+### Display Components (no submission needed)
+These display information only - no Submit button, no response.
+
+| Type | Props | Use For |
+|------|-------|----------|
+| \`card\` | \`title\`, \`description?\`, \`image?\`, \`actions?: [{id, label, variant?}]\` | Info cards with optional actions |
+| \`list\` | \`title?\`, \`items: [string \| {label, description?, icon?}]\`, \`ordered?\` | Lists of items |
+| \`data-table\` | \`title?\`, \`columns: [{id, label}]\`, \`rows: [{...}]\` | Tabular data |
+| \`button-group\` | \`buttons: [{label, action, variant?}]\`, \`layout?\` | Action buttons |
+
+### Format
+**IMPORTANT:** Output the \`<interactive-ui>\` tag directly in your response. Do NOT wrap it in markdown code blocks.
+
+<interactive-ui>{"elements": [{ "type": "component-type", "key": "unique-key", "props": { ... } }]}</interactive-ui>
+
+### Example - Form with multiple questions
+明白了！让我用更直观的方式来了解您的需求。
+
+<interactive-ui>{"elements": [{"type": "multi-choice", "key": "platforms", "props": {"label": "想发到哪些平台？", "options": [{"id": "xiaohongshu", "label": "小红书", "icon": "📕"}, {"id": "weixin", "label": "公众号", "icon": "💬"}, {"id": "zhihu", "label": "知乎", "icon": "💡"}], "min": 1}}, {"type": "single-choice", "key": "style", "props": {"label": "希望什么风格？", "options": [{"id": "story", "label": "讲故事", "description": "从痛点切入"}, {"id": "practical", "label": "干货型"}]}}]}</interactive-ui>
+
+User clicks **Submit** → You receive: \`{ "platforms": ["xiaohongshu", "weixin"], "style": "story" }\`
+
+### Guidelines
+- Form components: User fills in, clicks Submit, response comes back as JSON keyed by \`key\`
+- Display components: Just show information, no user action needed
+- Multiple form elements = single form with one Submit button
+- You can mix text and \`<interactive-ui>\` blocks freely`;
 }

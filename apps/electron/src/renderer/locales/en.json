@@ -20,6 +20,10 @@
     "Install update"
   ],
   [
+    "按照代码规范审查 PR",
+    "Review PRs following our code standards"
+  ],
+  [
     "版本",
     "Version"
   ],
@@ -92,6 +96,10 @@
     "Labels help you organize sessions with colored tags. Use them to categorize conversations by project, topic, or priority for easy filtering and finding relevant sessions later."
   ],
   [
+    "标签层次和自动应用规则",
+    "Label hierarchy and auto-apply rules"
+  ],
+  [
     "标签层级",
     "Label Hierarchy"
   ],
@@ -110,6 +118,14 @@
   [
     "标题已刷新",
     "Title Refreshed"
+  ],
+  [
+    "标志",
+    "Flag"
+  ],
+  [
+    "查看 Markdown",
+    "View as Markdown"
   ],
   [
     "查看支持的模型",
@@ -152,6 +168,10 @@
     "This session no longer exists"
   ],
   [
+    "此聊天附加或创建的文件将显示在这里。",
+    "Files attached or created by this chat will appear here."
+  ],
+  [
     "此数据源的文件系统路径",
     "File system path for this data source"
   ],
@@ -170,6 +190,10 @@
   [
     "打开",
     "Open"
+  ],
+  [
+    "打开侧边栏",
+    "Open sidebar"
   ],
   [
     "打开上下文菜单",
@@ -240,8 +264,16 @@
     "Branch"
   ],
   [
+    "补充限流文档",
+    "Add rate limit documentation"
+  ],
+  [
     "服务器 URL 和连接状态",
     "Server URL and connection status"
+  ],
+  [
+    "复制",
+    "Copy"
   ],
   [
     "复制链接",
@@ -250,6 +282,10 @@
   [
     "复制路径",
     "Copy path"
+  ],
+  [
+    "复制失败",
+    "Copy Failed"
   ],
   [
     "刚刚",
@@ -262,6 +298,10 @@
   [
     "格式：",
     "Format:"
+  ],
+  [
+    "个标签",
+    "tags"
   ],
   [
     "个数据源",
@@ -300,6 +340,14 @@
     "Update your API connection or change settings."
   ],
   [
+    "更新技能描述",
+    "Update the skill description"
+  ],
+  [
+    "更新显示名称",
+    "Update the display name"
+  ],
+  [
     "更新设置",
     "Update settings"
   ],
@@ -310,6 +358,10 @@
   [
     "工作目录",
     "Working Directory"
+  ],
+  [
+    "工作区",
+    "Workspace"
   ],
   [
     "工作区名称",
@@ -330,6 +382,10 @@
   [
     "共{count}条记录",
     "{count} records in total"
+  ],
+  [
+    "关闭侧边栏",
+    "Close sidebar"
   ],
   [
     "关闭对话框 / 取消输入焦点",
@@ -366,6 +422,10 @@
   [
     "换行",
     "Line break"
+  ],
+  [
+    "仅允许只读操作（list、get、search）",
+    "Only allow read operations (list, get, search)"
   ],
   [
     "会话列表",
@@ -414,6 +474,22 @@
   [
     "键盘快捷键",
     "Keyboard Shortcuts"
+  ],
+  [
+    "键盘快捷键参考",
+    "Keyboard shortcuts reference"
+  ],
+  [
+    "接受",
+    "Accept"
+  ],
+  [
+    "接受并压缩",
+    "Accept & Compact"
+  ],
+  [
+    "接受计划",
+    "Accept Plan"
   ],
   [
     "界面语言",
@@ -496,6 +572,10 @@
     "Check Now"
   ],
   [
+    "立即执行计划",
+    "Execute the plan immediately"
+  ],
+  [
     "例如：上海",
     "e.g., Shanghai"
   ],
@@ -508,6 +588,10 @@
     "e.g., Chinese"
   ],
   [
+    "例如",
+    "e.g."
+  ],
+  [
     "例如：Asia/Shanghai",
     "e.g., Asia/Shanghai"
   ],
@@ -518,6 +602,22 @@
   [
     "连接 Claude 账户",
     "Connect Claude Account"
+  ],
+  [
+    "连接 Linear",
+    "Connect to Linear"
+  ],
+  [
+    "连接 OpenAI API",
+    "Connect to the OpenAI API"
+  ],
+  [
+    "连接我的 Craft 空间",
+    "Connect to my Craft space"
+  ],
+  [
+    "连接我的 Obsidian 知识库",
+    "Connect to my Obsidian vault"
   ],
   [
     "连接类型",
@@ -538,6 +638,10 @@
   [
     "聊天",
     "Chat"
+  ],
+  [
+    "聊天信息",
+    "Chat Info"
   ],
   [
     "浏览",
@@ -564,8 +668,20 @@
     "Description"
   ],
   [
+    "描述您想要进行的更改...",
+    "Describe what you'd like to change..."
+  ],
+  [
+    "枚举",
+    "Enum"
+  ],
+  [
     "名称",
     "Name"
+  ],
+  [
+    "模板",
+    "Template"
   ],
   [
     "模式循环",
@@ -574,6 +690,10 @@
   [
     "模型",
     "Model"
+  ],
+  [
+    "模型、模式切换、高级设置",
+    "Model, mode switching, advanced settings"
   ],
   [
     "默认",
@@ -608,8 +728,32 @@
     "What would you like to do?"
   ],
   [
+    "你想连接什么？",
+    "What would you like to connect?"
+  ],
+  [
+    "你想连接哪个 API？",
+    "What API would you like to connect?"
+  ],
+  [
+    "你想连接哪个 MCP 服务器？",
+    "What MCP server would you like to connect?"
+  ],
+  [
+    "你想连接哪个本地文件夹？",
+    "What folder would you like to connect?"
+  ],
+  [
+    "你想创建什么标签？",
+    "What label would you like to create?"
+  ],
+  [
     "您的城市，用于本地信息和上下文",
     "Your city, for local information and context"
+  ],
+  [
+    "您的个人偏好",
+    "Your personal preferences"
   ],
   [
     "您的国家，用于地区格式和上下文",
@@ -622,6 +766,10 @@
   [
     "配置状态",
     "Configuration Status"
+  ],
+  [
+    "匹配模式",
+    "Match Mode"
   ],
   [
     "偏好设置",
@@ -686,6 +834,10 @@
   [
     "全局",
     "Global"
+  ],
+  [
+    "全屏查看",
+    "Full Screen View"
   ],
   [
     "权限",
@@ -808,6 +960,10 @@
     "View"
   ],
   [
+    "适合复杂的长计划",
+    "Works best for complex, longer plans"
+  ],
+  [
     "授权码",
     "Authorization code"
   ],
@@ -852,6 +1008,10 @@
     "Data source disabled"
   ],
   [
+    "数字",
+    "Number"
+  ],
+  [
     "刷新标题失败",
     "Failed to refresh title"
   ],
@@ -864,8 +1024,16 @@
     "Search"
   ],
   [
+    "搜索标签...",
+    "Search tags..."
+  ],
+  [
     "搜索对话...",
     "Search conversations..."
+  ],
+  [
+    "搜索规则...",
+    "Search rules..."
   ],
   [
     "搜索命令...",
@@ -916,6 +1084,18 @@
     "Allowed app-level patterns in explore mode. Commands not in this list will be blocked."
   ],
   [
+    "探索模式中允许的命令",
+    "Commands allowed in Explore mode"
+  ],
+  [
+    "探索模式允许 list 操作",
+    "Allow list operations in Explore mode"
+  ],
+  [
+    "添加备注...",
+    "Add notes..."
+  ],
+  [
     "添加附件",
     "Add Attachment"
   ],
@@ -938,6 +1118,34 @@
   [
     "添加新标签",
     "Add New Label"
+  ],
+  [
+    "添加错误处理指南",
+    "Add error handling guidelines"
+  ],
+  [
+    "添加“阻塞”状态",
+    "Add a 'Blocked' status"
+  ],
+  [
+    "添加“缺陷”标签（红色）",
+    "Add a 'Bug' label with red color"
+  ],
+  [
+    "添加检测 GitHub Issue 链接的规则",
+    "Add a rule to detect GitHub issue URLs"
+  ],
+  [
+    "添加“过期”视图（7 天未活跃）",
+    "Add a 'Stale' view for sessions inactive > 7 days"
+  ],
+  [
+    "添加编码风格偏好",
+    "Add coding style preferences"
+  ],
+  [
+    "条规则",
+    "rules"
   ],
   [
     "跳到第一项",
@@ -978,6 +1186,10 @@
   [
     "外观",
     "Appearance"
+  ],
+  [
+    "外观、通知、API 连接",
+    "Appearance, notifications, API connection"
   ],
   [
     "完全自主执行",
@@ -1024,6 +1236,10 @@
     "No custom permissions configured"
   ],
   [
+    "未配置自动应用规则",
+    "No auto-apply rules configured"
+  ],
+  [
     "未设置（使用会话文件夹）",
     "Not set (use session folder)"
   ],
@@ -1034,6 +1250,10 @@
   [
     "未选择工作区",
     "No workspace selected"
+  ],
+  [
+    "未选择会话",
+    "No session selected"
   ],
   [
     "未选择文件夹",
@@ -1074,6 +1294,14 @@
   [
     "文档",
     "Documents"
+  ],
+  [
+    "文本",
+    "Text"
+  ],
+  [
+    "文件",
+    "Files"
   ],
   [
     "文件夹",
@@ -1176,6 +1404,10 @@
     "Select a storage location for the new workspace."
   ],
   [
+    "颜色",
+    "Color"
+  ],
+  [
     "颜色主题",
     "Color Theme"
   ],
@@ -1186,6 +1418,10 @@
   [
     "一切就绪！",
     "All set!"
+  ],
+  [
+    "一个红色的“缺陷”标签",
+    "A red 'Bug' label"
   ],
   [
     "移除",
@@ -1220,6 +1456,14 @@
     "Shared"
   ],
   [
+    "已复制",
+    "Copied"
+  ],
+  [
+    "已复制到剪贴板",
+    "Copied to Clipboard"
+  ],
+  [
     "已禁用",
     "Disabled"
   ],
@@ -1248,6 +1492,10 @@
     "The following:"
   ],
   [
+    "应用",
+    "App"
+  ],
+  [
     "应用设置",
     "App settings"
   ],
@@ -1272,6 +1520,14 @@
     "Metadata"
   ],
   [
+    "允许 git fetch 命令",
+    "Allow git fetch command"
+  ],
+  [
+    "要让我学会做什么？",
+    "What should I learn to do?"
+  ],
+  [
     "在 .creator-flow 文件夹下",
     "Under .creator-flow folder"
   ],
@@ -1284,8 +1540,16 @@
     "Show in Finder"
   ],
   [
+    "在探索模式中允许运行 make build",
+    "Allow running 'make build' in Explore mode"
+  ],
+  [
     "在工作区中创建 permissions.json 文件以添加自定义规则。",
     "Create a permissions.json file in the workspace to add custom rules."
+  ],
+  [
+    "在聊天中输入反馈或",
+    "Type your feedback in chat or"
   ],
   [
     "在列表中导航",
@@ -1332,8 +1596,16 @@
     "Saving your configuration..."
   ],
   [
+    "正在加载会话...",
+    "Loading session..."
+  ],
+  [
     "正在设置...",
     "Setting up..."
+  ],
+  [
+    "正在输出...",
+    "Streaming..."
   ],
   [
     "只读，不允许更改",

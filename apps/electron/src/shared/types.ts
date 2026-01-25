@@ -354,7 +354,7 @@ export interface CreateSessionOptions {
 // turnId: Correlation ID from the API's message.id, groups all events in an assistant turn
 export type SessionEvent =
   | { type: 'text_delta'; sessionId: string; delta: string; turnId?: string }
-  | { type: 'text_complete'; sessionId: string; text: string; isIntermediate?: boolean; turnId?: string; parentToolUseId?: string }
+  | { type: 'text_complete'; sessionId: string; messageId?: string; text: string; isIntermediate?: boolean; turnId?: string; parentToolUseId?: string }
   | { type: 'tool_start'; sessionId: string; toolName: string; toolUseId: string; toolInput: Record<string, unknown>; toolIntent?: string; toolDisplayName?: string; toolDisplayMeta?: import('@creator-flow/core').ToolDisplayMeta; turnId?: string; parentToolUseId?: string }
   | { type: 'tool_result'; sessionId: string; toolUseId: string; toolName: string; result: string; turnId?: string; parentToolUseId?: string; isError?: boolean }
   | { type: 'parent_update'; sessionId: string; toolUseId: string; parentToolUseId: string }
@@ -399,6 +399,9 @@ export type SessionEvent =
   | { type: 'source_activated'; sessionId: string; sourceSlug: string; originalMessage: string }
   // Real-time usage update during processing (for context display)
   | { type: 'usage_update'; sessionId: string; tokenUsage: { inputTokens: number; contextWindow?: number } }
+  // Interactive UI events (Agent ↔ User structured interaction)
+  | { type: 'interactive_request'; sessionId: string; message: CoreMessage; request: import('@creator-flow/shared/interactive-ui').InteractiveRequest }
+  | { type: 'interactive_completed'; sessionId: string; requestId: string; response: import('@creator-flow/shared/interactive-ui').InteractiveResponse }
 
 // Options for sendMessage
 export interface SendMessageOptions {
@@ -467,6 +470,7 @@ export const IPC_CHANNELS = {
   GET_TASK_OUTPUT: 'tasks:getOutput',
   RESPOND_TO_PERMISSION: 'sessions:respondToPermission',
   RESPOND_TO_CREDENTIAL: 'sessions:respondToCredential',
+  RESPOND_TO_INTERACTIVE: 'sessions:respondToInteractive',
 
   // Consolidated session command
   SESSION_COMMAND: 'sessions:command',
@@ -688,6 +692,7 @@ export interface ElectronAPI {
   getTaskOutput(taskId: string): Promise<string | null>
   respondToPermission(sessionId: string, requestId: string, allowed: boolean, alwaysAllow: boolean): Promise<boolean>
   respondToCredential(sessionId: string, requestId: string, response: CredentialResponse): Promise<boolean>
+  respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): Promise<boolean>
 
   // Consolidated session command handler
   sessionCommand(sessionId: string, command: SessionCommand): Promise<void | ShareResult | RefreshTitleResult>

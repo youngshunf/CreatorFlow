@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from "motion/react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { Markdown, CollapsibleMarkdownProvider, StreamingMarkdown, type RenderMode } from "@/components/markdown"
+import { InteractiveUIParser, hasInteractiveUI } from "../interactive-ui/InteractiveUIParser"
+import type { InteractiveResponse } from "@creator-flow/shared/interactive-ui"
 import { AnimatedCollapsibleContent } from "@/components/ui/collapsible"
 import {
   Spinner,
@@ -1040,6 +1042,11 @@ interface MessageBubbleProps {
    * Callback to pop out message into a separate window
    */
   onPopOut?: (message: Message) => void
+  /**
+   * Callback when user submits interactive UI response
+   * The response data is sent back to the agent as a user message
+   */
+  onInteractiveResponse?: (data: Record<string, unknown>) => void
 }
 
 /**
@@ -1099,6 +1106,7 @@ function MessageBubble({
   onOpenUrl,
   renderMode = 'minimal',
   onPopOut,
+  onInteractiveResponse,
 }: MessageBubbleProps) {
   // === USER MESSAGE: Right-aligned bubble with attachments above ===
   if (message.role === 'user') {
@@ -1118,6 +1126,9 @@ function MessageBubble({
 
   // === ASSISTANT MESSAGE: Left-aligned gray bubble with markdown rendering ===
   if (message.role === 'assistant') {
+    // Check if content contains interactive UI blocks
+    const hasInteractive = !message.isStreaming && hasInteractiveUI(message.content)
+
     return (
       <div className="flex justify-start group">
         <div className="relative max-w-[90%] bg-background shadow-minimal rounded-[8px] pl-6 pr-4 py-3 break-words min-w-0 select-text">
@@ -1139,6 +1150,22 @@ function MessageBubble({
               mode={renderMode}
               onUrlClick={onOpenUrl}
               onFileClick={onOpenFile}
+            />
+          ) : hasInteractive ? (
+            /* Interactive UI parser for messages with <interactive-ui> blocks */
+            <InteractiveUIParser
+              content={message.content}
+              renderMode={renderMode}
+              onUrlClick={onOpenUrl}
+              onFileClick={onOpenFile}
+              messageId={message.id}
+              className="text-sm"
+              onInteractiveResponse={(response) => {
+                // Send response data back to agent
+                if (onInteractiveResponse && response.data) {
+                  onInteractiveResponse(response.data as Record<string, unknown>)
+                }
+              }}
             />
           ) : (
             <CollapsibleMarkdownProvider>

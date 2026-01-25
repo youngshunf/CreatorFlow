@@ -841,7 +841,7 @@ function AppShellContent({
         <HeaderIconButton
           icon={<PanelRightRounded className="h-5 w-6" />}
           onClick={() => setIsRightSidebarVisible(true)}
-          tooltip="Open sidebar"
+          tooltip={t('打开侧边栏')}
           className="text-foreground"
         />
       </motion.div>
@@ -856,7 +856,7 @@ function AppShellContent({
       <HeaderIconButton
         icon={<PanelLeftRounded className="h-5 w-6" />}
         onClick={() => setIsRightSidebarVisible(false)}
-        tooltip="Close sidebar"
+        tooltip={t('关闭侧边栏')}
         className="text-foreground"
       />
     )

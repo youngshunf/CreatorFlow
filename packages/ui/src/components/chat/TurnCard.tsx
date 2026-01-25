@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
 import type { ToolDisplayMeta } from '@creator-flow/core'
+import { t } from '@creator-flow/shared/locale'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ChevronRight,
@@ -24,6 +25,7 @@ import * as ReactDOM from 'react-dom'
 import { cn } from '../../lib/utils'
 import { Markdown } from '../markdown'
 import { Spinner } from '../ui/LoadingIndicator'
+import { InteractiveUIParser, hasInteractiveUI } from '../interactive-ui'
 import { TurnCardActionsMenu } from './TurnCardActionsMenu'
 import { computeLastChildSet, groupActivitiesByParent, isActivityGroup, formatDuration, formatTokens, deriveTurnPhase, shouldShowThinkingIndicator, type ActivityGroup, type AssistantTurn } from './turn-utils'
 import { DocumentFormattedMarkdownOverlay } from '../overlay'
@@ -1162,13 +1164,73 @@ export function ResponseCard({
               }),
             }}
           >
-            <Markdown
-              mode="minimal"
-              onUrlClick={onOpenUrl}
-              onFileClick={onOpenFile}
-            >
-              {text}
-            </Markdown>
+            {hasInteractiveUI(text) ? (
+              <InteractiveUIParser
+                content={text}
+                renderText={(textSegment) => (
+                  <Markdown
+                    mode="minimal"
+                    onUrlClick={onOpenUrl}
+                    onFileClick={onOpenFile}
+                  >
+                    {textSegment}
+                  </Markdown>
+                )}
+                onInteractiveResponse={(response, elements) => {
+                  // Send response as user message to agent
+                  // Format with labels instead of IDs for better readability
+                  if (response.data && elements) {
+                    const data = response.data as Record<string, unknown>
+                    const parts: string[] = []
+                    
+                    // Build a map of element key -> options for label lookup
+                    const elementMap = new Map<string, { label: string; options?: Array<{ id: string; label: string }> }>()
+                    for (const el of elements) {
+                      const props = el.props as Record<string, unknown>
+                      elementMap.set(el.key, {
+                        label: (props.label as string) || el.key,
+                        options: props.options as Array<{ id: string; label: string }> | undefined,
+                      })
+                    }
+                    
+                    for (const [key, value] of Object.entries(data)) {
+                      const elementInfo = elementMap.get(key)
+                      const fieldLabel = elementInfo?.label || key
+                      const options = elementInfo?.options
+                      
+                      // Convert IDs to labels
+                      const getLabel = (id: string) => {
+                        const opt = options?.find(o => o.id === id)
+                        return opt?.label || id
+                      }
+                      
+                      if (Array.isArray(value)) {
+                        const labels = value.map(v => getLabel(String(v)))
+                        parts.push(`${fieldLabel}: ${labels.join(', ')}`)
+                      } else if (typeof value === 'boolean') {
+                        parts.push(`${fieldLabel}: ${value ? '是' : '否'}`)
+                      } else {
+                        parts.push(`${fieldLabel}: ${getLabel(String(value))}`)
+                      }
+                    }
+                    const formattedResponse = parts.join('\n')
+                    window.dispatchEvent(
+                      new CustomEvent('craft:interactive-response', {
+                        detail: { text: formattedResponse },
+                      })
+                    )
+                  }
+                }}
+              />
+            ) : (
+              <Markdown
+                mode="minimal"
+                onUrlClick={onOpenUrl}
+                onFileClick={onOpenFile}
+              >
+                {text}
+              </Markdown>
+            )}
           </div>
 
           {/* Footer with actions */}
@@ -1186,15 +1248,15 @@ export function ResponseCard({
                   "focus:outline-none focus-visible:underline"
                 )}
               >
-                {copied ? (
+              {copied ? (
                   <>
                     <Check className={SIZE_CONFIG.iconSize} />
-                    <span>Copied!</span>
+                    <span>{t('已复制')}</span>
                   </>
                 ) : (
                   <>
                     <Copy className={SIZE_CONFIG.iconSize} />
-                    <span>Copy</span>
+                    <span>{t('复制')}</span>
                   </>
                 )}
               </button>
@@ -1207,8 +1269,8 @@ export function ResponseCard({
                     "focus:outline-none focus-visible:underline"
                   )}
                 >
-                  <ExternalLink className={SIZE_CONFIG.iconSize} />
-                  <span>View as Markdown</span>
+                <ExternalLink className={SIZE_CONFIG.iconSize} />
+                  <span>{t('查看 Markdown')}</span>
                 </button>
               )}
             </div>
@@ -1224,7 +1286,7 @@ export function ResponseCard({
                 )}
               >
                 <span className="text-xs text-muted-foreground">
-                  Type your feedback in chat or
+                  {t('在聊天中输入反馈或')}
                 </span>
                 <AcceptPlanDropdown
                   onAccept={onAccept}
@@ -1264,6 +1326,7 @@ export function ResponseCard({
           }),
         }}
       >
+        {/* Note: Interactive UI is not rendered during streaming - only after complete */}
         <Markdown
           mode="minimal"
           onUrlClick={onOpenUrl}
@@ -1277,7 +1340,7 @@ export function ResponseCard({
       <div className={cn("px-4 py-2 border-t border-border/30 flex items-center bg-muted/20", SIZE_CONFIG.fontSize)}>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Spinner className={SIZE_CONFIG.spinnerSize} />
-          <span>Streaming...</span>
+          <span>{t('正在输出...')}</span>
         </div>
       </div>
     </div>

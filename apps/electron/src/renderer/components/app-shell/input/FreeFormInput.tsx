@@ -372,6 +372,24 @@ export function FreeFormInput({
     return () => window.removeEventListener('craft:insert-text', handleInsertText as EventListener)
   }, [syncToParent, richInputRef])
 
+  // Listen for craft:interactive-response events (used by Interactive UI forms)
+  // Sends the form response as a user message to continue the conversation
+  React.useEffect(() => {
+    const handleInteractiveResponse = (e: CustomEvent<{ text?: string; sessionId?: string }>) => {
+      // Only handle if this event is for our session (or no sessionId specified)
+      if (e.detail?.sessionId && e.detail.sessionId !== sessionId) {
+        return
+      }
+      const text = e.detail?.text
+      if (!text) return
+      // Submit the response as a user message
+      onSubmit(text, undefined)
+    }
+
+    window.addEventListener('craft:interactive-response', handleInteractiveResponse as EventListener)
+    return () => window.removeEventListener('craft:interactive-response', handleInteractiveResponse as EventListener)
+  }, [sessionId, onSubmit])
+
   // Listen for craft:approve-plan events (used by ResponseCard's Accept Plan button)
   // This disables safe mode AND submits the message in one action
   // Only process events for this session (sessionId must match)

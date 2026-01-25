@@ -15,7 +15,8 @@ export type MessageRole =
   | 'info'
   | 'warning'
   | 'plan'
-  | 'auth-request';
+  | 'auth-request'
+  | 'interactive-ui';
 
 /**
  * Credential input modes for different auth types
@@ -40,6 +41,26 @@ export type AuthRequestType =
  * Auth request status
  */
 export type AuthStatus = 'pending' | 'completed' | 'cancelled' | 'failed';
+
+/**
+ * Interactive UI status
+ */
+export type InteractiveUIStatus = 'pending' | 'completed' | 'cancelled' | 'timeout';
+
+/**
+ * Interactive UI type (categorizes the component)
+ */
+export type InteractiveUIType = 'choice' | 'form' | 'display' | 'confirm' | 'action';
+
+/**
+ * Interactive UI element structure (tree node)
+ */
+export interface InteractiveUIElement {
+  key: string;
+  type: string;
+  props: Record<string, unknown>;
+  children?: InteractiveUIElement[];
+}
 
 /**
  * Tool execution status
@@ -201,6 +222,13 @@ export interface Message {
   authError?: string;             // Error message if auth failed
   authEmail?: string;             // Authenticated email (for OAuth)
   authWorkspace?: string;         // Authenticated workspace (for Slack)
+  // Interactive UI fields (for role='interactive-ui')
+  interactiveId?: string;              // Unique request ID
+  interactiveType?: InteractiveUIType; // 'choice' | 'form' | 'display' | 'confirm' | 'action'
+  interactiveTree?: InteractiveUIElement; // UI tree to render
+  interactiveStatus?: InteractiveUIStatus; // 'pending' | 'completed' | 'cancelled' | 'timeout'
+  interactiveResponse?: unknown;       // User response data
+  interactivePrompt?: string;          // Optional prompt/context shown above UI
 }
 
 /**
@@ -269,6 +297,13 @@ export interface StoredMessage {
   authError?: string;
   authEmail?: string;
   authWorkspace?: string;
+  // Interactive UI fields (for role='interactive-ui')
+  interactiveId?: string;
+  interactiveType?: InteractiveUIType;
+  interactiveTree?: InteractiveUIElement;
+  interactiveStatus?: InteractiveUIStatus;
+  interactiveResponse?: unknown;
+  interactivePrompt?: string;
 }
 
 /**

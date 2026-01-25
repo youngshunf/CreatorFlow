@@ -311,6 +311,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return sessionManager.respondToCredential(sessionId, requestId, response)
   })
 
+  // Respond to an interactive UI request (agent interactive components)
+  // Returns true if the response was delivered, false if no pending request found
+  ipcMain.handle(IPC_CHANNELS.RESPOND_TO_INTERACTIVE, async (_event, sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse) => {
+    return sessionManager.respondToInteractive(sessionId, requestId, response)
+  })
+
   // ==========================================================================
   // Consolidated Command Handlers
   // ==========================================================================

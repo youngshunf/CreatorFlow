@@ -12,6 +12,7 @@ import { ArrowUp } from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from './popover'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
+import { useT } from '@/context/LocaleContext'
 import type { ContentBadge } from '../../../shared/types'
 
 /**
@@ -101,7 +102,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "permissions" to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: "Allow running 'make build' in Explore mode",
+    example: '在探索模式中允许运行 make build',
   }),
 
   'default-permissions': (location) => ({
@@ -117,7 +118,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "permissions" to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Allow git fetch command',
+    example: '允许 git fetch 命令',
   }),
 
   // Skill editing contexts
@@ -133,7 +134,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call skill_validate with the skill slug to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add error handling guidelines',
+    example: '添加错误处理指南',
   }),
 
   'skill-metadata': (location) => ({
@@ -147,7 +148,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call skill_validate with the skill slug to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Update the skill description',
+    example: '更新技能描述',
   }),
 
   // Source editing contexts
@@ -161,7 +162,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Keep content clear and actionable. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add rate limit documentation',
+    example: '补充限流文档',
   }),
 
   'source-config': (location) => ({
@@ -175,7 +176,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call source_test with the source slug to verify the configuration. ' +
         'Confirm clearly when done.',
     },
-    example: 'Update the display name',
+    example: '更新显示名称',
   }),
 
   'source-permissions': (location) => ({
@@ -189,7 +190,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "permissions" and the source slug to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Allow list operations in Explore mode',
+    example: '探索模式允许 list 操作',
   }),
 
   'source-tool-permissions': (location) => ({
@@ -205,7 +206,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "permissions" and the source slug to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Only allow read operations (list, get, search)',
+    example: '仅允许只读操作（list、get、search）',
   }),
 
   // Preferences editing context
@@ -220,7 +221,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "preferences" to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add coding style preferences',
+    example: '添加编码风格偏好',
   }),
 
   // Add new source/skill contexts - use overridePlaceholder for inspiring, contextual prompts
@@ -236,8 +237,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
-    example: 'Connect to my Craft space',
-    overridePlaceholder: 'What would you like to connect?',
+    example: '连接我的 Craft 空间',
+    overridePlaceholder: '你想连接什么？',
   }),
 
   // Filter-specific add-source contexts: user is viewing a filtered list and wants to add that type
@@ -254,8 +255,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
-    example: 'Connect to the OpenAI API',
-    overridePlaceholder: 'What API would you like to connect?',
+    example: '连接 OpenAI API',
+    overridePlaceholder: '你想连接哪个 API？',
   }),
 
   'add-source-mcp': (location) => ({
@@ -271,8 +272,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
-    example: 'Connect to Linear',
-    overridePlaceholder: 'What MCP server would you like to connect?',
+    example: '连接 Linear',
+    overridePlaceholder: '你想连接哪个 MCP 服务器？',
   }),
 
   'add-source-local': (location) => ({
@@ -289,8 +290,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
-    example: 'Connect to my Obsidian vault',
-    overridePlaceholder: 'What folder would you like to connect?',
+    example: '连接我的 Obsidian 知识库',
+    overridePlaceholder: '你想连接哪个本地文件夹？',
   }),
 
   'add-skill': (location) => ({
@@ -305,8 +306,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Follow the patterns in ~/.creator-flow/docs/skills.md. ' +
         'After creating the skill, call skill_validate with the skill slug to verify the SKILL.md file.',
     },
-    example: 'Review PRs following our code standards',
-    overridePlaceholder: 'What should I learn to do?',
+    example: '按照代码规范审查 PR',
+    overridePlaceholder: '要让我学会做什么？',
   }),
 
   // Status configuration context
@@ -323,7 +324,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "statuses" to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add a "Blocked" status',
+    example: '添加“阻塞”状态',
   }),
 
   // Label configuration context
@@ -341,7 +342,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add a "Bug" label with red color',
+    example: '添加“缺陷”标签（红色）',
   }),
 
   // Auto-label rules context (focused on regex patterns within labels)
@@ -358,7 +359,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add a rule to detect GitHub issue URLs',
+    example: '添加检测 GitHub Issue 链接的规则',
   }),
 
   // Add new label context (triggered from the # menu when no labels match)
@@ -375,8 +376,8 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
-    example: 'A red "Bug" label',
-    overridePlaceholder: 'What label would you like to create?',
+    example: '一个红色的“缺陷”标签',
+    overridePlaceholder: '你想创建什么标签？',
   }),
 
   // Views configuration context
@@ -394,7 +395,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Colors use EntityColor format: string shorthand (e.g. "orange") or { light, dark } object. ' +
         'Confirm clearly when done.',
     },
-    example: 'Add a "Stale" view for sessions inactive > 7 days',
+    example: '添加“过期”视图（7 天未活跃）',
   }),
 }
 
@@ -541,11 +542,13 @@ export function EditPopover({
   onOpenChange: controlledOnOpenChange,
   modal = false,
 }: EditPopoverProps) {
+  const t = useT()
   // Build placeholder: use override if provided, otherwise default to "change" wording
   // overridePlaceholder allows contexts like add-source/add-skill to say "add" instead of "change"
-  const basePlaceholder = overridePlaceholder ?? "Describe what you'd like to change..."
-  const placeholder = example
-    ? `${basePlaceholder.replace(/\.{3}$/, '')}, e.g., "${example}"`
+  const basePlaceholder = overridePlaceholder ? t(overridePlaceholder) : t('描述您想要进行的更改...')
+  const exampleText = example ? t(example) : undefined
+  const placeholder = exampleText
+    ? `${basePlaceholder.replace(/\.{3}$/, '')}，${t('例如')}："${exampleText}"`
     : basePlaceholder
   // Support both controlled and uncontrolled modes:
   // - Uncontrolled (default): internal state manages open/close
@@ -713,6 +716,7 @@ export const EditButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentPropsWithoutRef<typeof Button>
 >(function EditButton({ className, ...props }, ref) {
+  const t = useT()
   return (
     <Button
       ref={ref}
@@ -722,7 +726,7 @@ export const EditButton = React.forwardRef<
       className={cn("h-8 px-3 rounded-[6px] bg-background shadow-minimal text-foreground/70 hover:text-foreground", className)}
       {...props}
     >
-      Edit
+      {t('编辑')}
     </Button>
   )
 })
