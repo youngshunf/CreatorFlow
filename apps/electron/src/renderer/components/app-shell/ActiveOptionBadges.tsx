@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { SlashCommandMenu, DEFAULT_SLASH_COMMAND_GROUPS, type SlashCommandId } from '@/components/ui/slash-command-menu'
+import { SlashCommandMenu, getLocalizedCommandGroups, type SlashCommandId } from '@/components/ui/slash-command-menu'
 import { ChevronDown, X } from 'lucide-react'
 import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@creator-flow/shared/agent/modes'
 import { ActiveTasksBar, type BackgroundTask } from './ActiveTasksBar'
@@ -325,6 +325,7 @@ interface PermissionModeDropdownProps {
 }
 
 function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onPermissionModeChange, onUltrathinkChange }: PermissionModeDropdownProps) {
+  const t = useT()
   const [open, setOpen] = React.useState(false)
   // Optimistic local state - updates immediately, syncs with prop
   const [optimisticMode, setOptimisticMode] = React.useState(permissionMode)
@@ -354,6 +355,16 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
 
   // Get config for current mode (use optimistic state for instant UI update)
   const config = PERMISSION_MODE_CONFIG[optimisticMode]
+
+  // Get localized command groups
+  const commandGroups = React.useMemo(() => getLocalizedCommandGroups(t), [t])
+
+  // Permission mode display names (localized)
+  const modeDisplayNames: Record<PermissionMode, string> = {
+    'safe': t('探索模式'),
+    'ask': t('询问模式'),
+    'allow-all': t('执行模式'),
+  }
 
   // Mode-specific styling using CSS variables (theme-aware)
   // - safe (Explore): foreground at 60% opacity - subtle, read-only feel
@@ -388,7 +399,7 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
           style={{ '--shadow-color': currentStyle.shadowVar } as React.CSSProperties}
         >
           <PermissionModeIcon mode={optimisticMode} className="h-3.5 w-3.5" />
-          <span>{config.displayName}</span>
+          <span>{modeDisplayNames[optimisticMode]}</span>
           <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </button>
       </PopoverTrigger>
@@ -404,7 +415,7 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
         }}
       >
         <SlashCommandMenu
-          commandGroups={DEFAULT_SLASH_COMMAND_GROUPS}
+          commandGroups={commandGroups}
           activeCommands={activeCommands}
           onSelect={handleSelect}
           showFilter

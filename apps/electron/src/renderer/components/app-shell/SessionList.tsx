@@ -10,6 +10,7 @@ import type { LabelConfig } from "@creator-flow/shared/labels"
 import { flattenLabels, parseLabelEntry, formatLabelEntry, formatDisplayValue } from "@creator-flow/shared/labels"
 import { resolveEntityColor } from "@creator-flow/shared/colors"
 import { useTheme } from "@/context/ThemeContext"
+import { useT } from "@/context/LocaleContext"
 import { Spinner, Tooltip, TooltipTrigger, TooltipContent } from "@creator-flow/ui"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
@@ -76,19 +77,19 @@ const shortTimeLocale: Pick<Locale, 'formatDistance'> = {
 
 /**
  * Format a date for the date header
- * Returns "Today", "Yesterday", or formatted date like "Dec 19"
+ * Returns localized "Today", "Yesterday", or formatted date like "Dec 19"
  */
-function formatDateHeader(date: Date): string {
-  if (isToday(date)) return "Today"
-  if (isYesterday(date)) return "Yesterday"
-  return format(date, "MMM d")
+function formatDateHeader(date: Date, t: (text: string) => string): string {
+  if (isToday(date)) return t('今天')
+  if (isYesterday(date)) return t('昨天')
+  return format(date, "M月d日")
 }
 
 /**
  * Group sessions by date (day boundary)
  * Returns array of { date, sessions } sorted by date descending
  */
-function groupSessionsByDate(sessions: SessionMeta[]): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
+function groupSessionsByDate(sessions: SessionMeta[], t: (text: string) => string): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
   const groups = new Map<string, { date: Date; sessions: SessionMeta[] }>()
 
   for (const session of sessions) {
@@ -107,7 +108,7 @@ function groupSessionsByDate(sessions: SessionMeta[]): Array<{ date: Date; label
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(group => ({
       ...group,
-      label: formatDateHeader(group.date),
+      label: formatDateHeader(group.date, t),
     }))
 }
 
@@ -228,6 +229,7 @@ function SessionItem({
   labels,
   onLabelsChange,
 }: SessionItemProps) {
+  const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [todoMenuOpen, setTodoMenuOpen] = useState(false)
@@ -360,7 +362,7 @@ function SessionItem({
               )}
               {!item.isProcessing && hasUnreadMessages(item) && (
                 <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent text-white">
-                  New
+                  {t('新')}
                 </span>
               )}
 
@@ -377,7 +379,7 @@ function SessionItem({
                 )}
                 {item.lastMessageRole === 'plan' && (
                   <span className="shrink-0 h-[18px] px-1.5 text-[10px] font-medium rounded bg-success/10 text-success flex items-center whitespace-nowrap">
-                    Plan
+                    {t('计划')}
                   </span>
                 )}
                 {permissionMode && (
@@ -687,6 +689,7 @@ export function SessionList({
   labels = [],
   onLabelsChange,
 }: SessionListProps) {
+  const t = useT()
   const [session] = useSession()
   const { navigate } = useNavigation()
   const navState = useNavigationState()
@@ -778,7 +781,7 @@ export function SessionList({
   }, [hasMore, loadMore])
 
   // Group sessions by date (use paginated items)
-  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems), [paginatedItems])
+  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems, t), [paginatedItems, t])
 
   // Create flat list for keyboard navigation (maintains order across groups)
   const flatItems = useMemo(() => {
@@ -936,9 +939,9 @@ export function SessionList({
           <EmptyMedia variant="icon">
             <Inbox />
           </EmptyMedia>
-          <EmptyTitle>No conversations yet</EmptyTitle>
+          <EmptyTitle>{t('暂无对话')}</EmptyTitle>
           <EmptyDescription>
-            Conversations with your agent appear here. Start one to get going.
+            {t('与助手的对话会显示在这里。开始新对话吧。')}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -952,7 +955,7 @@ export function SessionList({
             }}
             className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
           >
-            New Conversation
+            {t('新对话')}
           </button>
         </EmptyContent>
       </Empty>
@@ -974,7 +977,7 @@ export function SessionList({
                 value={searchQuery}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search conversations..."
+                placeholder={t('搜索对话...')}
                 className="w-full h-8 pl-8 pr-8 text-sm bg-foreground/5 border-0 rounded-[8px] outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
               />
               <button
@@ -997,12 +1000,12 @@ export function SessionList({
           {/* No results message when searching */}
           {searchActive && searchQuery && flatItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-              <p className="text-sm text-muted-foreground">No conversations found</p>
+              <p className="text-sm text-muted-foreground">{t('未找到对话')}</p>
               <button
                 onClick={() => onSearchChange?.('')}
                 className="text-xs text-foreground hover:underline mt-1"
               >
-                Clear search
+                {t('清除搜索')}
               </button>
             </div>
           )}

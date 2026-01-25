@@ -2,6 +2,10 @@
  * 语言偏好存储服务
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare const window: any;
+declare const navigator: any;
+
 const LOCALE_STORAGE_KEY = 'creator-flow-locale';
 
 /**
@@ -87,7 +91,7 @@ export function normalizeLocale(locale: string): string {
   
   // 尝试匹配语言前缀
   const prefix = normalized.split('-')[0];
-  if (mapping[prefix]) {
+  if (prefix && mapping[prefix]) {
     return mapping[prefix];
   }
   

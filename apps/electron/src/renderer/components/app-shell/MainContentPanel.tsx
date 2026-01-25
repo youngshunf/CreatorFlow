@@ -17,6 +17,7 @@ import { Panel } from './Panel'
 import { cn } from '@/lib/utils'
 import { useAppShellContext } from '@/context/AppShellContext'
 import { StoplightProvider } from '@/context/StoplightContext'
+import { useT } from '@/context/LocaleContext'
 import {
   useNavigationState,
   isChatsNavigation,
@@ -38,6 +39,7 @@ export function MainContentPanel({
   isFocusedMode = false,
   className,
 }: MainContentPanelProps) {
+  const t = useT()
   const navState = useNavigationState()
   const { activeWorkspaceId } = useAppShellContext()
 
@@ -107,7 +109,7 @@ export function MainContentPanel({
     return wrapWithStoplight(
       <Panel variant="grow" className={className}>
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">No sources configured</p>
+          <p className="text-sm">{t('暂无配置的数据源')}</p>
         </div>
       </Panel>
     )
@@ -129,7 +131,7 @@ export function MainContentPanel({
     return wrapWithStoplight(
       <Panel variant="grow" className={className}>
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">No skills configured</p>
+          <p className="text-sm">{t('暂无配置的技能')}</p>
         </div>
       </Panel>
     )
@@ -150,8 +152,8 @@ export function MainContentPanel({
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <p className="text-sm">
             {navState.filter.kind === 'flagged'
-              ? 'No flagged conversations'
-              : 'No conversations yet'}
+              ? t('暂无标记的对话')
+              : t('暂无对话')}
           </p>
         </div>
       </Panel>
@@ -162,7 +164,7 @@ export function MainContentPanel({
   return wrapWithStoplight(
     <Panel variant="grow" className={className}>
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        <p className="text-sm">Select a conversation to get started</p>
+        <p className="text-sm">{t('选择一个对话开始')}</p>
       </div>
     </Panel>
   )
