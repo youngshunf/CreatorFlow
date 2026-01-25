@@ -12,6 +12,7 @@ import { flattenLabels, parseLabelEntry, formatLabelEntry } from '@creator-flow/
 import { resolveEntityColor } from '@creator-flow/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { useDynamicStack } from '@/hooks/useDynamicStack'
+import { useT } from '@/context/LocaleContext'
 
 // ============================================================================
 // Permission Mode Icon Component
@@ -137,19 +138,7 @@ export function ActiveOptionBadges({
       )}
 
       {/* Ultrathink Badge */}
-      {ultrathinkEnabled && (
-        <button
-          type="button"
-          onClick={() => onUltrathinkChange?.(false)}
-          className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
-          style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
-        >
-          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Ultrathink
-          </span>
-          <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
-        </button>
-      )}
+      <UltrathinkBadge enabled={ultrathinkEnabled} onToggle={onUltrathinkChange} />
 
       {/* Label Badges Container — dynamic stacking with equal visible strips.
        * useDynamicStack sets per-child marginLeft directly via ResizeObserver.
@@ -195,6 +184,29 @@ export function ActiveOptionBadges({
         </div>
       )}
     </div>
+  )
+}
+
+// ============================================================================
+// Ultrathink Badge Component
+// ============================================================================
+
+function UltrathinkBadge({ enabled, onToggle }: { enabled: boolean; onToggle?: (enabled: boolean) => void }) {
+  const t = useT()
+  if (!enabled) return null
+  
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle?.(false)}
+      className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
+      style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
+    >
+      <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+        {t('深度思考')}
+      </span>
+      <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
+    </button>
   )
 }
 

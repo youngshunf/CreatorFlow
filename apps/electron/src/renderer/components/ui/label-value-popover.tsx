@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { parseDate } from 'chrono-node'
 import { format, parse } from 'date-fns'
 import type { LabelConfig } from '@creator-flow/shared/labels'
+import { useT } from '@/context/LocaleContext'
 
 export interface LabelValuePopoverProps {
   /** Label configuration (color, name, valueType) */
@@ -44,6 +45,7 @@ export function LabelValuePopover({
   onOpenChange,
   children,
 }: LabelValuePopoverProps) {
+  const t = useT()
   // Local draft value — resets to prop value when popover opens
   const [draft, setDraft] = React.useState(value ?? '')
   // Whether the inline calendar picker is visible (date labels only)
@@ -199,7 +201,7 @@ export function LabelValuePopover({
                       onValueChange?.(undefined)
                     }
                   }}
-                  placeholder="tomorrow, next friday..."
+                  placeholder={t('明天, 下周五...')}
                   className={cn(
                     'flex-1 h-7 px-2 text-[13px]',
                     'bg-transparent',
@@ -266,7 +268,7 @@ export function LabelValuePopover({
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={commitValue}
-              placeholder={label.valueType === 'number' ? 'Enter number...' : 'Enter value...'}
+              placeholder={label.valueType === 'number' ? t('输入数字...') : t('输入值...')}
               className={cn(
                 'w-full h-7 px-2 text-[13px]',
                 'bg-transparent',
@@ -294,7 +296,7 @@ export function LabelValuePopover({
             )}
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Remove</span>
+            <span>{t('移除')}</span>
           </button>
         </div>
       </PopoverContent>

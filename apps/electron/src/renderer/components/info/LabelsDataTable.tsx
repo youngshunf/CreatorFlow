@@ -15,8 +15,8 @@ import { Info_Badge } from './Info_Badge'
 import { DataTableOverlay } from '@creator-flow/ui'
 import { LabelIcon } from '@/components/ui/label-icon'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/hooks/useTheme'
 import type { LabelConfig } from '@creator-flow/shared/labels'
+import { useT } from '@/context/LocaleContext'
 
 interface LabelsDataTableProps {
   /** Label tree (root-level nodes with nested children) */
@@ -72,47 +72,59 @@ function ExpandableNameCell({ row }: { row: Row<LabelConfig> }) {
   )
 }
 
-// Column definitions for the labels tree table
-const columns: ColumnDef<LabelConfig>[] = [
-  {
-    id: 'color',
-    header: () => <span className="p-1.5 pl-2.5">Color</span>,
-    cell: ({ row }) => (
-      <div className="p-1.5 pl-2.5">
-        <LabelIcon
-          label={row.original}
-          size="sm"
-          hasChildren={!!row.original.children?.length}
-        />
-      </div>
-    ),
-    minSize: 60,
-    maxSize: 60,
-  },
-  {
-    accessorKey: 'name',
-    header: ({ column }) => <SortableHeader column={column} title="Name" />,
-    cell: ({ row }) => <ExpandableNameCell row={row} />,
-    meta: { fillWidth: true },
-  },
-  {
-    id: 'valueType',
-    accessorKey: 'valueType',
-    header: ({ column }) => <SortableHeader column={column} title="Type" />,
-    cell: ({ row }) => (
-      <div className="p-1.5 pl-2.5">
-        {row.original.valueType ? (
-          <Info_Badge color="muted" className="capitalize whitespace-nowrap">
-            {row.original.valueType}
-          </Info_Badge>
-        ) : (
-          <span className="text-muted-foreground/50 text-sm">—</span>
-        )}
-      </div>
-    ),
-    minSize: 120,
-  },
-]
+// Column definitions for the labels tree table - created dynamically to support i18n
+function createColumns(t: (key: string) => string): ColumnDef<LabelConfig>[] {
+  return [
+    {
+      id: 'color',
+      header: () => <span className="p-1.5 pl-2.5">{t('颜色')}</span>,
+      cell: ({ row }) => (
+        <div className="p-1.5 pl-2.5">
+          <LabelIcon
+            label={row.original}
+            size="sm"
+            hasChildren={!!row.original.children?.length}
+          />
+        </div>
+      ),
+      minSize: 60,
+      maxSize: 60,
+    },
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <SortableHeader column={column} title={t('名称')} />,
+      cell: ({ row }) => <ExpandableNameCell row={row} />,
+      meta: { fillWidth: true },
+    },
+    {
+      id: 'valueType',
+      accessorKey: 'valueType',
+      header: ({ column }) => <SortableHeader column={column} title={t('类型')} />,
+      cell: ({ row }) => {
+        // Map valueType to translated labels
+        const valueTypeLabels: Record<string, string> = {
+          'string': t('文本'),
+          'number': t('数字'),
+          'enum': t('枚举'),
+        }
+        const valueType = row.original.valueType
+        const label = valueType ? (valueTypeLabels[valueType] || valueType) : null
+        return (
+          <div className="p-1.5 pl-2.5">
+            {label ? (
+              <Info_Badge color="muted" className="whitespace-nowrap">
+                {label}
+              </Info_Badge>
+            ) : (
+              <span className="text-muted-foreground/50 text-sm">—</span>
+            )}
+          </div>
+        )
+      },
+      minSize: 160,
+    },
+  ]
+}
 
 /**
  * Extract children from a LabelConfig for tree expansion.
@@ -127,11 +139,14 @@ export function LabelsDataTable({
   searchable = false,
   maxHeight = 400,
   fullscreen = false,
-  fullscreenTitle = 'Labels',
+  fullscreenTitle,
   className,
 }: LabelsDataTableProps) {
+  const t = useT()
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const { isDark } = useTheme()
+  
+  // Create columns with i18n support
+  const columns = React.useMemo(() => createColumns(t), [t])
 
   // Fullscreen button (shown on hover via group class)
   const fullscreenButton = fullscreen ? (
@@ -144,7 +159,7 @@ export function LabelsDataTable({
         'text-muted-foreground/50 hover:text-foreground',
         'focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:opacity-100'
       )}
-      title="View Fullscreen"
+      title={t('全屏查看')}
     >
       <Maximize2 className="w-3.5 h-3.5" />
     </button>
@@ -160,9 +175,9 @@ export function LabelsDataTable({
       <Info_DataTable
         columns={columns}
         data={data}
-        searchable={searchable ? { placeholder: 'Search labels...' } : false}
+        searchable={searchable ? { placeholder: t('搜索标签...') } : false}
         maxHeight={maxHeight}
-        emptyContent="No labels configured"
+        emptyContent={t('未配置标签')}
         floatingAction={fullscreenButton}
         className={cn(fullscreen && 'group', className)}
         getSubRows={getSubRows}
@@ -173,15 +188,14 @@ export function LabelsDataTable({
         <DataTableOverlay
           isOpen={isFullscreen}
           onClose={() => setIsFullscreen(false)}
-          title={fullscreenTitle}
-          subtitle={`${totalCount} ${totalCount === 1 ? 'label' : 'labels'}`}
-          theme={isDark ? 'dark' : 'light'}
+          title={fullscreenTitle || t('标签')}
+          subtitle={`${totalCount} ${t('个标签')}`}
         >
           <Info_DataTable
             columns={columns}
             data={data}
-            searchable={searchable ? { placeholder: 'Search labels...' } : false}
-            emptyContent="No labels configured"
+            searchable={searchable ? { placeholder: t('搜索标签...') } : false}
+            emptyContent={t('未配置标签')}
             getSubRows={getSubRows}
           />
         </DataTableOverlay>
