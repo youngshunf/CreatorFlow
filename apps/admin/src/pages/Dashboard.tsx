@@ -1,12 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 import { getDashboardStats } from '../lib/api'
 import { format } from 'date-fns'
 
 export function Dashboard() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: getDashboardStats,
-  })
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  
+  useEffect(() => {
+    getDashboardStats()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setIsLoading(false))
+  }, [])
   
   if (isLoading) {
     return <div className="animate-pulse">加载中...</div>

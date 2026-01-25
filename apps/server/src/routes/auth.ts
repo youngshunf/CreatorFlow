@@ -21,8 +21,9 @@ auth.post(
     
     try {
       const user = await UserService.register({ email, password, name })
+      const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
       const token = await sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, exp },
         process.env.JWT_SECRET!
       )
       
@@ -55,8 +56,9 @@ auth.post(
     
     try {
       const user = await UserService.login(email, password)
+      const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
       const token = await sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, exp },
         process.env.JWT_SECRET!
       )
       
@@ -145,8 +147,9 @@ auth.get('/oauth/google/callback', async (c) => {
   
   try {
     const user = await UserService.handleGoogleOAuth(code)
+    const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
     const token = await sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, exp },
       process.env.JWT_SECRET!
     )
     
@@ -164,8 +167,9 @@ auth.post('/refresh', authMiddleware, async (c) => {
   const userId = c.get('userId')
   const userEmail = c.get('userEmail')
   
+  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
   const token = await sign(
-    { userId, email: userEmail },
+    { userId, email: userEmail, exp },
     process.env.JWT_SECRET!
   )
   

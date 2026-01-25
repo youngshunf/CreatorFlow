@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect, useCallback } from 'react'
 import { getSubscriptions, grantSubscription } from '../lib/api'
 import { format } from 'date-fns'
 
@@ -8,19 +7,27 @@ export function Subscriptions() {
   const [statusFilter, setStatusFilter] = useState('')
   const [planFilter, setPlanFilter] = useState('')
   const [showGrantModal, setShowGrantModal] = useState(false)
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const limit = 20
   
-  const queryClient = useQueryClient()
-  
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['subscriptions', page, statusFilter, planFilter],
-    queryFn: () => getSubscriptions({
+  const fetchData = useCallback(() => {
+    setIsLoading(true)
+    getSubscriptions({
       page,
       limit,
       status: statusFilter || undefined,
       plan: planFilter || undefined,
-    }),
-  })
+    })
+      .then(setData)
+      .catch(setError)
+      .finally(() => setIsLoading(false))
+  }, [page, statusFilter, planFilter])
+  
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
   
   const totalPages = Math.ceil((data?.total ?? 0) / limit)
   
@@ -156,7 +163,7 @@ export function Subscriptions() {
           onClose={() => setShowGrantModal(false)}
           onSuccess={() => {
             setShowGrantModal(false)
-            queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
+            fetchData()
           }}
         />
       )}
@@ -169,11 +176,21 @@ function GrantModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: ()
   const [plan, setPlan] = useState('pro')
   const [months, setMonths] = useState(1)
   const [reason, setReason] = useState('')
+  const [isPending, setIsPending] = useState(false)
+  const [mutationError, setMutationError] = useState<Error | null>(null)
   
-  const mutation = useMutation({
-    mutationFn: () => grantSubscription(userId, plan, months, reason),
-    onSuccess,
-  })
+  const handleSubmit = async () => {
+    setIsPending(true)
+    setMutationError(null)
+    try {
+      await grantSubscription(userId, plan, months, reason)
+      onSuccess()
+    } catch (err) {
+      setMutationError(err as Error)
+    } finally {
+      setIsPending(false)
+    }
+  }
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
@@ -236,17 +253,17 @@ function GrantModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: ()
             取消
           </button>
           <button
-            onClick={() => mutation.mutate()}
-            disabled={!userId || mutation.isPending}
+            onClick={handleSubmit}
+            disabled={!userId || isPending}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {mutation.isPending ? '处理中...' : '确认授予'}
+            {isPending ? '处理中...' : '确认授予'}
           </button>
         </div>
         
-        {mutation.isError && (
+        {mutationError && (
           <p className="mt-3 text-sm text-red-600">
-            {(mutation.error as Error).message}
+            {mutationError.message}
           </p>
         )}
       </div>

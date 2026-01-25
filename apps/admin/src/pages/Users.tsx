@@ -1,17 +1,22 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 import { getUsers } from '../lib/api'
 import { format } from 'date-fns'
 
 export function Users() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const limit = 20
   
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['users', page, search],
-    queryFn: () => getUsers({ page, limit, search: search || undefined }),
-  })
+  useEffect(() => {
+    setIsLoading(true)
+    getUsers({ page, limit, search: search || undefined })
+      .then(setData)
+      .catch(setError)
+      .finally(() => setIsLoading(false))
+  }, [page, search])
   
   const totalPages = Math.ceil((data?.total ?? 0) / limit)
   

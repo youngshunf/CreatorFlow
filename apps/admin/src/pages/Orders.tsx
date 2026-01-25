@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 import { getOrders } from '../lib/api'
 import { format } from 'date-fns'
 
@@ -7,17 +6,23 @@ export function Orders() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('')
   const [channelFilter, setChannelFilter] = useState('')
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const limit = 20
   
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['orders', page, statusFilter, channelFilter],
-    queryFn: () => getOrders({
+  useEffect(() => {
+    setIsLoading(true)
+    getOrders({
       page,
       limit,
       status: statusFilter || undefined,
       channel: channelFilter || undefined,
-    }),
-  })
+    })
+      .then(setData)
+      .catch(setError)
+      .finally(() => setIsLoading(false))
+  }, [page, statusFilter, channelFilter])
   
   const totalPages = Math.ceil((data?.total ?? 0) / limit)
   

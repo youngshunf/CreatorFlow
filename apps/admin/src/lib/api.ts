@@ -1,8 +1,8 @@
-import { useAuthStore } from './auth'
+import { getAuthState } from './auth'
 
 const API_BASE = '/api'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message)
     this.name = 'ApiError'
@@ -10,7 +10,7 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = useAuthStore.getState().token
+  const { token } = getAuthState()
   
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -25,7 +25,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const error = await response.json().catch(() => ({ error: 'Request failed' }))
     
     if (response.status === 401) {
-      useAuthStore.getState().logout()
+      // Clear auth on 401
+      localStorage.removeItem('admin-auth-token')
+      window.location.href = '/login'
     }
     
     throw new ApiError(response.status, error.error || 'Request failed')
