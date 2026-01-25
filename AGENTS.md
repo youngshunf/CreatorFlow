@@ -199,3 +199,29 @@ const MyComponent = () => {
 - **Location:** `scripts/i18n-translate.ts`
 - **Scanned directories:** `apps/electron/src`, `packages/shared/src`, `packages/ui/src`
 - If translations are missing, check that the source directory is included in the `scanDirs` array in the script
+
+## Git branch merge guidelines
+
+### Merging main into creator-flow branch
+
+**CRITICAL:** When merging the `main` branch into `creator-flow`, you MUST preserve the internationalization (i18n) changes in the `creator-flow` branch.
+
+#### Merge strategy
+1. **Before merging:** Commit all i18n changes in `creator-flow` branch first
+2. **During merge:** When conflicts occur in i18n-related files, prefer the `creator-flow` version:
+   - `apps/electron/src/renderer/locales/*.json` - Keep creator-flow translations
+   - Components with `useT()` and `t()` calls - Keep the Chinese text wrapped with `t()`
+   - `packages/shared/src/locale/*` - Keep creator-flow locale utilities
+3. **After merging:** Run `bun run i18n:scan` to ensure all new text from main is captured
+4. **Verification:** Check the UI to ensure all visible text displays in Chinese
+
+#### Files requiring special attention during merge
+- `apps/electron/src/renderer/locales/zh-cn.json` - Translation dictionary
+- `apps/electron/src/renderer/components/app-shell/*.tsx` - UI components with i18n
+- `apps/electron/src/renderer/components/ui/slash-command-menu.tsx` - Permission mode translations
+- `packages/shared/src/agent/mode-types.ts` - Mode config (descriptions are translated at render time)
+
+#### Conflict resolution priority
+1. Keep i18n wrapper functions (`t()`, `useT()`) from creator-flow
+2. Accept new features/logic from main
+3. Merge both when possible (new feature code + i18n wrappers)
