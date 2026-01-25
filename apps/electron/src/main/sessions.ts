@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CraftAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
+import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -247,7 +247,7 @@ function resolveToolDisplayMeta(
 interface ManagedSession {
   id: string
   workspace: Workspace
-  agent: CraftAgent | null  // Lazy-loaded - null until first message
+  agent: CreatorFlowAgent | null  // Lazy-loaded - null until first message
   messages: Message[]
   isProcessing: boolean
   lastMessageAt: number
@@ -1417,11 +1417,11 @@ export class SessionManager {
   /**
    * Get or create agent for a session (lazy loading)
    */
-  private async getOrCreateAgent(managed: ManagedSession): Promise<CraftAgent> {
+  private async getOrCreateAgent(managed: ManagedSession): Promise<CreatorFlowAgent> {
     if (!managed.agent) {
       const end = perf.start('agent.create', { sessionId: managed.id })
       const config = loadStoredConfig()
-      managed.agent = new CraftAgent({
+      managed.agent = new CreatorFlowAgent({
         workspace: managed.workspace,
         // Session model takes priority, fallback to global config, then resolve with customModel override
         model: resolveModelId(managed.model || config?.model || DEFAULT_MODEL),
@@ -1493,7 +1493,7 @@ export class SessionManager {
       }
 
       // Note: Credential requests now flow through onAuthRequest (unified auth flow)
-      // The legacy onCredentialRequest callback has been removed from CraftAgent
+      // The legacy onCredentialRequest callback has been removed from CreatorFlowAgent
 
       // Set up mode change handlers
       managed.agent.onPermissionModeChange = (mode) => {
@@ -3117,7 +3117,7 @@ To view this task's output:
         const PARENT_TOOLS = ['Task', 'TaskOutput']
         const isParentTool = PARENT_TOOLS.includes(event.toolName)
 
-        // Use parentToolUseId from the event - CraftAgent computes this correctly
+        // Use parentToolUseId from the event - CreatorFlowAgent computes this correctly
         // using the SDK's parent_tool_use_id (authoritative for parallel Tasks)
         // Only fall back to stack heuristic if event doesn't provide parent
         let parentToolUseId: string | undefined
@@ -3125,7 +3125,7 @@ To view this task's output:
           // Parent tools don't have a parent themselves
           parentToolUseId = undefined
         } else if (event.parentToolUseId) {
-          // CraftAgent provided the correct parent from SDK - use it
+          // CreatorFlowAgent provided the correct parent from SDK - use it
           parentToolUseId = event.parentToolUseId
         } else if (managed.parentToolStack.length > 0) {
           // Fallback: use stack heuristic for edge cases
@@ -3463,7 +3463,7 @@ To view this task's output:
         break
 
       case 'complete':
-        // Complete event from CraftAgent - accumulate usage from this turn
+        // Complete event from CreatorFlowAgent - accumulate usage from this turn
         // Actual 'complete' sent to renderer comes from the finally block in sendMessage
         if (event.usage) {
           // Initialize tokenUsage if not set
