@@ -18,6 +18,7 @@ import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { EditPopover, EditButton, getEditConfig } from '@/components/ui/EditPopover'
 import { getDocUrl } from '@creator-flow/shared/docs/doc-links'
 import { Loader2 } from 'lucide-react'
+import { useT } from '@/context/LocaleContext'
 import { useAppShellContext, useActiveWorkspace } from '@/context/AppShellContext'
 import { useLabels } from '@/hooks/useLabels'
 import {
@@ -37,6 +38,7 @@ export const meta: DetailsPageMeta = {
 }
 
 export default function LabelsSettingsPage() {
+  const t = useT()
   const { activeWorkspaceId } = useAppShellContext()
   const activeWorkspace = useActiveWorkspace()
   const { labels, isLoading } = useLabels(activeWorkspaceId)
@@ -57,7 +59,7 @@ export default function LabelsSettingsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <PanelHeader title="Labels" actions={<HeaderMenu route={routes.view.settings('labels')} />} />
+      <PanelHeader title={t('标签')} actions={<HeaderMenu route={routes.view.settings('labels')} />} />
       <div className="flex-1 min-h-0 mask-fade-y">
         <ScrollArea className="h-full">
           <div className="px-5 py-7 max-w-3xl mx-auto">
@@ -69,17 +71,17 @@ export default function LabelsSettingsPage() {
               ) : (
                 <>
                   {/* About Section */}
-                  <SettingsSection title="About Labels">
+                  <SettingsSection title={t('关于标签')}>
                     <SettingsCard className="px-4 py-3.5">
                       <div className="text-sm text-muted-foreground leading-relaxed space-y-1.5">
                         <p>
-                          Labels help you organize sessions with colored tags. Use them to categorize conversations by project, topic, or priority — making it easy to filter and find related sessions later.
+                          {t('标签可以用彩色标签对会话进行组织。可按项目、主题或优先级分类，便于筛选与查找。')}
                         </p>
                         <p>
-                          Each label can optionally carry a <span className="text-foreground/80 font-medium">value</span> with a specific type (text, number, or date). This turns labels into structured metadata — for example, a "priority" label with value 3, or a "due" label with a date.
+                          {t('每个标签可选择携带一个具有特定类型（文本、数字或日期）的值，这使标签成为结构化元数据，例如带值3的“优先级”或带日期的“截止”。')}
                         </p>
                         <p>
-                          <span className="text-foreground/80 font-medium">Auto-apply rules</span> assign labels automatically when a message matches a regex pattern. For example, pasting a Linear issue URL can auto-tag the session with the project name and issue ID — no manual tagging needed.
+                          {t('自动应用规则会在消息匹配正则时自动打标签，例如粘贴 Linear Issue 链接可自动标注项目名与 Issue ID，无需手动。')}
                         </p>
                         <p>
                           <button
@@ -87,7 +89,7 @@ export default function LabelsSettingsPage() {
                             onClick={() => window.electronAPI?.openUrl(getDocUrl('labels'))}
                             className="text-foreground/70 hover:text-foreground underline underline-offset-2"
                           >
-                            Learn more
+                            {t('了解更多')}
                           </button>
                         </p>
                       </div>
@@ -96,8 +98,8 @@ export default function LabelsSettingsPage() {
 
                   {/* Label Hierarchy Section */}
                   <SettingsSection
-                    title="Label Hierarchy"
-                    description="All labels configured for this workspace. Labels can be nested to form groups."
+                    title={t('标签层级')}
+                    description={t('显示当前工作区的所有标签，可通过嵌套形成分组。')}
                     action={
                       <EditPopover
                         trigger={<EditButton />}
@@ -114,13 +116,13 @@ export default function LabelsSettingsPage() {
                           searchable
                           maxHeight={350}
                           fullscreen
-                          fullscreenTitle="Label Hierarchy"
+                          fullscreenTitle={t('标签层级')}
                         />
                       ) : (
                         <div className="p-8 text-center text-muted-foreground">
-                          <p className="text-sm">No labels configured.</p>
+                          <p className="text-sm">{t('暂无已配置的标签。')}</p>
                           <p className="text-xs mt-1 text-foreground/40">
-                            Labels can be created by the agent or by editing <code className="bg-foreground/5 px-1 rounded">labels/config.json</code> in your workspace.
+                            {t('可由智能体创建，或编辑工作区中的 labels/config.json。')}
                           </p>
                         </div>
                       )}
@@ -129,8 +131,8 @@ export default function LabelsSettingsPage() {
 
                   {/* Auto-Apply Rules Section */}
                   <SettingsSection
-                    title="Auto-Apply Rules"
-                    description="Regex patterns that automatically apply labels when matched in user messages. For example, paste a Linear issue URL and automatically tag the session with the project name and issue ID."
+                    title={t('自动应用规则')}
+                    description={t('当用户消息匹配正则时自动应用标签，例如粘贴 Linear Issue 链接时自动标注项目与 Issue ID。')}
                     action={
                       <EditPopover
                         trigger={<EditButton />}
@@ -146,7 +148,7 @@ export default function LabelsSettingsPage() {
                         searchable
                         maxHeight={350}
                         fullscreen
-                        fullscreenTitle="Auto-Apply Rules"
+                        fullscreenTitle={t('自动应用规则')}
                       />
                     </SettingsCard>
                   </SettingsSection>
