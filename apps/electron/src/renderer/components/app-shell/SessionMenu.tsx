@@ -33,13 +33,16 @@ import {
   CloudUpload,
   Globe,
   RefreshCw,
+  Tag,
+  Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { useMenuComponents } from '@/components/ui/menu-context'
+import { useMenuComponents, type MenuComponents } from '@/components/ui/menu-context'
 import { getStateColor, getStateIcon, type TodoStateId } from '@/config/todo-states'
 import type { TodoState } from '@/config/todo-states'
-import { useT } from '@/context/LocaleContext'
+import type { LabelConfig } from '@creator-flow/shared/labels'
+import { extractLabelId } from '@creator-flow/shared/labels'
+import { LabelIcon } from '@/components/ui/label-icon'
 
 export interface SessionMenuProps {
   /** Session ID */
@@ -58,6 +61,12 @@ export interface SessionMenuProps {
   currentTodoState: TodoStateId
   /** Available todo states */
   todoStates: TodoState[]
+  /** Current labels applied to this session (e.g. ["bug", "priority::3"]) */
+  sessionLabels?: string[]
+  /** All available label configs (tree structure) for the labels submenu */
+  labels?: LabelConfig[]
+  /** Callback when labels are toggled (receives full updated labels array) */
+  onLabelsChange?: (labels: string[]) => void
   /** Callbacks */
   onRename: () => void
   onFlag: () => void
@@ -81,6 +90,9 @@ export function SessionMenu({
   hasUnreadMessages,
   currentTodoState,
   todoStates,
+  sessionLabels = [],
+  labels = [],
+  onLabelsChange,
   onRename,
   onFlag,
   onUnflag,
@@ -89,21 +101,20 @@ export function SessionMenu({
   onOpenInNewWindow,
   onDelete,
 }: SessionMenuProps) {
-  const t = useT()
   // Share handlers
   const handleShare = async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'shareToViewer' }) as { success: boolean; url?: string; error?: string } | undefined
     if (result?.success && result.url) {
       await navigator.clipboard.writeText(result.url)
-      toast.success(t('链接已复制到剪贴板'), {
+      toast.success('Link copied to clipboard', {
         description: result.url,
         action: {
-          label: t('打开'),
+          label: 'Open',
           onClick: () => window.electronAPI.openUrl(result.url!),
         },
       })
     } else {
-      toast.error(t('分享失败'), { description: result?.error || t('未知错误') })
+      toast.error('Failed to share', { description: result?.error || 'Unknown error' })
     }
   }
 
@@ -114,25 +125,25 @@ export function SessionMenu({
   const handleCopyLink = async () => {
     if (sharedUrl) {
       await navigator.clipboard.writeText(sharedUrl)
-      toast.success(t('链接已复制到剪贴板'))
+      toast.success('Link copied to clipboard')
     }
   }
 
   const handleUpdateShare = async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'updateShare' })
     if (result?.success) {
-      toast.success(t('分享已更新'))
+      toast.success('Share updated')
     } else {
-      toast.error(t('更新分享失败'), { description: result?.error })
+      toast.error('Failed to update share', { description: result?.error })
     }
   }
 
   const handleRevokeShare = async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'revokeShare' })
     if (result?.success) {
-      toast.success(t('已停止分享'))
+      toast.success('Sharing stopped')
     } else {
-      toast.error(t('停止分享失败'), { description: result?.error })
+      toast.error('Failed to stop sharing', { description: result?.error })
     }
   }
 
@@ -144,18 +155,38 @@ export function SessionMenu({
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'copyPath' }) as { success: boolean; path?: string } | undefined
     if (result?.success && result.path) {
       await navigator.clipboard.writeText(result.path)
-      toast.success(t('路径已复制到剪贴板'))
+      toast.success('Path copied to clipboard')
     }
   }
 
   const handleRefreshTitle = async () => {
     const result = await window.electronAPI.sessionCommand(sessionId, { type: 'refreshTitle' }) as { success: boolean; title?: string; error?: string } | undefined
     if (result?.success) {
-      toast.success(t('标题已刷新'), { description: result.title })
+      toast.success('Title refreshed', { description: result.title })
     } else {
-      toast.error(t('刷新标题失败'), { description: result?.error || t('未知错误') })
+      toast.error('Failed to refresh title', { description: result?.error || 'Unknown error' })
     }
   }
+
+  // Set of currently applied label IDs (extracted from entries like "priority::3" → "priority")
+  const appliedLabelIds = React.useMemo(
+    () => new Set(sessionLabels.map(extractLabelId)),
+    [sessionLabels]
+  )
+
+  // Toggle a label: add if not applied, remove if applied (by base ID)
+  const handleLabelToggle = React.useCallback((labelId: string) => {
+    if (!onLabelsChange) return
+    const isApplied = appliedLabelIds.has(labelId)
+    if (isApplied) {
+      // Remove all entries matching this label ID (handles valued labels too)
+      const updated = sessionLabels.filter(entry => extractLabelId(entry) !== labelId)
+      onLabelsChange(updated)
+    } else {
+      // Add as a boolean label (just the ID, no value)
+      onLabelsChange([...sessionLabels, labelId])
+    }
+  }, [sessionLabels, appliedLabelIds, onLabelsChange])
 
   // Get menu components from context (works with both DropdownMenu and ContextMenu)
   const { MenuItem, Separator, Sub, SubTrigger, SubContent } = useMenuComponents()
@@ -166,30 +197,30 @@ export function SessionMenu({
       {!sharedUrl ? (
         <MenuItem onClick={handleShare}>
           <CloudUpload className="h-3.5 w-3.5" />
-          <span className="flex-1">{t('分享')}</span>
+          <span className="flex-1">Share</span>
         </MenuItem>
       ) : (
         <Sub>
-          <SubTrigger>
+          <SubTrigger className="pr-2">
             <CloudUpload className="h-3.5 w-3.5" />
-            <span className="flex-1">{t('已分享')}</span>
+            <span className="flex-1">Shared</span>
           </SubTrigger>
           <SubContent>
             <MenuItem onClick={handleOpenInBrowser}>
               <Globe className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('在浏览器中打开')}</span>
+              <span className="flex-1">Open in Browser</span>
             </MenuItem>
             <MenuItem onClick={handleCopyLink}>
               <Copy className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('复制链接')}</span>
+              <span className="flex-1">Copy Link</span>
             </MenuItem>
             <MenuItem onClick={handleUpdateShare}>
               <RefreshCw className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('更新分享')}</span>
+              <span className="flex-1">Update Share</span>
             </MenuItem>
             <MenuItem onClick={handleRevokeShare} variant="destructive">
               <Link2Off className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('停止分享')}</span>
+              <span className="flex-1">Stop Sharing</span>
             </MenuItem>
           </SubContent>
         </Sub>
@@ -198,14 +229,14 @@ export function SessionMenu({
 
       {/* Status submenu - includes all statuses plus Flag/Unflag at the bottom */}
       <Sub>
-        <SubTrigger>
+        <SubTrigger className="pr-2">
           <span
             className="shrink-0 flex items-center justify-center -mt-px h-3.5 w-3.5 [&>svg]:w-full [&>svg]:h-full [&>div>svg]:w-full [&>div>svg]:h-full [&>img]:w-full [&>img]:h-full"
             style={{ color: getStateColor(currentTodoState, todoStates) ?? 'var(--foreground)' }}
           >
             {getStateIcon(currentTodoState, todoStates)}
           </span>
-          <span className="flex-1">{t('状态')}</span>
+          <span className="flex-1">Status</span>
         </SubTrigger>
         <SubContent>
           {todoStates.map((state) => {
@@ -231,16 +262,39 @@ export function SessionMenu({
         </SubContent>
       </Sub>
 
+      {/* Labels submenu - hierarchical label tree with nested sub-menus and toggle checkmarks */}
+      {labels.length > 0 && (
+        <Sub>
+          <SubTrigger className="pr-2">
+            <Tag className="h-3.5 w-3.5" />
+            <span className="flex-1">Labels</span>
+            {sessionLabels.length > 0 && (
+              <span className="text-[10px] text-muted-foreground tabular-nums -mr-2.5">
+                {sessionLabels.length}
+              </span>
+            )}
+          </SubTrigger>
+          <SubContent>
+            <LabelMenuItems
+              labels={labels}
+              appliedLabelIds={appliedLabelIds}
+              onToggle={handleLabelToggle}
+              menu={{ MenuItem, Separator, Sub, SubTrigger, SubContent }}
+            />
+          </SubContent>
+        </Sub>
+      )}
+
       {/* Flag/Unflag */}
       {!isFlagged ? (
         <MenuItem onClick={onFlag}>
           <Flag className="h-3.5 w-3.5 text-info" />
-          <span className="flex-1">{t('标记')}</span>
+          <span className="flex-1">Flag</span>
         </MenuItem>
       ) : (
         <MenuItem onClick={onUnflag}>
           <FlagOff className="h-3.5 w-3.5" />
-          <span className="flex-1">{t('取消标记')}</span>
+          <span className="flex-1">Unflag</span>
         </MenuItem>
       )}
 
@@ -248,7 +302,7 @@ export function SessionMenu({
       {!hasUnreadMessages && hasMessages && (
         <MenuItem onClick={onMarkUnread}>
           <MailOpen className="h-3.5 w-3.5" />
-          <span className="flex-1">{t('标记为未读')}</span>
+          <span className="flex-1">Mark as Unread</span>
         </MenuItem>
       )}
 
@@ -257,13 +311,13 @@ export function SessionMenu({
       {/* Rename */}
       <MenuItem onClick={onRename}>
         <Pencil className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('重命名')}</span>
+        <span className="flex-1">Rename</span>
       </MenuItem>
 
       {/* Regenerate Title - AI-generate based on recent messages */}
       <MenuItem onClick={handleRefreshTitle}>
         <RefreshCw className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('重新生成标题')}</span>
+        <span className="flex-1">Regenerate Title</span>
       </MenuItem>
 
       <Separator />
@@ -271,19 +325,19 @@ export function SessionMenu({
       {/* Open in New Window */}
       <MenuItem onClick={onOpenInNewWindow}>
         <AppWindow className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('在新窗口打开')}</span>
+        <span className="flex-1">Open in New Window</span>
       </MenuItem>
 
       {/* View in Finder */}
       <MenuItem onClick={handleShowInFinder}>
         <FolderOpen className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('在访达中查看')}</span>
+        <span className="flex-1">View in Finder</span>
       </MenuItem>
 
       {/* Copy Path */}
       <MenuItem onClick={handleCopyPath}>
         <Copy className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('复制路径')}</span>
+        <span className="flex-1">Copy Path</span>
       </MenuItem>
 
       <Separator />
@@ -291,8 +345,116 @@ export function SessionMenu({
       {/* Delete */}
       <MenuItem onClick={onDelete} variant="destructive">
         <Trash2 className="h-3.5 w-3.5" />
-        <span className="flex-1">{t('删除')}</span>
+        <span className="flex-1">Delete</span>
       </MenuItem>
+    </>
+  )
+}
+
+/**
+ * Count how many labels in a subtree (including the root) are currently applied.
+ * Used to show selection counts on parent SubTriggers so users can see
+ * where in the tree their selections are.
+ */
+function countAppliedInSubtree(label: LabelConfig, appliedIds: Set<string>): number {
+  let count = appliedIds.has(label.id) ? 1 : 0
+  if (label.children) {
+    for (const child of label.children) {
+      count += countAppliedInSubtree(child, appliedIds)
+    }
+  }
+  return count
+}
+
+/**
+ * LabelMenuItems - Recursive component for rendering label tree as nested sub-menus.
+ *
+ * Labels with children render as nested Sub/SubTrigger/SubContent menus (the parent
+ * itself appears as the first toggleable item inside its submenu, followed by children).
+ * Leaf labels render as simple toggleable menu items with checkmarks.
+ * Parent triggers show a count of applied descendants so users can see where selections are.
+ *
+ * Menu primitives are passed as props so this works in both DropdownMenu and ContextMenu.
+ */
+function LabelMenuItems({
+  labels,
+  appliedLabelIds,
+  onToggle,
+  menu,
+}: {
+  labels: LabelConfig[]
+  appliedLabelIds: Set<string>
+  onToggle: (labelId: string) => void
+  menu: Pick<MenuComponents, 'MenuItem' | 'Separator' | 'Sub' | 'SubTrigger' | 'SubContent'>
+}) {
+  const { MenuItem, Separator, Sub, SubTrigger, SubContent } = menu
+
+  return (
+    <>
+      {labels.map(label => {
+        const hasChildren = label.children && label.children.length > 0
+        const isApplied = appliedLabelIds.has(label.id)
+
+        if (hasChildren) {
+          // Count applied labels in this subtree (parent + all descendants)
+          const subtreeCount = countAppliedInSubtree(label, appliedLabelIds)
+
+          // Parent label: render as a submenu trigger with nested child items
+          return (
+            <Sub key={label.id}>
+              <SubTrigger className="pr-2">
+                <LabelIcon label={label} size="sm" hasChildren />
+                <span className="flex-1">{label.name}</span>
+                {subtreeCount > 0 && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums -mr-2.5">
+                    {subtreeCount}
+                  </span>
+                )}
+              </SubTrigger>
+              <SubContent>
+                {/* Parent label itself is toggleable as the first item */}
+                <MenuItem
+                  onSelect={(e: Event) => {
+                    e.preventDefault()
+                    onToggle(label.id)
+                  }}
+                >
+                  <LabelIcon label={label} size="sm" hasChildren />
+                  <span className="flex-1">{label.name}</span>
+                  <span className="w-3.5 ml-4">
+                    {isApplied && <Check className="h-3.5 w-3.5 text-foreground" />}
+                  </span>
+                </MenuItem>
+                <Separator />
+                {/* Recurse into children */}
+                <LabelMenuItems
+                  labels={label.children!}
+                  appliedLabelIds={appliedLabelIds}
+                  onToggle={onToggle}
+                  menu={menu}
+                />
+              </SubContent>
+            </Sub>
+          )
+        }
+
+        // Leaf label: simple toggleable item with checkmark
+        return (
+          <MenuItem
+            key={label.id}
+            onSelect={(e: Event) => {
+              e.preventDefault()
+              onToggle(label.id)
+            }}
+          >
+            <LabelIcon label={label} size="sm" />
+            <span className="flex-1">{label.name}</span>
+            <span className="w-3.5 ml-4">
+              {isApplied && <Check className="h-3.5 w-3.5 text-foreground" />}
+            </span>
+          </MenuItem>
+        )
+      })}
     </>
   )
 }

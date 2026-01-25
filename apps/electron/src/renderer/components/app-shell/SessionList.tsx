@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { rendererPerf } from "@/lib/perf"
 import type { LabelConfig } from "@creator-flow/shared/labels"
-import { flattenLabels, extractLabelId } from "@creator-flow/shared/labels"
+import { flattenLabels, parseLabelEntry, formatLabelEntry, formatDisplayValue } from "@creator-flow/shared/labels"
 import { resolveEntityColor } from "@creator-flow/shared/colors"
 import { useTheme } from "@/context/ThemeContext"
 import { Spinner, Tooltip, TooltipTrigger, TooltipContent } from "@creator-flow/ui"
@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TodoStateMenu } from "@/components/ui/todo-filter-menu"
+import { LabelValuePopover } from "@/components/ui/label-value-popover"
+import { LabelValueTypeIcon } from "@/components/ui/label-icon"
 import { getStateColor, getStateIcon, getStateLabel, type TodoStateId } from "@/config/todo-states"
 import type { TodoState } from "@/config/todo-states"
 import {
@@ -49,41 +51,7 @@ import { useFocusContext } from "@/context/FocusContext"
 import { getSessionTitle } from "@/utils/session"
 import type { SessionMeta } from "@/atoms/sessions"
 import type { ViewConfig } from "@creator-flow/shared/views"
-import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@creator-flow/shared/agent/modes'
-import { useT } from "@/context/LocaleContext"
-
-// ============================================================================
-// Translation Mappings
-// ============================================================================
-
-/**
- * Permission mode short name translations for UI.
- */
-const PERMISSION_MODE_SHORT_NAMES: Record<PermissionMode, string> = {
-  'safe': '探索',
-  'ask': '询问',
-  'allow-all': '执行',
-}
-
-/**
- * Label name translation mapping for existing workspaces with English labels.
- */
-const LABEL_NAME_TRANSLATIONS: Record<string, string> = {
-  'Development': '开发',
-  'Code': '代码',
-  'Bug': '缺陷',
-  'Automation': '自动化',
-  'Content': '内容',
-  'Writing': '写作',
-  'Research': '研究',
-  'Design': '设计',
-  'Priority': '优先级',
-  'Project': '项目',
-}
-
-function translateLabelName(name: string): string {
-  return LABEL_NAME_TRANSLATIONS[name] ?? name
-}
+import { PERMISSION_MODE_CONFIG, type PermissionMode } from "@creator-flow/shared/agent/modes"
 
 // Pagination constants
 const INITIAL_DISPLAY_LIMIT = 20
@@ -110,9 +78,9 @@ const shortTimeLocale: Pick<Locale, 'formatDistance'> = {
  * Format a date for the date header
  * Returns "Today", "Yesterday", or formatted date like "Dec 19"
  */
-function formatDateHeader(date: Date, t: (text: string) => string): string {
-  if (isToday(date)) return t("今天")
-  if (isYesterday(date)) return t("昨天")
+function formatDateHeader(date: Date): string {
+  if (isToday(date)) return "Today"
+  if (isYesterday(date)) return "Yesterday"
   return format(date, "MMM d")
 }
 
@@ -120,7 +88,7 @@ function formatDateHeader(date: Date, t: (text: string) => string): string {
  * Group sessions by date (day boundary)
  * Returns array of { date, sessions } sorted by date descending
  */
-function groupSessionsByDate(sessions: SessionMeta[], t: (text: string) => string): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
+function groupSessionsByDate(sessions: SessionMeta[]): Array<{ date: Date; label: string; sessions: SessionMeta[] }> {
   const groups = new Map<string, { date: Date; sessions: SessionMeta[] }>()
 
   for (const session of sessions) {
@@ -139,7 +107,7 @@ function groupSessionsByDate(sessions: SessionMeta[], t: (text: string) => strin
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(group => ({
       ...group,
-      label: formatDateHeader(group.date, t),
+      label: formatDateHeader(group.date),
     }))
 }
 
@@ -227,6 +195,10 @@ interface SessionItemProps {
   todoStates: TodoState[]
   /** Pre-flattened label configs for resolving session label IDs to display info */
   flatLabels: LabelConfig[]
+  /** Full label tree (for labels submenu in SessionMenu) */
+  labels: LabelConfig[]
+  /** Callback when session labels are toggled */
+  onLabelsChange?: (sessionId: string, labels: string[]) => void
 }
 
 /**
@@ -253,24 +225,29 @@ function SessionItem({
   searchQuery,
   todoStates,
   flatLabels,
+  labels,
+  onLabelsChange,
 }: SessionItemProps) {
-  const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [todoMenuOpen, setTodoMenuOpen] = useState(false)
+  // Tracks which label badge's LabelValuePopover is open (by index), null = all closed
+  const [openLabelIndex, setOpenLabelIndex] = useState<number | null>(null)
 
   // Get current todo state from session properties
   const currentTodoState = getSessionTodoState(item)
 
-  // Resolve session label IDs (e.g. "bug", "priority::3") to their LabelConfig objects
+  // Resolve session label entries (e.g. "bug", "priority::3") to config + optional value
   const resolvedLabels = useMemo(() => {
     if (!item.labels || item.labels.length === 0 || flatLabels.length === 0) return []
     return item.labels
       .map(entry => {
-        const id = extractLabelId(entry)
-        return flatLabels.find(l => l.id === id)
+        const parsed = parseLabelEntry(entry)
+        const config = flatLabels.find(l => l.id === parsed.id)
+        if (!config) return null
+        return { config, rawValue: parsed.rawValue }
       })
-      .filter((l): l is LabelConfig => l != null)
+      .filter((l): l is { config: LabelConfig; rawValue: string | undefined } => l != null)
   }, [item.labels, flatLabels])
 
 
@@ -383,7 +360,7 @@ function SessionItem({
               )}
               {!item.isProcessing && hasUnreadMessages(item) && (
                 <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-accent text-white">
-                  {t('新')}
+                  New
                 </span>
               )}
 
@@ -400,7 +377,7 @@ function SessionItem({
                 )}
                 {item.lastMessageRole === 'plan' && (
                   <span className="shrink-0 h-[18px] px-1.5 text-[10px] font-medium rounded bg-success/10 text-success flex items-center whitespace-nowrap">
-                    {t('计划')}
+                    Plan
                   </span>
                 )}
                 {permissionMode && (
@@ -412,26 +389,77 @@ function SessionItem({
                       permissionMode === 'allow-all' && "bg-accent/10 text-accent"
                     )}
                   >
-                    {t(PERMISSION_MODE_SHORT_NAMES[permissionMode])}
+                    {PERMISSION_MODE_CONFIG[permissionMode].shortName}
                   </span>
                 )}
-                {/* Label badges — solid color via color-mix in sRGB */}
-                {resolvedLabels.map(label => {
+                {/* Label badges — each badge opens its own LabelValuePopover for
+                    editing the value or removing the label. Uses onMouseDown +
+                    stopPropagation to prevent parent <button> session selection. */}
+                {resolvedLabels.map(({ config: label, rawValue }, labelIndex) => {
                   const color = label.color ? resolveEntityColor(label.color, isDark) : null
+                  const displayValue = rawValue ? formatDisplayValue(rawValue, label.valueType) : undefined
                   return (
-                    <span
+                    <LabelValuePopover
                       key={label.id}
-                      className="shrink-0 h-[18px] px-1.5 text-[10px] font-medium rounded flex items-center whitespace-nowrap"
-                      style={color ? {
-                        backgroundColor: `color-mix(in srgb, ${color} 6%, transparent)`,
-                        color: `color-mix(in srgb, ${color} 80%, transparent)`,
-                      } : {
-                        backgroundColor: 'rgba(var(--foreground-rgb), 0.05)',
-                        color: 'rgba(var(--foreground-rgb), 0.6)',
+                      label={label}
+                      value={rawValue}
+                      open={openLabelIndex === labelIndex}
+                      onOpenChange={(open) => setOpenLabelIndex(open ? labelIndex : null)}
+                      onValueChange={(newValue) => {
+                        // Rebuild labels array with the updated value for this label
+                        const updatedLabels = (item.labels || []).map(entry => {
+                          const parsed = parseLabelEntry(entry)
+                          if (parsed.id === label.id) {
+                            return formatLabelEntry(label.id, newValue)
+                          }
+                          return entry
+                        })
+                        onLabelsChange?.(item.id, updatedLabels)
+                      }}
+                      onRemove={() => {
+                        // Remove this label entry from the session
+                        const updatedLabels = (item.labels || []).filter(entry => {
+                          const parsed = parseLabelEntry(entry)
+                          return parsed.id !== label.id
+                        })
+                        onLabelsChange?.(item.id, updatedLabels)
                       }}
                     >
-                      {translateLabelName(label.name)}
-                    </span>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="shrink-0 h-[18px] max-w-[120px] px-1.5 text-[10px] font-medium rounded flex items-center whitespace-nowrap gap-0.5 cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                        }}
+                        style={color ? {
+                          backgroundColor: `color-mix(in srgb, ${color} 6%, transparent)`,
+                          color: `color-mix(in srgb, ${color} 75%, var(--foreground))`,
+                        } : {
+                          backgroundColor: 'rgba(var(--foreground-rgb), 0.05)',
+                          color: 'rgba(var(--foreground-rgb), 0.8)',
+                        }}
+                      >
+                        {label.name}
+                        {/* Interpunct + value for typed labels, or placeholder icon if typed but no value set */}
+                        {displayValue ? (
+                          <>
+                            <span style={{ opacity: 0.4 }}>·</span>
+                            <span className="font-normal truncate min-w-0" style={{ opacity: 0.75 }}>
+                              {displayValue}
+                            </span>
+                          </>
+                        ) : (
+                          label.valueType && (
+                            <>
+                              <span style={{ opacity: 0.4 }}>·</span>
+                              <LabelValueTypeIcon valueType={label.valueType} size={10} />
+                            </>
+                          )
+                        )}
+                      </div>
+                    </LabelValuePopover>
                   )
                 })}
                 {item.sharedUrl && (
@@ -447,37 +475,37 @@ function SessionItem({
                     <StyledDropdownMenuContent align="start">
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(item.sharedUrl!)}>
                         <Globe />
-                        {t('在浏览器中打开')}
+                        Open in Browser
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         await navigator.clipboard.writeText(item.sharedUrl!)
-                        toast.success(t('链接已复制到剪贴板'))
+                        toast.success('Link copied to clipboard')
                       }}>
                         <Copy />
-                        {t('复制链接')}
+                        Copy Link
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'updateShare' })
                         if (result?.success) {
-                          toast.success(t('分享已更新'))
+                          toast.success('Share updated')
                         } else {
-                          toast.error(t('更新分享失败'), { description: result?.error })
+                          toast.error('Failed to update share', { description: result?.error })
                         }
                       }}>
                         <RefreshCw />
-                        {t('更新分享')}
+                        Update Share
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuSeparator />
                       <StyledDropdownMenuItem onClick={async () => {
                         const result = await window.electronAPI.sessionCommand(item.id, { type: 'revokeShare' })
                         if (result?.success) {
-                          toast.success(t('已停止分享'))
+                          toast.success('Sharing stopped')
                         } else {
-                          toast.error(t('停止分享失败'), { description: result?.error })
+                          toast.error('Failed to stop sharing', { description: result?.error })
                         }
                       }} variant="destructive">
                         <Link2Off />
-                        {t('停止分享')}
+                        Stop Sharing
                       </StyledDropdownMenuItem>
                     </StyledDropdownMenuContent>
                   </DropdownMenu>
@@ -526,6 +554,9 @@ function SessionItem({
                     hasUnreadMessages={hasUnreadMessages(item)}
                     currentTodoState={currentTodoState}
                     todoStates={todoStates}
+                    sessionLabels={item.labels ?? []}
+                    labels={labels}
+                    onLabelsChange={onLabelsChange ? (newLabels) => onLabelsChange(item.id, newLabels) : undefined}
                     onRename={() => onRenameClick(item.id, getSessionTitle(item))}
                     onFlag={() => onFlag?.(item.id)}
                     onUnflag={() => onUnflag?.(item.id)}
@@ -553,6 +584,9 @@ function SessionItem({
               hasUnreadMessages={hasUnreadMessages(item)}
               currentTodoState={currentTodoState}
               todoStates={todoStates}
+              sessionLabels={item.labels ?? []}
+              labels={labels}
+              onLabelsChange={onLabelsChange ? (newLabels) => onLabelsChange(item.id, newLabels) : undefined}
               onRename={() => onRenameClick(item.id, getSessionTitle(item))}
               onFlag={() => onFlag?.(item.id)}
               onUnflag={() => onUnflag?.(item.id)}
@@ -614,6 +648,8 @@ interface SessionListProps {
   evaluateViews?: (meta: SessionMeta) => ViewConfig[]
   /** Label configs for resolving session label IDs to display info */
   labels?: LabelConfig[]
+  /** Callback when session labels are toggled (for labels submenu in SessionMenu) */
+  onLabelsChange?: (sessionId: string, labels: string[]) => void
 }
 
 // Re-export TodoStateId for use by parent components
@@ -649,8 +685,8 @@ export function SessionList({
   todoStates = [],
   evaluateViews,
   labels = [],
+  onLabelsChange,
 }: SessionListProps) {
-  const t = useT()
   const [session] = useSession()
   const { navigate } = useNavigation()
   const navState = useNavigationState()
@@ -683,15 +719,28 @@ export function SessionList({
     (b.lastMessageAt || 0) - (a.lastMessageAt || 0)
   )
 
-  // Filter items by search query
+  // Filter items by search query — matches title, label names, and label values.
+  // '#' characters are stripped when matching labels (so "#bug" finds label "bug").
+  // A bare '#' matches all sessions that have any labels.
   const searchFilteredItems = useMemo(() => {
     if (!searchQuery.trim()) return sortedItems
     const query = searchQuery.toLowerCase()
+    const labelQuery = query.replace(/#/g, '')
     return sortedItems.filter(item => {
-      const title = getSessionTitle(item).toLowerCase()
-      return title.includes(query)
+      if (getSessionTitle(item).toLowerCase().includes(query)) return true
+      // Bare '#' (no text after stripping) matches any session with labels
+      if (!labelQuery && item.labels && item.labels.length > 0) return true
+      // Match against label names and values (with # stripped)
+      if (labelQuery && item.labels?.some(entry => {
+        const parsed = parseLabelEntry(entry)
+        const config = flatLabels.find(l => l.id === parsed.id)
+        if (config?.name.toLowerCase().includes(labelQuery)) return true
+        if (parsed.rawValue?.toLowerCase().includes(labelQuery)) return true
+        return false
+      })) return true
+      return false
     })
-  }, [sortedItems, searchQuery])
+  }, [sortedItems, searchQuery, flatLabels])
 
   // Reset display limit when search query changes
   useEffect(() => {
@@ -729,7 +778,7 @@ export function SessionList({
   }, [hasMore, loadMore])
 
   // Group sessions by date (use paginated items)
-  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems, t), [paginatedItems, t])
+  const dateGroups = useMemo(() => groupSessionsByDate(paginatedItems), [paginatedItems])
 
   // Create flat list for keyboard navigation (maintains order across groups)
   const flatItems = useMemo(() => {
@@ -772,36 +821,36 @@ export function SessionList({
   const handleFlagWithToast = useCallback((sessionId: string) => {
     if (!onFlag) return
     onFlag(sessionId)
-    toast(t('对话已标记'), {
-      description: t('已添加到标记列表'),
+    toast('Conversation flagged', {
+      description: 'Added to your flagged items',
       action: onUnflag ? {
-        label: t('撤销'),
+        label: 'Undo',
         onClick: () => onUnflag(sessionId),
       } : undefined,
     })
-  }, [onFlag, onUnflag, t])
+  }, [onFlag, onUnflag])
 
   const handleUnflagWithToast = useCallback((sessionId: string) => {
     if (!onUnflag) return
     onUnflag(sessionId)
-    toast(t('标记已移除'), {
-      description: t('已从标记列表移除'),
+    toast('Flag removed', {
+      description: 'Removed from flagged items',
       action: onFlag ? {
-        label: t('撤销'),
+        label: 'Undo',
         onClick: () => onFlag(sessionId),
       } : undefined,
     })
-  }, [onFlag, onUnflag, t])
+  }, [onFlag, onUnflag])
 
   const handleDeleteWithToast = useCallback(async (sessionId: string): Promise<boolean> => {
     // Confirmation dialog is shown by handleDeleteSession in App.tsx
     // We await so toast only shows after successful deletion (if user confirmed)
     const deleted = await onDelete(sessionId)
     if (deleted) {
-      toast(t('对话已删除'))
+      toast('Conversation deleted')
     }
     return deleted
-  }, [onDelete, t])
+  }, [onDelete])
 
   // Roving tabindex for keyboard navigation
   const {
@@ -887,17 +936,23 @@ export function SessionList({
           <EmptyMedia variant="icon">
             <Inbox />
           </EmptyMedia>
-          <EmptyTitle>{t('暂无对话')}</EmptyTitle>
+          <EmptyTitle>No conversations yet</EmptyTitle>
           <EmptyDescription>
-            {t('与智能体的对话将显示在这里。开始一个新对话吧。')}
+            Conversations with your agent appear here. Start one to get going.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <button
-            onClick={() => onFocusChatInput?.()}
+            onClick={() => {
+              // Create a new session, applying the current filter's status/label if applicable
+              const params: { status?: string; label?: string } = {}
+              if (currentFilter?.kind === 'state') params.status = currentFilter.stateId
+              else if (currentFilter?.kind === 'label') params.label = currentFilter.labelId
+              navigate(routes.action.newChat(Object.keys(params).length > 0 ? params : undefined))
+            }}
             className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
           >
-            {t('新建对话')}
+            New Conversation
           </button>
         </EmptyContent>
       </Empty>
@@ -919,13 +974,13 @@ export function SessionList({
                 value={searchQuery}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder={t('搜索对话...')}
+                placeholder="Search conversations..."
                 className="w-full h-8 pl-8 pr-8 text-sm bg-foreground/5 border-0 rounded-[8px] outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
               />
               <button
                 onClick={onSearchClose}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-foreground/10 rounded"
-                title={t('关闭搜索')}
+                title="Close search"
               >
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -942,12 +997,12 @@ export function SessionList({
           {/* No results message when searching */}
           {searchActive && searchQuery && flatItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-              <p className="text-sm text-muted-foreground">{t('未找到对话')}</p>
+              <p className="text-sm text-muted-foreground">No conversations found</p>
               <button
                 onClick={() => onSearchChange?.('')}
                 className="text-xs text-foreground hover:underline mt-1"
               >
-                {t('清除搜索')}
+                Clear search
               </button>
             </div>
           )}
@@ -993,6 +1048,8 @@ export function SessionList({
                     searchQuery={searchQuery}
                     todoStates={todoStates}
                     flatLabels={flatLabels}
+                    labels={labels}
+                    onLabelsChange={onLabelsChange}
                   />
                 )
               })}
@@ -1011,11 +1068,11 @@ export function SessionList({
       <RenameDialog
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
-        title={t('重命名对话')}
+        title="Rename conversation"
         value={renameName}
         onValueChange={setRenameName}
         onSubmit={handleRenameSubmit}
-        placeholder={t('输入名称...')}
+        placeholder="Enter a name..."
       />
     </>
   )

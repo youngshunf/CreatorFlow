@@ -39,9 +39,12 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@creat
 import {
   DropdownMenu,
   DropdownMenuTrigger,
+  DropdownMenuSub,
   StyledDropdownMenuContent,
   StyledDropdownMenuItem,
   StyledDropdownMenuSeparator,
+  StyledDropdownMenuSubTrigger,
+  StyledDropdownMenuSubContent,
 } from "@/components/ui/styled-dropdown"
 import {
   ContextMenu,
@@ -80,8 +83,8 @@ import { type TodoStateId, type TodoState, statusConfigsToTodoStates } from "@/c
 import { useStatuses } from "@/hooks/useStatuses"
 import { useLabels } from "@/hooks/useLabels"
 import { useViews } from "@/hooks/useViews"
-import { LabelIcon } from "@/components/ui/label-icon"
-import { buildLabelTree, getDescendantIds, getLabelDisplayName, flattenLabels, extractLabelId } from "@creator-flow/shared/labels"
+import { LabelIcon, LabelValueTypeIcon } from "@/components/ui/label-icon"
+import { buildLabelTree, getDescendantIds, getLabelDisplayName, flattenLabels, extractLabelId, findLabelById } from "@creator-flow/shared/labels"
 import type { LabelConfig, LabelTreeNode } from "@creator-flow/shared/labels"
 import { resolveEntityColor } from "@creator-flow/shared/colors"
 import * as storage from "@/lib/local-storage"
@@ -108,32 +111,6 @@ import { RightSidebar } from "./RightSidebar"
 import type { RichTextInputHandle } from "@/components/ui/rich-text-input"
 import { hasOpenOverlay } from "@/lib/overlay-detection"
 import { clearSourceIconCaches } from "@/lib/icon-cache"
-import { useT } from "@/context/LocaleContext"
-
-/**
- * Label name translation mapping for existing workspaces with English labels.
- * This ensures existing workspaces with English labels display in Chinese.
- */
-const LABEL_NAME_TRANSLATIONS: Record<string, string> = {
-  'Development': '开发',
-  'Code': '代码',
-  'Bug': '缺陷',
-  'Automation': '自动化',
-  'Content': '内容',
-  'Writing': '写作',
-  'Research': '研究',
-  'Design': '设计',
-  'Priority': '优先级',
-  'Project': '项目',
-}
-
-/**
- * Translate label name if it's a known English label.
- * Returns the original name if no translation found.
- */
-function translateLabelName(name: string): string {
-  return LABEL_NAME_TRANSLATIONS[name] ?? name
-}
 
 /**
  * AppShellProps - Minimal props interface for AppShell component
@@ -158,8 +135,84 @@ interface AppShellProps {
 }
 
 /**
- * Panel spacing constants (in pixels)
+ * FilterLabelItems - Recursive component for rendering label tree in the filter dropdown.
+ * Labels with children render as nested submenus; leaf labels render as toggleable items.
  */
+function FilterLabelItems({
+  labels,
+  labelFilter,
+  setLabelFilter,
+}: {
+  labels: LabelConfig[]
+  labelFilter: Set<string>
+  setLabelFilter: React.Dispatch<React.SetStateAction<Set<string>>>
+}) {
+  return (
+    <>
+      {labels.map(label => {
+        const hasChildren = label.children && label.children.length > 0
+        if (hasChildren) {
+          // Parent label: render as a submenu trigger with nested items.
+          // The parent itself is also toggleable via clicking the trigger area.
+          return (
+            <DropdownMenuSub key={label.id}>
+              <StyledDropdownMenuSubTrigger>
+                <LabelIcon label={label} size="sm" hasChildren />
+                <span className="flex-1">{label.name}</span>
+                {labelFilter.has(label.id) && <Check className="h-3 w-3 text-foreground" />}
+              </StyledDropdownMenuSubTrigger>
+              <StyledDropdownMenuSubContent minWidth="min-w-[160px]">
+                {/* Allow selecting the parent label itself */}
+                <StyledDropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setLabelFilter(prev => {
+                      const next = new Set(prev)
+                      if (next.has(label.id)) next.delete(label.id)
+                      else next.add(label.id)
+                      return next
+                    })
+                  }}
+                >
+                  <LabelIcon label={label} size="sm" hasChildren />
+                  <span className="flex-1">{label.name}</span>
+                  <span className="w-3.5 ml-4">{labelFilter.has(label.id) && <Check className="h-3.5 w-3.5 text-foreground" />}</span>
+                </StyledDropdownMenuItem>
+                <StyledDropdownMenuSeparator />
+                {/* Recurse into children */}
+                <FilterLabelItems
+                  labels={label.children!}
+                  labelFilter={labelFilter}
+                  setLabelFilter={setLabelFilter}
+                />
+              </StyledDropdownMenuSubContent>
+            </DropdownMenuSub>
+          )
+        }
+        // Leaf label: render as a simple toggleable item
+        return (
+          <StyledDropdownMenuItem
+            key={label.id}
+            onClick={(e) => {
+              e.preventDefault()
+              setLabelFilter(prev => {
+                const next = new Set(prev)
+                if (next.has(label.id)) next.delete(label.id)
+                else next.add(label.id)
+                return next
+              })
+            }}
+          >
+            <LabelIcon label={label} size="sm" />
+            <span className="flex-1">{label.name}</span>
+            <span className="w-3.5 ml-4">{labelFilter.has(label.id) && <Check className="h-3.5 w-3.5 text-foreground" />}</span>
+          </StyledDropdownMenuItem>
+        )
+      })}
+    </>
+  )
+}
+
 const PANEL_WINDOW_EDGE_SPACING = 6 // Padding between panels and window edge
 const PANEL_PANEL_SPACING = 5 // Gap between adjacent panels
 
@@ -260,7 +313,6 @@ function AppShellContent({
   const [session, setSession] = useSession()
   const { resolvedMode, isDark } = useTheme()
   const { canGoBack, canGoForward, goBack, goForward, navigateToSource } = useNavigation()
-  const t = useT()
 
   // Double-Esc interrupt feature: first Esc shows warning, second Esc interrupts
   const { handleEscapePress } = useEscapeInterrupt()
@@ -278,6 +330,11 @@ function AppShellContent({
   // Session list filter: empty set shows all, otherwise shows only sessions with selected states
   const [listFilter, setListFilter] = React.useState<Set<TodoStateId>>(() => {
     const saved = storage.get<TodoStateId[]>(storage.KEYS.listFilter, [])
+    return new Set(saved)
+  })
+  // Label filter: empty set shows all, otherwise shows only sessions with at least one matching label
+  const [labelFilter, setLabelFilter] = React.useState<Set<string>>(() => {
+    const saved = storage.get<string[]>(storage.KEYS.labelFilter, [])
     return new Set(saved)
   })
   // Search state for session list
@@ -802,13 +859,29 @@ function AppShellContent({
         result = workspaceSessionMetas
     }
 
-    // Apply secondary filter by todo states if any are selected (only in allChats view)
-    if (chatFilter.kind === 'allChats' && listFilter.size > 0) {
-      result = result.filter(s => listFilter.has((s.todoState || 'todo') as TodoStateId))
+    // Apply secondary filters in allChats view (status + labels, AND-ed together)
+    if (chatFilter.kind === 'allChats') {
+      // Filter by status if any statuses are selected
+      if (listFilter.size > 0) {
+        result = result.filter(s => listFilter.has((s.todoState || 'todo') as TodoStateId))
+      }
+      // Filter by labels if any labels are selected (includes descendants)
+      if (labelFilter.size > 0) {
+        // Expand selected labels to include all descendant IDs
+        const matchIds = new Set<string>()
+        for (const id of labelFilter) {
+          matchIds.add(id)
+          const descendants = getDescendantIds(labelConfigs, id)
+          for (const d of descendants) matchIds.add(d)
+        }
+        result = result.filter(s =>
+          s.labels?.some(l => matchIds.has(extractLabelId(l)))
+        )
+      }
     }
 
     return result
-  }, [workspaceSessionMetas, chatFilter, listFilter, labelConfigs])
+  }, [workspaceSessionMetas, chatFilter, listFilter, labelFilter, labelConfigs])
 
   // Ensure session messages are loaded when selected
   React.useEffect(() => {
@@ -841,7 +914,7 @@ function AppShellContent({
         <HeaderIconButton
           icon={<PanelRightRounded className="h-5 w-6" />}
           onClick={() => setIsRightSidebarVisible(true)}
-          tooltip={t('打开侧边栏')}
+          tooltip="Open sidebar"
           className="text-foreground"
         />
       </motion.div>
@@ -856,7 +929,7 @@ function AppShellContent({
       <HeaderIconButton
         icon={<PanelLeftRounded className="h-5 w-6" />}
         onClick={() => setIsRightSidebarVisible(false)}
-        tooltip={t('关闭侧边栏')}
+        tooltip="Close sidebar"
         className="text-foreground"
       />
     )
@@ -896,6 +969,11 @@ function AppShellContent({
   React.useEffect(() => {
     storage.set(storage.KEYS.listFilter, [...listFilter])
   }, [listFilter])
+
+  // Persist label filter to localStorage
+  React.useEffect(() => {
+    storage.set(storage.KEYS.labelFilter, [...labelFilter])
+  }, [labelFilter])
 
   // Persist sidebar section collapsed states
   React.useEffect(() => {
@@ -973,6 +1051,9 @@ function AppShellContent({
   // appears near it rather than at a fixed location. Updated synchronously before
   // the setTimeout that opens the popover, ensuring the ref is set before render.
   const editPopoverAnchorY = useRef<number>(120)
+  // Tracks which label was right-clicked when opening label EditPopovers,
+  // so the agent knows the target for commands like "make this red" or "add below this"
+  const editLabelTargetId = useRef<string | undefined>(undefined)
 
   // Stores the trigger element (button) so we can keep it highlighted while the
   // EditPopover is open (after Radix removes data-state="open" on context menu close).
@@ -1014,8 +1095,9 @@ function AppShellContent({
   }, [captureContextMenuPosition])
 
   // Handler for "Configure Labels" context menu action
-  // Opens the EditPopover for label configuration
-  const openConfigureLabels = useCallback(() => {
+  // Opens the EditPopover for label configuration, storing which label was right-clicked
+  const openConfigureLabels = useCallback((labelId?: string) => {
+    editLabelTargetId.current = labelId
     captureContextMenuPosition()
     setTimeout(() => setEditPopoverOpen('labels'), 50)
   }, [captureContextMenuPosition])
@@ -1040,8 +1122,10 @@ function AppShellContent({
   }, [activeWorkspace?.id, viewConfigs])
 
   // Handler for "Add New Label" context menu action
-  // Opens the EditPopover with 'add-label' context so the user can describe the label
-  const handleAddLabel = useCallback((_parentId?: string) => {
+  // Opens the EditPopover with 'add-label' context, storing which label was right-clicked
+  // so the agent knows to add the new label relative to it
+  const handleAddLabel = useCallback((parentId?: string) => {
+    editLabelTargetId.current = parentId
     captureContextMenuPosition()
     setTimeout(() => setEditPopoverOpen('add-label'), 50)
   }, [captureContextMenuPosition])
@@ -1263,35 +1347,35 @@ function AppShellContent({
   const listTitle = React.useMemo(() => {
     // Sources navigator
     if (isSourcesNavigation(navState)) {
-      return t('数据源')
+      return 'Sources'
     }
 
     // Skills navigator
     if (isSkillsNavigation(navState)) {
-      return t('所有技能')
+      return 'All Skills'
     }
 
     // Settings navigator
-    if (isSettingsNavigation(navState)) return t('设置')
+    if (isSettingsNavigation(navState)) return 'Settings'
 
     // Chats navigator - use chatFilter
-    if (!chatFilter) return t('所有对话')
+    if (!chatFilter) return 'All Chats'
 
     switch (chatFilter.kind) {
       case 'flagged':
-        return t('已标记')
+        return 'Flagged'
       case 'state': {
         const state = effectiveTodoStates.find(s => s.id === chatFilter.stateId)
-        return state?.label || t('所有对话')
+        return state?.label || 'All Chats'
       }
       case 'label':
-        return chatFilter.labelId === '__all__' ? t('标签') : getLabelDisplayName(labelConfigs, chatFilter.labelId)
+        return chatFilter.labelId === '__all__' ? 'Labels' : getLabelDisplayName(labelConfigs, chatFilter.labelId)
       case 'view':
-        return chatFilter.viewId === '__all__' ? t('视图') : viewConfigs.find(v => v.id === chatFilter.viewId)?.name || t('视图')
+        return chatFilter.viewId === '__all__' ? 'Views' : viewConfigs.find(v => v.id === chatFilter.viewId)?.name || 'Views'
       default:
-        return t('所有对话')
+        return 'All Chats'
     }
-  }, [navState, chatFilter, effectiveTodoStates, labelConfigs, viewConfigs, t])
+  }, [navState, chatFilter, effectiveTodoStates, labelConfigs, viewConfigs])
 
   // Build recursive sidebar items from label tree.
   // Each node renders with condensed height (compact: true) since many labels expected.
@@ -1310,8 +1394,19 @@ function AppShellContent({
 
       const item: any = {
         id: `nav:label:${node.fullId}`,
-        title: translateLabelName(node.label?.name || node.segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')),
+        title: node.label?.name || node.segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
         label: count > 0 ? String(count) : undefined,
+        // Show label type icon (Hash/Calendar/Type) right-aligned before count, with tooltip explaining the type
+        afterTitle: node.label?.valueType ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center"><LabelValueTypeIcon valueType={node.label.valueType} size={10} /></span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              This label can have a {node.label.valueType} value
+            </TooltipContent>
+          </Tooltip>
+        ) : undefined,
         icon: node.label && activeWorkspace?.id ? (
           <LabelIcon
             label={node.label}
@@ -1413,7 +1508,7 @@ function AppShellContent({
                         data-tutorial="new-chat-button"
                       >
                         <SquarePenRounded className="h-3.5 w-3.5 shrink-0" />
-                        {t('新建聊天')}
+                        New Chat
                       </Button>
                     </ContextMenuTrigger>
                     <StyledContextMenuContent>
@@ -1433,7 +1528,7 @@ function AppShellContent({
                     // --- Chats Section ---
                     {
                       id: "nav:allChats",
-                      title: t('所有对话'),
+                      title: "All Chats",
                       label: String(workspaceSessionMetas.length),
                       icon: Inbox,
                       variant: chatFilter?.kind === 'allChats' ? "default" : "ghost",
@@ -1441,7 +1536,7 @@ function AppShellContent({
                     },
                     {
                       id: "nav:flagged",
-                      title: t('已标记'),
+                      title: "Flagged",
                       label: String(flaggedCount),
                       icon: <Flag className="h-3.5 w-3.5" />,
                       variant: chatFilter?.kind === 'flagged' ? "default" : "ghost",
@@ -1450,7 +1545,7 @@ function AppShellContent({
                     // States: expandable section with status sub-items (drag-and-drop reorder)
                     {
                       id: "nav:states",
-                      title: t('状态'),
+                      title: "Status",
                       icon: CheckCircle2,
                       variant: "ghost",
                       onClick: () => toggleExpanded('nav:states'),
@@ -1482,7 +1577,7 @@ function AppShellContent({
                     // Labels: navigable header (shows all labeled sessions) + hierarchical tree (drag-and-drop reorder + re-parent)
                     {
                       id: "nav:labels",
-                      title: t('标签'),
+                      title: "Labels",
                       icon: Tag,
                       // Only highlighted when "Labels" itself is selected (not sub-labels)
                       variant: (chatFilter?.kind === 'label' && chatFilter.labelId === '__all__') ? "default" as const : "ghost" as const,
@@ -1503,7 +1598,7 @@ function AppShellContent({
                     // --- Sources & Skills Section ---
                     {
                       id: "nav:sources",
-                      title: t('数据源'),
+                      title: "Sources",
                       label: String(sources.length),
                       icon: DatabaseZap,
                       variant: (isSourcesNavigation(navState) && !sourceFilter) ? "default" : "ghost",
@@ -1519,7 +1614,7 @@ function AppShellContent({
                       items: [
                         {
                           id: "nav:sources:api",
-                          title: t('API 服务'),
+                          title: "APIs",
                           label: String(sourceTypeCounts.api),
                           icon: Globe,
                           variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'api') ? "default" : "ghost",
@@ -1532,7 +1627,7 @@ function AppShellContent({
                         },
                         {
                           id: "nav:sources:mcp",
-                          title: t('MCP 服务'),
+                          title: "MCPs",
                           label: String(sourceTypeCounts.mcp),
                           icon: <McpIcon className="h-3.5 w-3.5" />,
                           variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'mcp') ? "default" : "ghost",
@@ -1545,7 +1640,7 @@ function AppShellContent({
                         },
                         {
                           id: "nav:sources:local",
-                          title: t('本地文件夹'),
+                          title: "Local Folders",
                           label: String(sourceTypeCounts.local),
                           icon: FolderOpen,
                           variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'local') ? "default" : "ghost",
@@ -1560,7 +1655,7 @@ function AppShellContent({
                     },
                     {
                       id: "nav:skills",
-                      title: t('技能'),
+                      title: "Skills",
                       label: String(skills.length),
                       icon: Zap,
                       variant: isSkillsNavigation(navState) ? "default" : "ghost",
@@ -1575,7 +1670,7 @@ function AppShellContent({
                     // --- Settings ---
                     {
                       id: "nav:settings",
-                      title: t('设置'),
+                      title: "Settings",
                       icon: Settings,
                       variant: isSettingsNavigation(navState) ? "default" : "ghost",
                       onClick: () => handleSettingsClick('app'),
@@ -1613,34 +1708,34 @@ function AppShellContent({
                             </button>
                           </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{t('帮助与文档')}</TooltipContent>
+                        <TooltipContent side="top">Help & Documentation</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                     <StyledDropdownMenuContent align="end" side="top" sideOffset={8}>
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(getDocUrl('sources'))}>
                         <DatabaseZap className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('数据源')}</span>
+                        <span className="flex-1">Sources</span>
                         <ExternalLink className="h-3 w-3 text-muted-foreground" />
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(getDocUrl('skills'))}>
                         <Zap className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('技能')}</span>
+                        <span className="flex-1">Skills</span>
                         <ExternalLink className="h-3 w-3 text-muted-foreground" />
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(getDocUrl('statuses'))}>
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('状态')}</span>
+                        <span className="flex-1">Statuses</span>
                         <ExternalLink className="h-3 w-3 text-muted-foreground" />
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl(getDocUrl('permissions'))}>
                         <Settings className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('权限')}</span>
+                        <span className="flex-1">Permissions</span>
                         <ExternalLink className="h-3 w-3 text-muted-foreground" />
                       </StyledDropdownMenuItem>
                       <StyledDropdownMenuSeparator />
                       <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs')}>
                         <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('全部文档')}</span>
+                        <span className="flex-1">All Documentation</span>
                       </StyledDropdownMenuItem>
                     </StyledDropdownMenuContent>
                   </DropdownMenu>
@@ -1694,59 +1789,145 @@ function AppShellContent({
               compensateForStoplight={!isSidebarVisible}
               actions={
                 <>
-                  {/* Filter dropdown - allows filtering by todo states (only in All Chats view) */}
+                  {/* Filter dropdown - allows filtering by statuses and labels (only in All Chats view) */}
                   {chatFilter?.kind === 'allChats' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <HeaderIconButton
                           icon={<ListFilter className="h-4 w-4" />}
-                          className={listFilter.size > 0 ? "text-foreground" : undefined}
+                          className={(listFilter.size > 0 || labelFilter.size > 0) ? "text-foreground" : undefined}
                         />
                       </DropdownMenuTrigger>
                       <StyledDropdownMenuContent align="end" light minWidth="min-w-[200px]">
                         {/* Header with title and clear button */}
                         <div className="flex items-center justify-between px-2 py-1.5 border-b border-foreground/5">
-                          <span className="text-xs font-medium text-muted-foreground">{t('筛选对话')}</span>
-                          {listFilter.size > 0 && (
+                          <span className="text-xs font-medium text-muted-foreground">Filter Chats</span>
+                          {(listFilter.size > 0 || labelFilter.size > 0) && (
                             <button
                               onClick={(e) => {
                                 e.preventDefault()
                                 setListFilter(new Set())
+                                setLabelFilter(new Set())
                               }}
                               className="text-xs text-muted-foreground hover:text-foreground"
                             >
-                              {t('清除')}
+                              Clear
                             </button>
                           )}
                         </div>
-                        {/* Dynamic status filter items */}
-                        {effectiveTodoStates.map(state => {
-                          // Only apply color if icon is colorable (uses currentColor)
-                          const applyColor = state.iconColorable
-                          return (
-                            <StyledDropdownMenuItem
-                              key={state.id}
-                              onClick={(e) => {
-                                e.preventDefault()
-                                setListFilter(prev => {
-                                  const next = new Set(prev)
-                                  if (next.has(state.id)) next.delete(state.id)
-                                  else next.add(state.id)
-                                  return next
-                                })
-                              }}
-                            >
-                              <span
-                                className="h-3.5 w-3.5 flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full [&>img]:w-full [&>img]:h-full"
-                                style={applyColor ? { color: state.resolvedColor } : undefined}
-                              >
-                                {state.icon}
-                              </span>
-                              <span className="flex-1">{state.label}</span>
-                              <span className="w-3.5 ml-4">{listFilter.has(state.id) && <Check className="h-3.5 w-3.5 text-foreground" />}</span>
-                            </StyledDropdownMenuItem>
-                          )
-                        })}
+
+                        {/* Selected items at root level - shows active filters with checkmarks for quick visibility */}
+                        {(listFilter.size > 0 || labelFilter.size > 0) && (
+                          <>
+                            {/* Selected statuses */}
+                            {effectiveTodoStates.filter(s => listFilter.has(s.id)).map(state => {
+                              const applyColor = state.iconColorable
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={`sel-status-${state.id}`}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setListFilter(prev => {
+                                      const next = new Set(prev)
+                                      next.delete(state.id)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <span
+                                    className="h-3.5 w-3.5 flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full [&>img]:w-full [&>img]:h-full"
+                                    style={applyColor ? { color: state.resolvedColor } : undefined}
+                                  >
+                                    {state.icon}
+                                  </span>
+                                  <span className="flex-1">{state.label}</span>
+                                  <Check className="h-3.5 w-3.5 text-foreground ml-4" />
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                            {/* Selected labels */}
+                            {Array.from(labelFilter).map(labelId => {
+                              const label = findLabelById(labelConfigs, labelId)
+                              if (!label) return null
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={`sel-label-${labelId}`}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setLabelFilter(prev => {
+                                      const next = new Set(prev)
+                                      next.delete(labelId)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <LabelIcon label={label} size="sm" />
+                                  <span className="flex-1">{label.name}</span>
+                                  <Check className="h-3.5 w-3.5 text-foreground ml-4" />
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                            <StyledDropdownMenuSeparator />
+                          </>
+                        )}
+
+                        {/* Statuses submenu - all workspace statuses with toggle selection */}
+                        <DropdownMenuSub>
+                          <StyledDropdownMenuSubTrigger>
+                            <Inbox className="h-3.5 w-3.5" />
+                            <span className="flex-1">Statuses</span>
+                          </StyledDropdownMenuSubTrigger>
+                          <StyledDropdownMenuSubContent minWidth="min-w-[180px]">
+                            {effectiveTodoStates.map(state => {
+                              const applyColor = state.iconColorable
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={state.id}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setListFilter(prev => {
+                                      const next = new Set(prev)
+                                      if (next.has(state.id)) next.delete(state.id)
+                                      else next.add(state.id)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <span
+                                    className="h-3.5 w-3.5 flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full [&>img]:w-full [&>img]:h-full"
+                                    style={applyColor ? { color: state.resolvedColor } : undefined}
+                                  >
+                                    {state.icon}
+                                  </span>
+                                  <span className="flex-1">{state.label}</span>
+                                  <span className="w-3.5 ml-4">{listFilter.has(state.id) && <Check className="h-3.5 w-3.5 text-foreground" />}</span>
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                          </StyledDropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        {/* Labels submenu - full label tree with recursive submenus */}
+                        <DropdownMenuSub>
+                          <StyledDropdownMenuSubTrigger>
+                            <Tag className="h-3.5 w-3.5" />
+                            <span className="flex-1">Labels</span>
+                          </StyledDropdownMenuSubTrigger>
+                          <StyledDropdownMenuSubContent minWidth="min-w-[180px]">
+                            {labelConfigs.length === 0 ? (
+                              <StyledDropdownMenuItem disabled>
+                                <span className="text-muted-foreground">No labels configured</span>
+                              </StyledDropdownMenuItem>
+                            ) : (
+                              <FilterLabelItems
+                                labels={labelConfigs}
+                                labelFilter={labelFilter}
+                                setLabelFilter={setLabelFilter}
+                              />
+                            )}
+                          </StyledDropdownMenuSubContent>
+                        </DropdownMenuSub>
+
                         <StyledDropdownMenuSeparator />
                         <StyledDropdownMenuItem
                           onClick={() => {
@@ -1754,16 +1935,7 @@ function AppShellContent({
                           }}
                         >
                           <Search className="h-3.5 w-3.5" />
-                          <span className="flex-1">{t('搜索')}</span>
-                        </StyledDropdownMenuItem>
-                        <StyledDropdownMenuSeparator />
-                        <StyledDropdownMenuItem
-                          onClick={() => {
-                            window.electronAPI?.openUrl(getDocUrl('statuses'))
-                          }}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span className="flex-1">{t('了解更多')}</span>
+                          <span className="flex-1">Search</span>
                         </StyledDropdownMenuItem>
                       </StyledDropdownMenuContent>
                     </DropdownMenu>
@@ -1781,7 +1953,7 @@ function AppShellContent({
                           }}
                         >
                           <Search className="h-3.5 w-3.5" />
-                          <span className="flex-1">{t('搜索')}</span>
+                          <span className="flex-1">Search</span>
                         </StyledDropdownMenuItem>
                         <StyledDropdownMenuSeparator />
                         <StyledDropdownMenuItem
@@ -1790,7 +1962,7 @@ function AppShellContent({
                           }}
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
-                          <span className="flex-1">{t('了解更多')}</span>
+                          <span className="flex-1">Learn More</span>
                         </StyledDropdownMenuItem>
                       </StyledDropdownMenuContent>
                     </DropdownMenu>
@@ -1801,7 +1973,7 @@ function AppShellContent({
                       trigger={
                         <HeaderIconButton
                           icon={<Plus className="h-4 w-4" />}
-                          tooltip={t('添加数据源')}
+                          tooltip="Add Source"
                           data-tutorial="add-source-button"
                         />
                       }
@@ -1817,7 +1989,7 @@ function AppShellContent({
                       trigger={
                         <HeaderIconButton
                           icon={<Plus className="h-4 w-4" />}
-                          tooltip={t('添加技能')}
+                          tooltip="Add Skill"
                           data-tutorial="add-skill-button"
                         />
                       }
@@ -1910,6 +2082,7 @@ function AppShellContent({
                   todoStates={effectiveTodoStates}
                   evaluateViews={evaluateViews}
                   labels={labelConfigs}
+                  onLabelsChange={handleSessionLabelsChange}
                 />
               </>
             )}
@@ -2067,6 +2240,10 @@ function AppShellContent({
             }
             side="bottom"
             align="start"
+            secondaryAction={{
+              label: 'Edit File',
+              onClick: () => window.electronAPI?.openFile(`${activeWorkspace.rootPath}/statuses/config.json`),
+            }}
             {...getEditConfig('edit-statuses', activeWorkspace.rootPath)}
           />
           {/* Configure Labels EditPopover - anchored near sidebar */}
@@ -2083,7 +2260,27 @@ function AppShellContent({
             }
             side="bottom"
             align="start"
-            {...getEditConfig('edit-labels', activeWorkspace.rootPath)}
+            secondaryAction={{
+              label: 'Edit File',
+              onClick: () => window.electronAPI?.openFile(`${activeWorkspace.rootPath}/labels/config.json`),
+            }}
+            {...(() => {
+              // Spread base config, override context to include which label was right-clicked
+              const config = getEditConfig('edit-labels', activeWorkspace.rootPath)
+              const targetLabel = editLabelTargetId.current
+                ? findLabelById(labelConfigs, editLabelTargetId.current)
+                : undefined
+              if (!targetLabel) return config
+              return {
+                ...config,
+                context: {
+                  ...config.context,
+                  context: (config.context.context || '') +
+                    ` The user right-clicked on the label "${targetLabel.name}" (id: "${targetLabel.id}"). ` +
+                    'If they refer to "this label" or "this", they mean this specific label.',
+                },
+              }
+            })()}
           />
           {/* Edit Views EditPopover - anchored near sidebar */}
           <EditPopover
@@ -2099,6 +2296,10 @@ function AppShellContent({
             }
             side="bottom"
             align="start"
+            secondaryAction={{
+              label: 'Edit File',
+              onClick: () => window.electronAPI?.openFile(`${activeWorkspace.rootPath}/views.json`),
+            }}
             {...getEditConfig('edit-views', activeWorkspace.rootPath)}
           />
           {/* Add Source EditPopovers - one for each variant (generic + filter-specific)
@@ -2152,7 +2353,27 @@ function AppShellContent({
             }
             side="bottom"
             align="start"
-            {...getEditConfig('add-label', activeWorkspace.rootPath)}
+            secondaryAction={{
+              label: 'Edit File',
+              onClick: () => window.electronAPI?.openFile(`${activeWorkspace.rootPath}/labels/config.json`),
+            }}
+            {...(() => {
+              // Spread base config, override context to include which label was right-clicked
+              const config = getEditConfig('add-label', activeWorkspace.rootPath)
+              const targetLabel = editLabelTargetId.current
+                ? findLabelById(labelConfigs, editLabelTargetId.current)
+                : undefined
+              if (!targetLabel) return config
+              return {
+                ...config,
+                context: {
+                  ...config.context,
+                  context: (config.context.context || '') +
+                    ` The user right-clicked on the label "${targetLabel.name}" (id: "${targetLabel.id}"). ` +
+                    'The new label should be added as a sibling after this label, or as a child if the user specifies.',
+                },
+              }
+            })()}
           />
         </>
       )}

@@ -48,6 +48,7 @@ import type { RichTextInputHandle } from "@/components/ui/rich-text-input"
 import { useBackgroundTasks } from "@/hooks/useBackgroundTasks"
 import type { SessionMeta } from "@/atoms/sessions"
 import { CHAT_LAYOUT } from "@/config/layout"
+import { flattenLabels } from "@creator-flow/shared/labels"
 
 // ============================================================================
 // Overlay State Types
@@ -391,6 +392,10 @@ export function ChatDisplay({
   const { tasks: backgroundTasks, killTask } = useBackgroundTasks({
     sessionId: session?.id ?? ''
   })
+
+  // Track which label should auto-open its value popover after being added via # menu.
+  // Set when a valued label is selected, cleared once the popover opens.
+  const [autoOpenLabelId, setAutoOpenLabelId] = useState<string | null>(null)
 
   // Focus textarea when session changes (tab switch) or zone gains focus via keyboard
   useEffect(() => {
@@ -865,11 +870,14 @@ export function ChatDisplay({
               onInsertMessage={onInputChange}
               sessionLabels={session.labels}
               labels={labels}
+              onLabelsChange={onLabelsChange}
               onRemoveLabel={(labelId) => {
-                // Remove label from session and persist
+                // Remove label from session and persist (legacy fallback)
                 const newLabels = (session.labels || []).filter(id => id !== labelId)
                 onLabelsChange?.(newLabels)
               }}
+              autoOpenLabelId={autoOpenLabelId}
+              onAutoOpenConsumed={() => setAutoOpenLabelId(null)}
             />
             <InputContainer
               disabled={isInputDisabled}
@@ -901,6 +909,13 @@ export function ChatDisplay({
                 const current = session.labels || []
                 if (!current.includes(labelId)) {
                   onLabelsChange?.([...current, labelId])
+                  // If the label has a valueType, auto-open its popover so the user
+                  // can set the value immediately without an extra click.
+                  const flat = flattenLabels(labels || [])
+                  const config = flat.find(l => l.id === labelId)
+                  if (config?.valueType) {
+                    setAutoOpenLabelId(labelId)
+                  }
                 }
               }}
               workspaceId={workspaceId}
@@ -1002,6 +1017,7 @@ export function ChatDisplay({
           onClose={handleCloseOverlay}
           content={overlayState.content}
           title={overlayState.title}
+          theme={isDark ? 'dark' : 'light'}
         />
       )}
 
@@ -1012,6 +1028,7 @@ export function ChatDisplay({
           onClose={handleCloseOverlay}
           content={overlayData.content}
           title={overlayData.title}
+          theme={isDark ? 'dark' : 'light'}
         />
       )}
     </div>

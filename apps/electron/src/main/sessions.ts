@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
+import { CraftAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -53,6 +53,7 @@ import { DEFAULT_MODEL } from '@creator-flow/shared/config'
 import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels'
 import { evaluateAutoLabels } from '@creator-flow/shared/labels/auto'
 import { listLabels } from '@creator-flow/shared/labels/storage'
+import { extractLabelId } from '@creator-flow/shared/labels'
 
 /**
  * Sanitize message content for use as session title.
@@ -246,7 +247,7 @@ function resolveToolDisplayMeta(
 interface ManagedSession {
   id: string
   workspace: Workspace
-  agent: CreatorFlowAgent | null  // Lazy-loaded - null until first message
+  agent: CraftAgent | null  // Lazy-loaded - null until first message
   messages: Message[]
   isProcessing: boolean
   lastMessageAt: number
@@ -462,8 +463,6 @@ export class SessionManager {
   private configWatchers: Map<string, ConfigWatcher> = new Map()
   // Pending credential request resolvers (keyed by requestId)
   private pendingCredentialResolvers: Map<string, (response: import('../shared/types').CredentialResponse) => void> = new Map()
-  // Pending interactive UI request resolvers (keyed by requestId)
-  private pendingInteractiveResolvers: Map<string, (response: import('@creator-flow/shared/interactive-ui').InteractiveResponse) => void> = new Map()
   // Promise deduplication for lazy-loading messages (prevents race conditions)
   private messageLoadingPromises: Map<string, Promise<void>> = new Map()
   /**
@@ -480,16 +479,16 @@ export class SessionManager {
   /**
    * Set up ConfigWatcher for a workspace to broadcast live updates
    * (sources added/removed, guide.md changes, etc.)
-   * Public so ipc.ts can call it when sources are first requested
-   * Supports multiple workspaces simultaneously
+   * Called during window init (GET_WINDOW_WORKSPACE) and workspace switch.
+   * workspaceId must be the global config ID (what the renderer knows).
    */
-  setupConfigWatcher(workspaceRootPath: string): void {
+  setupConfigWatcher(workspaceRootPath: string, workspaceId: string): void {
     // Check if already watching this workspace
     if (this.configWatchers.has(workspaceRootPath)) {
       return // Already watching this workspace
     }
 
-    sessionLog.info(`Setting up ConfigWatcher for workspace: ${workspaceRootPath}`)
+    sessionLog.info(`Setting up ConfigWatcher for workspace: ${workspaceId} (${workspaceRootPath})`)
 
     const callbacks: ConfigWatcherCallbacks = {
       onSourcesListChange: async (sources: LoadedSource[]) => {
@@ -522,15 +521,15 @@ export class SessionManager {
         const sources = loadWorkspaceSources(workspaceRootPath)
         this.broadcastSourcesChanged(sources)
       },
-      onStatusConfigChange: (workspaceId: string) => {
+      onStatusConfigChange: () => {
         sessionLog.info(`Status config changed in ${workspaceId}`)
         this.broadcastStatusesChanged(workspaceId)
       },
-      onStatusIconChange: (workspaceId: string, iconFilename: string) => {
+      onStatusIconChange: (_workspaceId: string, iconFilename: string) => {
         sessionLog.info(`Status icon changed: ${iconFilename} in ${workspaceId}`)
         this.broadcastStatusesChanged(workspaceId)
       },
-      onLabelConfigChange: (workspaceId: string) => {
+      onLabelConfigChange: () => {
         sessionLog.info(`Label config changed in ${workspaceId}`)
         this.broadcastLabelsChanged(workspaceId)
       },
@@ -657,7 +656,7 @@ export class SessionManager {
 
   /**
    * Broadcast default permissions changed event to all windows
-   * Triggered when ~/.creator-flow/permissions/default.json changes
+   * Triggered when ~/.craft-agent/permissions/default.json changes
    */
   private broadcastDefaultPermissionsChanged(): void {
     if (!this.windowManager) return
@@ -676,7 +675,7 @@ export class SessionManager {
     const workspaceRootPath = managed.workspace.rootPath
     sessionLog.info(`Reloading sources for session ${managed.id}`)
 
-    // Reload all sources from disk (creator-flows-docs is always available as MCP server)
+    // Reload all sources from disk (craft-agents-docs is always available as MCP server)
     const allSources = loadAllSources(workspaceRootPath)
     managed.agent.setAllSources(allSources)
 
@@ -700,7 +699,7 @@ export class SessionManager {
    * Bun's automatic .env loading is disabled in the subprocess (--env-file=/dev/null)
    * to prevent a user's project .env from injecting ANTHROPIC_API_KEY and overriding
    * OAuth auth — Claude Code prioritizes API key over OAuth token when both are set.
-   * See: https://github.com/lukilabs/creator-flows-oss/issues/39
+   * See: https://github.com/lukilabs/craft-agents-oss/issues/39
    */
   async reinitializeAuth(): Promise<void> {
     try {
@@ -1418,11 +1417,11 @@ export class SessionManager {
   /**
    * Get or create agent for a session (lazy loading)
    */
-  private async getOrCreateAgent(managed: ManagedSession): Promise<CreatorFlowAgent> {
+  private async getOrCreateAgent(managed: ManagedSession): Promise<CraftAgent> {
     if (!managed.agent) {
       const end = perf.start('agent.create', { sessionId: managed.id })
       const config = loadStoredConfig()
-      managed.agent = new CreatorFlowAgent({
+      managed.agent = new CraftAgent({
         workspace: managed.workspace,
         // Session model takes priority, fallback to global config, then resolve with customModel override
         model: resolveModelId(managed.model || config?.model || DEFAULT_MODEL),
@@ -1494,7 +1493,7 @@ export class SessionManager {
       }
 
       // Note: Credential requests now flow through onAuthRequest (unified auth flow)
-      // The legacy onCredentialRequest callback has been removed from CreatorFlowAgent
+      // The legacy onCredentialRequest callback has been removed from CraftAgent
 
       // Set up mode change handlers
       managed.agent.onPermissionModeChange = (mode) => {
@@ -2525,7 +2524,7 @@ export class SessionManager {
 
       // Skills mentioned via @mentions are handled by the SDK's Skill tool.
       // The UI layer (extractBadges in mentions.ts) injects fully-qualified names
-      // in the rawText, and canUseTool in creator-flow.ts provides a fallback
+      // in the rawText, and canUseTool in craft-agent.ts provides a fallback
       // to qualify short names. No transformation needed here.
 
       sendSpan.mark('chat.starting')
@@ -2951,39 +2950,6 @@ To view this task's output:
   }
 
   /**
-   * Respond to a pending interactive UI request
-   * Returns true if the response was delivered, false if no pending request found
-   */
-  respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): boolean {
-    const managed = this.sessions.get(sessionId)
-    if (!managed) {
-      sessionLog.warn(`Cannot respond to interactive - session not found: ${sessionId}`)
-      return false
-    }
-
-    // Check for pending interactive resolver
-    const resolver = this.pendingInteractiveResolvers.get(requestId)
-    if (resolver) {
-      sessionLog.info(`Interactive response for ${requestId}: type=${response.type}`)
-      resolver(response)
-      this.pendingInteractiveResolvers.delete(requestId)
-
-      // Send completed event to renderer
-      this.sendEvent({
-        type: 'interactive_completed',
-        sessionId,
-        requestId,
-        response,
-      }, managed.workspace.id)
-
-      return true
-    } else {
-      sessionLog.warn(`Cannot respond to interactive - no pending request for ${requestId}`)
-      return false
-    }
-  }
-
-  /**
    * Set the permission mode for a session ('safe', 'ask', 'allow-all')
    */
   setSessionPermissionMode(sessionId: string, mode: PermissionMode): void {
@@ -3017,7 +2983,7 @@ To view this task's output:
       this.sendEvent({
         type: 'labels_changed',
         sessionId: managed.id,
-        labels,
+        labels: managed.labels,
       }, managed.workspace.id)
       // Persist to disk
       this.persistSession(managed)
@@ -3116,7 +3082,7 @@ To view this task's output:
           managed.lastFinalMessageId = assistantMessage.id
         }
 
-        this.sendEvent({ type: 'text_complete', sessionId, messageId: assistantMessage.id, text: event.text, isIntermediate: event.isIntermediate, turnId: event.turnId, parentToolUseId: textParentToolUseId }, workspaceId)
+        this.sendEvent({ type: 'text_complete', sessionId, text: event.text, isIntermediate: event.isIntermediate, turnId: event.turnId, parentToolUseId: textParentToolUseId }, workspaceId)
 
         // Persist session after complete message to prevent data loss on quit
         this.persistSession(managed)
@@ -3151,7 +3117,7 @@ To view this task's output:
         const PARENT_TOOLS = ['Task', 'TaskOutput']
         const isParentTool = PARENT_TOOLS.includes(event.toolName)
 
-        // Use parentToolUseId from the event - CreatorFlowAgent computes this correctly
+        // Use parentToolUseId from the event - CraftAgent computes this correctly
         // using the SDK's parent_tool_use_id (authoritative for parallel Tasks)
         // Only fall back to stack heuristic if event doesn't provide parent
         let parentToolUseId: string | undefined
@@ -3159,7 +3125,7 @@ To view this task's output:
           // Parent tools don't have a parent themselves
           parentToolUseId = undefined
         } else if (event.parentToolUseId) {
-          // CreatorFlowAgent provided the correct parent from SDK - use it
+          // CraftAgent provided the correct parent from SDK - use it
           parentToolUseId = event.parentToolUseId
         } else if (managed.parentToolStack.length > 0) {
           // Fallback: use stack heuristic for edge cases
@@ -3497,7 +3463,7 @@ To view this task's output:
         break
 
       case 'complete':
-        // Complete event from CreatorFlowAgent - accumulate usage from this turn
+        // Complete event from CraftAgent - accumulate usage from this turn
         // Actual 'complete' sent to renderer comes from the finally block in sendMessage
         if (event.usage) {
           // Initialize tokenUsage if not set

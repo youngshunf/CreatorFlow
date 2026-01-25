@@ -1,58 +1,17 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { SlashCommandMenu, getLocalizedCommandGroups, type SlashCommandId } from '@/components/ui/slash-command-menu'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  StyledDropdownMenuContent,
-  StyledDropdownMenuItem,
-} from '@/components/ui/styled-dropdown'
-import { ChevronDown, Trash2, X } from 'lucide-react'
+import { SlashCommandMenu, DEFAULT_SLASH_COMMAND_GROUPS, type SlashCommandId } from '@/components/ui/slash-command-menu'
+import { ChevronDown, X } from 'lucide-react'
 import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@creator-flow/shared/agent/modes'
 import { ActiveTasksBar, type BackgroundTask } from './ActiveTasksBar'
-import { LabelIcon } from '@/components/ui/label-icon'
+import { LabelIcon, LabelValueTypeIcon } from '@/components/ui/label-icon'
+import { LabelValuePopover } from '@/components/ui/label-value-popover'
 import type { LabelConfig } from '@creator-flow/shared/labels'
-import { flattenLabels, extractLabelId } from '@creator-flow/shared/labels'
+import { flattenLabels, parseLabelEntry, formatLabelEntry } from '@creator-flow/shared/labels'
 import { resolveEntityColor } from '@creator-flow/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { useDynamicStack } from '@/hooks/useDynamicStack'
-import { useT } from '@/context/LocaleContext'
-
-// ============================================================================
-// Translation Mappings
-// ============================================================================
-
-/**
- * Permission mode display name translations for UI.
- */
-const PERMISSION_MODE_DISPLAY_NAMES: Record<PermissionMode, string> = {
-  'safe': '探索模式',
-  'ask': '询问模式',
-  'allow-all': '执行模式',
-}
-
-/**
- * Label name translation mapping for existing workspaces with English labels.
- */
-const LABEL_NAME_TRANSLATIONS: Record<string, string> = {
-  'Development': '开发',
-  'Code': '代码',
-  'Bug': '缺陷',
-  'Automation': '自动化',
-  'Content': '内容',
-  'Writing': '写作',
-  'Research': '研究',
-  'Design': '设计',
-  'Priority': '优先级',
-  'Project': '项目',
-}
-
-function translateLabelName(name: string): string {
-  return LABEL_NAME_TRANSLATIONS[name] ?? name
-}
 
 // ============================================================================
 // Permission Mode Icon Component
@@ -92,14 +51,27 @@ export interface ActiveOptionBadgesProps {
   onKillTask?: (taskId: string) => void
   /** Callback to insert message into input field */
   onInsertMessage?: (text: string) => void
-  /** Label IDs applied to this session */
+  /** Label entries applied to this session (e.g., ["bug", "priority::3"]) */
   sessionLabels?: string[]
   /** Available label configs (tree structure) for resolving label display */
   labels?: LabelConfig[]
-  /** Callback when a label is removed */
+  /** Callback when a label is removed (legacy — prefer onLabelsChange) */
   onRemoveLabel?: (labelId: string) => void
+  /** Callback when session labels array changes (value edits or removals) */
+  onLabelsChange?: (updatedLabels: string[]) => void
+  /** Label ID whose value popover should auto-open (set when a valued label is added via # menu) */
+  autoOpenLabelId?: string | null
+  /** Called after the auto-open has been consumed, so the parent can clear the signal */
+  onAutoOpenConsumed?: () => void
   /** Additional CSS classes */
   className?: string
+}
+
+/** Resolved label entry: config + parsed value + original index in sessionLabels */
+interface ResolvedLabelEntry {
+  config: LabelConfig
+  rawValue?: string
+  index: number
 }
 
 export function ActiveOptionBadges({
@@ -114,17 +86,26 @@ export function ActiveOptionBadges({
   sessionLabels = [],
   labels = [],
   onRemoveLabel,
+  onLabelsChange,
+  autoOpenLabelId,
+  onAutoOpenConsumed,
   className,
 }: ActiveOptionBadgesProps) {
-  // Resolve session label entries to their config objects for rendering.
-  // Entries may be bare IDs ("bug") or valued ("priority::3"), so we
-  // extract just the label ID before looking up the config.
-  const resolvedLabels = React.useMemo(() => {
+  // Resolve session label entries to their config objects + parsed values.
+  // Entries may be bare IDs ("bug") or valued ("priority::3").
+  // Preserves the raw value and original index for editing/removal.
+  const resolvedLabels = React.useMemo((): ResolvedLabelEntry[] => {
     if (sessionLabels.length === 0 || labels.length === 0) return []
     const flat = flattenLabels(labels)
-    return sessionLabels
-      .map(entry => flat.find(l => l.id === extractLabelId(entry)))
-      .filter((l): l is LabelConfig => l !== undefined)
+    const result: ResolvedLabelEntry[] = []
+    for (let i = 0; i < sessionLabels.length; i++) {
+      const parsed = parseLabelEntry(sessionLabels[i])
+      const config = flat.find(l => l.id === parsed.id)
+      if (config) {
+        result.push({ config, rawValue: parsed.rawValue, index: i })
+      }
+    }
+    return result
   }, [sessionLabels, labels])
 
   const hasLabels = resolvedLabels.length > 0
@@ -156,7 +137,19 @@ export function ActiveOptionBadges({
       )}
 
       {/* Ultrathink Badge */}
-      <UltrathinkBadge enabled={ultrathinkEnabled} onToggle={onUltrathinkChange} />
+      {ultrathinkEnabled && (
+        <button
+          type="button"
+          onClick={() => onUltrathinkChange?.(false)}
+          className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
+          style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
+        >
+          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Ultrathink
+          </span>
+          <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
+        </button>
+      )}
 
       {/* Label Badges Container — dynamic stacking with equal visible strips.
        * useDynamicStack sets per-child marginLeft directly via ResizeObserver.
@@ -176,11 +169,26 @@ export function ActiveOptionBadges({
             className="flex items-center min-w-0 justify-end py-1 -my-1 pr-2 -mr-2"
             style={{ overflow: 'clip' }}
           >
-            {resolvedLabels.map(label => (
+            {resolvedLabels.map(({ config, rawValue, index }) => (
               <LabelBadge
-                key={label.id}
-                label={label}
-                onRemove={() => onRemoveLabel?.(label.id)}
+                key={config.id}
+                label={config}
+                value={rawValue}
+                autoOpen={config.id === autoOpenLabelId}
+                onAutoOpenConsumed={onAutoOpenConsumed}
+                onValueChange={(newValue) => {
+                  // Rebuild the sessionLabels array with the updated entry
+                  const updated = [...sessionLabels]
+                  updated[index] = formatLabelEntry(config.id, newValue)
+                  onLabelsChange?.(updated)
+                }}
+                onRemove={() => {
+                  if (onLabelsChange) {
+                    onLabelsChange(sessionLabels.filter((_, i) => i !== index))
+                  } else {
+                    onRemoveLabel?.(config.id)
+                  }
+                }}
               />
             ))}
           </div>
@@ -191,86 +199,109 @@ export function ActiveOptionBadges({
 }
 
 // ============================================================================
-// Ultrathink Badge Component
-// ============================================================================
-
-function UltrathinkBadge({ enabled, onToggle }: { enabled: boolean; onToggle?: (enabled: boolean) => void }) {
-  const t = useT()
-  if (!enabled) return null
-  
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle?.(false)}
-      className="h-[30px] pl-2.5 pr-2 text-xs font-medium rounded-[8px] flex items-center gap-1.5 shrink-0 transition-all bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 hover:from-blue-600/15 hover:via-purple-600/15 hover:to-pink-600/15 shadow-tinted outline-none select-none"
-      style={{ '--shadow-color': '147, 51, 234' } as React.CSSProperties}
-    >
-      <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-        {t('深度思考')}
-      </span>
-      <X className="h-3 w-3 text-purple-500 opacity-60 hover:opacity-100 translate-y-px" />
-    </button>
-  )
-}
-
-// ============================================================================
 // Label Badge Component
 // ============================================================================
 
 /**
- * Renders a single label badge with a dropdown menu for actions (e.g. Remove).
+ * Format a raw value for display based on the label's valueType.
+ * Dates render as locale short format; numbers and strings pass through.
+ */
+function formatDisplayValue(rawValue: string, valueType?: 'string' | 'number' | 'date'): string {
+  if (valueType === 'date') {
+    const date = new Date(rawValue.includes('T') ? rawValue + ':00Z' : rawValue + 'T00:00:00Z')
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+  }
+  return rawValue
+}
+
+/**
+ * Renders a single label badge with LabelValuePopover for editing/removal.
  * No box-shadow on the badge itself — all shadows come from the parent
  * wrapper's drop-shadow filter (traces masked alpha without clipping).
- * Chevron indicates the dropdown is interactive.
+ * Shows: [color circle] [name] [· value in mono] [chevron]
  */
 function LabelBadge({
   label,
+  value,
+  autoOpen,
+  onAutoOpenConsumed,
+  onValueChange,
   onRemove,
 }: {
   label: LabelConfig
+  value?: string
+  /** When true, auto-open the value popover on mount (for newly added valued labels) */
+  autoOpen?: boolean
+  onAutoOpenConsumed?: () => void
+  onValueChange?: (newValue: string | undefined) => void
   onRemove: () => void
 }) {
-  const t = useT()
   const { isDark } = useTheme()
-  // Resolve label color to CSS value for tinting bg (3%) and text (10%).
-  // Falls back to foreground if no color — produces near-invisible neutral tint.
+  const [open, setOpen] = React.useState(false)
+
+  // Auto-open the value popover when this label was just added via # menu
+  // and has a valueType. Opens exactly once, then clears the signal.
+  React.useEffect(() => {
+    if (autoOpen && label.valueType) {
+      setOpen(true)
+      onAutoOpenConsumed?.()
+    }
+  }, [autoOpen, label.valueType, onAutoOpenConsumed])
+
+  // Resolve label color for tinting background and text via CSS color-mix
   const resolvedColor = label.color
     ? resolveEntityColor(label.color, isDark)
     : 'var(--foreground)'
 
+  const displayValue = value ? formatDisplayValue(value, label.valueType) : undefined
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "h-[30px] pl-3 pr-2 text-xs font-medium rounded-[8px] flex items-center shrink-0",
-            "outline-none select-none transition-colors",
-            // Background: 97% background + 3% label color. Hover: 92% + 8%.
-            // Text: 90% foreground + 10% label color.
-            // All opaque — drop-shadow traces alpha, badge must stay solid.
-            "bg-[color-mix(in_srgb,var(--background)_97%,var(--badge-color))]",
-            "hover:bg-[color-mix(in_srgb,var(--background)_92%,var(--badge-color))]",
-            "text-[color-mix(in_srgb,var(--foreground)_90%,var(--badge-color))]",
-            "relative", // for z-index stacking when overlapped
-          )}
-          style={{ '--badge-color': resolvedColor } as React.CSSProperties}
-        >
-          <LabelIcon label={label} size="sm" />
-          <span className="whitespace-nowrap ml-2">{translateLabelName(label.name)}</span>
-          <ChevronDown className="h-3 w-3 opacity-40 ml-1 shrink-0" />
-        </button>
-      </DropdownMenuTrigger>
-      <StyledDropdownMenuContent side="bottom" align="end" sideOffset={4} className="min-w-[140px]">
-        <StyledDropdownMenuItem
-          onSelect={onRemove}
-          className="flex items-center gap-2 text-destructive cursor-pointer"
-        >
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-          <span>{t('移除')}</span>
-        </StyledDropdownMenuItem>
-      </StyledDropdownMenuContent>
-    </DropdownMenu>
+    <LabelValuePopover
+      label={label}
+      value={value}
+      open={open}
+      onOpenChange={setOpen}
+      onValueChange={onValueChange}
+      onRemove={onRemove}
+    >
+      <button
+        type="button"
+        className={cn(
+          "h-[30px] pl-3 pr-2 text-xs font-medium rounded-[8px] flex items-center shrink-0",
+          "outline-none select-none transition-colors",
+          // Background: 97% background + 3% label color. Hover: 92% + 8%.
+          // Text: 80% foreground + 20% label color.
+          // All opaque — drop-shadow traces alpha, badge must stay solid.
+          "bg-[color-mix(in_srgb,var(--background)_97%,var(--badge-color))]",
+          "hover:bg-[color-mix(in_srgb,var(--background)_92%,var(--badge-color))]",
+          "text-[color-mix(in_srgb,var(--foreground)_80%,var(--badge-color))]",
+          "relative", // for z-index stacking when overlapped
+        )}
+        style={{ '--badge-color': resolvedColor } as React.CSSProperties}
+      >
+        <LabelIcon label={label} size="sm" />
+        <span className="whitespace-nowrap ml-2">{label.name}</span>
+        {/* Optional typed value: interpunkt separator + value, or placeholder icon if typed but no value set */}
+        {displayValue ? (
+          <>
+            <span className="opacity-30 mx-1">·</span>
+            <span className="opacity-60 whitespace-nowrap max-w-[100px] truncate">
+              {displayValue}
+            </span>
+          </>
+        ) : (
+          label.valueType && (
+            <>
+              <span className="opacity-30 mx-1">·</span>
+              <LabelValueTypeIcon valueType={label.valueType} />
+            </>
+          )
+        )}
+        <ChevronDown className="h-3 w-3 opacity-40 ml-1 shrink-0" />
+      </button>
+    </LabelValuePopover>
   )
 }
 
@@ -282,7 +313,6 @@ interface PermissionModeDropdownProps {
 }
 
 function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onPermissionModeChange, onUltrathinkChange }: PermissionModeDropdownProps) {
-  const t = useT()
   const [open, setOpen] = React.useState(false)
   // Optimistic local state - updates immediately, syncs with prop
   const [optimisticMode, setOptimisticMode] = React.useState(permissionMode)
@@ -346,7 +376,7 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
           style={{ '--shadow-color': currentStyle.shadowVar } as React.CSSProperties}
         >
           <PermissionModeIcon mode={optimisticMode} className="h-3.5 w-3.5" />
-          <span>{t(PERMISSION_MODE_DISPLAY_NAMES[optimisticMode])}</span>
+          <span>{config.displayName}</span>
           <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </button>
       </PopoverTrigger>
@@ -362,11 +392,10 @@ function PermissionModeDropdown({ permissionMode, ultrathinkEnabled = false, onP
         }}
       >
         <SlashCommandMenu
-          commandGroups={getLocalizedCommandGroups(t)}
+          commandGroups={DEFAULT_SLASH_COMMAND_GROUPS}
           activeCommands={activeCommands}
           onSelect={handleSelect}
           showFilter
-          showDescription
         />
       </PopoverContent>
     </Popover>
