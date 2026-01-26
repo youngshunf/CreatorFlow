@@ -88,8 +88,10 @@ export const CREATOR_MEDIA_APP: AppManifest = {
       'script-create',
       'topic-research',
       'content-review',
-      'platform-adapter',
+      'platform-adaptation',
+      'viral-content-analysis',
       'topic-to-publish-flow',
+      'data-review',
     ],
   },
 
@@ -147,9 +149,9 @@ export const CREATOR_MEDIA_APP: AppManifest = {
     tags: ['自媒体', '创作', 'AI', '小红书', '抖音', '公众号', '内容创作'],
     changelog: `## v1.0.0
 - 初始版本发布
-- 支持小红书、抖音、公众号
-- 完整的创作工作流
-- 素材整理、脚本创作、选题研究技能`,
+- 支持小红书、抖音、公众号、B站等主流平台
+- 完整的创作工作流支持
+- 内置 8 个核心技能：素材整理、脚本创作、选题研究、内容审核、平台适配、爆款分析、选题到发布流程、数据复盘`,
   },
 
   plugins: {
