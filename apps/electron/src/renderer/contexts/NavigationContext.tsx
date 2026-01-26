@@ -153,10 +153,15 @@ export function NavigationProvider({
     return session.todoState === 'done' || session.todoState === 'cancelled'
   }, [])
 
-  // Helper: Filter sessions by ChatFilter
+  // Helper: Filter sessions by ChatFilter (scoped to current workspace)
   const filterSessionsByFilter = useCallback(
     (filter: ChatFilter): SessionMeta[] => {
       return sessionMetas.filter((session) => {
+        // Filter by workspace first to prevent selecting sessions from other workspaces
+        // This is critical during workspace switching to avoid "ghost sessions"
+        if (workspaceId && session.workspaceId !== workspaceId) {
+          return false
+        }
         switch (filter.kind) {
           case 'allChats':
             return true
@@ -169,7 +174,7 @@ export function NavigationProvider({
         }
       })
     },
-    [sessionMetas]
+    [sessionMetas, workspaceId]
   )
 
   // Helper: Get first session ID for a filter
@@ -201,6 +206,16 @@ export function NavigationProvider({
       return skills[0]?.slug ?? null
     },
     [skills]
+  )
+
+  // Helper: Check if a session belongs to the current workspace
+  const isSessionInCurrentWorkspace = useCallback(
+    (sessionId: string): boolean => {
+      if (!workspaceId) return true // No workspace filter
+      const session = sessionMetaMap.get(sessionId)
+      return session?.workspaceId === workspaceId
+    },
+    [sessionMetaMap, workspaceId]
   )
 
   // Handle action navigation (side effects that don't change navigation state)
@@ -364,8 +379,41 @@ export function NavigationProvider({
    */
   const applyNavigationState = useCallback(
     (newState: NavigationState): NavigationState => {
-      // For chats: auto-select first session if no details provided
-      if (isChatsNavigation(newState) && !newState.details) {
+      // For chats: validate and auto-select session
+      if (isChatsNavigation(newState)) {
+        // If details provided, verify session belongs to current workspace
+        // This prevents "ghost sessions" when switching workspaces
+        if (newState.details) {
+          if (!isSessionInCurrentWorkspace(newState.details.sessionId)) {
+            // Session doesn't belong to current workspace, clear details and re-select
+            console.log('[Navigation] Session', newState.details.sessionId, 'not in current workspace, clearing selection')
+            const firstSessionId = getFirstSessionId(newState.filter)
+            if (firstSessionId) {
+              const stateWithSelection: NavigationState = {
+                ...newState,
+                details: { type: 'chat', sessionId: firstSessionId },
+              }
+              setSession({ selected: firstSessionId })
+              setNavigationState(stateWithSelection)
+              return stateWithSelection
+            } else {
+              // No sessions in current workspace
+              const stateWithoutDetails: NavigationState = {
+                ...newState,
+                details: undefined,
+              }
+              setSession({ selected: null })
+              setNavigationState(stateWithoutDetails)
+              return stateWithoutDetails
+            }
+          }
+          // Session is valid for current workspace
+          setSession({ selected: newState.details.sessionId })
+          setNavigationState(newState)
+          return newState
+        }
+
+        // No details provided - auto-select first session
         const firstSessionId = getFirstSessionId(newState.filter)
         if (firstSessionId) {
           const stateWithSelection: NavigationState = {
@@ -414,16 +462,11 @@ export function NavigationProvider({
         }
       }
 
-      // For chats with explicit session: update session selection
-      if (isChatsNavigation(newState) && newState.details) {
-        setSession({ selected: newState.details.sessionId })
-      }
-
       // Apply state directly
       setNavigationState(newState)
       return newState
     },
-    [getFirstSessionId, getFirstSourceSlug, getFirstSkillSlug, setSession]
+    [getFirstSessionId, getFirstSourceSlug, getFirstSkillSlug, setSession, isSessionInCurrentWorkspace]
   )
 
   // Main navigate function - unified approach using NavigationState
@@ -641,6 +684,42 @@ export function NavigationProvider({
 
   // Track whether initial route restoration has been attempted
   const initialRouteRestoredRef = useRef(false)
+
+  // Track the previous workspace ID to detect workspace switches
+  const prevWorkspaceIdRef = useRef<string | null>(null)
+
+  // Re-validate navigation state when workspace changes
+  // This handles the case where user switches workspaces and the current
+  // selected session doesn't belong to the new workspace
+  useEffect(() => {
+    // Skip on initial render or if workspace is not set
+    if (!workspaceId || !isReady) return
+
+    // Skip if this is the first workspace (not a switch)
+    if (prevWorkspaceIdRef.current === null) {
+      prevWorkspaceIdRef.current = workspaceId
+      return
+    }
+
+    // Skip if workspace hasn't actually changed
+    if (prevWorkspaceIdRef.current === workspaceId) return
+
+    console.log('[Navigation] Workspace changed from', prevWorkspaceIdRef.current, 'to', workspaceId)
+    prevWorkspaceIdRef.current = workspaceId
+
+    // If currently in chats navigator, re-validate the selection
+    if (isChatsNavigation(navigationState)) {
+      // Always re-apply navigation state to trigger proper session selection
+      // for the new workspace. This will either:
+      // 1. Clear invalid session and auto-select first session in new workspace
+      // 2. Show empty state if new workspace has no sessions
+      const newState: NavigationState = {
+        ...navigationState,
+        details: undefined, // Clear any existing selection
+      }
+      applyNavigationState(newState)
+    }
+  }, [workspaceId, isReady, navigationState, applyNavigationState])
 
   // Initialize history stack on first load
   useEffect(() => {

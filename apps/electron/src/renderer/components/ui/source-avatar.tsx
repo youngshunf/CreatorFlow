@@ -147,7 +147,7 @@ export function SourceAvatar({ source, size = 'md', fluid, showStatus, className
     workspaceId: source.workspaceId,
     entityType: 'source',
     identifier: source.config.slug,
-    iconDir: `sources/${source.config.slug}`,
+    iconDir: `.creator-flow/sources/${source.config.slug}`,
     iconValue: source.config.icon,
   })
 

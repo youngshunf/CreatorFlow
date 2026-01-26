@@ -4,7 +4,8 @@ import type { Env } from '../app'
 
 export interface JWTPayload {
   userId: string
-  email: string
+  email?: string | null
+  phone?: string | null
   iat?: number
   exp?: number
 }
@@ -15,7 +16,7 @@ export interface JWTPayload {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const payload = await verify(token, process.env.JWT_SECRET!, 'HS256')
-    return payload as JWTPayload
+    return payload as unknown as JWTPayload
   } catch (err) {
     console.error('[JWT] Verification failed:', err)
     return null
@@ -42,7 +43,7 @@ export const authMiddleware = async (c: Context<Env>, next: Next) => {
   
   // Set user info in context
   c.set('userId', payload.userId)
-  c.set('userEmail', payload.email)
+  c.set('userEmail', payload.email ?? payload.phone ?? '')
   
   await next()
 }
@@ -59,7 +60,7 @@ export const optionalAuthMiddleware = async (c: Context<Env>, next: Next) => {
     
     if (payload) {
       c.set('userId', payload.userId)
-      c.set('userEmail', payload.email)
+      c.set('userEmail', payload.email ?? payload.phone ?? '')
     }
   }
   
@@ -94,7 +95,7 @@ export const apiKeyMiddleware = async (c: Context<Env>, next: Next) => {
   }
   
   c.set('userId', user.id)
-  c.set('userEmail', user.email)
+  c.set('userEmail', user.email ?? user.phone ?? '')
   
   await next()
 }

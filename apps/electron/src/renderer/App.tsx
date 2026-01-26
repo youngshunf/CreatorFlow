@@ -1108,16 +1108,13 @@ export default function App() {
       // This prevents showing stale session data from the wrong workspace.
       setSession({ selected: null })
 
-      // 4. Navigate to allChats view without a specific session selected
-      // This ensures the UI is in a clean state for the new workspace
-      navigate(routes.view.allChats())
-
-      // 5. Clear pending permissions/credentials (not relevant to new workspace)
+      // 4. Clear pending permissions/credentials (not relevant to new workspace)
       setPendingPermissions(new Map())
       setPendingCredentials(new Map())
 
-      // Note: Sessions and theme will reload automatically due to windowWorkspaceId dependency
-      // in useEffect hooks
+      // Note: Navigation state will be re-validated automatically by NavigationProvider
+      // when it detects workspaceId change. Sessions and theme will reload automatically
+      // due to windowWorkspaceId dependency in useEffect hooks.
     }
   }, [windowWorkspaceId, setSession])
 

@@ -158,9 +158,9 @@ export const EMOJI_ICON_PREFIX = 'emoji:'
  *
  * Resolution priority (config.icon is the source of truth):
  * 1. Emoji in config.icon → Return emoji marker for caller to render as text
- * 2. Local path in config.icon (./icon.svg) → Load from sources/{slug}/icon.svg
+ * 2. Local path in config.icon (./icon.svg) → Load from .creator-flow/sources/{slug}/icon.svg
  * 3. URL in config.icon → Use URL directly (icon file may have been auto-downloaded)
- * 4. config.icon undefined → Auto-discover sources/{slug}/icon.{svg,png}
+ * 4. config.icon undefined → Auto-discover .creator-flow/sources/{slug}/icon.{svg,png}
  * 5. Fallback → Resolve favicon from service URL
  *
  * @returns Promise resolving to icon URL, emoji marker (emoji:{emoji}), or null
@@ -187,7 +187,7 @@ export async function loadSourceIcon(
   // Priority 2: Explicit local path in config.icon (e.g., "./icon.svg")
   if (icon?.startsWith('./')) {
     const iconFilename = icon.slice(2) // Remove './'
-    const relativePath = `sources/${config.slug}/${iconFilename}`
+    const relativePath = `.creator-flow/sources/${config.slug}/${iconFilename}`
     const loaded = await loadWorkspaceIcon(workspaceId, relativePath)
     if (loaded) {
       sourceIconCache.set(cacheKey, loaded)
@@ -199,13 +199,13 @@ export async function loadSourceIcon(
   // This handles both:
   // - config.icon is a URL (icon may have been downloaded to local file)
   // - config.icon is undefined (auto-discovery)
-  const localIconSvg = await loadWorkspaceIcon(workspaceId, `sources/${config.slug}/icon.svg`)
+  const localIconSvg = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.svg`)
   if (localIconSvg) {
     sourceIconCache.set(cacheKey, localIconSvg)
     return localIconSvg
   }
 
-  const localIconPng = await loadWorkspaceIcon(workspaceId, `sources/${config.slug}/icon.png`)
+  const localIconPng = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.png`)
   if (localIconPng) {
     sourceIconCache.set(cacheKey, localIconPng)
     return localIconPng
@@ -293,11 +293,11 @@ export async function loadSkillIcon(
   if (cached) return cached
 
   // Extract relative path from absolute icon path
-  // iconPath is absolute, we need to get the skills/slug/icon.ext part
-  const skillsMatch = iconPath.match(/skills\/([^/]+)\/(.+)$/)
+  // iconPath is absolute, we need to get the .creator-flow/skills/slug/icon.ext part
+  const skillsMatch = iconPath.match(/\.creator-flow\/skills\/([^/]+)\/(.+)$/)
   if (!skillsMatch) return null
 
-  const relativePath = `skills/${skillsMatch[1]}/${skillsMatch[2]}`
+  const relativePath = `.creator-flow/skills/${skillsMatch[1]}/${skillsMatch[2]}`
 
   try {
     const result = await window.electronAPI.readWorkspaceImage(workspaceId, relativePath)
@@ -425,10 +425,10 @@ const ICON_FILE_EXTENSIONS = ['.svg', '.png', '.jpg', '.jpeg']
 
 /**
  * Pre-compiled regex for extracting workspace-relative icon paths from absolute paths.
- * Matches any known entity directory prefix (skills/, sources/, statuses/)
+ * Matches any known entity directory prefix (.creator-flow/skills/, .creator-flow/sources/, .creator-flow/statuses/)
  * followed by the rest of the path.
  */
-const ICON_PATH_PATTERN = /(?:skills|sources|statuses)\/.+$/
+const ICON_PATH_PATTERN = /\.creator-flow\/(?:skills|sources|statuses)\/.+$/
 
 /**
  * Options for the useEntityIcon hook.
@@ -442,13 +442,13 @@ export interface UseEntityIconOptions {
   identifier: string
   /**
    * Known relative path to icon file (for entities with pre-resolved paths).
-   * e.g. 'skills/my-skill/icon.svg'
+   * e.g. '.creator-flow/skills/my-skill/icon.svg'
    * If provided, only this exact path is attempted (no auto-discovery).
    */
   iconPath?: string
   /**
    * Directory to auto-discover icon files in (relative to workspace).
-   * e.g. 'sources/linear' → tries sources/linear/icon.svg, icon.png, etc.
+   * e.g. '.creator-flow/sources/linear' → tries .creator-flow/sources/linear/icon.svg, icon.png, etc.
    * Ignored if iconPath is provided.
    */
   iconDir?: string
