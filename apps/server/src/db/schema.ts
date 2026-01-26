@@ -1,19 +1,29 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb, index } from 'drizzle-orm/pg-core'
 
+// Client types
+export type ClientType = 'desktop' | 'admin'
+export type UserSource = 'desktop' | 'admin' | 'web'
+
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  email: text('email').unique(),  // null if phone registration
+  phone: text('phone').unique(),  // null if email/OAuth registration
   passwordHash: text('password_hash'),  // null if OAuth only
   name: text('name'),
   avatar: text('avatar'),
-  provider: text('provider'),  // 'email' | 'google' | 'apple'
+  provider: text('provider'),  // 'email' | 'phone' | 'google' | 'apple'
   providerId: text('provider_id'),
   emailVerified: boolean('email_verified').default(false),
+  phoneVerified: boolean('phone_verified').default(false),
+  // Multi-client access control
+  source: text('source').$type<UserSource>().default('desktop'),  // where the user registered
+  allowedClients: jsonb('allowed_clients').$type<ClientType[]>().default(['desktop']),  // which clients user can access
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index('users_email_idx').on(table.email),
+  phoneIdx: index('users_phone_idx').on(table.phone),
   providerIdx: index('users_provider_idx').on(table.provider, table.providerId),
 }))
 

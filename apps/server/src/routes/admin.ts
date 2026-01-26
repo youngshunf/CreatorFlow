@@ -17,10 +17,11 @@ const adminMiddleware = async (c: any, next: () => Promise<void>) => {
   const user = await UserService.getById(userId)
   
   // Check if user is admin (you can implement your own logic)
-  // For now, check against an env variable list of admin emails
+  // For now, check against an env variable list of admin emails/phones
   const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim())
+  const userIdentifier = user?.email || user?.phone || ''
   
-  if (!user || !adminEmails.includes(user.email)) {
+  if (!user || !adminEmails.includes(userIdentifier)) {
     return c.json({ error: 'Forbidden' }, 403)
   }
   
@@ -239,6 +240,46 @@ admin.post(
     })
     
     return c.json({ subscription })
+  }
+)
+
+// Grant admin access to a user
+admin.post(
+  '/users/:userId/grant-admin',
+  authMiddleware,
+  adminMiddleware,
+  async (c) => {
+    const userId = c.req.param('userId')
+    
+    try {
+      const user = await UserService.grantClientAccess(userId, 'admin')
+      return c.json({ user, message: '已授予管理端访问权限' })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'User not found') {
+        return c.json({ error: 'User not found' }, 404)
+      }
+      throw error
+    }
+  }
+)
+
+// Revoke admin access from a user
+admin.post(
+  '/users/:userId/revoke-admin',
+  authMiddleware,
+  adminMiddleware,
+  async (c) => {
+    const userId = c.req.param('userId')
+    
+    try {
+      const user = await UserService.revokeClientAccess(userId, 'admin')
+      return c.json({ user, message: '已撤销管理端访问权限' })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'User not found') {
+        return c.json({ error: 'User not found' }, 404)
+      }
+      throw error
+    }
   }
 )
 

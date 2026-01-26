@@ -1,6 +1,7 @@
 import { eq, like, or, sql, count } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { db, users, apiTokens, type User, type NewUser } from '../db'
+import { db, users, apiTokens, type User, type NewUser, type ClientType, type UserSource } from '../db'
+import { SmsService } from './sms'
 
 // Simple password hashing using Bun's built-in crypto
 async function hashPassword(password: string): Promise<string> {
@@ -18,6 +19,13 @@ export interface RegisterInput {
   email: string
   password: string
   name?: string
+  source?: UserSource
+  allowedClients?: ClientType[]
+}
+
+export interface PhoneLoginInput {
+  phone: string
+  code: string
 }
 
 export interface GoogleOAuthProfile {
@@ -45,6 +53,10 @@ export class UserService {
     
     const passwordHash = await hashPassword(input.password)
     
+    // Default: desktop registration only allows desktop access
+    const source = input.source ?? 'desktop'
+    const allowedClients = input.allowedClients ?? (source === 'admin' ? ['desktop', 'admin'] : ['desktop'])
+    
     const newUser: NewUser = {
       id: nanoid(),
       email: input.email,
@@ -52,6 +64,8 @@ export class UserService {
       name: input.name,
       provider: 'email',
       emailVerified: false,
+      source,
+      allowedClients,
     }
     
     const [user] = await db.insert(users).values(newUser).returning()
@@ -60,8 +74,9 @@ export class UserService {
   
   /**
    * Login with email/password
+   * @param client - which client is attempting to login
    */
-  static async login(email: string, password: string): Promise<User> {
+  static async login(email: string, password: string, client: ClientType = 'desktop'): Promise<User> {
     if (!db) throw new Error('Database not configured')
     
     const user = await db.query.users.findFirst({
@@ -77,7 +92,73 @@ export class UserService {
       throw new Error('Invalid credentials')
     }
     
+    // Check client access
+    const allowedClients = user.allowedClients as ClientType[] | null
+    if (!allowedClients?.includes(client)) {
+      throw new Error('Client access denied')
+    }
+    
     return user
+  }
+  
+  /**
+   * Login or register with phone number (auto-registration)
+   * If user doesn't exist, create new account
+   * @param client - which client is attempting to login
+   */
+  static async loginOrRegisterByPhone(input: PhoneLoginInput, client: ClientType = 'desktop'): Promise<{ user: User; isNewUser: boolean }> {
+    if (!db) throw new Error('Database not configured')
+    
+    // Verify SMS code first
+    const isValid = await SmsService.verifyCode(input.phone, input.code)
+    if (!isValid) {
+      throw new Error('Invalid verification code')
+    }
+    
+    // Check if user exists
+    let user = await db.query.users.findFirst({
+      where: eq(users.phone, input.phone),
+    })
+    
+    if (user) {
+      // Existing user - check client access
+      const allowedClients = user.allowedClients as ClientType[] | null
+      if (!allowedClients?.includes(client)) {
+        throw new Error('Client access denied')
+      }
+      return { user, isNewUser: false }
+    }
+    
+    // New user - auto register (desktop only by default)
+    const newUser: NewUser = {
+      id: nanoid(),
+      phone: input.phone,
+      provider: 'phone',
+      phoneVerified: true,
+      source: 'desktop',
+      allowedClients: ['desktop'],
+    }
+    
+    // If registering from admin, deny (admin users must be pre-created or granted access)
+    if (client === 'admin') {
+      throw new Error('Client access denied')
+    }
+    
+    const [created] = await db.insert(users).values(newUser).returning()
+    return { user: created!, isNewUser: true }
+  }
+  
+  /**
+   * Get user by phone number
+   */
+  static async getByPhone(phone: string): Promise<User | null> {
+    if (!db) return null
+    
+    const user = await db.query.users.findFirst({
+      where: eq(users.phone, phone),
+    })
+    
+    return user ?? null
   }
   
   /**
@@ -254,5 +335,58 @@ export class UserService {
     
     const result = await db.select({ count: count() }).from(users)
     return result[0]?.count ?? 0
+  }
+  
+  /**
+   * Grant client access to a user
+   */
+  static async grantClientAccess(userId: string, client: ClientType): Promise<User> {
+    if (!db) throw new Error('Database not configured')
+    
+    const user = await this.getById(userId)
+    if (!user) throw new Error('User not found')
+    
+    const currentClients = (user.allowedClients as ClientType[] | null) ?? ['desktop']
+    if (currentClients.includes(client)) {
+      return user // Already has access
+    }
+    
+    const [updated] = await db.update(users)
+      .set({
+        allowedClients: [...currentClients, client],
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning()
+    
+    return updated!
+  }
+  
+  /**
+   * Revoke client access from a user
+   */
+  static async revokeClientAccess(userId: string, client: ClientType): Promise<User> {
+    if (!db) throw new Error('Database not configured')
+    
+    const user = await this.getById(userId)
+    if (!user) throw new Error('User not found')
+    
+    const currentClients = (user.allowedClients as ClientType[] | null) ?? ['desktop']
+    const newClients = currentClients.filter(c => c !== client)
+    
+    // Must have at least desktop access
+    if (newClients.length === 0) {
+      newClients.push('desktop')
+    }
+    
+    const [updated] = await db.update(users)
+      .set({
+        allowedClients: newClients,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning()
+    
+    return updated!
   }
 }
