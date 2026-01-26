@@ -13,7 +13,7 @@ interface AppOption {
 
 interface AddWorkspaceStep_ChooseAppProps {
   onBack?: () => void
-  onNext: (appId: string) => void
+  onNext: (appId: string, appName: string) => void
   isLoading?: boolean
   /** Whether this is the first step (hides back button) */
   isFirstStep?: boolean
@@ -123,7 +123,8 @@ export function AddWorkspaceStep_ChooseApp({
 
   const handleNext = () => {
     if (selectedAppId) {
-      onNext(selectedAppId)
+      const selectedApp = apps.find(app => app.id === selectedAppId)
+      onNext(selectedAppId, selectedApp?.name || '')
     }
   }
 

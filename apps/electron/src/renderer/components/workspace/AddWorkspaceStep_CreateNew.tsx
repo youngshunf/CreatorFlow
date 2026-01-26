@@ -14,6 +14,8 @@ interface AddWorkspaceStep_CreateNewProps {
   onBack: () => void
   onCreate: (folderPath: string, name: string) => Promise<void>
   isCreating: boolean
+  /** Default workspace name (typically from selected app) */
+  defaultName?: string
 }
 
 /**
@@ -26,11 +28,12 @@ interface AddWorkspaceStep_CreateNewProps {
 export function AddWorkspaceStep_CreateNew({
   onBack,
   onCreate,
-  isCreating
+  isCreating,
+  defaultName = ''
 }: AddWorkspaceStep_CreateNewProps) {
   const t = useT()
   const $t = use$T()
-  const [name, setName] = useState('')
+  const [name, setName] = useState(defaultName)
   const [locationOption, setLocationOption] = useState<LocationOption>('default')
   const [customPath, setCustomPath] = useState<string | null>(null)
   const [homeDir, setHomeDir] = useState('')

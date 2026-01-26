@@ -33,6 +33,7 @@ export function WorkspaceCreationScreen({
 }: WorkspaceCreationScreenProps) {
   const [step, setStep] = useState<CreationStep>('choose-app')
   const [selectedAppId, setSelectedAppId] = useState<string>('app.general')
+  const [selectedAppName, setSelectedAppName] = useState<string>('')
   const [isCreating, setIsCreating] = useState(false)
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
 
@@ -54,8 +55,9 @@ export function WorkspaceCreationScreen({
     }
   }, [isCreating, onClose])
 
-  const handleChooseApp = useCallback((appId: string) => {
+  const handleChooseApp = useCallback((appId: string, appName: string) => {
     setSelectedAppId(appId)
+    setSelectedAppName(appName)
     setStep('create')
   }, [])
 
@@ -87,6 +89,7 @@ export function WorkspaceCreationScreen({
             onBack={() => setStep('choose-app')}
             onCreate={handleCreateWorkspace}
             isCreating={isCreating}
+            defaultName={selectedAppName}
           />
         )
 
