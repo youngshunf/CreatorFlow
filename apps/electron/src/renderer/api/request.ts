@@ -1,0 +1,114 @@
+// 使用原生 fetch 替代 axios，避免依赖安装问题
+
+// 定义后端响应的标准结构
+export interface ApiResponse<T = any> {
+  code: number;
+  msg: string;
+  data: T;
+}
+
+const BASE_URL = import.meta.env.VITE_GLOB_API_URL || 'http://localhost:8020/api/v1';
+
+interface RequestOptions extends RequestInit {
+  params?: Record<string, string>;
+}
+
+class RequestClient {
+  private baseURL: string;
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+  }
+
+  private async request<T>(url: string, options: RequestOptions = {}): Promise<T> {
+    const { params, ...init } = options;
+    
+    // 构建 URL
+    let fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    if (params) {
+      const searchParams = new URLSearchParams(params);
+      fullUrl += `?${searchParams.toString()}`;
+    }
+
+    // 设置 Headers
+    const headers = new Headers(init.headers);
+    if (!headers.has('Content-Type') && !(init.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    // 注入 Token
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    try {
+      const response = await fetch(fullUrl, {
+        ...init,
+        headers,
+      });
+
+      // 处理 401 未授权
+      if (response.status === 401) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('llm_token');
+        window.dispatchEvent(new Event('auth:unauthorized'));
+        throw new Error('Unauthorized');
+      }
+
+      // 处理 HTTP 错误
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.msg || errorJson.error || response.statusText);
+        } catch (e) {
+          throw new Error(errorText || response.statusText);
+        }
+      }
+
+      // 解析 JSON
+      const res = await response.json() as ApiResponse<T>;
+      
+      // 处理业务错误 (clound-backend 标准: code 200 为成功)
+      if (res.code !== undefined && res.code !== 200) {
+        throw new Error(res.msg || 'API Error');
+      }
+
+      // 如果后端返回标准结构，取 data；否则直接返回整个 body (兼容性)
+      return (res.code === 200 && res.data !== undefined) ? res.data : res;
+
+    } catch (error: any) {
+      console.error('Request Error:', error);
+      throw error;
+    }
+  }
+
+  get<T>(url: string, options?: RequestOptions) {
+    return this.request<T>(url, { ...options, method: 'GET' });
+  }
+
+  post<T>(url: string, data?: any, options?: RequestOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  put<T>(url: string, data?: any, options?: RequestOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  delete<T>(url: string, options?: RequestOptions) {
+    return this.request<T>(url, { ...options, method: 'DELETE' });
+  }
+}
+
+const request = new RequestClient(BASE_URL);
+
+export default request;

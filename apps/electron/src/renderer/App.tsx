@@ -11,6 +11,7 @@ import type { AgentEvent, Effect } from './event-processor'
 import { AppShell } from '@/components/app-shell/AppShell'
 import type { AppShellContextType } from '@/context/AppShellContext'
 import { OnboardingWizard, ReauthScreen } from '@/components/onboarding'
+import { LoginScreen } from '@/components/auth/LoginScreen'
 import { ResetConfirmationDialog } from '@/components/ResetConfirmationDialog'
 import { SplashScreen } from '@/components/SplashScreen'
 import { TooltipProvider } from '@creator-flow/ui'
@@ -141,6 +142,12 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>('loading')
   const [setupNeeds, setSetupNeeds] = useState<SetupNeeds | null>(null)
 
+  // Login state for cloud services
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('access_token'))
+  const handleLoginSuccess = useCallback(() => {
+    setIsLoggedIn(true)
+  }, [])
+
   // Per-session Jotai atom setters for isolated updates
   // NOTE: No sessionsAtom - we don't store a Session[] array anywhere to prevent memory leaks
   // Instead we use:
@@ -218,6 +225,16 @@ export default function App() {
   // Handler for when splash exit animation completes
   const handleSplashExitComplete = useCallback(() => {
     setSplashHidden(true)
+  }, [])
+
+  // Listen for unauthorized events (token expired)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setIsLoggedIn(false)
+      setAppState('onboarding')
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
   }, [])
 
   // Apply theme via hook (injects CSS variables)
@@ -1227,6 +1244,16 @@ export default function App() {
   // Loading state - show splash screen
   if (appState === 'loading') {
     return <SplashScreen isExiting={false} />
+  }
+
+  // Force login if not authenticated (except during loading)
+  if (!isLoggedIn) {
+    return (
+      <ModalProvider>
+        <WindowCloseHandler />
+        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+      </ModalProvider>
+    )
   }
 
   // Reauth state - session expired, need to re-login
