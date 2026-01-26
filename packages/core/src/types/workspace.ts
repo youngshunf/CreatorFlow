@@ -17,6 +17,7 @@ export interface Workspace {
   iconUrl?: string;
   mcpUrl?: string;
   mcpAuthType?: McpAuthType;
+  appId?: string;          // Application ID this workspace was created with (e.g., 'app.creator-media')
 }
 
 export type AuthType = 'api_key' | 'oauth_token';

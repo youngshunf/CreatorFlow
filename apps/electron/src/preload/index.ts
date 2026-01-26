@@ -26,8 +26,8 @@ const api: ElectronAPI = {
 
   // Workspace management
   getWorkspaces: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WORKSPACES),
-  createWorkspace: (folderPath: string, name: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name),
+  createWorkspace: (folderPath: string, name: string, appId?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
 

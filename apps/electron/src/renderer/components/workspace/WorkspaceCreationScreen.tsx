@@ -6,11 +6,12 @@ import { FullscreenOverlayBase } from "@creator-flow/ui"
 import { cn } from "@/lib/utils"
 import { overlayTransitionIn } from "@/lib/animations"
 import { AddWorkspaceStep_Choice } from "./AddWorkspaceStep_Choice"
+import { AddWorkspaceStep_ChooseApp } from "./AddWorkspaceStep_ChooseApp"
 import { AddWorkspaceStep_CreateNew } from "./AddWorkspaceStep_CreateNew"
 import { AddWorkspaceStep_OpenFolder } from "./AddWorkspaceStep_OpenFolder"
 import type { Workspace } from "../../../shared/types"
 
-type CreationStep = 'choice' | 'create' | 'open'
+type CreationStep = 'choice' | 'choose-app' | 'create' | 'open'
 
 interface WorkspaceCreationScreenProps {
   /** Callback when a workspace is created successfully */
@@ -34,6 +35,7 @@ export function WorkspaceCreationScreen({
   className
 }: WorkspaceCreationScreenProps) {
   const [step, setStep] = useState<CreationStep>('choice')
+  const [selectedAppId, setSelectedAppId] = useState<string>('app.general')
   const [isCreating, setIsCreating] = useState(false)
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
 
@@ -55,30 +57,45 @@ export function WorkspaceCreationScreen({
     }
   }, [isCreating, onClose])
 
+  const handleChooseApp = useCallback((appId: string) => {
+    setSelectedAppId(appId)
+    setStep('create')
+  }, [])
+
   const handleCreateWorkspace = useCallback(async (folderPath: string, name: string) => {
     setIsCreating(true)
     try {
-      const workspace = await window.electronAPI.createWorkspace(folderPath, name)
+      // Pass the selected app ID to workspace creation
+      const workspace = await window.electronAPI.createWorkspace(folderPath, name, selectedAppId)
       onWorkspaceCreated(workspace)
     } finally {
       setIsCreating(false)
     }
-  }, [onWorkspaceCreated])
+  }, [onWorkspaceCreated, selectedAppId])
 
   const renderStep = () => {
     switch (step) {
       case 'choice':
         return (
           <AddWorkspaceStep_Choice
-            onCreateNew={() => setStep('create')}
+            onCreateNew={() => setStep('choose-app')}
             onOpenFolder={() => setStep('open')}
+          />
+        )
+
+      case 'choose-app':
+        return (
+          <AddWorkspaceStep_ChooseApp
+            onBack={() => setStep('choice')}
+            onNext={handleChooseApp}
+            isLoading={isCreating}
           />
         )
 
       case 'create':
         return (
           <AddWorkspaceStep_CreateNew
-            onBack={() => setStep('choice')}
+            onBack={() => setStep('choose-app')}
             onCreate={handleCreateWorkspace}
             isCreating={isCreating}
           />

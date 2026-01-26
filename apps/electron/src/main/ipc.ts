@@ -136,9 +136,33 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Create a new workspace at a folder path (Obsidian-style: folder IS the workspace)
-  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string) => {
+  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string) => {
     const rootPath = folderPath
-    const workspace = addWorkspace({ name, rootPath })
+    
+    // Initialize workspace from app manifest if appId provided
+    if (appId && appId !== 'app.general') {
+      const { initializeWorkspaceFromApp } = await import('@creator-flow/shared/apps')
+      try {
+        const result = initializeWorkspaceFromApp({
+          name,
+          rootPath,
+          appId,
+        })
+        if (result.success) {
+          ipcLog.info(`Initialized workspace "${name}" with app "${appId}" at ${rootPath}`)
+          if (result.skillsInstalled.length > 0) {
+            ipcLog.info(`Installed skills: ${result.skillsInstalled.join(', ')}`)
+          }
+        } else {
+          ipcLog.warn(`Workspace initialized with errors: ${result.errors.join(', ')}`)
+        }
+      } catch (error) {
+        ipcLog.error(`Failed to initialize workspace with app "${appId}":`, error)
+        // Continue with workspace creation even if app initialization fails
+      }
+    }
+    
+    const workspace = addWorkspace({ name, rootPath, appId })
     // Make it active
     setActiveWorkspace(workspace.id)
     ipcLog.info(`Created workspace "${name}" at ${rootPath}`)
