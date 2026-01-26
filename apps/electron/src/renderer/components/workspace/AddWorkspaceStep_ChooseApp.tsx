@@ -12,9 +12,11 @@ interface AppOption {
 }
 
 interface AddWorkspaceStep_ChooseAppProps {
-  onBack: () => void
+  onBack?: () => void
   onNext: (appId: string) => void
   isLoading?: boolean
+  /** Whether this is the first step (hides back button) */
+  isFirstStep?: boolean
 }
 
 interface AppCardProps {
@@ -80,7 +82,8 @@ function AppCard({ app, selected, onClick, disabled }: AppCardProps) {
 export function AddWorkspaceStep_ChooseApp({
   onBack,
   onNext,
-  isLoading
+  isLoading,
+  isFirstStep = true
 }: AddWorkspaceStep_ChooseAppProps) {
   const t = useT()
   const [selectedAppId, setSelectedAppId] = useState<string>('app.general')
@@ -128,22 +131,26 @@ export function AddWorkspaceStep_ChooseApp({
 
   return (
     <AddWorkspaceContainer>
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        disabled={isLoading}
-        className={cn(
-          "self-start flex items-center gap-1 text-sm text-muted-foreground",
-          "hover:text-foreground transition-colors mb-4",
-          isLoading && "opacity-50 cursor-not-allowed"
-        )}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {t('返回')}
-      </button>
+      {/* Back button - only show if not first step */}
+      {!isFirstStep && onBack && (
+        <button
+          onClick={onBack}
+          disabled={isLoading}
+          className={cn(
+            "self-start flex items-center gap-1 text-sm text-muted-foreground",
+            "hover:text-foreground transition-colors mb-4",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('返回')}
+        </button>
+      )}
+
+      {isFirstStep && <div className="mt-2" />}
 
       <AddWorkspaceStepHeader
-        title={t('选择应用')}
+        title={t('添加工作区')}
         description={t('选择适合你的工作流的应用模板。')}
       />
 
