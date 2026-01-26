@@ -126,7 +126,7 @@ function createColumnsWithType(t: (key: string) => string): ColumnDef<Permission
       cell: ({ row }) => (
         <div className="p-1.5 pl-2.5 min-w-0">
           <span className="truncate block">
-            {row.original.comment || '—'}
+            {row.original.comment ? t(row.original.comment) : '—'}
           </span>
         </div>
       ),
@@ -164,7 +164,7 @@ function createColumnsWithoutType(t: (key: string) => string): ColumnDef<Permiss
       cell: ({ row }) => (
         <div className="p-1.5 pl-2.5 min-w-0">
           <span className="truncate block">
-            {row.original.comment || '—'}
+            {row.original.comment ? t(row.original.comment) : '—'}
           </span>
         </div>
       ),
