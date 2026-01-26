@@ -189,7 +189,7 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_SETTINGS_UPDATE, workspaceId, key, value),
 
   // Folder dialog
-  openFolderDialog: () => ipcRenderer.invoke(IPC_CHANNELS.OPEN_FOLDER_DIALOG),
+  openFolderDialog: (defaultPath?: string) => ipcRenderer.invoke(IPC_CHANNELS.OPEN_FOLDER_DIALOG, defaultPath),
 
   // Filesystem search (for @ mention file selection)
   searchFiles: (basePath: string, query: string) =>

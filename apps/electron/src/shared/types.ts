@@ -808,7 +808,7 @@ export interface ElectronAPI {
   updateWorkspaceSetting<K extends keyof WorkspaceSettings>(workspaceId: string, key: K, value: WorkspaceSettings[K]): Promise<void>
 
   // Folder dialog
-  openFolderDialog(): Promise<string | null>
+  openFolderDialog(defaultPath?: string): Promise<string | null>
 
   // User Preferences
   readPreferences(): Promise<{ content: string; exists: boolean; path: string }>

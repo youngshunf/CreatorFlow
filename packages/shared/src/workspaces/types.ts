@@ -59,6 +59,31 @@ export interface WorkspaceConfig {
    */
   localMcpServers?: LocalMcpConfig;
 
+  /**
+   * Application framework fields
+   */
+  
+  /**
+   * ID of the main application bound to this workspace.
+   * Example: 'app.creator-media' for the content creation app.
+   * When set, workspace initialization uses the app's configuration.
+   */
+  appId?: string;
+
+  /**
+   * List of installed plugin application IDs.
+   * Plugin apps extend the main app with additional capabilities.
+   * Example: ['plugin.data-analytics', 'plugin.seo-optimizer']
+   */
+  installedPluginApps?: string[];
+
+  /**
+   * Application-specific settings.
+   * Each app can store its own configuration here.
+   * Structure depends on the app's requirements.
+   */
+  appSettings?: Record<string, any>;
+
   createdAt: number;
   updatedAt: number;
 }

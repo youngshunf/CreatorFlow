@@ -53,7 +53,7 @@ import { cn } from '@/lib/utils'
 import { applySmartTypography } from '@/lib/smart-typography'
 import { AttachmentPreview } from '../AttachmentPreview'
 import { MODELS, getModelShortName, getModelContextWindow, isClaudeModel } from '@config/models'
-import { useOptionalAppShellContext } from '@/context/AppShellContext'
+import { useOptionalAppShellContext, useActiveWorkspace } from '@/context/AppShellContext'
 import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { FreeFormInputContextBadge } from './FreeFormInputContextBadge'
@@ -1651,6 +1651,21 @@ function formatPathForDisplay(path: string, homeDir: string): string {
  * WorkingDirectoryBadge - Context badge for selecting working directory
  * Uses cmdk for filterable folder list when there are more than 5 recent folders.
  */
+/**
+ * Check if a path is under the workspace root directory.
+ * Returns true if path starts with workspaceRootPath (case-sensitive on Unix).
+ */
+function isPathUnderWorkspace(path: string, workspaceRootPath: string | undefined): boolean {
+  if (!workspaceRootPath || !path) return true // No workspace root means no restriction
+  
+  // Normalize paths: ensure no trailing slash for comparison
+  const normalizedPath = path.endsWith('/') ? path.slice(0, -1) : path
+  const normalizedRoot = workspaceRootPath.endsWith('/') ? workspaceRootPath.slice(0, -1) : workspaceRootPath
+  
+  // Path must be the workspace root itself OR start with workspace root + '/'
+  return normalizedPath === normalizedRoot || normalizedPath.startsWith(normalizedRoot + '/')
+}
+
 function WorkingDirectoryBadge({
   workingDirectory,
   onWorkingDirectoryChange,
@@ -1663,6 +1678,8 @@ function WorkingDirectoryBadge({
   isEmptySession?: boolean
 }) {
   const t = useT()
+  const activeWorkspace = useActiveWorkspace()
+  const workspaceRootPath = activeWorkspace?.rootPath
   const [recentDirs, setRecentDirs] = React.useState<string[]>([])
   const [popoverOpen, setPopoverOpen] = React.useState(false)
   const [homeDir, setHomeDir] = React.useState<string>('')
@@ -1704,8 +1721,17 @@ function WorkingDirectoryBadge({
   const handleChooseFolder = async () => {
     if (!window.electronAPI) return
     setPopoverOpen(false)
-    const selectedPath = await window.electronAPI.openFolderDialog()
+    // Open dialog at current working directory if set, otherwise at workspace root
+    const defaultPath = workingDirectory || workspaceRootPath
+    const selectedPath = await window.electronAPI.openFolderDialog(defaultPath)
     if (selectedPath) {
+      // Check if path is outside workspace and show warning
+      if (!isPathUnderWorkspace(selectedPath, workspaceRootPath)) {
+        toast.warning(t('所选目录不在当前工作区根目录下'), {
+          description: t('这可能会导致文件管理混乱，建议选择工作区内的目录。'),
+          duration: 6000,
+        })
+      }
       addRecentDir(selectedPath)
       setRecentDirs(getRecentDirs())
       onWorkingDirectoryChange(selectedPath)
@@ -1713,6 +1739,13 @@ function WorkingDirectoryBadge({
   }
 
   const handleSelectRecent = (path: string) => {
+    // Check if path is outside workspace and show warning
+    if (!isPathUnderWorkspace(path, workspaceRootPath)) {
+      toast.warning(t('所选目录不在当前工作区根目录下'), {
+        description: t('这可能会导致文件管理混乱，建议选择工作区内的目录。'),
+        duration: 6000,
+      })
+    }
     addRecentDir(path) // Move to top of recent list
     setRecentDirs(getRecentDirs())
     onWorkingDirectoryChange(path)

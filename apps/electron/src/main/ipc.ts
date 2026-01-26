@@ -1214,10 +1214,19 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Open native folder dialog for selecting working directory
-  ipcMain.handle(IPC_CHANNELS.OPEN_FOLDER_DIALOG, async () => {
+  ipcMain.handle(IPC_CHANNELS.OPEN_FOLDER_DIALOG, async (_event, defaultPath?: string) => {
+    // Normalize defaultPath - remove trailing /. or / for clean path
+    let normalizedPath = defaultPath?.replace(/\/\.?$/, '') || undefined
+    
+    // Verify the path exists, otherwise fall back to undefined (system default)
+    if (normalizedPath && !existsSync(normalizedPath)) {
+      normalizedPath = undefined
+    }
+    
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
       title: 'Select Working Directory',
+      defaultPath: normalizedPath,
     })
     return result.canceled ? null : result.filePaths[0]
   })
