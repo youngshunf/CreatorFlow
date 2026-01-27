@@ -78,16 +78,22 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   
   // 初始化
   useEffect(() => {
-    setupLocales(localeConfig.defaultLocale);
-    setLocaleState(getLocale());
-    setInitialized(true);
-    
-    // 监听语言变化
-    const unsubscribe = onLocaleChange((newLocale) => {
-      setLocaleState(newLocale);
-    });
-    
-    return unsubscribe;
+    try {
+      setupLocales(localeConfig.defaultLocale);
+      setLocaleState(getLocale());
+      setInitialized(true);
+      
+      // 监听语言变化
+      const unsubscribe = onLocaleChange((newLocale) => {
+        setLocaleState(newLocale);
+      });
+      
+      return unsubscribe;
+    } catch (error) {
+      console.error('[LocaleProvider] Initialization failed:', error);
+      // Fallback: Initialize anyway to prevent white screen
+      setInitialized(true);
+    }
   }, []);
   
   // 设置语言

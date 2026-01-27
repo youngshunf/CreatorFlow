@@ -58,10 +58,7 @@
     "server:db:migrate": "cd apps/server && bun run db:migrate",
     "server:db:push": "cd apps/server && bun run db:push",
     "server:db:studio": "cd apps/server && bun run db:studio",
-    "server:typecheck": "cd apps/server && bun run typecheck",
-    "admin:dev": "cd apps/admin && bun run dev",
-    "admin:build": "cd apps/admin && bun run build",
-    "admin:preview": "cd apps/admin && bun run preview"
+    "server:typecheck": "cd apps/server && bun run typecheck"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.947.0",

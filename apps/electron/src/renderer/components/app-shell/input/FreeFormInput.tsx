@@ -1871,7 +1871,7 @@ function WorkingDirectoryBadge({
 
             {/* Recent Directories - filterable (current directory already filtered out via filteredRecent) */}
             {filteredRecent.map((path) => {
-              const recentFolderName = getPathBasename(path) || 'Folder'
+              const recentFolderName = getPathBasename(path) || t('文件夹')
               return (
                 <CommandPrimitive.Item
                   key={path}

@@ -21,6 +21,9 @@ import { randomUUID } from 'crypto';
 import { expandPath, toPortablePath } from '../utils/paths.ts';
 import { getDefaultStatusConfig, saveStatusConfig, ensureDefaultIconFiles } from '../statuses/storage.ts';
 import { getDefaultLabelConfig, saveLabelConfig } from '../labels/storage.ts';
+import { getDefaultViews } from '../views/defaults.ts';
+import { saveViewsConfig } from '../views/storage.ts';
+import type { ViewsConfig } from '../views/storage.ts';
 import { loadConfigDefaults } from '../config/storage.ts';
 import { DEFAULT_MODEL } from '../config/models.ts';
 import type {
@@ -332,6 +335,10 @@ export function createWorkspaceAtPath(
 
   // Initialize label configuration with defaults (two nested groups + valued labels)
   saveLabelConfig(rootPath, getDefaultLabelConfig());
+
+  // Initialize views configuration with defaults
+  const defaultViewsConfig: ViewsConfig = { version: 1, views: getDefaultViews() };
+  saveViewsConfig(rootPath, defaultViewsConfig);
 
   // Initialize plugin manifest for SDK integration (enables skills, commands, agents)
   ensurePluginManifest(rootPath, name);

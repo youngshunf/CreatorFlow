@@ -2,18 +2,19 @@
  * Views Storage
  *
  * Filesystem-based storage for workspace view configurations.
- * Views are stored at {workspaceRootPath}/views.json
+ * Views are stored at {workspaceRootPath}/.creator-flow/views.json
  *
  * Views are dynamic, expression-based filters computed at runtime from session state.
  * They are never persisted on sessions — purely runtime-evaluated.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import type { ViewConfig } from './types.ts';
 import { getDefaultViews } from './defaults.ts';
 import { debug } from '../utils/debug.ts';
 
+const WORKSPACE_DATA_DIR = '.creator-flow';
 const VIEWS_FILE = 'views.json';
 
 /**
@@ -32,7 +33,7 @@ export interface ViewsConfig {
  * Also handles migration from old labels/config.json smartLabels key.
  */
 export function loadViewsConfig(workspaceRootPath: string): ViewsConfig {
-  const configPath = join(workspaceRootPath, VIEWS_FILE);
+  const configPath = join(workspaceRootPath, WORKSPACE_DATA_DIR, VIEWS_FILE);
 
   // If no views.json exists, check for legacy smartLabels in labels/config.json
   // and migrate them. Otherwise seed with defaults.
@@ -66,7 +67,13 @@ export function saveViewsConfig(
   workspaceRootPath: string,
   config: ViewsConfig
 ): void {
-  const configPath = join(workspaceRootPath, VIEWS_FILE);
+  const dataDir = join(workspaceRootPath, WORKSPACE_DATA_DIR);
+  const configPath = join(dataDir, VIEWS_FILE);
+
+  // Ensure .creator-flow directory exists
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true });
+  }
 
   try {
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
@@ -104,7 +111,7 @@ export function saveViews(
  * Returns the migrated config if migration occurred, null otherwise.
  */
 function migrateFromSmartLabels(workspaceRootPath: string): ViewsConfig | null {
-  const labelsConfigPath = join(workspaceRootPath, 'labels', 'config.json');
+  const labelsConfigPath = join(workspaceRootPath, WORKSPACE_DATA_DIR, 'labels', 'config.json');
   if (!existsSync(labelsConfigPath)) return null;
 
   try {

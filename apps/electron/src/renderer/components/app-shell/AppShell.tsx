@@ -85,7 +85,7 @@ import { useStatuses } from "@/hooks/useStatuses"
 import { useLabels } from "@/hooks/useLabels"
 import { useViews } from "@/hooks/useViews"
 import { LabelIcon } from "@/components/ui/label-icon"
-import { buildLabelTree, getDescendantIds, getLabelDisplayName, flattenLabels, extractLabelId } from "@creator-flow/shared/labels"
+import { buildLabelTree, getDescendantIds, getLabelDisplayName, flattenLabels, extractLabelId, findLabelById } from "@creator-flow/shared/labels"
 import type { LabelConfig, LabelTreeNode } from "@creator-flow/shared/labels"
 import { resolveEntityColor } from "@creator-flow/shared/colors"
 import * as storage from "@/lib/local-storage"
@@ -410,6 +410,11 @@ function AppShellContent({
   // Session list filter: empty set shows all, otherwise shows only sessions with selected states
   const [listFilter, setListFilter] = React.useState<Set<TodoStateId>>(() => {
     const saved = storage.get<TodoStateId[]>(storage.KEYS.listFilter, [])
+    return new Set(saved)
+  })
+  // Label filter: empty set shows all, otherwise shows only sessions with at least one matching label
+  const [labelFilter, setLabelFilter] = React.useState<Set<string>>(() => {
+    const saved = storage.get<string[]>(storage.KEYS.labelFilter, [])
     return new Set(saved)
   })
   // Search state for session list
@@ -934,13 +939,29 @@ function AppShellContent({
         result = workspaceSessionMetas
     }
 
-    // Apply secondary filter by todo states if any are selected (only in allChats view)
-    if (chatFilter.kind === 'allChats' && listFilter.size > 0) {
-      result = result.filter(s => listFilter.has((s.todoState || 'todo') as TodoStateId))
+    // Apply secondary filters (only in allChats view)
+    if (chatFilter.kind === 'allChats') {
+      // Filter by status if any statuses are selected
+      if (listFilter.size > 0) {
+        result = result.filter(s => listFilter.has((s.todoState || 'todo') as TodoStateId))
+      }
+      // Filter by labels if any labels are selected (includes descendants)
+      if (labelFilter.size > 0) {
+        // Expand selected labels to include all descendant IDs
+        const matchIds = new Set<string>()
+        for (const id of labelFilter) {
+          matchIds.add(id)
+          const descendants = getDescendantIds(labelConfigs, id)
+          for (const d of descendants) matchIds.add(d)
+        }
+        result = result.filter(s =>
+          s.labels?.some(l => matchIds.has(extractLabelId(l)))
+        )
+      }
     }
 
     return result
-  }, [workspaceSessionMetas, chatFilter, listFilter, labelConfigs])
+  }, [workspaceSessionMetas, chatFilter, listFilter, labelFilter, labelConfigs])
 
   // Ensure session messages are loaded when selected
   React.useEffect(() => {
@@ -1028,6 +1049,11 @@ function AppShellContent({
   React.useEffect(() => {
     storage.set(storage.KEYS.listFilter, [...listFilter])
   }, [listFilter])
+
+  // Persist label filter to localStorage
+  React.useEffect(() => {
+    storage.set(storage.KEYS.labelFilter, [...labelFilter])
+  }, [labelFilter])
 
   // Persist sidebar section collapsed states
   React.useEffect(() => {
@@ -1845,11 +1871,12 @@ function AppShellContent({
                         {/* Header with title and clear button */}
                         <div className="flex items-center justify-between px-2 py-1.5 border-b border-foreground/5">
                           <span className="text-xs font-medium text-muted-foreground">{t('筛选对话')}</span>
-                          {listFilter.size > 0 && (
+                          {(listFilter.size > 0 || labelFilter.size > 0) && (
                             <button
                               onClick={(e) => {
                                 e.preventDefault()
                                 setListFilter(new Set())
+                                setLabelFilter(new Set())
                               }}
                               className="text-xs text-muted-foreground hover:text-foreground"
                             >

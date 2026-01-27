@@ -188,7 +188,7 @@ function InlineFileBadge({
   // e.g. "/Users/.../workspaces/{id}/sessions/{id}/plans/foo.md" → "plans/foo.md"
   const rawPath = badge.filePath || badge.label
   const tooltipPath = normalizePath(rawPath).replace(/^.*\.creator-flow\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
-  const isClickable
+  const isClickable = !!(onFileClick && badge.filePath)
 
   const badgeContent = (
     <span
