@@ -5,8 +5,11 @@
  * These are registered at startup and provide default functionality.
  */
 
+import { existsSync, mkdirSync, readdirSync, copyFileSync, readFileSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { AppManifest } from './types.ts';
-import { registerBundledApp } from './storage.ts';
+import { registerBundledApp, getAppPath, ensureAppsDir } from './storage.ts';
 
 // ============================================================
 // General App (Default)
@@ -166,16 +169,88 @@ export const CREATOR_MEDIA_APP: AppManifest = {
 };
 
 // ============================================================
+// Skill Copying Utilities
+// ============================================================
+
+/**
+ * Get the path to bundled-skills directory
+ * Works in both ESM and CJS contexts
+ */
+function getBundledSkillsDir(): string {
+  // Try to get current file directory
+  try {
+    // ESM context
+    const currentFile = fileURLToPath(import.meta.url);
+    return join(dirname(currentFile), 'bundled-skills');
+  } catch {
+    // Fallback for CJS or other contexts
+    return join(__dirname, 'bundled-skills');
+  }
+}
+
+/**
+ * Copy a directory recursively
+ */
+function copyDirectoryRecursive(source: string, target: string): void {
+  if (!existsSync(source)) return;
+  
+  mkdirSync(target, { recursive: true });
+  
+  const entries = readdirSync(source, { withFileTypes: true });
+  for (const entry of entries) {
+    const sourcePath = join(source, entry.name);
+    const targetPath = join(target, entry.name);
+    
+    if (entry.isFile()) {
+      copyFileSync(sourcePath, targetPath);
+    } else if (entry.isDirectory()) {
+      copyDirectoryRecursive(sourcePath, targetPath);
+    }
+  }
+}
+
+/**
+ * Copy bundled skills to app directory
+ */
+function copyBundledSkillsToApp(appId: string, skillSlugs: string[]): void {
+  if (skillSlugs.length === 0) return;
+  
+  const bundledSkillsDir = getBundledSkillsDir();
+  const appPath = getAppPath(appId, true);
+  const appSkillsDir = join(appPath, 'skills');
+  
+  // Ensure skills directory exists
+  mkdirSync(appSkillsDir, { recursive: true });
+  
+  for (const skillSlug of skillSlugs) {
+    const sourceSkillPath = join(bundledSkillsDir, skillSlug);
+    const targetSkillPath = join(appSkillsDir, skillSlug);
+    
+    if (existsSync(sourceSkillPath)) {
+      copyDirectoryRecursive(sourceSkillPath, targetSkillPath);
+    }
+  }
+}
+
+// ============================================================
 // Registration
 // ============================================================
 
 /**
  * Register all bundled apps.
  * Called at application startup.
+ * Also copies bundled skills to app directories.
  */
 export function registerBundledApps(): void {
+  ensureAppsDir();
+  
+  // Register General App
   registerBundledApp(GENERAL_APP);
+  copyBundledSkillsToApp(GENERAL_APP.id, GENERAL_APP.capabilities?.skills || []);
+  
+  // Register Creator Media App
   registerBundledApp(CREATOR_MEDIA_APP);
+  copyBundledSkillsToApp(CREATOR_MEDIA_APP.id, CREATOR_MEDIA_APP.capabilities?.skills || []);
 }
 
 /**
