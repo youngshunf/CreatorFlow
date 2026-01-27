@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/styled-dropdown'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { PATH_SEP, getPathBasename } from '@/lib/platform'
 import { applySmartTypography } from '@/lib/smart-typography'
 import { AttachmentPreview } from '../AttachmentPreview'
 import { MODELS, getModelShortName, getModelContextWindow, isClaudeModel } from '@config/models'
@@ -173,6 +174,8 @@ export interface FreeFormInputProps {
   sessionFolderPath?: string
   /** Session ID for scoping events like approve-plan */
   sessionId?: string
+  /** Current todo state of the session (for # menu state selection) */
+  currentTodoState?: string
   /** Disable send action (for tutorial guidance) */
   disableSend?: boolean
   /** Whether the session is empty (no messages yet) - affects context badge prominence */
@@ -231,6 +234,7 @@ export function FreeFormInput({
   onWorkingDirectoryChange,
   sessionFolderPath,
   sessionId,
+  currentTodoState,
   disableSend = false,
   isEmptySession = false,
   contextStatus,
@@ -241,11 +245,15 @@ export function FreeFormInput({
   // Uses optional variant so playground (no provider) doesn't crash.
   const appShellCtx = useOptionalAppShellContext()
   const customModel = appShellCtx?.customModel ?? null
+  // Access todoStates and onTodoStateChange from context for the # menu state picker
+  const todoStates = appShellCtx?.todoStates ?? []
+  const onTodoStateChange = appShellCtx?.onTodoStateChange
 
   // Get locale-aware placeholders
   const defaultPlaceholders = t('你想做什么？') !== '你想做什么？'
     ? DEFAULT_PLACEHOLDERS_EN
     : DEFAULT_PLACEHOLDERS_ZH
+
   // Resolve workspace rootPath for "Add New Label" deep link
   const workspaceRootPath = React.useMemo(() => {
     if (!appShellCtx || !workspaceId) return null
@@ -665,6 +673,8 @@ export function FreeFormInput({
     labels,
     sessionLabels,
     onSelect: handleLabelSelect,
+    todoStates,
+    activeStateId: currentTodoState,
   })
 
   // "Add New Label" handler: cleans up the #trigger text and opens a controlled
@@ -1113,6 +1123,17 @@ export function FreeFormInput({
     richInputRef.current?.focus()
   }, [inlineLabel, syncToParent])
 
+  // Handle inline state selection from # menu (removes #text, changes session state)
+  const handleInlineStateSelect = React.useCallback((stateId: string) => {
+    const newValue = inlineLabel.handleSelect('')
+    setInput(newValue)
+    syncToParent(newValue)
+    if (sessionId) {
+      onTodoStateChange?.(sessionId, stateId)
+    }
+    richInputRef.current?.focus()
+  }, [inlineLabel, syncToParent, sessionId, onTodoStateChange])
+
   const hasContent = input.trim() || attachments.length > 0
 
   return (
@@ -1156,7 +1177,7 @@ export function FreeFormInput({
           isSearching={inlineMention.isSearching}
         />
 
-        {/* Inline Label Autocomplete (#labels) */}
+        {/* Inline Label & State Autocomplete (#labels / #states) */}
         <InlineLabelMenu
           open={inlineLabel.isOpen}
           onOpenChange={(open) => !open && inlineLabel.close()}
@@ -1165,6 +1186,9 @@ export function FreeFormInput({
           onAddLabel={handleAddLabel}
           filter={inlineLabel.filter}
           position={inlineLabel.position}
+          states={inlineLabel.states}
+          activeStateId={inlineLabel.activeStateId}
+          onSelectState={handleInlineStateSelect}
         />
 
         {/* Controlled EditPopover for "Add New Label" — opens when user selects
@@ -1642,7 +1666,10 @@ function formatPathForDisplay(path: string, homeDir: string): string {
   let displayPath = path
   if (homeDir && path.startsWith(homeDir)) {
     const relativePath = path.slice(homeDir.length)
-    displayPath = relativePath || '/'
+    // Remove leading separator if present, show root separator if empty
+    displayPath = relativePath.startsWith(PATH_SEP)
+      ? relativePath.slice(1)
+      : (relativePath || PATH_SEP)
   }
   return `in ${displayPath}`
 }
@@ -1763,8 +1790,8 @@ function WorkingDirectoryBadge({
   const filteredRecent = recentDirs
     .filter(p => p !== workingDirectory)
     .sort((a, b) => {
-      const nameA = (a.split('/').pop() || '').toLowerCase()
-      const nameB = (b.split('/').pop() || '').toLowerCase()
+      const nameA = getPathBasename(a).toLowerCase()
+      const nameB = getPathBasename(b).toLowerCase()
       return nameA.localeCompare(nameB)
     })
   // Show filter input only when more than 5 recent folders
@@ -1772,7 +1799,7 @@ function WorkingDirectoryBadge({
 
   // Determine label - "Work in Folder" if not set or at session root, otherwise folder name
   const hasFolder = !!workingDirectory && workingDirectory !== sessionFolderPath
-  const folderName = hasFolder ? (workingDirectory.split('/').pop() || t('文件夹')) : t('选择工作目录')
+  const folderName = hasFolder ? (getPathBasename(workingDirectory) || t('文件夹')) : t('选择工作目录')
 
   // Show reset option when a folder is selected and it differs from session folder
   const showReset = hasFolder && sessionFolderPath && sessionFolderPath !== workingDirectory
@@ -1844,7 +1871,7 @@ function WorkingDirectoryBadge({
 
             {/* Recent Directories - filterable (current directory already filtered out via filteredRecent) */}
             {filteredRecent.map((path) => {
-              const recentFolderName = path.split('/').pop() || 'Folder'
+              const recentFolderName = getPathBasename(path) || 'Folder'
               return (
                 <CommandPrimitive.Item
                   key={path}

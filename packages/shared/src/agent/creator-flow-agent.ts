@@ -1,5 +1,5 @@
 import { query, createSdkMcpServer, tool, AbortError, type Query, type SDKMessage, type SDKUserMessage, type SDKAssistantMessageError, type Options } from '@anthropic-ai/claude-agent-sdk';
-import { getDefaultOptions } from './options.ts';
+import { getDefaultOptions, resetClaudeConfigCheck } from './options.ts';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources';
 import { z } from 'zod';
 import { getSystemPrompt, getDateTimeContext, getWorkingDirectoryContext } from '../prompts/system.ts';
@@ -14,7 +14,6 @@ import { getCredentialManager } from '../credentials/index.ts';
 import { updatePreferences, loadPreferences, formatPreferencesForPrompt, type UserPreferences } from '../config/preferences.ts';
 import type { FileAttachment } from '../utils/files.ts';
 import { debug } from '../utils/debug.ts';
-import { estimateTokens, summarizeLargeResult, TOKEN_LIMIT } from '../utils/summarize.ts';
 import {
   getSessionPlansDir,
   getLastPlanFilePath,
@@ -40,9 +39,8 @@ import {
   SAFE_MODE_CONFIG,
 } from './mode-manager.ts';
 import { type PermissionsContext, permissionsConfigCache } from './permissions-config.ts';
-import { getSessionPlansPath, getSessionPath, getSessionLongResponsesPath } from '../sessions/storage.ts';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { getSessionPlansPath, getSessionPath } from '../sessions/storage.ts';
+import { readFileSync } from 'fs';
 import { expandPath } from '../utils/paths.ts';
 import {
   ConfigWatcher,
@@ -317,6 +315,39 @@ export type SdkMcpServerConfig =
   | { type: 'http' | 'sse'; url: string; headers?: Record<string, string> }
   | { type: 'stdio'; command: string; args?: string[]; env?: Record<string, string> };
 
+/**
+ * Detect the Windows ENOENT .claude/skills directory error from the Claude Code SDK.
+ * The SDK scans C:\ProgramData\ClaudeCode\.claude\skills for managed/enterprise skills
+ * but crashes if the directory doesn't exist. This is an upstream SDK bug.
+ * See: https://github.com/anthropics/claude-code/issues/20571
+ *
+ * Returns a typed_error event with user-friendly instructions, or null if not this error.
+ */
+function buildWindowsSkillsDirError(errorText: string): { type: 'typed_error'; error: AgentError } | null {
+  if (!errorText.includes('ENOENT') || !errorText.includes('skills')) {
+    return null;
+  }
+
+  const pathMatch = errorText.match(/scandir\s+'([^']+)'/);
+  const missingPath = pathMatch?.[1] || 'C:\\ProgramData\\ClaudeCode\\.claude\\skills';
+
+  return {
+    type: 'typed_error',
+    error: {
+      code: 'unknown_error',
+      title: 'Windows Setup Required',
+      message: `The SDK requires a directory that doesn't exist: ${missingPath} — Create this folder in File Explorer, then restart the app.`,
+      details: [
+        `PowerShell (run as Administrator):`,
+        `New-Item -ItemType Directory -Force -Path "${missingPath}"`,
+      ],
+      actions: [],
+      canRetry: true,
+      originalError: errorText,
+    },
+  };
+}
+
 export class CreatorFlowAgent {
   private config: CreatorFlowAgentConfig;
   private currentQuery: Query | null = null;
@@ -342,10 +373,6 @@ export class CreatorFlowAgent {
   private knownSourceSlugs: Set<string> = new Set();
   // Temporary clarifications (not yet saved to Craft document)
   private temporaryClarifications: string | null = null;
-  // Map tool_use_id → explicit intent from _intent field (for summarization and UI display)
-  private toolIntents: Map<string, string> = new Map();
-  // Map tool_use_id → display name from _displayName field (for UI tool name display)
-  private toolDisplayNames: Map<string, string> = new Map();
   // Safe mode state - user-controlled read-only exploration mode
   private safeMode: boolean = false;
   // SDK tools list (captured from init message)
@@ -742,10 +769,6 @@ export class CreatorFlowAgent {
   ): AsyncGenerator<AgentEvent> {
     try {
       const sessionId = this.config.session?.id || `temp-${Date.now()}`;
-
-      // Clear intent and display name maps for new turn
-      this.toolIntents.clear();
-      this.toolDisplayNames.clear();
 
       // Pin system prompt components on first chat() call for consistency after compaction
       // The SDK's resume mechanism expects system prompt consistency within a session
@@ -1169,27 +1192,14 @@ export class CreatorFlowAgent {
                 'SubmitPlan', 'Skill', 'SlashCommand',
               ]);
 
-              // Extract _intent and _displayName from MCP tool inputs (not built-in SDK tools)
+              // Strip _intent and _displayName metadata from MCP tool inputs before forwarding
+              // These fields are for UI display only, not for the actual MCP server
               if (!builtInTools.has(input.tool_name)) {
                 const toolInput = input.tool_input as Record<string, unknown>;
-                const intent = toolInput._intent as string | undefined;
-                const displayName = toolInput._displayName as string | undefined;
+                const hasMetadata = '_intent' in toolInput || '_displayName' in toolInput;
 
-                // Store metadata if present
-                if (intent) {
-                  this.toolIntents.set(input.tool_use_id, intent);
-                  this.onDebug?.(`Extracted intent for ${input.tool_use_id}: ${intent}`);
-                }
-                if (displayName) {
-                  this.toolDisplayNames.set(input.tool_use_id, displayName);
-                  this.onDebug?.(`Extracted displayName for ${input.tool_use_id}: ${displayName}`);
-                }
-
-                // Strip metadata fields before forwarding to MCP server
-                if (intent || displayName) {
+                if (hasMetadata) {
                   const { _intent, _displayName, ...cleanInput } = toolInput;
-
-                  // Return with updatedInput to strip metadata before forwarding to MCP
                   return {
                     continue: true,
                     hookSpecificOutput: {
@@ -1425,138 +1435,11 @@ export class CreatorFlowAgent {
               return { continue: true };
             }],
           }],
-          // PostToolUse hook to summarize large MCP tool results
-          PostToolUse: [{
-            hooks: [async (input) => {
-              // Only handle PostToolUse events
-              if (input.hook_event_name !== 'PostToolUse') {
-                return { continue: true };
-              }
+          // NOTE: PostToolUse hook was removed because updatedMCPToolOutput is not a valid SDK output field.
+          // For API tools (api_*), summarization happens in api-tools.ts.
+          // For external MCP servers (stdio/HTTP), we cannot modify their output - they're responsible
+          // for their own size management via pagination or filtering.
 
-              // Note: EnterPlanMode/ExitPlanMode are disallowed (line ~811) since Safe Mode is user-controlled.
-              // The agent uses SubmitPlan (universal) to submit plans at any time.
-
-              // Skip built-in SDK tools (they have their own context management)
-              const builtInTools = new Set([
-                'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep',
-                'WebFetch', 'WebSearch', 'Task',
-                'TodoWrite', 'MultiEdit', 'NotebookEdit', 'KillShell',
-                'SubmitPlan', 'Skill', 'SlashCommand',
-              ]);
-
-              // Skip in-process MCP tools (preferences)
-              const inProcessTools = new Set([
-                'update_user_preferences',
-              ]);
-
-              // Skip API tools - they already handle summarization internally
-              if (builtInTools.has(input.tool_name) ||
-                  inProcessTools.has(input.tool_name) ||
-                  input.tool_name.startsWith('api_')) {
-                return { continue: true };
-              }
-
-              // For MCP tools, always clean up stored intent after processing
-              // Use try/finally to ensure cleanup even on early returns or errors
-              try {
-                // Check if response is large enough to warrant summarization
-                const response = input.tool_response;
-                let responseStr: string;
-                try {
-                  responseStr = typeof response === 'string'
-                    ? response
-                    : JSON.stringify(response);
-                } catch {
-                  // Response has circular references or can't be stringified
-                  // Skip summarization for non-serializable responses
-                  return { continue: true };
-                }
-
-                const tokens = estimateTokens(responseStr);
-                if (tokens <= TOKEN_LIMIT) {
-                  return { continue: true };
-                }
-
-                this.onDebug?.(`PostToolUse: ${input.tool_name} response too large (~${tokens} tokens), summarizing...`);
-
-                // Get explicit intent for this tool call (from _intent field, extracted by PreToolUse hook)
-                const explicitIntent = this.toolIntents.get(input.tool_use_id);
-                this.onDebug?.(`PostToolUse: Using intent for summarization: ${explicitIntent || '(none - will use tool params)'}`);
-
-                // Save full response to filesystem so agent can read specific details later if needed
-                let savedFilePath: string | undefined;
-                if (sessionId) {
-                  try {
-                    const longResponsesDir = getSessionLongResponsesPath(this.workspaceRootPath, sessionId);
-                    if (!existsSync(longResponsesDir)) {
-                      mkdirSync(longResponsesDir, { recursive: true });
-                    }
-                    // Generate filename: YYYYMMDD-HHMMSSMMM_toolname.json (includes milliseconds for uniqueness)
-                    const now = new Date();
-                    const timestamp = now.toISOString().replace(/[-:T.]/g, '').slice(0, 17);
-                    // Sanitize tool name for filename (replace special chars with underscore)
-                    const safeToolName = input.tool_name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                    const filename = `${timestamp}_${safeToolName}.json`;
-                    savedFilePath = join(longResponsesDir, filename);
-
-                    // Write full response with metadata
-                    const fullResponseData = {
-                      timestamp: now.toISOString(),
-                      toolName: input.tool_name,
-                      input: input.tool_input,
-                      tokens,
-                      result: response,
-                    };
-                    writeFileSync(savedFilePath, JSON.stringify(fullResponseData, null, 2));
-                    this.onDebug?.(`PostToolUse: Full response saved to ${savedFilePath}`);
-                  } catch (saveError) {
-                    debug(`[PostToolUse] Failed to save full response: ${saveError}`);
-                    // Continue with summarization even if save fails
-                  }
-                }
-
-                try {
-                  const summary = await summarizeLargeResult(responseStr, {
-                    toolName: input.tool_name,
-                    input: input.tool_input as Record<string, unknown>,
-                    // Use explicit intent if available - otherwise summarizer uses tool name/params
-                    modelIntent: explicitIntent,
-                  });
-
-                  // Build message with optional file path reference
-                  let message = `[Large result (~${tokens} tokens) was summarized to fit context.`;
-                  if (savedFilePath) {
-                    message += ` Full result saved to: ${savedFilePath}. Use Read, Grep, or Glob tools to look up specific information if needed.`;
-                  } else {
-                    message += ` If key details are missing, consider re-calling with more specific filters or pagination.`;
-                  }
-                  message += `]\n\n${summary}`;
-
-                  return {
-                    continue: true,
-                    hookSpecificOutput: {
-                      hookEventName: 'PostToolUse' as const,
-                      updatedMCPToolOutput: message,
-                    },
-                  };
-                } catch (error) {
-                  debug(`[PostToolUse] Summarization failed for ${input.tool_name}: ${error}`);
-                  // On error, truncate rather than fail
-                  return {
-                    continue: true,
-                    hookSpecificOutput: {
-                      hookEventName: 'PostToolUse' as const,
-                      updatedMCPToolOutput: responseStr.substring(0, 40000) + '\n\n[Result truncated due to size]',
-                    },
-                  };
-                }
-              } finally {
-                // Always clean up stored metadata for MCP tools to prevent memory leak
-                this.toolIntents.delete(input.tool_use_id);
-                this.toolDisplayNames.delete(input.tool_use_id);
-              }
-            }],
-          }],
           // ═══════════════════════════════════════════════════════════════════════════
           // SUBAGENT HOOKS: Logging only - parent tracking uses SDK's parent_tool_use_id
           // ═══════════════════════════════════════════════════════════════════════════
@@ -1909,8 +1792,7 @@ export class CreatorFlowAgent {
           errorMsg.includes('invalid x-api-key');
 
         if (isAuthError) {
-          // Auth errors should surface immediately, not retry
-          // Parse to typed error using the captured/processed error message
+          // Auth errors surface immediately - session manager handles retry by recreating agent
           const typedError = parseError(new Error(rawErrorMsg));
           yield { type: 'typed_error', error: typedError };
           yield { type: 'complete' };
@@ -1943,6 +1825,30 @@ export class CreatorFlowAgent {
           const typedError = parseError(new Error(rawErrorMsg));
           yield { type: 'typed_error', error: typedError };
           yield { type: 'complete' };
+          return;
+        }
+
+        // Check for .claude.json corruption — the SDK subprocess crashes if this file
+        // is empty, BOM-encoded, or contains invalid JSON. Two error patterns:
+        //   1. "CLI output was not valid JSON" — CLI wrote plain-text error to stdout
+        //   2. "process exited with code 1" with stderr mentioning config corruption
+        // See: claude-code#14442 (BOM), #2593 (empty file), #18998 (race condition)
+        const stderrForConfigCheck = this.lastStderrOutput.join('\n').toLowerCase();
+        const isConfigCorruption =
+          (errorMsg.includes('not valid json') && (errorMsg.includes('claude') || errorMsg.includes('configuration'))) ||
+          (errorMsg.includes('process exited with code') && (
+            stderrForConfigCheck.includes('claude.json') ||
+            stderrForConfigCheck.includes('configuration file') ||
+            stderrForConfigCheck.includes('corrupted')
+          ));
+
+        if (isConfigCorruption && !_isRetry) {
+          debug('[CraftAgent] Detected .claude.json corruption, repairing and retrying...');
+          // Reset the once-per-process guard so ensureClaudeConfig() runs again
+          // on the retry — it will repair the file before the next subprocess spawn
+          resetClaudeConfigCheck();
+          yield { type: 'info', message: 'Repairing configuration file...' };
+          yield* this.chat(userMessage, attachments, true);
           return;
         }
 
@@ -1987,6 +1893,14 @@ export class CreatorFlowAgent {
             yield { type: 'info', message: 'Session expired, restoring context...' };
             // Recursively call with isRetry=true (yield* delegates all events)
             yield* this.chat(userMessage, attachments, true);
+            return;
+          }
+
+          // Check for Windows SDK setup error (missing .claude/skills directory)
+          const windowsSkillsError = buildWindowsSkillsDirError(stderrContext || rawErrorMsg);
+          if (windowsSkillsError) {
+            yield windowsSkillsError;
+            yield { type: 'complete' };
             return;
           }
 
@@ -2639,8 +2553,7 @@ Please continue the conversation naturally from where we left off.
             textContent += block.text;
           } else if (block.type === 'tool_use') {
             // Extract intent and displayName from the tool_use input for UI display
-            // Note: PreToolUse hook also extracts and stores these for summarization
-            // We only extract here for emitting in tool_start events (UI display)
+            // Note: PreToolUse hook strips these before forwarding to MCP servers
             const toolInput = block.input as Record<string, unknown>;
             let intent: string | undefined = toolInput._intent as string | undefined;
             const displayName: string | undefined = toolInput._displayName as string | undefined;
@@ -2974,6 +2887,17 @@ Please continue the conversation naturally from where we left off.
               parentToolUseId: message.parent_tool_use_id || undefined,
             });
 
+            // Clean up activeParentTools when a Task completes.
+            // This is critical: Task results arrive with parent_tool_use_id=null (main agent level),
+            // so they enter Case 3 (FIFO matching), not Case 1 where cleanup normally happens.
+            // Without this, the Task stays in activeParentTools and subsequent main-agent tools
+            // get incorrectly assigned as children of the completed Task.
+            if (toolUse?.name === 'Task' && toolUseId) {
+              activeParentTools.delete(toolUseId);
+              parentToChildren.delete(toolUseId);
+              console.log(`[CraftAgent] PARENT CLEANED UP (task-result): ${toolUseId}`);
+            }
+
             // Detect background task start - Task tool with agent_id in result
             if (toolUse?.name === 'Task' && !isError && resultStr) {
               const agentIdMatch = resultStr.match(/agentId:\s*([a-zA-Z0-9_-]+)/);
@@ -3150,7 +3074,14 @@ Please continue the conversation naturally from where we left off.
         } else {
           // Error result - emit error then complete with whatever usage we have
           const errorMsg = 'errors' in message ? message.errors.join(', ') : 'Query failed';
-          events.push({ type: 'error', message: errorMsg });
+
+          // Check for Windows SDK setup error (missing .claude/skills directory)
+          const windowsError = buildWindowsSkillsDirError(errorMsg);
+          if (windowsError) {
+            events.push(windowsError);
+          } else {
+            events.push({ type: 'error', message: errorMsg });
+          }
           events.push({ type: 'complete', usage });
         }
         break;

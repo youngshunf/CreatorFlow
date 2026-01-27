@@ -1290,12 +1290,13 @@ export default function App() {
           onSubmitCredential={onboarding.handleSubmitCredential}
           onStartOAuth={onboarding.handleStartOAuth}
           onFinish={onboarding.handleFinish}
-          existingClaudeToken={onboarding.existingClaudeToken}
-          isClaudeCliInstalled={onboarding.isClaudeCliInstalled}
-          onUseExistingClaudeToken={onboarding.handleUseExistingClaudeToken}
           isWaitingForCode={onboarding.isWaitingForCode}
           onSubmitAuthCode={onboarding.handleSubmitAuthCode}
           onCancelOAuth={onboarding.handleCancelOAuth}
+          onBrowseGitBash={onboarding.handleBrowseGitBash}
+          onUseGitBashPath={onboarding.handleUseGitBashPath}
+          onRecheckGitBash={onboarding.handleRecheckGitBash}
+          onClearError={onboarding.handleClearError}
         />
       </ModalProvider>
     )

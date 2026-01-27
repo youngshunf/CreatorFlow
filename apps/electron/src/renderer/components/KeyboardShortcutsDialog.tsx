@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog"
 import { useRegisterModal } from "@/context/ModalContext"
 import { useT } from "@/context/LocaleContext"
+import { isMac } from "@/lib/platform"
 
 interface KeyboardShortcutsDialogProps {
   open: boolean
@@ -23,7 +24,6 @@ interface ShortcutSection {
   shortcuts: ShortcutItem[]
 }
 
-const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
 const cmdKey = isMac ? '⌘' : 'Ctrl'
 
 function useSections(t: (text: string) => string): ShortcutSection[] {

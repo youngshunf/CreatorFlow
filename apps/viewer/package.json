@@ -1,6 +1,6 @@
 {
   "name": "@creator-flow/viewer",
-  "version": "0.1.0",
+  "version": "0.2.34",
   "description": "Web viewer for CreatorFlow sessions - upload and share session transcripts",
   "private": true,
   "type": "module",

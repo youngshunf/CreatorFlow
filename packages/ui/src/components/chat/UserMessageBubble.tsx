@@ -13,6 +13,7 @@
 
 import type { ReactNode } from 'react'
 import type { StoredAttachment, ContentBadge } from '@creator-flow/core'
+import { normalizePath } from '@creator-flow/core/utils'
 import { cn } from '../../lib/utils'
 import { Markdown } from '../markdown'
 import { FileTypeIcon, getFileTypeLabel } from './attachment-helpers'
@@ -186,8 +187,8 @@ function InlineFileBadge({
   // Strip .creator-flow workspace/session path prefix for cleaner tooltip display
   // e.g. "/Users/.../workspaces/{id}/sessions/{id}/plans/foo.md" → "plans/foo.md"
   const rawPath = badge.filePath || badge.label
-  const tooltipPath = rawPath.replace(/^.*\.creator-flow\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
-  const isClickable = !!badge.filePath && !!onFileClick
+  const tooltipPath = normalizePath(rawPath).replace(/^.*\.creator-flow\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
+  const isClickable
 
   const badgeContent = (
     <span

@@ -156,11 +156,7 @@ const api: ElectronAPI = {
     anthropicBaseUrl?: string | null
     customModel?: string | null
   }) => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_SAVE_CONFIG, config),
-  // Claude OAuth
-  getExistingClaudeToken: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_GET_EXISTING_CLAUDE_TOKEN),
-  isClaudeCliInstalled: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_IS_CLAUDE_CLI_INSTALLED),
-  runClaudeSetupToken: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_RUN_CLAUDE_SETUP_TOKEN),
-  // Native Claude OAuth (two-step flow)
+  // Claude OAuth (two-step flow)
   startClaudeOAuth: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_START_CLAUDE_OAUTH),
   exchangeClaudeCode: (code: string) => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_EXCHANGE_CLAUDE_CODE, code),
   hasClaudeOAuthState: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_HAS_CLAUDE_OAUTH_STATE),
@@ -408,6 +404,27 @@ const api: ElectronAPI = {
   },
   getGitBranch: (dirPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_GIT_BRANCH, dirPath),
+
+  // Git Bash (Windows)
+  checkGitBash: () => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_CHECK),
+  browseForGitBash: () => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_BROWSE),
+  setGitBashPath: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_SET_PATH, path),
+
+  // Menu actions (for unified Craft menu)
+  menuQuit: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_QUIT),
+  menuNewWindow: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_NEW_WINDOW),
+  menuMinimize: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_MINIMIZE),
+  menuMaximize: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_MAXIMIZE),
+  menuZoomIn: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_ZOOM_IN),
+  menuZoomOut: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_ZOOM_OUT),
+  menuZoomReset: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_ZOOM_RESET),
+  menuToggleDevTools: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_TOGGLE_DEVTOOLS),
+  menuUndo: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_UNDO),
+  menuRedo: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_REDO),
+  menuCut: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_CUT),
+  menuCopy: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_COPY),
+  menuPaste: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_PASTE),
+  menuSelectAll: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_SELECT_ALL),
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

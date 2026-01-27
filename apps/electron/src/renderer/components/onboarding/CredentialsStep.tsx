@@ -5,7 +5,7 @@
  * with StepFormLayout for the onboarding wizard context.
  */
 
-import { ExternalLink, CheckCircle2 } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import type { ApiSetupMethod } from "./APISetupStep"
 import { StepFormLayout, BackButton, ContinueButton } from "./primitives"
 import {
@@ -26,10 +26,6 @@ interface CredentialsStepProps {
   onSubmit: (data: ApiKeySubmitData) => void
   onStartOAuth?: () => void
   onBack: () => void
-  // Claude OAuth specific
-  existingClaudeToken?: string | null
-  isClaudeCliInstalled?: boolean
-  onUseExistingClaudeToken?: () => void
   // Two-step OAuth flow
   isWaitingForCode?: boolean
   onSubmitAuthCode?: (code: string) => void
@@ -43,8 +39,6 @@ export function CredentialsStep({
   onSubmit,
   onStartOAuth,
   onBack,
-  existingClaudeToken,
-  onUseExistingClaudeToken,
   isWaitingForCode,
   onSubmitAuthCode,
   onCancelOAuth,
@@ -54,8 +48,6 @@ export function CredentialsStep({
 
   // --- OAuth flow ---
   if (isOAuth) {
-    const hasExistingToken = !!existingClaudeToken
-
     // Waiting for authorization code entry
     if (isWaitingForCode) {
       return (
@@ -78,10 +70,8 @@ export function CredentialsStep({
           <OAuthConnect
             status={status as OAuthStatus}
             errorMessage={errorMessage}
-            existingClaudeToken={existingClaudeToken}
             isWaitingForCode={true}
             onStartOAuth={onStartOAuth!}
-            onUseExistingClaudeToken={onUseExistingClaudeToken}
             onSubmitAuthCode={onSubmitAuthCode}
             onCancelOAuth={onCancelOAuth}
           />
@@ -89,50 +79,30 @@ export function CredentialsStep({
       )
     }
 
-    // Static layout matching the API key step pattern:
-    // Fixed title/description, button shows loading, error below content
-    const description = hasExistingToken
-      ? t('找到现有的 Claude 令牌。使用它或使用其他账户登录。')
-      : t('使用您的 Claude 订阅来支持多智能体工作流。')
-
     return (
       <StepFormLayout
         title={t('连接 Claude 账户')}
-        description={description}
+        description={t('使用您的 Claude 订阅来支持多智能体工作流。')}
         actions={
           <>
             <BackButton onClick={onBack} disabled={status === 'validating'} />
-            {hasExistingToken ? (
-              <ContinueButton
-                onClick={onUseExistingClaudeToken}
-                className="gap-2"
-                loading={status === 'validating'}
-                loadingText={t('连接中...')}
-              >
-                <CheckCircle2 className="size-4" />
-                {t('使用现有令牌')}
-              </ContinueButton>
-            ) : (
-              <ContinueButton
-                onClick={onStartOAuth}
-                className="gap-2"
-                loading={status === 'validating'}
-                loadingText={t('连接中...')}
-              >
-                <ExternalLink className="size-4" />
-                {t('使用 Claude 登录')}
-              </ContinueButton>
-            )}
+            <ContinueButton
+              onClick={onStartOAuth}
+              className="gap-2"
+              loading={status === 'validating'}
+              loadingText={t('连接中...')}
+            >
+              <ExternalLink className="size-4" />
+              {t('使用 Claude 登录')}
+            </ContinueButton>
           </>
         }
       >
         <OAuthConnect
           status={status as OAuthStatus}
           errorMessage={errorMessage}
-          existingClaudeToken={existingClaudeToken}
           isWaitingForCode={false}
           onStartOAuth={onStartOAuth!}
-          onUseExistingClaudeToken={onUseExistingClaudeToken}
           onSubmitAuthCode={onSubmitAuthCode}
           onCancelOAuth={onCancelOAuth}
         />

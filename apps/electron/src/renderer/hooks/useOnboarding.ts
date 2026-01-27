@@ -4,9 +4,10 @@
  * Manages the state machine for the onboarding wizard.
  * Flow:
  * 1. Welcome
- * 2. API Setup (API Key / Claude OAuth)
- * 3. Credentials (API Key or Claude OAuth)
- * 4. Complete
+ * 2. Git Bash (Windows only, if not found)
+ * 3. API Setup (API Key / Claude OAuth)
+ * 4. Credentials (API Key or Claude OAuth)
+ * 5. Complete
  */
 import { useState, useCallback, useEffect } from 'react'
 import type {
@@ -17,7 +18,7 @@ import type {
   ApiSetupMethod,
 } from '@/components/onboarding'
 import type { ApiKeySubmitData } from '@/components/apisetup'
-import type { AuthType, SetupNeeds } from '../../shared/types'
+import type { AuthType, SetupNeeds, GitBashStatus } from '../../shared/types'
 
 interface UseOnboardingOptions {
   /** Called when onboarding is complete */
@@ -48,14 +49,16 @@ interface UseOnboardingReturn {
   handleSubmitCredential: (data: ApiKeySubmitData) => void
   handleStartOAuth: () => void
 
-  // Claude OAuth
-  existingClaudeToken: string | null
-  isClaudeCliInstalled: boolean
-  handleUseExistingClaudeToken: () => void
-  // Two-step OAuth flow
+  // Claude OAuth (two-step flow)
   isWaitingForCode: boolean
   handleSubmitAuthCode: (code: string) => void
   handleCancelOAuth: () => void
+
+  // Git Bash (Windows)
+  handleBrowseGitBash: () => Promise<string | null>
+  handleUseGitBashPath: (path: string) => void
+  handleRecheckGitBash: () => void
+  handleClearError: () => void
 
   // Completion
   handleFinish: () => void
@@ -88,7 +91,25 @@ export function useOnboarding({
     completionStatus: 'saving',
     apiSetupMethod: null,
     isExistingUser: initialSetupNeeds?.needsBillingConfig ?? false,
+    gitBashStatus: undefined,
+    isRecheckingGitBash: false,
+    isCheckingGitBash: true, // Start as true until check completes
   })
+
+  // Check Git Bash on Windows when starting from welcome
+  useEffect(() => {
+    const checkGitBash = async () => {
+      try {
+        const status = await window.electronAPI.checkGitBash()
+        setState(s => ({ ...s, gitBashStatus: status, isCheckingGitBash: false }))
+      } catch (error) {
+        console.error('[Onboarding] Failed to check Git Bash:', error)
+        // Even on error, allow continuing (will skip git-bash step)
+        setState(s => ({ ...s, isCheckingGitBash: false }))
+      }
+    }
+    checkGitBash()
+  }, [])
 
   // Save configuration
   const handleSaveConfig = useCallback(async (credential?: string, options?: { baseUrl?: string; customModel?: string }) => {
@@ -136,6 +157,15 @@ export function useOnboarding({
   const handleContinue = useCallback(async () => {
     switch (state.step) {
       case 'welcome':
+        // On Windows, check if Git Bash is needed
+        if (state.gitBashStatus?.platform === 'win32' && !state.gitBashStatus?.found) {
+          setState(s => ({ ...s, step: 'git-bash' }))
+        } else {
+          setState(s => ({ ...s, step: 'api-setup' }))
+        }
+        break
+
+      case 'git-bash':
         setState(s => ({ ...s, step: 'api-setup' }))
         break
 
@@ -151,7 +181,7 @@ export function useOnboarding({
         onComplete()
         break
     }
-  }, [state.step, state.apiSetupMethod, onComplete])
+  }, [state.step, state.gitBashStatus, state.apiSetupMethod, onComplete])
 
   // Go back to previous step. If at the initial step, call onDismiss instead.
   const handleBack = useCallback(() => {
@@ -160,14 +190,22 @@ export function useOnboarding({
       return
     }
     switch (state.step) {
-      case 'api-setup':
+      case 'git-bash':
         setState(s => ({ ...s, step: 'welcome' }))
+        break
+      case 'api-setup':
+        // If on Windows and Git Bash was needed, go back to git-bash step
+        if (state.gitBashStatus?.platform === 'win32' && state.gitBashStatus?.found === false) {
+          setState(s => ({ ...s, step: 'git-bash' }))
+        } else {
+          setState(s => ({ ...s, step: 'welcome' }))
+        }
         break
       case 'credentials':
         setState(s => ({ ...s, step: 'api-setup', credentialStatus: 'idle', errorMessage: undefined }))
         break
     }
-  }, [state.step, initialStep, onDismiss])
+  }, [state.step, state.gitBashStatus, initialStep, onDismiss])
 
   // Select API setup method
   const handleSelectApiSetupMethod = useCallback((method: ApiSetupMethod) => {
@@ -224,56 +262,8 @@ export function useOnboarding({
     }
   }, [handleSaveConfig])
 
-  // Claude OAuth state
-  const [existingClaudeToken, setExistingClaudeToken] = useState<string | null>(null)
-  const [isClaudeCliInstalled, setIsClaudeCliInstalled] = useState(false)
-  const [claudeOAuthChecked, setClaudeOAuthChecked] = useState(false)
   // Two-step OAuth flow state
   const [isWaitingForCode, setIsWaitingForCode] = useState(false)
-
-  // Check for existing Claude token when reaching credentials step with OAuth selected
-  useEffect(() => {
-    if (state.step === 'credentials' && state.apiSetupMethod === 'claude_oauth' && !claudeOAuthChecked) {
-      const checkClaudeAuth = async () => {
-        try {
-          const [token, cliInstalled] = await Promise.all([
-            window.electronAPI.getExistingClaudeToken(),
-            window.electronAPI.isClaudeCliInstalled(),
-          ])
-          setExistingClaudeToken(token)
-          setIsClaudeCliInstalled(cliInstalled)
-          setClaudeOAuthChecked(true)
-        } catch (error) {
-          console.error('Failed to check Claude auth:', error)
-          setClaudeOAuthChecked(true)
-        }
-      }
-      checkClaudeAuth()
-    }
-  }, [state.step, state.apiSetupMethod, claudeOAuthChecked])
-
-  // Use existing Claude token (from keychain)
-  const handleUseExistingClaudeToken = useCallback(async () => {
-    if (!existingClaudeToken) return
-
-    setState(s => ({ ...s, credentialStatus: 'validating', errorMessage: undefined }))
-
-    try {
-      await handleSaveConfig(existingClaudeToken)
-
-      setState(s => ({
-        ...s,
-        credentialStatus: 'success',
-        step: 'complete',
-      }))
-    } catch (error) {
-      setState(s => ({
-        ...s,
-        credentialStatus: 'error',
-        errorMessage: error instanceof Error ? error.message : 'Failed to save token',
-      }))
-    }
-  }, [existingClaudeToken, handleSaveConfig])
 
   // Start Claude OAuth (native browser-based OAuth with PKCE - two-step flow)
   const handleStartOAuth = useCallback(async () => {
@@ -319,7 +309,6 @@ export function useOnboarding({
       const result = await window.electronAPI.exchangeClaudeCode(code.trim())
 
       if (result.success && result.token) {
-        setExistingClaudeToken(result.token)
         setIsWaitingForCode(false)
         await handleSaveConfig(result.token)
 
@@ -352,6 +341,49 @@ export function useOnboarding({
     await window.electronAPI.clearClaudeOAuthState()
   }, [])
 
+  // Git Bash handlers (Windows only)
+  const handleBrowseGitBash = useCallback(async () => {
+    return window.electronAPI.browseForGitBash()
+  }, [])
+
+  const handleUseGitBashPath = useCallback(async (path: string) => {
+    const result = await window.electronAPI.setGitBashPath(path)
+    if (result.success) {
+      // Update state to mark Git Bash as found and continue
+      setState(s => ({
+        ...s,
+        gitBashStatus: { ...s.gitBashStatus!, found: true, path },
+        step: 'api-setup',
+      }))
+    } else {
+      setState(s => ({
+        ...s,
+        errorMessage: result.error || 'Invalid path',
+      }))
+    }
+  }, [])
+
+  const handleRecheckGitBash = useCallback(async () => {
+    setState(s => ({ ...s, isRecheckingGitBash: true }))
+    try {
+      const status = await window.electronAPI.checkGitBash()
+      setState(s => ({
+        ...s,
+        gitBashStatus: status,
+        isRecheckingGitBash: false,
+        // If found, automatically continue to next step
+        step: status.found ? 'api-setup' : s.step,
+      }))
+    } catch (error) {
+      console.error('[Onboarding] Failed to recheck Git Bash:', error)
+      setState(s => ({ ...s, isRecheckingGitBash: false }))
+    }
+  }, [])
+
+  const handleClearError = useCallback(() => {
+    setState(s => ({ ...s, errorMessage: undefined }))
+  }, [])
+
   // Finish onboarding
   const handleFinish = useCallback(() => {
     onComplete()
@@ -373,9 +405,6 @@ export function useOnboarding({
       isExistingUser: false,
       errorMessage: undefined,
     })
-    setExistingClaudeToken(null)
-    setIsClaudeCliInstalled(false)
-    setClaudeOAuthChecked(false)
     setIsWaitingForCode(false)
   }, [])
 
@@ -386,13 +415,15 @@ export function useOnboarding({
     handleSelectApiSetupMethod,
     handleSubmitCredential,
     handleStartOAuth,
-    existingClaudeToken,
-    isClaudeCliInstalled,
-    handleUseExistingClaudeToken,
     // Two-step OAuth flow
     isWaitingForCode,
     handleSubmitAuthCode,
     handleCancelOAuth,
+    // Git Bash (Windows)
+    handleBrowseGitBash,
+    handleUseGitBashPath,
+    handleRecheckGitBash,
+    handleClearError,
     handleFinish,
     handleCancel,
     reset,

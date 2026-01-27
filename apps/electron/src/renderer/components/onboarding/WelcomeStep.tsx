@@ -6,6 +6,8 @@ interface WelcomeStepProps {
   onContinue: () => void
   /** Whether this is an existing user updating settings */
   isExistingUser?: boolean
+  /** Whether the app is loading (e.g., checking Git Bash on Windows) */
+  isLoading?: boolean
 }
 
 /**
@@ -17,7 +19,8 @@ interface WelcomeStepProps {
  */
 export function WelcomeStep({
   onContinue,
-  isExistingUser = false
+  isExistingUser = false,
+  isLoading = false
 }: WelcomeStepProps) {
   const t = useT()
   return (
@@ -34,7 +37,7 @@ export function WelcomeStep({
           : t('为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需，尽在此处！')
       }
       actions={
-        <ContinueButton onClick={onContinue} className="w-full">
+        <ContinueButton onClick={onContinue} className="w-full" loading={isLoading} loadingText={t('检查中...')}>
           {isExistingUser ? t('继续') : t('开始使用')}
         </ContinueButton>
       }

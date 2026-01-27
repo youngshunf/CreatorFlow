@@ -1,6 +1,6 @@
 {
   "name": "@creator-flow/electron",
-  "version": "0.1.0",
+  "version": "0.2.34",
   "description": "Electron desktop app for CreatorFlow",
   "main": "dist/main.cjs",
   "private": true,

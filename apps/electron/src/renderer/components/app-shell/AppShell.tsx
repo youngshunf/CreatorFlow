@@ -32,6 +32,7 @@ import { AppMenu } from "../AppMenu"
 import { SquarePenRounded } from "../icons/SquarePenRounded"
 import { McpIcon } from "../icons/McpIcon"
 import { cn } from "@/lib/utils"
+import { isMac } from "@/lib/platform"
 import { Button } from "@/components/ui/button"
 import { HeaderIconButton } from "@/components/ui/HeaderIconButton"
 import { Separator } from "@/components/ui/separator"
@@ -39,9 +40,12 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@creat
 import {
   DropdownMenu,
   DropdownMenuTrigger,
+  DropdownMenuSub,
   StyledDropdownMenuContent,
   StyledDropdownMenuItem,
   StyledDropdownMenuSeparator,
+  StyledDropdownMenuSubTrigger,
+  StyledDropdownMenuSubContent,
 } from "@/components/ui/styled-dropdown"
 import {
   ContextMenu,
@@ -155,6 +159,134 @@ interface AppShellProps {
   menuNewChatTrigger?: number
   /** Focused mode - hides sidebars, shows only the chat content */
   isFocusedMode?: boolean
+}
+
+/**
+ * FilterMenuRow - Consistent layout for filter menu items.
+ * Enforces: [icon 14px box] [label flex] [accessory 12px box]
+ */
+function FilterMenuRow({
+  icon,
+  label,
+  accessory,
+  iconClassName,
+  iconStyle,
+  noIconContainer,
+}: {
+  icon: React.ReactNode
+  label: string
+  accessory?: React.ReactNode
+  /** Additional classes for icon container (e.g., for status icon scaling) */
+  iconClassName?: string
+  /** Style for icon container (e.g., for status icon color) */
+  iconStyle?: React.CSSProperties
+  /** When true, skip the icon container (for icons that have their own container) */
+  noIconContainer?: boolean
+}) {
+  return (
+    <>
+      {noIconContainer ? (
+        // Wrapper for color inheritance. Clone icon to add bare prop (removes EntityIcon container).
+        <span style={iconStyle}>
+          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ bare?: boolean }>, { bare: true }) : icon}
+        </span>
+      ) : (
+        <span
+          className={cn("h-3.5 w-3.5 flex items-center justify-center shrink-0", iconClassName)}
+          style={iconStyle}
+        >
+          {icon}
+        </span>
+      )}
+      <span className="flex-1">{label}</span>
+      <span className="w-3 shrink-0">{accessory}</span>
+    </>
+  )
+}
+
+/**
+ * FilterLabelItems - Recursive component for rendering label tree in the filter dropdown.
+ * Labels with children render as nested submenus; leaf labels render as toggleable items.
+ */
+function FilterLabelItems({
+  labels,
+  labelFilter,
+  setLabelFilter,
+}: {
+  labels: LabelConfig[]
+  labelFilter: Set<string>
+  setLabelFilter: React.Dispatch<React.SetStateAction<Set<string>>>
+}) {
+  return (
+    <>
+      {labels.map(label => {
+        const hasChildren = label.children && label.children.length > 0
+        if (hasChildren) {
+          // Parent label: render as a submenu trigger with nested items.
+          // The parent itself is also toggleable via clicking the trigger area.
+          return (
+            <DropdownMenuSub key={label.id}>
+              <StyledDropdownMenuSubTrigger>
+                <FilterMenuRow
+                  icon={<LabelIcon label={label} size="sm" hasChildren />}
+                  label={label.name}
+                  accessory={labelFilter.has(label.id) && <Check className="h-3 w-3 text-foreground" />}
+                />
+              </StyledDropdownMenuSubTrigger>
+              <StyledDropdownMenuSubContent minWidth="min-w-[160px]">
+                {/* Allow selecting the parent label itself */}
+                <StyledDropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setLabelFilter(prev => {
+                      const next = new Set(prev)
+                      if (next.has(label.id)) next.delete(label.id)
+                      else next.add(label.id)
+                      return next
+                    })
+                  }}
+                >
+                  <FilterMenuRow
+                    icon={<LabelIcon label={label} size="sm" hasChildren />}
+                    label={label.name}
+                    accessory={labelFilter.has(label.id) && <Check className="h-3 w-3 text-foreground" />}
+                  />
+                </StyledDropdownMenuItem>
+                <StyledDropdownMenuSeparator />
+                {/* Recurse into children */}
+                <FilterLabelItems
+                  labels={label.children!}
+                  labelFilter={labelFilter}
+                  setLabelFilter={setLabelFilter}
+                />
+              </StyledDropdownMenuSubContent>
+            </DropdownMenuSub>
+          )
+        }
+        // Leaf label: render as a simple toggleable item
+        return (
+          <StyledDropdownMenuItem
+            key={label.id}
+            onClick={(e) => {
+              e.preventDefault()
+              setLabelFilter(prev => {
+                const next = new Set(prev)
+                if (next.has(label.id)) next.delete(label.id)
+                else next.add(label.id)
+                return next
+              })
+            }}
+          >
+            <FilterMenuRow
+              icon={<LabelIcon label={label} size="sm" />}
+              label={label.name}
+              accessory={labelFilter.has(label.id) && <Check className="h-3 w-3 text-foreground" />}
+            />
+          </StyledDropdownMenuItem>
+        )
+      })}
+    </>
+  )
 }
 
 /**
@@ -1356,27 +1488,32 @@ function AppShellContent({
         */}
         <div className="titlebar-drag-region fixed top-0 left-0 right-0 h-[50px] z-titlebar" />
 
-      {/* App Menu - fixed position, always visible (hidden in focused mode) */}
-      {!isFocusedMode && (
-        <div
-          className="fixed left-[86px] top-0 h-[50px] z-overlay flex items-center titlebar-no-drag pr-2"
-          style={{ width: sidebarWidth - 86 }}
-        >
-          <AppMenu
-            onNewChat={() => handleNewChat(true)}
-            onOpenSettings={onOpenSettings}
-            onOpenKeyboardShortcuts={onOpenKeyboardShortcuts}
-            onOpenStoredUserPreferences={onOpenStoredUserPreferences}
-            onReset={onReset}
-            onBack={goBack}
-            onForward={goForward}
-            canGoBack={canGoBack}
-            canGoForward={canGoForward}
-            onToggleSidebar={() => setIsSidebarVisible(prev => !prev)}
-            isSidebarVisible={isSidebarVisible}
-          />
-        </div>
-      )}
+      {/* App Menu - fixed position, always visible (hidden in focused mode)
+          On macOS: offset 86px to avoid stoplight controls
+          On Windows/Linux: offset 12px (no stoplight controls) */}
+      {!isFocusedMode && (() => {
+        const menuLeftOffset = isMac ? 86 : 12
+        return (
+          <div
+            className="fixed top-0 h-[50px] z-overlay flex items-center titlebar-no-drag pr-2"
+            style={{ left: menuLeftOffset, width: sidebarWidth - menuLeftOffset }}
+          >
+            <AppMenu
+              onNewChat={() => handleNewChat(true)}
+              onNewWindow={() => window.electronAPI.menuNewWindow()}
+              onOpenSettings={onOpenSettings}
+              onOpenKeyboardShortcuts={onOpenKeyboardShortcuts}
+              onOpenStoredUserPreferences={onOpenStoredUserPreferences}
+              onBack={goBack}
+              onForward={goForward}
+              canGoBack={canGoBack}
+              canGoForward={canGoForward}
+              onToggleSidebar={() => setIsSidebarVisible(prev => !prev)}
+              isSidebarVisible={isSidebarVisible}
+            />
+          </div>
+        )
+      })()}
 
       {/* === OUTER LAYOUT: Sidebar | Main Content === */}
       <div className="h-full flex items-stretch relative">
@@ -1514,7 +1651,7 @@ function AppShellContent({
                       onToggle: () => toggleExpanded('nav:sources'),
                       contextMenu: {
                         type: 'sources',
-                        onAddSource: openAddSource,
+                        onAddSource: () => openAddSource(),
                       },
                       items: [
                         {
@@ -1700,7 +1837,8 @@ function AppShellContent({
                       <DropdownMenuTrigger asChild>
                         <HeaderIconButton
                           icon={<ListFilter className="h-4 w-4" />}
-                          className={listFilter.size > 0 ? "text-foreground" : undefined}
+                          className={(listFilter.size > 0 || labelFilter.size > 0) ? "bg-accent/5 text-accent rounded-[8px] shadow-tinted" : "rounded-[8px]"}
+                          style={(listFilter.size > 0 || labelFilter.size > 0) ? { '--shadow-color': 'var(--accent-rgb)' } as React.CSSProperties : undefined}
                         />
                       </DropdownMenuTrigger>
                       <StyledDropdownMenuContent align="end" light minWidth="min-w-[200px]">
@@ -1719,34 +1857,119 @@ function AppShellContent({
                             </button>
                           )}
                         </div>
-                        {/* Dynamic status filter items */}
-                        {effectiveTodoStates.map(state => {
-                          // Only apply color if icon is colorable (uses currentColor)
-                          const applyColor = state.iconColorable
-                          return (
-                            <StyledDropdownMenuItem
-                              key={state.id}
-                              onClick={(e) => {
-                                e.preventDefault()
-                                setListFilter(prev => {
-                                  const next = new Set(prev)
-                                  if (next.has(state.id)) next.delete(state.id)
-                                  else next.add(state.id)
-                                  return next
-                                })
-                              }}
-                            >
-                              <span
-                                className="h-3.5 w-3.5 flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full [&>img]:w-full [&>img]:h-full"
-                                style={applyColor ? { color: state.resolvedColor } : undefined}
-                              >
-                                {state.icon}
-                              </span>
-                              <span className="flex-1">{state.label}</span>
-                              <span className="w-3.5 ml-4">{listFilter.has(state.id) && <Check className="h-3.5 w-3.5 text-foreground" />}</span>
-                            </StyledDropdownMenuItem>
-                          )
-                        })}
+
+                        {/* Selected items at root level - shows active filters with checkmarks for quick visibility */}
+                        {(listFilter.size > 0 || labelFilter.size > 0) && (
+                          <>
+                            {/* Selected statuses */}
+                            {effectiveTodoStates.filter(s => listFilter.has(s.id)).map(state => {
+                              const applyColor = state.iconColorable
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={`sel-status-${state.id}`}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setListFilter(prev => {
+                                      const next = new Set(prev)
+                                      next.delete(state.id)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <FilterMenuRow
+                                    icon={state.icon}
+                                    label={state.label}
+                                    accessory={<Check className="h-3 w-3 text-foreground" />}
+                                    iconStyle={applyColor ? { color: state.resolvedColor } : undefined}
+                                    noIconContainer
+                                  />
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                            {/* Selected labels */}
+                            {Array.from(labelFilter).map(labelId => {
+                              const label = findLabelById(labelConfigs, labelId)
+                              if (!label) return null
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={`sel-label-${labelId}`}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setLabelFilter(prev => {
+                                      const next = new Set(prev)
+                                      next.delete(labelId)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <FilterMenuRow
+                                    icon={<LabelIcon label={label} size="sm" />}
+                                    label={translateLabelName(label.name)}
+                                    accessory={<Check className="h-3 w-3 text-foreground" />}
+                                  />
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                            <StyledDropdownMenuSeparator />
+                          </>
+                        )}
+
+                        {/* Statuses submenu - all workspace statuses with toggle selection */}
+                        <DropdownMenuSub>
+                          <StyledDropdownMenuSubTrigger>
+                            <Inbox className="h-3.5 w-3.5" />
+                            <span className="flex-1">{t('状态')}</span>
+                          </StyledDropdownMenuSubTrigger>
+                          <StyledDropdownMenuSubContent minWidth="min-w-[180px]">
+                            {effectiveTodoStates.map(state => {
+                              const applyColor = state.iconColorable
+                              return (
+                                <StyledDropdownMenuItem
+                                  key={state.id}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setListFilter(prev => {
+                                      const next = new Set(prev)
+                                      if (next.has(state.id)) next.delete(state.id)
+                                      else next.add(state.id)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  <FilterMenuRow
+                                    icon={state.icon}
+                                    label={state.label}
+                                    accessory={listFilter.has(state.id) && <Check className="h-3 w-3 text-foreground" />}
+                                    iconStyle={applyColor ? { color: state.resolvedColor } : undefined}
+                                    noIconContainer
+                                  />
+                                </StyledDropdownMenuItem>
+                              )
+                            })}
+                          </StyledDropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        {/* Labels submenu - full label tree with recursive submenus */}
+                        <DropdownMenuSub>
+                          <StyledDropdownMenuSubTrigger>
+                            <Tag className="h-3.5 w-3.5" />
+                            <span className="flex-1">{t('标签')}</span>
+                          </StyledDropdownMenuSubTrigger>
+                          <StyledDropdownMenuSubContent minWidth="min-w-[180px]">
+                            {labelConfigs.length === 0 ? (
+                              <StyledDropdownMenuItem disabled>
+                                <span className="text-muted-foreground">{t('未配置标签')}</span>
+                              </StyledDropdownMenuItem>
+                            ) : (
+                              <FilterLabelItems
+                                labels={labelConfigs}
+                                labelFilter={labelFilter}
+                                setLabelFilter={setLabelFilter}
+                              />
+                            )}
+                          </StyledDropdownMenuSubContent>
+                        </DropdownMenuSub>
+
                         <StyledDropdownMenuSeparator />
                         <StyledDropdownMenuItem
                           onClick={() => {
@@ -2112,8 +2335,8 @@ function AppShellContent({
               modal={true}
               trigger={
                 <div
-                  className="fixed top-[120px] w-0 h-0 pointer-events-none"
-                  style={{ left: sidebarWidth + 20 }}
+                  className="fixed w-0 h-0 pointer-events-none"
+                  style={{ left: sidebarWidth + 20, top: editPopoverAnchorY.current }}
                   aria-hidden="true"
                 />
               }

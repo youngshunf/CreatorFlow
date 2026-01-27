@@ -212,6 +212,15 @@ export interface Plan {
 // ============================================
 
 /**
+ * Git Bash detection status (Windows only)
+ */
+export interface GitBashStatus {
+  found: boolean
+  path: string | null
+  platform: 'win32' | 'darwin' | 'linux'
+}
+
+/**
  * Result of saving onboarding configuration
  */
 export interface OnboardingSaveResult {
@@ -560,11 +569,7 @@ export const IPC_CHANNELS = {
   ONBOARDING_VALIDATE_MCP: 'onboarding:validateMcp',
   ONBOARDING_START_MCP_OAUTH: 'onboarding:startMcpOAuth',
   ONBOARDING_SAVE_CONFIG: 'onboarding:saveConfig',
-  // Claude OAuth
-  ONBOARDING_GET_EXISTING_CLAUDE_TOKEN: 'onboarding:getExistingClaudeToken',
-  ONBOARDING_IS_CLAUDE_CLI_INSTALLED: 'onboarding:isClaudeCliInstalled',
-  ONBOARDING_RUN_CLAUDE_SETUP_TOKEN: 'onboarding:runClaudeSetupToken',
-  // Native Claude OAuth (two-step flow)
+  // Claude OAuth (two-step flow)
   ONBOARDING_START_CLAUDE_OAUTH: 'onboarding:startClaudeOAuth',
   ONBOARDING_EXCHANGE_CLAUDE_CODE: 'onboarding:exchangeClaudeCode',
   ONBOARDING_HAS_CLAUDE_OAUTH_STATE: 'onboarding:hasClaudeOAuthState',
@@ -674,6 +679,26 @@ export const IPC_CHANNELS = {
 
   // Git operations
   GET_GIT_BRANCH: 'git:getBranch',
+
+  // Git Bash (Windows)
+  GITBASH_CHECK: 'gitbash:check',
+  GITBASH_BROWSE: 'gitbash:browse',
+  GITBASH_SET_PATH: 'gitbash:setPath',
+
+  // Menu actions (renderer → main for window/app control)
+  MENU_QUIT: 'menu:quit',
+  MENU_MINIMIZE: 'menu:minimize',
+  MENU_MAXIMIZE: 'menu:maximize',
+  MENU_ZOOM_IN: 'menu:zoomIn',
+  MENU_ZOOM_OUT: 'menu:zoomOut',
+  MENU_ZOOM_RESET: 'menu:zoomReset',
+  MENU_TOGGLE_DEVTOOLS: 'menu:toggleDevTools',
+  MENU_UNDO: 'menu:undo',
+  MENU_REDO: 'menu:redo',
+  MENU_CUT: 'menu:cut',
+  MENU_COPY: 'menu:copy',
+  MENU_PASTE: 'menu:paste',
+  MENU_SELECT_ALL: 'menu:selectAll',
 } as const
 
 // Re-import types for ElectronAPI
@@ -781,11 +806,7 @@ export interface ElectronAPI {
     anthropicBaseUrl?: string | null  // Custom Anthropic API base URL
     customModel?: string | null  // Custom model ID override
   }): Promise<OnboardingSaveResult>
-  // Claude OAuth
-  getExistingClaudeToken(): Promise<string | null>
-  isClaudeCliInstalled(): Promise<boolean>
-  runClaudeSetupToken(): Promise<ClaudeOAuthResult>
-  // Native Claude OAuth (two-step flow)
+  // Claude OAuth (two-step flow)
   startClaudeOAuth(): Promise<{ success: boolean; authUrl?: string; error?: string }>
   exchangeClaudeCode(code: string): Promise<ClaudeOAuthResult>
   hasClaudeOAuthState(): Promise<boolean>
@@ -909,6 +930,27 @@ export interface ElectronAPI {
 
   // Git operations
   getGitBranch(dirPath: string): Promise<string | null>
+
+  // Git Bash (Windows)
+  checkGitBash(): Promise<GitBashStatus>
+  browseForGitBash(): Promise<string | null>
+  setGitBashPath(path: string): Promise<{ success: boolean; error?: string }>
+
+  // Menu actions (from renderer to main)
+  menuQuit(): Promise<void>
+  menuNewWindow(): Promise<void>
+  menuMinimize(): Promise<void>
+  menuMaximize(): Promise<void>
+  menuZoomIn(): Promise<void>
+  menuZoomOut(): Promise<void>
+  menuZoomReset(): Promise<void>
+  menuToggleDevTools(): Promise<void>
+  menuUndo(): Promise<void>
+  menuRedo(): Promise<void>
+  menuCut(): Promise<void>
+  menuCopy(): Promise<void>
+  menuPaste(): Promise<void>
+  menuSelectAll(): Promise<void>
 }
 
 /**

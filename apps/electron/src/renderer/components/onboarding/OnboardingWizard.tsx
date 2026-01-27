@@ -3,10 +3,12 @@ import { WelcomeStep } from "./WelcomeStep"
 import { APISetupStep, type ApiSetupMethod } from "./APISetupStep"
 import { CredentialsStep, type CredentialStatus } from "./CredentialsStep"
 import { CompletionStep } from "./CompletionStep"
+import { GitBashWarning, type GitBashStatus } from "./GitBashWarning"
 import type { ApiKeySubmitData } from "../apisetup"
 
 export type OnboardingStep =
   | 'welcome'
+  | 'git-bash'
   | 'api-setup'
   | 'credentials'
   | 'complete'
@@ -21,6 +23,9 @@ export interface OnboardingState {
   apiSetupMethod: ApiSetupMethod | null
   isExistingUser: boolean
   errorMessage?: string
+  gitBashStatus?: GitBashStatus
+  isRecheckingGitBash?: boolean
+  isCheckingGitBash?: boolean
 }
 
 interface OnboardingWizardProps {
@@ -35,14 +40,16 @@ interface OnboardingWizardProps {
   onStartOAuth?: () => void
   onFinish: () => void
 
-  // Claude OAuth
-  existingClaudeToken?: string | null
-  isClaudeCliInstalled?: boolean
-  onUseExistingClaudeToken?: () => void
-  // Two-step OAuth flow
+  // Claude OAuth (two-step flow)
   isWaitingForCode?: boolean
   onSubmitAuthCode?: (code: string) => void
   onCancelOAuth?: () => void
+
+  // Git Bash (Windows)
+  onBrowseGitBash?: () => Promise<string | null>
+  onUseGitBashPath?: (path: string) => void
+  onRecheckGitBash?: () => void
+  onClearError?: () => void
 
   className?: string
 }
@@ -64,13 +71,15 @@ export function OnboardingWizard({
   onSubmitCredential,
   onStartOAuth,
   onFinish,
-  existingClaudeToken,
-  isClaudeCliInstalled,
-  onUseExistingClaudeToken,
   // Two-step OAuth flow
   isWaitingForCode,
   onSubmitAuthCode,
   onCancelOAuth,
+  // Git Bash (Windows)
+  onBrowseGitBash,
+  onUseGitBashPath,
+  onRecheckGitBash,
+  onClearError,
   className
 }: OnboardingWizardProps) {
   const renderStep = () => {
@@ -80,6 +89,21 @@ export function OnboardingWizard({
           <WelcomeStep
             isExistingUser={state.isExistingUser}
             onContinue={onContinue}
+            isLoading={state.isCheckingGitBash}
+          />
+        )
+
+      case 'git-bash':
+        return (
+          <GitBashWarning
+            status={state.gitBashStatus!}
+            onBrowse={onBrowseGitBash!}
+            onUsePath={onUseGitBashPath!}
+            onRecheck={onRecheckGitBash!}
+            onBack={onBack}
+            isRechecking={state.isRecheckingGitBash}
+            errorMessage={state.errorMessage}
+            onClearError={onClearError}
           />
         )
 
@@ -102,9 +126,6 @@ export function OnboardingWizard({
             onSubmit={onSubmitCredential}
             onStartOAuth={onStartOAuth}
             onBack={onBack}
-            existingClaudeToken={existingClaudeToken}
-            isClaudeCliInstalled={isClaudeCliInstalled}
-            onUseExistingClaudeToken={onUseExistingClaudeToken}
             isWaitingForCode={isWaitingForCode}
             onSubmitAuthCode={onSubmitAuthCode}
             onCancelOAuth={onCancelOAuth}
