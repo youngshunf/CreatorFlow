@@ -5,6 +5,7 @@
  */
 
 export { default as SettingsNavigator } from './SettingsNavigator'
+export { default as UserProfilePage, meta as UserProfileMeta } from './UserProfilePage'
 export { default as AppSettingsPage, meta as AppSettingsMeta } from './AppSettingsPage'
 export { default as WorkspaceSettingsPage, meta as WorkspaceSettingsMeta } from './WorkspaceSettingsPage'
 export { default as PermissionsSettingsPage, meta as PermissionsMeta } from './PermissionsSettingsPage'

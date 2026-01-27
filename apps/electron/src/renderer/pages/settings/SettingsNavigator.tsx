@@ -139,7 +139,30 @@ interface SettingsItem {
   descriptionKey: string
 }
 
+/** Custom user profile icon */
+const UserProfileIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2ZM4 20C4 16.6863 7.58172 14 12 14C16.4183 14 20 16.6863 20 20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V20Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
 const settingsItems: SettingsItem[] = [
+  {
+    id: 'user-profile',
+    labelKey: '用户资料',
+    icon: UserProfileIcon,
+    descriptionKey: '头像、昵称、个人信息',
+  },
   {
     id: 'app',
     labelKey: '应用',

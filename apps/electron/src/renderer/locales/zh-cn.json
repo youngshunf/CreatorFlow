@@ -1,5 +1,13 @@
 [
   [
+    ".NET 版本",
+    ""
+  ],
+  [
+    ".NET version",
+    ".NET 版本"
+  ],
+  [
     "{count}分钟前",
     ""
   ],
@@ -37,6 +45,14 @@
   ],
   [
     "保存",
+    ""
+  ],
+  [
+    "报告或过滤重复行",
+    ""
+  ],
+  [
+    "报告文件系统磁盘空间使用情况",
     ""
   ],
   [
@@ -152,11 +168,19 @@
     ""
   ],
   [
+    "查询 DNS 服务器",
+    ""
+  ],
+  [
     "撤销",
     ""
   ],
   [
     "城市",
+    ""
+  ],
+  [
+    "窗口",
     ""
   ],
   [
@@ -208,6 +232,10 @@
     ""
   ],
   [
+    "从行中删除部分内容",
+    ""
+  ],
+  [
     "打开",
     ""
   ],
@@ -229,6 +257,50 @@
   ],
   [
     "打开中...",
+    ""
+  ],
+  [
+    "打印当前工作目录",
+    ""
+  ],
+  [
+    "打印当前日期和时间",
+    ""
+  ],
+  [
+    "打印当前用户名",
+    ""
+  ],
+  [
+    "打印环境变量",
+    ""
+  ],
+  [
+    "打印所有环境变量（仅限单独命令，不是 env <cmd>）",
+    ""
+  ],
+  [
+    "打印系统信息",
+    ""
+  ],
+  [
+    "打印系统运行时间和负载",
+    ""
+  ],
+  [
+    "打印系统主机名",
+    ""
+  ],
+  [
+    "打印用户和组 ID",
+    ""
+  ],
+  [
+    "打印组成员资格",
+    ""
+  ],
+  [
+    "带语法高亮的 cat 替代品",
     ""
   ],
   [
@@ -256,6 +328,10 @@
     ""
   ],
   [
+    "地区信息",
+    ""
+  ],
+  [
     "等待当前操作完成",
     ""
   ],
@@ -268,11 +344,35 @@
     ""
   ],
   [
+    "调试",
+    ""
+  ],
+  [
+    "定位命令",
+    ""
+  ],
+  [
+    "定位命令的二进制文件、源码和手册",
+    ""
+  ],
+  [
+    "读取 GitHub CLI 配置",
+    ""
+  ],
+  [
     "对话已标记",
     ""
   ],
   [
     "对话已删除",
+    ""
+  ],
+  [
+    "对文本文件行进行排序",
+    ""
+  ],
+  [
+    "发送 ICMP echo 请求",
     ""
   ],
   [
@@ -292,6 +392,14 @@
     ""
   ],
   [
+    "访问",
+    ""
+  ],
+  [
+    "放大",
+    ""
+  ],
+  [
     "分享",
     ""
   ],
@@ -301,6 +409,10 @@
   ],
   [
     "分享已更新",
+    ""
+  ],
+  [
+    "分页查看文件内容",
     ""
   ],
   [
@@ -340,11 +452,19 @@
     ""
   ],
   [
+    "格式：YYYY-MM-DD",
+    ""
+  ],
+  [
     "格式错误",
     ""
   ],
   [
     "个标签",
+    ""
+  ],
+  [
+    "个人简介",
     ""
   ],
   [
@@ -417,6 +537,10 @@
   ],
   [
     "共{count}条记录",
+    ""
+  ],
+  [
+    "估算文件/目录磁盘使用量",
     ""
   ],
   [
@@ -528,6 +652,10 @@
     ""
   ],
   [
+    "检查 GitHub 认证状态",
+    ""
+  ],
+  [
     "检查更新",
     ""
   ],
@@ -537,6 +665,10 @@
   ],
   [
     "键盘快捷键",
+    ""
+  ],
+  [
+    "交互式进程查看器",
     ""
   ],
   [
@@ -552,11 +684,19 @@
     ""
   ],
   [
+    "介绍一下您自己",
+    ""
+  ],
+  [
     "界面语言",
     ""
   ],
   [
     "今天",
+    ""
+  ],
+  [
+    "仅批量/列表模式下的进程查看器",
     ""
   ],
   [
@@ -593,6 +733,10 @@
   ],
   [
     "快捷键",
+    ""
+  ],
+  [
+    "快速且用户友好的 find 替代品",
     ""
   ],
   [
@@ -644,7 +788,23 @@
     ""
   ],
   [
+    "例如：广东省",
+    ""
+  ],
+  [
+    "例如：互联网/科技",
+    ""
+  ],
+  [
+    "例如：南山区",
+    ""
+  ],
+  [
     "例如：上海",
+    ""
+  ],
+  [
+    "例如：深圳市",
     ""
   ],
   [
@@ -668,6 +828,10 @@
     ""
   ],
   [
+    "连接并显示文件内容",
+    ""
+  ],
+  [
     "连接类型",
     ""
   ],
@@ -680,6 +844,10 @@
     ""
   ],
   [
+    "联系信息",
+    ""
+  ],
+  [
     "链接已复制到剪贴板",
     ""
   ],
@@ -689,6 +857,34 @@
   ],
   [
     "聊天信息",
+    ""
+  ],
+  [
+    "列表分列显示",
+    ""
+  ],
+  [
+    "列出 PCI 设备",
+    ""
+  ],
+  [
+    "列出 USB 设备",
+    ""
+  ],
+  [
+    "列出块设备",
+    ""
+  ],
+  [
+    "列出目录内容",
+    ""
+  ],
+  [
+    "列出所有文件（包括隐藏文件，ls -la 别名）",
+    ""
+  ],
+  [
+    "列出正在运行的进程",
     ""
   ],
   [
@@ -740,6 +936,10 @@
     ""
   ],
   [
+    "模式",
+    ""
+  ],
+  [
     "模式循环",
     ""
   ],
@@ -776,7 +976,15 @@
     ""
   ],
   [
+    "男",
+    ""
+  ],
+  [
     "你想做什么？",
+    ""
+  ],
+  [
+    "昵称",
     ""
   ],
   [
@@ -784,11 +992,63 @@
     ""
   ],
   [
+    "您的登录用户名（不可更改）",
+    ""
+  ],
+  [
+    "您的工作和专业背景",
+    ""
+  ],
+  [
     "您的国家，用于地区格式和上下文",
     ""
   ],
   [
+    "您的基本个人信息",
+    ""
+  ],
+  [
+    "您的联系方式",
+    ""
+  ],
+  [
+    "您的手机号（需验证后修改）",
+    ""
+  ],
+  [
     "您的姓名",
+    ""
+  ],
+  [
+    "您的性别",
+    ""
+  ],
+  [
+    "您的邮箱地址（需验证后修改）",
+    ""
+  ],
+  [
+    "您所从事的行业",
+    ""
+  ],
+  [
+    "您所在的城市",
+    ""
+  ],
+  [
+    "您所在的地理位置",
+    ""
+  ],
+  [
+    "您所在的区",
+    ""
+  ],
+  [
+    "您所在的省份",
+    ""
+  ],
+  [
+    "女",
     ""
   ],
   [
@@ -805,6 +1065,14 @@
   ],
   [
     "偏好设置",
+    ""
+  ],
+  [
+    "其他",
+    ""
+  ],
+  [
+    "其他人看到的名称",
     ""
   ],
   [
@@ -840,6 +1108,14 @@
     ""
   ],
   [
+    "切换开发者工具",
+    ""
+  ],
+  [
+    "切换目录（仅影响 shell 会话）",
+    ""
+  ],
+  [
     "切换权限模式",
     ""
   ],
@@ -868,11 +1144,19 @@
     ""
   ],
   [
+    "请输入昵称",
+    ""
+  ],
+  [
     "请先备份重要数据！",
     ""
   ],
   [
     "请在设置中添加数据源。",
+    ""
+  ],
+  [
+    "区",
     ""
   ],
   [
@@ -909,6 +1193,10 @@
   ],
   [
     "权限模式",
+    ""
+  ],
+  [
+    "确定文件类型",
     ""
   ],
   [
@@ -1004,6 +1292,14 @@
     ""
   ],
   [
+    "生日",
+    ""
+  ],
+  [
+    "省份",
+    ""
+  ],
+  [
     "时区",
     ""
   ],
@@ -1016,7 +1312,15 @@
     ""
   ],
   [
+    "使用模式搜索文件内容",
+    ""
+  ],
+  [
     "使用您的 Claude 订阅来支持多智能体工作流。",
+    ""
+  ],
+  [
+    "使用数据库按名称查找文件",
     ""
   ],
   [
@@ -1036,7 +1340,23 @@
     ""
   ],
   [
+    "手机号",
+    ""
+  ],
+  [
     "授权码",
+    ""
+  ],
+  [
+    "输出环境变量值",
+    ""
+  ],
+  [
+    "输出文件结尾部分",
+    ""
+  ],
+  [
+    "输出文件开头部分",
     ""
   ],
   [
@@ -1120,7 +1440,19 @@
     ""
   ],
   [
+    "搜索模式...",
+    ""
+  ],
+  [
     "搜索数据源...",
+    ""
+  ],
+  [
+    "缩小",
+    ""
+  ],
+  [
+    "所选目录不在当前工作区根目录下",
     ""
   ],
   [
@@ -1165,6 +1497,10 @@
   ],
   [
     "探索模式下允许的应用级模式。不在此列表中的命令将被阻止。",
+    ""
+  ],
+  [
+    "套接字统计",
     ""
   ],
   [
@@ -1220,11 +1556,43 @@
     ""
   ],
   [
+    "通用 AI 助手工作区，适合各种任务场景",
+    ""
+  ],
+  [
+    "通用读取操作",
+    ""
+  ],
+  [
+    "通用工作区",
+    ""
+  ],
+  [
+    "通用获取/读取操作",
+    ""
+  ],
+  [
+    "通用列表操作",
+    ""
+  ],
+  [
     "通用设置",
     ""
   ],
   [
     "通知",
+    ""
+  ],
+  [
+    "统计文件的行数、单词数、字节数",
+    ""
+  ],
+  [
+    "头像",
+    ""
+  ],
+  [
+    "头像 URL 地址",
     ""
   ],
   [
@@ -1244,11 +1612,31 @@
     ""
   ],
   [
+    "退出 CreatorFlow",
+    ""
+  ],
+  [
     "外观",
     ""
   ],
   [
     "完全自主执行",
+    ""
+  ],
+  [
+    "完整的自媒体创作工作流，支持小红书、抖音、公众号等平台",
+    ""
+  ],
+  [
+    "网络接口配置（只读）",
+    ""
+  ],
+  [
+    "网络统计",
+    ""
+  ],
+  [
+    "网络诊断工具",
     ""
   ],
   [
@@ -1276,6 +1664,10 @@
     ""
   ],
   [
+    "未配置权限",
+    ""
+  ],
+  [
     "未配置数据源",
     ""
   ],
@@ -1289,6 +1681,10 @@
   ],
   [
     "未配置自动应用规则",
+    ""
+  ],
+  [
+    "未设置",
     ""
   ],
   [
@@ -1356,6 +1752,10 @@
     ""
   ],
   [
+    "文件和命令的模糊查找器",
+    ""
+  ],
+  [
     "文件夹",
     ""
   ],
@@ -1372,11 +1772,51 @@
     ""
   ],
   [
+    "下一步",
+    ""
+  ],
+  [
+    "显示 CPU 架构信息",
+    ""
+  ],
+  [
     "显示此对话框",
     ""
   ],
   [
     "显示当前工作区的所有标签，可通过嵌套形成分组。",
+    ""
+  ],
+  [
+    "显示命令帮助",
+    ""
+  ],
+  [
+    "显示命令帮助（短选项）",
+    ""
+  ],
+  [
+    "显示命令类型信息",
+    ""
+  ],
+  [
+    "显示目录树结构",
+    ""
+  ],
+  [
+    "显示内存使用情况",
+    ""
+  ],
+  [
+    "显示内存信息",
+    ""
+  ],
+  [
+    "显示手册页",
+    ""
+  ],
+  [
+    "显示文件状态和元数据",
     ""
   ],
   [
@@ -1416,7 +1856,19 @@
     ""
   ],
   [
+    "行业",
+    ""
+  ],
+  [
     "姓名",
+    ""
+  ],
+  [
+    "性别",
+    ""
+  ],
+  [
+    "虚拟内存统计",
     ""
   ],
   [
@@ -1441,6 +1893,10 @@
   ],
   [
     "选择使用 Shift+Tab 循环的模式",
+    ""
+  ],
+  [
+    "选择适合你的工作流的应用模板。",
     ""
   ],
   [
@@ -1580,11 +2036,23 @@
     ""
   ],
   [
+    "用户名",
+    ""
+  ],
+  [
+    "用户资料",
+    ""
+  ],
+  [
     "用于\"明天\"或\"下周\"等相对日期",
     ""
   ],
   [
     "用于复杂问题的扩展推理",
+    ""
+  ],
+  [
+    "邮箱",
     ""
   ],
   [
@@ -1644,6 +2112,10 @@
     ""
   ],
   [
+    "在目录层次结构中搜索文件",
+    ""
+  ],
+  [
     "在区域之间移动（在列表中）",
     ""
   ],
@@ -1657,6 +2129,10 @@
   ],
   [
     "在新窗口中打开",
+    ""
+  ],
+  [
+    "在这里写下您的个人简介...",
     ""
   ],
   [
@@ -1692,6 +2168,10 @@
     ""
   ],
   [
+    "长格式列表（ls -l 别名）",
+    ""
+  ],
+  [
     "账户",
     ""
   ],
@@ -1705,6 +2185,10 @@
   ],
   [
     "这将",
+    ""
+  ],
+  [
+    "这可能会导致文件管理混乱，建议选择工作区内的目录。",
     ""
   ],
   [
@@ -1729,6 +2213,10 @@
   ],
   [
     "执行模式",
+    ""
+  ],
+  [
+    "职业信息",
     ""
   ],
   [
@@ -1780,6 +2268,10 @@
     ""
   ],
   [
+    "重置缩放",
+    ""
+  ],
+  [
     "重置应用",
     ""
   ],
@@ -1796,7 +2288,23 @@
     ""
   ],
   [
+    "注释",
+    ""
+  ],
+  [
+    "转换或删除字符",
+    ""
+  ],
+  [
     "状态",
+    ""
+  ],
+  [
+    "追踪到主机的路径",
+    ""
+  ],
+  [
+    "追踪到主机的数据包路由",
     ""
   ],
   [
@@ -1836,7 +2344,15 @@
     ""
   ],
   [
+    "自媒体创作",
+    ""
+  ],
+  [
     "自由格式的上下文，帮助 CreatorFlow 了解您的偏好",
+    ""
+  ],
+  [
+    "最大化",
     ""
   ],
   [
@@ -1860,8 +2376,20 @@
     ""
   ],
   [
+    "最小化",
+    ""
+  ],
+  [
     "昨天",
     ""
+  ],
+  [
+    "Ack - 程序员专用的类 grep 工具",
+    ""
+  ],
+  [
+    "Ack - grep-like tool for programmers",
+    "Ack - 程序员专用的类 grep 工具"
   ],
   [
     "AI 代理连接语言模型的方式",
@@ -1896,12 +2424,84 @@
     ""
   ],
   [
+    "Bun 版本",
+    ""
+  ],
+  [
+    "Bun 包管理器列表",
+    ""
+  ],
+  [
+    "Bun package manager list",
+    "Bun 包管理器列表"
+  ],
+  [
+    "Bun version",
+    "Bun 版本"
+  ],
+  [
+    "Bundler 读取操作：列出 gem、检查过时包",
+    ""
+  ],
+  [
+    "Bundler read operations: list gems, check outdated",
+    "Bundler 读取操作：列出 gem、检查过时包"
+  ],
+  [
+    "Cargo 版本",
+    ""
+  ],
+  [
+    "Cargo 读取操作：依赖树、元数据",
+    ""
+  ],
+  [
+    "Cargo read operations: dependency tree, metadata",
+    "Cargo 读取操作：依赖树、元数据"
+  ],
+  [
+    "Cargo version",
+    "Cargo 版本"
+  ],
+  [
+    "Cat clone with syntax highlighting",
+    "带语法高亮的 cat 替代品"
+  ],
+  [
+    "Change directory (affects shell session only)",
+    "切换目录（仅影响 shell 会话）"
+  ],
+  [
+    "Check GitHub authentication status",
+    "检查 GitHub 认证状态"
+  ],
+  [
     "Claude 模型请留空。仅在使用非 Claude 模型时设置。",
     ""
   ],
   [
     "Claude Pro/Max — 使用您的 Claude 订阅",
     ""
+  ],
+  [
+    "Columnate lists",
+    "列表分列显示"
+  ],
+  [
+    "Composer 读取操作：显示包、许可证",
+    ""
+  ],
+  [
+    "Composer read operations: show packages, licenses",
+    "Composer 读取操作：显示包、许可证"
+  ],
+  [
+    "Concatenate and display file contents",
+    "连接并显示文件内容"
+  ],
+  [
+    "Count lines, words, bytes in files",
+    "统计文件的行数、单词数、字节数"
   ],
   [
     "CreatorFlow 响应的首选语言",
@@ -1912,888 +2512,8 @@
     ""
   ],
   [
-    "MCP 服务",
-    ""
-  ],
-  [
-    "列出目录内容",
-    ""
-  ],
-  [
-    "长格式列表（ls -l 别名）",
-    ""
-  ],
-  [
-    "列出所有文件（包括隐藏文件，ls -la 别名）",
-    ""
-  ],
-  [
-    "显示目录树结构",
-    ""
-  ],
-  [
-    "确定文件类型",
-    ""
-  ],
-  [
-    "显示文件状态和元数据",
-    ""
-  ],
-  [
-    "估算文件/目录磁盘使用量",
-    ""
-  ],
-  [
-    "报告文件系统磁盘空间使用情况",
-    ""
-  ],
-  [
-    "统计文件的行数、单词数、字节数",
-    ""
-  ],
-  [
-    "输出文件开头部分",
-    ""
-  ],
-  [
-    "输出文件结尾部分",
-    ""
-  ],
-  [
-    "连接并显示文件内容",
-    ""
-  ],
-  [
-    "分页查看文件内容",
-    ""
-  ],
-  [
-    "带语法高亮的 cat 替代品",
-    ""
-  ],
-  [
-    "在目录层次结构中搜索文件",
-    ""
-  ],
-  [
-    "使用数据库按名称查找文件",
-    ""
-  ],
-  [
-    "定位命令",
-    ""
-  ],
-  [
-    "定位命令的二进制文件、源码和手册",
-    ""
-  ],
-  [
-    "显示命令类型信息",
-    ""
-  ],
-  [
-    "使用模式搜索文件内容",
-    ""
-  ],
-  [
-    "Ripgrep - 快速递归搜索",
-    ""
-  ],
-  [
-    "Silver Searcher - 快速代码搜索",
-    ""
-  ],
-  [
-    "Ack - 程序员专用的类 grep 工具",
-    ""
-  ],
-  [
-    "快速且用户友好的 find 替代品",
-    ""
-  ],
-  [
-    "文件和命令的模糊查找器",
-    ""
-  ],
-  [
-    "Git 只读操作（支持 -C、--no-pager 等子命令前的选项）",
-    ""
-  ],
-  [
-    "GitHub CLI 读取操作：查看 PR、Issue、Release",
-    ""
-  ],
-  [
-    "GitHub API 使用明确的 GET 方法",
-    ""
-  ],
-  [
-    "GitHub API 无方法参数（默认为 GET）",
-    ""
-  ],
-  [
-    "检查 GitHub 认证状态",
-    ""
-  ],
-  [
-    "读取 GitHub CLI 配置",
-    ""
-  ],
-  [
-    "npm 读取操作：列出包、查看信息、检查过时包",
-    ""
-  ],
-  [
-    "Yarn 读取操作：列出包、检查过时包",
-    ""
-  ],
-  [
-    "pnpm 读取操作：列出包、检查过时包",
-    ""
-  ],
-  [
-    "Bun 包管理器列表",
-    ""
-  ],
-  [
-    "pip 读取操作：列出包、显示信息",
-    ""
-  ],
-  [
-    "pip3 读取操作：列出包、显示信息",
-    ""
-  ],
-  [
-    "Cargo 读取操作：依赖树、元数据",
-    ""
-  ],
-  [
-    "Go 读取操作：列出模块、依赖图",
-    ""
-  ],
-  [
-    "Composer 读取操作：显示包、许可证",
-    ""
-  ],
-  [
-    "RubyGems 读取操作：列出 gem、显示信息",
-    ""
-  ],
-  [
-    "Bundler 读取操作：列出 gem、检查过时包",
-    ""
-  ],
-  [
-    "切换目录（仅影响 shell 会话）",
-    ""
-  ],
-  [
-    "打印当前工作目录",
-    ""
-  ],
-  [
-    "打印当前用户名",
-    ""
-  ],
-  [
-    "打印用户和组 ID",
-    ""
-  ],
-  [
-    "打印组成员资格",
-    ""
-  ],
-  [
-    "打印系统信息",
-    ""
-  ],
-  [
-    "打印系统主机名",
-    ""
-  ],
-  [
-    "打印当前日期和时间",
-    ""
-  ],
-  [
-    "打印系统运行时间和负载",
-    ""
-  ],
-  [
-    "打印所有环境变量（仅限单独命令，不是 env <cmd>）",
-    ""
-  ],
-  [
-    "打印环境变量",
-    ""
-  ],
-  [
-    "输出环境变量值",
-    ""
-  ],
-  [
-    "列出正在运行的进程",
-    ""
-  ],
-  [
-    "仅批量/列表模式下的进程查看器",
-    ""
-  ],
-  [
-    "交互式进程查看器",
-    ""
-  ],
-  [
-    "显示内存使用情况",
-    ""
-  ],
-  [
-    "虚拟内存统计",
-    ""
-  ],
-  [
-    "I/O 统计",
-    ""
-  ],
-  [
-    "显示 CPU 架构信息",
-    ""
-  ],
-  [
-    "显示内存信息",
-    ""
-  ],
-  [
-    "列出块设备",
-    ""
-  ],
-  [
-    "列出 USB 设备",
-    ""
-  ],
-  [
-    "列出 PCI 设备",
-    ""
-  ],
-  [
-    "Docker 读取操作：列出容器、镜像、日志、检查",
-    ""
-  ],
-  [
-    "Docker Compose 读取操作：列出服务、查看日志",
-    ""
-  ],
-  [
-    "Docker Compose (v2) 读取操作",
-    ""
-  ],
-  [
-    "Kubernetes 读取操作：获取资源、描述、查看日志",
-    ""
-  ],
-  [
-    "sed 仅打印模式（不编辑）",
-    ""
-  ],
-  [
-    "对文本文件行进行排序",
-    ""
-  ],
-  [
-    "报告或过滤重复行",
-    ""
-  ],
-  [
-    "从行中删除部分内容",
-    ""
-  ],
-  [
-    "转换或删除字符",
-    ""
-  ],
-  [
-    "列表分列显示",
-    ""
-  ],
-  [
-    "JSON 处理器",
-    ""
-  ],
-  [
-    "YAML 处理器",
-    ""
-  ],
-  [
-    "XML 处理器（通过 yq）",
-    ""
-  ],
-  [
-    "XML 检查器和格式化器",
-    ""
-  ],
-  [
-    "JSON 美化打印",
-    ""
-  ],
-  [
-    "Python JSON 格式化器",
-    ""
-  ],
-  [
-    "发送 ICMP echo 请求",
-    ""
-  ],
-  [
-    "追踪到主机的数据包路由",
-    ""
-  ],
-  [
-    "追踪到主机的路径",
-    ""
-  ],
-  [
-    "网络诊断工具",
-    ""
-  ],
-  [
-    "DNS 查询工具",
-    ""
-  ],
-  [
-    "查询 DNS 服务器",
-    ""
-  ],
-  [
-    "网络统计",
-    ""
-  ],
-  [
-    "套接字统计",
-    ""
-  ],
-  [
-    "IP 地址/链路/路由信息",
-    ""
-  ],
-  [
-    "网络接口配置（只读）",
-    ""
-  ],
-  [
-    "Node.js 版本",
-    ""
-  ],
-  [
-    "npm 版本",
-    ""
-  ],
-  [
-    "Yarn 版本",
-    ""
-  ],
-  [
-    "pnpm 版本",
-    ""
-  ],
-  [
-    "Bun 版本",
-    ""
-  ],
-  [
-    "Python 版本",
-    ""
-  ],
-  [
-    "Python 3 版本",
-    ""
-  ],
-  [
-    "Ruby 版本",
-    ""
-  ],
-  [
-    "Go 版本",
-    ""
-  ],
-  [
-    "Rust 编译器版本",
-    ""
-  ],
-  [
-    "Cargo 版本",
-    ""
-  ],
-  [
-    "Java 版本",
-    ""
-  ],
-  [
-    ".NET 版本",
-    ""
-  ],
-  [
-    "PHP 版本",
-    ""
-  ],
-  [
-    "Perl 版本",
-    ""
-  ],
-  [
-    "显示手册页",
-    ""
-  ],
-  [
-    "显示命令帮助",
-    ""
-  ],
-  [
-    "显示命令帮助（短选项）",
-    ""
-  ],
-  [
-    "MCP 源的搜索操作",
-    ""
-  ],
-  [
-    "通用列表操作",
-    ""
-  ],
-  [
-    "通用获取/读取操作",
-    ""
-  ],
-  [
-    "通用读取操作",
-    ""
-  ],
-  [
-    "List directory contents",
-    "列出目录内容"
-  ],
-  [
-    "Long listing (ls -l alias)",
-    "长格式列表（ls -l 别名）"
-  ],
-  [
-    "List all including hidden (ls -la alias)",
-    "列出所有文件（包括隐藏文件，ls -la 别名）"
-  ],
-  [
-    "Display directory tree structure",
-    "显示目录树结构"
-  ],
-  [
     "Determine file type",
     "确定文件类型"
-  ],
-  [
-    "Display file status and metadata",
-    "显示文件状态和元数据"
-  ],
-  [
-    "Estimate file/directory disk usage",
-    "估算文件/目录磁盘使用量"
-  ],
-  [
-    "Report filesystem disk space usage",
-    "报告文件系统磁盘空间使用情况"
-  ],
-  [
-    "Count lines, words, bytes in files",
-    "统计文件的行数、单词数、字节数"
-  ],
-  [
-    "Output first part of files",
-    "输出文件开头部分"
-  ],
-  [
-    "Output last part of files",
-    "输出文件结尾部分"
-  ],
-  [
-    "Concatenate and display file contents",
-    "连接并显示文件内容"
-  ],
-  [
-    "View file contents with paging",
-    "分页查看文件内容"
-  ],
-  [
-    "Cat clone with syntax highlighting",
-    "带语法高亮的 cat 替代品"
-  ],
-  [
-    "Search for files in directory hierarchy",
-    "在目录层次结构中搜索文件"
-  ],
-  [
-    "Find files by name using database",
-    "使用数据库按名称查找文件"
-  ],
-  [
-    "Locate a command",
-    "定位命令"
-  ],
-  [
-    "Locate binary, source, manual for command",
-    "定位命令的二进制文件、源码和手册"
-  ],
-  [
-    "Display information about command type",
-    "显示命令类型信息"
-  ],
-  [
-    "Search file contents with patterns",
-    "使用模式搜索文件内容"
-  ],
-  [
-    "Ripgrep - fast recursive search",
-    "Ripgrep - 快速递归搜索"
-  ],
-  [
-    "The Silver Searcher - fast code search",
-    "Silver Searcher - 快速代码搜索"
-  ],
-  [
-    "Ack - grep-like tool for programmers",
-    "Ack - 程序员专用的类 grep 工具"
-  ],
-  [
-    "Fast and user-friendly find alternative",
-    "快速且用户友好的 find 替代品"
-  ],
-  [
-    "Fuzzy finder for files and commands",
-    "文件和命令的模糊查找器"
-  ],
-  [
-    "Git read-only operations (supports flags like -C, --no-pager before subcommand)",
-    "Git 只读操作（支持 -C、--no-pager 等子命令前的选项）"
-  ],
-  [
-    "GitHub CLI read operations: view PRs, issues, releases",
-    "GitHub CLI 读取操作：查看 PR、Issue、Release"
-  ],
-  [
-    "GitHub API with explicit GET method",
-    "GitHub API 使用明确的 GET 方法"
-  ],
-  [
-    "GitHub API without method (defaults to GET)",
-    "GitHub API 无方法参数（默认为 GET）"
-  ],
-  [
-    "Check GitHub authentication status",
-    "检查 GitHub 认证状态"
-  ],
-  [
-    "Read GitHub CLI configuration",
-    "读取 GitHub CLI 配置"
-  ],
-  [
-    "npm read operations: list packages, view info, check outdated",
-    "npm 读取操作：列出包、查看信息、检查过时包"
-  ],
-  [
-    "Yarn read operations: list packages, check outdated",
-    "Yarn 读取操作：列出包、检查过时包"
-  ],
-  [
-    "pnpm read operations: list packages, check outdated",
-    "pnpm 读取操作：列出包、检查过时包"
-  ],
-  [
-    "Bun package manager list",
-    "Bun 包管理器列表"
-  ],
-  [
-    "pip read operations: list packages, show info",
-    "pip 读取操作：列出包、显示信息"
-  ],
-  [
-    "pip3 read operations: list packages, show info",
-    "pip3 读取操作：列出包、显示信息"
-  ],
-  [
-    "Cargo read operations: dependency tree, metadata",
-    "Cargo 读取操作：依赖树、元数据"
-  ],
-  [
-    "Go read operations: list modules, dependency graph",
-    "Go 读取操作：列出模块、依赖图"
-  ],
-  [
-    "Composer read operations: show packages, licenses",
-    "Composer 读取操作：显示包、许可证"
-  ],
-  [
-    "RubyGems read operations: list gems, show info",
-    "RubyGems 读取操作：列出 gem、显示信息"
-  ],
-  [
-    "Bundler read operations: list gems, check outdated",
-    "Bundler 读取操作：列出 gem、检查过时包"
-  ],
-  [
-    "Change directory (affects shell session only)",
-    "切换目录（仅影响 shell 会话）"
-  ],
-  [
-    "Print current working directory",
-    "打印当前工作目录"
-  ],
-  [
-    "Print current username",
-    "打印当前用户名"
-  ],
-  [
-    "Print user and group IDs",
-    "打印用户和组 ID"
-  ],
-  [
-    "Print group memberships",
-    "打印组成员资格"
-  ],
-  [
-    "Print system information",
-    "打印系统信息"
-  ],
-  [
-    "Print system hostname",
-    "打印系统主机名"
-  ],
-  [
-    "Print current date and time",
-    "打印当前日期和时间"
-  ],
-  [
-    "Print system uptime and load",
-    "打印系统运行时间和负载"
-  ],
-  [
-    "Print all environment variables (bare command only, not env <cmd>)",
-    "打印所有环境变量（仅限单独命令，不是 env <cmd>）"
-  ],
-  [
-    "Print environment variables",
-    "打印环境变量"
-  ],
-  [
-    "Echo environment variable values",
-    "输出环境变量值"
-  ],
-  [
-    "List running processes",
-    "列出正在运行的进程"
-  ],
-  [
-    "Process viewer in batch/list mode only",
-    "仅批量/列表模式下的进程查看器"
-  ],
-  [
-    "Interactive process viewer",
-    "交互式进程查看器"
-  ],
-  [
-    "Display memory usage",
-    "显示内存使用情况"
-  ],
-  [
-    "Virtual memory statistics",
-    "虚拟内存统计"
-  ],
-  [
-    "I/O statistics",
-    "I/O 统计"
-  ],
-  [
-    "Display CPU architecture information",
-    "显示 CPU 架构信息"
-  ],
-  [
-    "Display memory information",
-    "显示内存信息"
-  ],
-  [
-    "List block devices",
-    "列出块设备"
-  ],
-  [
-    "List USB devices",
-    "列出 USB 设备"
-  ],
-  [
-    "List PCI devices",
-    "列出 PCI 设备"
-  ],
-  [
-    "Docker read operations: list containers, images, logs, inspect",
-    "Docker 读取操作：列出容器、镜像、日志、检查"
-  ],
-  [
-    "Docker Compose read operations: list services, view logs",
-    "Docker Compose 读取操作：列出服务、查看日志"
-  ],
-  [
-    "Docker Compose (v2) read operations",
-    "Docker Compose (v2) 读取操作"
-  ],
-  [
-    "Kubernetes read operations: get resources, describe, view logs",
-    "Kubernetes 读取操作：获取资源、描述、查看日志"
-  ],
-  [
-    "sed in print-only mode (no editing)",
-    "sed 仅打印模式（不编辑）"
-  ],
-  [
-    "Sort lines of text files",
-    "对文本文件行进行排序"
-  ],
-  [
-    "Report or filter repeated lines",
-    "报告或过滤重复行"
-  ],
-  [
-    "Remove sections from lines",
-    "从行中删除部分内容"
-  ],
-  [
-    "Translate or delete characters",
-    "转换或删除字符"
-  ],
-  [
-    "Columnate lists",
-    "列表分列显示"
-  ],
-  [
-    "JSON processor",
-    "JSON 处理器"
-  ],
-  [
-    "YAML processor",
-    "YAML 处理器"
-  ],
-  [
-    "XML processor (via yq)",
-    "XML 处理器（通过 yq）"
-  ],
-  [
-    "XML linter and formatter",
-    "XML 检查器和格式化器"
-  ],
-  [
-    "JSON pretty printer",
-    "JSON 美化打印"
-  ],
-  [
-    "Python JSON formatter",
-    "Python JSON 格式化器"
-  ],
-  [
-    "Send ICMP echo requests",
-    "发送 ICMP echo 请求"
-  ],
-  [
-    "Trace packet route to host",
-    "追踪到主机的数据包路由"
-  ],
-  [
-    "Trace path to host",
-    "追踪到主机的路径"
-  ],
-  [
-    "Network diagnostic tool",
-    "网络诊断工具"
-  ],
-  [
-    "DNS lookup utility",
-    "DNS 查询工具"
-  ],
-  [
-    "Query DNS servers",
-    "查询 DNS 服务器"
-  ],
-  [
-    "Network statistics",
-    "网络统计"
-  ],
-  [
-    "Socket statistics",
-    "套接字统计"
-  ],
-  [
-    "IP address/link/route information",
-    "IP 地址/链路/路由信息"
-  ],
-  [
-    "Network interface configuration (read)",
-    "网络接口配置（只读）"
-  ],
-  [
-    "Node.js version",
-    "Node.js 版本"
-  ],
-  [
-    "npm version",
-    "npm 版本"
-  ],
-  [
-    "Yarn version",
-    "Yarn 版本"
-  ],
-  [
-    "pnpm version",
-    "pnpm 版本"
-  ],
-  [
-    "Bun version",
-    "Bun 版本"
-  ],
-  [
-    "Python version",
-    "Python 版本"
-  ],
-  [
-    "Python 3 version",
-    "Python 3 版本"
-  ],
-  [
-    "Ruby version",
-    "Ruby 版本"
-  ],
-  [
-    "Go version",
-    "Go 版本"
-  ],
-  [
-    "Rust compiler version",
-    "Rust 编译器版本"
-  ],
-  [
-    "Cargo version",
-    "Cargo 版本"
-  ],
-  [
-    "Java version",
-    "Java 版本"
-  ],
-  [
-    ".NET version",
-    ".NET 版本"
-  ],
-  [
-    "PHP version",
-    "PHP 版本"
-  ],
-  [
-    "Perl version",
-    "Perl 版本"
-  ],
-  [
-    "Display manual pages",
-    "显示手册页"
   ],
   [
     "Display command help",
@@ -2804,19 +2524,555 @@
     "显示命令帮助（短选项）"
   ],
   [
-    "Search operations across MCP sources",
-    "MCP 源的搜索操作"
+    "Display CPU architecture information",
+    "显示 CPU 架构信息"
   ],
   [
-    "Generic list operations",
-    "通用列表操作"
+    "Display directory tree structure",
+    "显示目录树结构"
+  ],
+  [
+    "Display file status and metadata",
+    "显示文件状态和元数据"
+  ],
+  [
+    "Display information about command type",
+    "显示命令类型信息"
+  ],
+  [
+    "Display manual pages",
+    "显示手册页"
+  ],
+  [
+    "Display memory information",
+    "显示内存信息"
+  ],
+  [
+    "Display memory usage",
+    "显示内存使用情况"
+  ],
+  [
+    "DNS 查询工具",
+    ""
+  ],
+  [
+    "DNS lookup utility",
+    "DNS 查询工具"
+  ],
+  [
+    "Docker 读取操作：列出容器、镜像、日志、检查",
+    ""
+  ],
+  [
+    "Docker Compose (v2) 读取操作",
+    ""
+  ],
+  [
+    "Docker Compose (v2) read operations",
+    "Docker Compose (v2) 读取操作"
+  ],
+  [
+    "Docker Compose 读取操作：列出服务、查看日志",
+    ""
+  ],
+  [
+    "Docker Compose read operations: list services, view logs",
+    "Docker Compose 读取操作：列出服务、查看日志"
+  ],
+  [
+    "Docker read operations: list containers, images, logs, inspect",
+    "Docker 读取操作：列出容器、镜像、日志、检查"
+  ],
+  [
+    "Echo environment variable values",
+    "输出环境变量值"
+  ],
+  [
+    "Estimate file/directory disk usage",
+    "估算文件/目录磁盘使用量"
+  ],
+  [
+    "Fast and user-friendly find alternative",
+    "快速且用户友好的 find 替代品"
+  ],
+  [
+    "Find files by name using database",
+    "使用数据库按名称查找文件"
+  ],
+  [
+    "Fuzzy finder for files and commands",
+    "文件和命令的模糊查找器"
   ],
   [
     "Generic get/read operations",
     "通用获取/读取操作"
   ],
   [
+    "Generic list operations",
+    "通用列表操作"
+  ],
+  [
     "Generic read operations",
     "通用读取操作"
+  ],
+  [
+    "Git 只读操作（支持 -C、--no-pager 等子命令前的选项）",
+    ""
+  ],
+  [
+    "Git read-only operations (supports flags like -C, --no-pager before subcommand)",
+    "Git 只读操作（支持 -C、--no-pager 等子命令前的选项）"
+  ],
+  [
+    "GitHub API 使用明确的 GET 方法",
+    ""
+  ],
+  [
+    "GitHub API 无方法参数（默认为 GET）",
+    ""
+  ],
+  [
+    "GitHub API with explicit GET method",
+    "GitHub API 使用明确的 GET 方法"
+  ],
+  [
+    "GitHub API without method (defaults to GET)",
+    "GitHub API 无方法参数（默认为 GET）"
+  ],
+  [
+    "GitHub CLI 读取操作：查看 PR、Issue、Release",
+    ""
+  ],
+  [
+    "GitHub CLI read operations: view PRs, issues, releases",
+    "GitHub CLI 读取操作：查看 PR、Issue、Release"
+  ],
+  [
+    "Go 版本",
+    ""
+  ],
+  [
+    "Go 读取操作：列出模块、依赖图",
+    ""
+  ],
+  [
+    "Go read operations: list modules, dependency graph",
+    "Go 读取操作：列出模块、依赖图"
+  ],
+  [
+    "Go version",
+    "Go 版本"
+  ],
+  [
+    "https://example.com/avatar.png",
+    ""
+  ],
+  [
+    "I/O 统计",
+    ""
+  ],
+  [
+    "I/O statistics",
+    "I/O 统计"
+  ],
+  [
+    "Interactive process viewer",
+    "交互式进程查看器"
+  ],
+  [
+    "IP 地址/链路/路由信息",
+    ""
+  ],
+  [
+    "IP address/link/route information",
+    "IP 地址/链路/路由信息"
+  ],
+  [
+    "Java 版本",
+    ""
+  ],
+  [
+    "Java version",
+    "Java 版本"
+  ],
+  [
+    "JSON 处理器",
+    ""
+  ],
+  [
+    "JSON 美化打印",
+    ""
+  ],
+  [
+    "JSON pretty printer",
+    "JSON 美化打印"
+  ],
+  [
+    "JSON processor",
+    "JSON 处理器"
+  ],
+  [
+    "Kubernetes 读取操作：获取资源、描述、查看日志",
+    ""
+  ],
+  [
+    "Kubernetes read operations: get resources, describe, view logs",
+    "Kubernetes 读取操作：获取资源、描述、查看日志"
+  ],
+  [
+    "List all including hidden (ls -la alias)",
+    "列出所有文件（包括隐藏文件，ls -la 别名）"
+  ],
+  [
+    "List block devices",
+    "列出块设备"
+  ],
+  [
+    "List directory contents",
+    "列出目录内容"
+  ],
+  [
+    "List PCI devices",
+    "列出 PCI 设备"
+  ],
+  [
+    "List running processes",
+    "列出正在运行的进程"
+  ],
+  [
+    "List USB devices",
+    "列出 USB 设备"
+  ],
+  [
+    "Locate a command",
+    "定位命令"
+  ],
+  [
+    "Locate binary, source, manual for command",
+    "定位命令的二进制文件、源码和手册"
+  ],
+  [
+    "Long listing (ls -l alias)",
+    "长格式列表（ls -l 别名）"
+  ],
+  [
+    "MCP 服务",
+    ""
+  ],
+  [
+    "MCP 源的搜索操作",
+    ""
+  ],
+  [
+    "Network diagnostic tool",
+    "网络诊断工具"
+  ],
+  [
+    "Network interface configuration (read)",
+    "网络接口配置（只读）"
+  ],
+  [
+    "Network statistics",
+    "网络统计"
+  ],
+  [
+    "Node.js 版本",
+    ""
+  ],
+  [
+    "Node.js version",
+    "Node.js 版本"
+  ],
+  [
+    "npm 版本",
+    ""
+  ],
+  [
+    "npm 读取操作：列出包、查看信息、检查过时包",
+    ""
+  ],
+  [
+    "npm read operations: list packages, view info, check outdated",
+    "npm 读取操作：列出包、查看信息、检查过时包"
+  ],
+  [
+    "npm version",
+    "npm 版本"
+  ],
+  [
+    "Output first part of files",
+    "输出文件开头部分"
+  ],
+  [
+    "Output last part of files",
+    "输出文件结尾部分"
+  ],
+  [
+    "Perl 版本",
+    ""
+  ],
+  [
+    "Perl version",
+    "Perl 版本"
+  ],
+  [
+    "PHP 版本",
+    ""
+  ],
+  [
+    "PHP version",
+    "PHP 版本"
+  ],
+  [
+    "pip 读取操作：列出包、显示信息",
+    ""
+  ],
+  [
+    "pip read operations: list packages, show info",
+    "pip 读取操作：列出包、显示信息"
+  ],
+  [
+    "pip3 读取操作：列出包、显示信息",
+    ""
+  ],
+  [
+    "pip3 read operations: list packages, show info",
+    "pip3 读取操作：列出包、显示信息"
+  ],
+  [
+    "pnpm 版本",
+    ""
+  ],
+  [
+    "pnpm 读取操作：列出包、检查过时包",
+    ""
+  ],
+  [
+    "pnpm read operations: list packages, check outdated",
+    "pnpm 读取操作：列出包、检查过时包"
+  ],
+  [
+    "pnpm version",
+    "pnpm 版本"
+  ],
+  [
+    "Print all environment variables (bare command only, not env <cmd>)",
+    "打印所有环境变量（仅限单独命令，不是 env <cmd>）"
+  ],
+  [
+    "Print current date and time",
+    "打印当前日期和时间"
+  ],
+  [
+    "Print current username",
+    "打印当前用户名"
+  ],
+  [
+    "Print current working directory",
+    "打印当前工作目录"
+  ],
+  [
+    "Print environment variables",
+    "打印环境变量"
+  ],
+  [
+    "Print group memberships",
+    "打印组成员资格"
+  ],
+  [
+    "Print system hostname",
+    "打印系统主机名"
+  ],
+  [
+    "Print system information",
+    "打印系统信息"
+  ],
+  [
+    "Print system uptime and load",
+    "打印系统运行时间和负载"
+  ],
+  [
+    "Print user and group IDs",
+    "打印用户和组 ID"
+  ],
+  [
+    "Process viewer in batch/list mode only",
+    "仅批量/列表模式下的进程查看器"
+  ],
+  [
+    "Python 3 版本",
+    ""
+  ],
+  [
+    "Python 3 version",
+    "Python 3 版本"
+  ],
+  [
+    "Python 版本",
+    ""
+  ],
+  [
+    "Python JSON 格式化器",
+    ""
+  ],
+  [
+    "Python JSON formatter",
+    "Python JSON 格式化器"
+  ],
+  [
+    "Python version",
+    "Python 版本"
+  ],
+  [
+    "Query DNS servers",
+    "查询 DNS 服务器"
+  ],
+  [
+    "Read GitHub CLI configuration",
+    "读取 GitHub CLI 配置"
+  ],
+  [
+    "Remove sections from lines",
+    "从行中删除部分内容"
+  ],
+  [
+    "Report filesystem disk space usage",
+    "报告文件系统磁盘空间使用情况"
+  ],
+  [
+    "Report or filter repeated lines",
+    "报告或过滤重复行"
+  ],
+  [
+    "Ripgrep - 快速递归搜索",
+    ""
+  ],
+  [
+    "Ripgrep - fast recursive search",
+    "Ripgrep - 快速递归搜索"
+  ],
+  [
+    "Ruby 版本",
+    ""
+  ],
+  [
+    "Ruby version",
+    "Ruby 版本"
+  ],
+  [
+    "RubyGems 读取操作：列出 gem、显示信息",
+    ""
+  ],
+  [
+    "RubyGems read operations: list gems, show info",
+    "RubyGems 读取操作：列出 gem、显示信息"
+  ],
+  [
+    "Rust 编译器版本",
+    ""
+  ],
+  [
+    "Rust compiler version",
+    "Rust 编译器版本"
+  ],
+  [
+    "Search file contents with patterns",
+    "使用模式搜索文件内容"
+  ],
+  [
+    "Search for files in directory hierarchy",
+    "在目录层次结构中搜索文件"
+  ],
+  [
+    "Search operations across MCP sources",
+    "MCP 源的搜索操作"
+  ],
+  [
+    "sed 仅打印模式（不编辑）",
+    ""
+  ],
+  [
+    "sed in print-only mode (no editing)",
+    "sed 仅打印模式（不编辑）"
+  ],
+  [
+    "Send ICMP echo requests",
+    "发送 ICMP echo 请求"
+  ],
+  [
+    "Silver Searcher - 快速代码搜索",
+    ""
+  ],
+  [
+    "Socket statistics",
+    "套接字统计"
+  ],
+  [
+    "Sort lines of text files",
+    "对文本文件行进行排序"
+  ],
+  [
+    "The Silver Searcher - fast code search",
+    "Silver Searcher - 快速代码搜索"
+  ],
+  [
+    "Trace packet route to host",
+    "追踪到主机的数据包路由"
+  ],
+  [
+    "Trace path to host",
+    "追踪到主机的路径"
+  ],
+  [
+    "Translate or delete characters",
+    "转换或删除字符"
+  ],
+  [
+    "View file contents with paging",
+    "分页查看文件内容"
+  ],
+  [
+    "Virtual memory statistics",
+    "虚拟内存统计"
+  ],
+  [
+    "XML 处理器（通过 yq）",
+    ""
+  ],
+  [
+    "XML 检查器和格式化器",
+    ""
+  ],
+  [
+    "XML linter and formatter",
+    "XML 检查器和格式化器"
+  ],
+  [
+    "XML processor (via yq)",
+    "XML 处理器（通过 yq）"
+  ],
+  [
+    "YAML 处理器",
+    ""
+  ],
+  [
+    "YAML processor",
+    "YAML 处理器"
+  ],
+  [
+    "Yarn 版本",
+    ""
+  ],
+  [
+    "Yarn 读取操作：列出包、检查过时包",
+    ""
+  ],
+  [
+    "Yarn read operations: list packages, check outdated",
+    "Yarn 读取操作：列出包、检查过时包"
+  ],
+  [
+    "Yarn version",
+    "Yarn 版本"
   ]
 ]

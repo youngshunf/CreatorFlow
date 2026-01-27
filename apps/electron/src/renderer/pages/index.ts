@@ -10,6 +10,7 @@ export { default as SourceInfoPage } from './SourceInfoPage'
 // Settings pages
 export {
   SettingsNavigator,
+  UserProfilePage,
   AppSettingsPage,
   WorkspaceSettingsPage,
   PermissionsSettingsPage,
