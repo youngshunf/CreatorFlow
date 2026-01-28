@@ -93,8 +93,8 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
 
   // Settings navigator
   if (first === 'settings') {
-    const subpage = (segments[1] || 'app') as SettingsSubpage
-    const validSubpages: SettingsSubpage[] = ['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences']
+    const subpage = (segments[1] || 'user-profile') as SettingsSubpage
+    const validSubpages: SettingsSubpage[] = ['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile']
     if (!validSubpages.includes(subpage)) return null
     return {
       navigator: 'settings',
@@ -214,8 +214,8 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
  */
 export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
   if (parsed.navigator === 'settings') {
-    const detailsType = parsed.details?.type || 'app'
-    return detailsType === 'app' ? 'settings' : `settings/${detailsType}`
+    const detailsType = parsed.details?.type || 'user-profile'
+    return detailsType === 'user-profile' ? 'settings' : `settings/${detailsType}`
   }
 
   if (parsed.navigator === 'sources') {
@@ -322,8 +322,8 @@ export function parseRoute(route: string): ParsedRoute | null {
 function convertCompoundToViewRoute(compound: ParsedCompoundRoute): ParsedRoute {
   // Settings
   if (compound.navigator === 'settings') {
-    const subpage = compound.details?.type || 'app'
-    if (subpage === 'app') {
+    const subpage = compound.details?.type || 'user-profile'
+    if (subpage === 'user-profile') {
       return { type: 'view', name: 'settings', params: {} }
     }
     return { type: 'view', name: subpage, params: {} }
@@ -431,7 +431,7 @@ export function parseRouteToNavigationState(
 function convertCompoundToNavigationState(compound: ParsedCompoundRoute): NavigationState {
   // Settings
   if (compound.navigator === 'settings') {
-    const subpage = (compound.details?.type || 'app') as SettingsSubpage
+    const subpage = (compound.details?.type || 'user-profile') as SettingsSubpage
     return { navigator: 'settings', subpage }
   }
 
@@ -489,7 +489,9 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
 
   switch (parsed.name) {
     case 'settings':
-      return { navigator: 'settings', subpage: 'app' }
+      return { navigator: 'settings', subpage: 'user-profile' }
+    case 'user-profile':
+      return { navigator: 'settings', subpage: 'user-profile' }
     case 'workspace':
       return { navigator: 'settings', subpage: 'workspace' }
     case 'permissions':
@@ -500,6 +502,8 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
       return { navigator: 'settings', subpage: 'shortcuts' }
     case 'preferences':
       return { navigator: 'settings', subpage: 'preferences' }
+    case 'app':
+      return { navigator: 'settings', subpage: 'app' }
     case 'sources':
       return { navigator: 'sources', details: null }
     case 'source-info':

@@ -1217,10 +1217,10 @@ export const parseNavigationStateKey = (key: string): NavigationState | null => 
   }
 
   // Handle settings
-  if (key === 'settings') return { navigator: 'settings', subpage: 'app' }
+  if (key === 'settings') return { navigator: 'settings', subpage: 'user-profile' }
   if (key.startsWith('settings:')) {
     const subpage = key.slice(9) as SettingsSubpage
-    if (['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences'].includes(subpage)) {
+    if (['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile'].includes(subpage)) {
       return { navigator: 'settings', subpage }
     }
   }

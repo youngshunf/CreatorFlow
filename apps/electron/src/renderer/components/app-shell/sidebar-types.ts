@@ -64,11 +64,11 @@ export const parseSidebarModeKey = (key: string): SidebarMode | null => {
   }
   if (key.startsWith('settings:')) {
     const subpage = key.slice(9) as SettingsSubpage
-    if (['app', 'workspace', 'shortcuts', 'preferences'].includes(subpage)) {
+    if (['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile'].includes(subpage)) {
       return { type: 'settings', subpage }
     }
   }
-  if (key === 'settings') return { type: 'settings', subpage: 'app' }
+  if (key === 'settings') return { type: 'settings', subpage: 'user-profile' }
   return null
 }
 
