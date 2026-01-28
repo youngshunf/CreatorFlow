@@ -39,7 +39,7 @@ export const userApi = {
    * 获取当前用户信息
    */
   getCurrentUser: () => {
-    return request.get<UserProfile>('/admin/v1/users/me');
+    return request.get<UserProfile>('/sys/users/me');
   },
 
   /**
@@ -47,6 +47,6 @@ export const userApi = {
    * @param data 用户资料数据
    */
   updateProfile: (data: UpdateUserProfileParams) => {
-    return request.put('/admin/v1/users/me/profile', data);
+    return request.put('/sys/users/me/profile', data);
   },
 };

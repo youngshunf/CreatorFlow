@@ -1114,7 +1114,7 @@ function AppShellContent({
   }, [])
 
   // Handler for settings view
-  const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'app') => {
+  const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
     navigate(routes.view.settings(subpage))
   }, [])
 
@@ -1307,7 +1307,7 @@ function AppShellContent({
     // 3. Sources, Skills, Settings
     result.push({ id: 'nav:sources', type: 'nav', action: handleSourcesClick })
     result.push({ id: 'nav:skills', type: 'nav', action: handleSkillsClick })
-    result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('app') })
+    result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
 
     return result
   }, [handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleSettingsClick])

@@ -148,10 +148,10 @@ export default function UserProfilePage() {
                 <SettingsSelect
                   label={t('性别')}
                   description={t('您的性别')}
-                  value={profile.gender || ''}
-                  onValueChange={(v) => updateField('gender', v)}
+                  value={profile.gender || 'unset'}
+                  onValueChange={(v) => updateField('gender', v === 'unset' ? '' : v)}
                   options={[
-                    { value: '', label: t('未设置') },
+                    { value: 'unset', label: t('未设置') },
                     { value: 'male', label: t('男') },
                     { value: 'female', label: t('女') },
                     { value: 'other', label: t('其他') },
