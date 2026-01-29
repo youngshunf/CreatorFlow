@@ -297,6 +297,37 @@ const api: ElectronAPI = {
     }
   },
 
+  // Marketplace
+  marketplaceListSkills: (options?: import('@creator-flow/shared/marketplace').ListSkillsOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_SKILLS, options),
+  marketplaceGetSkill: (skillId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_SKILL, skillId),
+  marketplaceListApps: (options?: import('@creator-flow/shared/marketplace').ListAppsOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_APPS, options),
+  marketplaceGetApp: (appId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_APP, appId),
+  marketplaceListCategories: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES),
+  marketplaceSearch: (query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_SEARCH, query, options),
+  marketplaceInstallSkill: (workspaceId: string, skillId: string, version?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_INSTALL_SKILL, workspaceId, skillId, version),
+  marketplaceUpdateSkill: (workspaceId: string, skillId: string, version?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_UPDATE_SKILL, workspaceId, skillId, version),
+  marketplaceCheckUpdates: (workspaceId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_CHECK_UPDATES, workspaceId),
+  marketplaceGetInstalled: (workspaceId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_INSTALLED, workspaceId),
+  onMarketplaceInstallProgress: (callback: (progress: import('@creator-flow/shared/marketplace').InstallProgress) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, progress: import('@creator-flow/shared/marketplace').InstallProgress) => {
+      callback(progress)
+    }
+    ipcRenderer.on(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, handler)
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, handler)
+    }
+  },
+
   // Statuses change listener (live updates when statuses config or icon files change)
   onStatusesChanged: (callback: (workspaceId: string) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, workspaceId: string) => {

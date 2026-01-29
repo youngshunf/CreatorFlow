@@ -55,17 +55,49 @@ const DEFAULT_CONFIG: Record<AppEnvironment, Omit<EnvConfig, 'env'>> = {
 };
 
 /**
+ * Get Vite environment variables safely
+ * 
+ * This function is designed to work around esbuild warnings about import.meta
+ * in CJS output. We use Function constructor to dynamically access import.meta
+ * which prevents esbuild from statically analyzing and warning about it.
+ */
+function getViteEnv(): Record<string, string> | undefined {
+  // Only attempt in browser/renderer context
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  
+  try {
+    // Use indirect eval to access import.meta without triggering esbuild warning
+    // This is safe because it only runs in the browser context where ESM is used
+    // eslint-disable-next-line no-new-func
+    const getImportMeta = new Function('return typeof import.meta !== "undefined" ? import.meta : undefined');
+    const meta = getImportMeta();
+    return meta?.env;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Get environment variable value (works in both Vite and Node.js)
+ * 
+ * Priority:
+ * 1. process.env (Node.js / Electron main process)
+ * 2. import.meta.env (Vite / browser renderer)
  */
 function getEnvVar(key: string): string | undefined {
-  // Vite environment (browser/renderer)
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
-    return (import.meta as any).env[key];
-  }
-  // Node.js environment (main process)
+  // Node.js / Electron main process environment
   if (typeof process !== 'undefined' && process.env) {
     return process.env[key];
   }
+  
+  // Vite environment (browser/renderer)
+  const viteEnv = getViteEnv();
+  if (viteEnv) {
+    return viteEnv[key];
+  }
+  
   return undefined;
 }
 

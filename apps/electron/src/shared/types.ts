@@ -687,6 +687,19 @@ export const IPC_CHANNELS = {
   SKILLS_OPEN_FINDER: 'skills:openFinder',
   SKILLS_CHANGED: 'skills:changed',
 
+  // Marketplace (cloud skill/app market)
+  MARKETPLACE_LIST_SKILLS: 'marketplace:listSkills',
+  MARKETPLACE_GET_SKILL: 'marketplace:getSkill',
+  MARKETPLACE_LIST_APPS: 'marketplace:listApps',
+  MARKETPLACE_GET_APP: 'marketplace:getApp',
+  MARKETPLACE_LIST_CATEGORIES: 'marketplace:listCategories',
+  MARKETPLACE_SEARCH: 'marketplace:search',
+  MARKETPLACE_INSTALL_SKILL: 'marketplace:installSkill',
+  MARKETPLACE_UPDATE_SKILL: 'marketplace:updateSkill',
+  MARKETPLACE_CHECK_UPDATES: 'marketplace:checkUpdates',
+  MARKETPLACE_GET_INSTALLED: 'marketplace:getInstalled',
+  MARKETPLACE_INSTALL_PROGRESS: 'marketplace:installProgress',  // Broadcast event
+
   // Status management (workspace-scoped)
   STATUSES_LIST: 'statuses:list',
   STATUSES_REORDER: 'statuses:reorder',  // Reorder statuses (drag-and-drop)
@@ -970,6 +983,19 @@ export interface ElectronAPI {
   // Skills change listener (live updates when skills are added/removed/modified)
   onSkillsChanged(callback: (skills: LoadedSkill[]) => void): () => void
 
+  // Marketplace
+  marketplaceListSkills(options?: import('@creator-flow/shared/marketplace').ListSkillsOptions): Promise<import('@creator-flow/shared/marketplace').ListSkillsResult>
+  marketplaceGetSkill(skillId: string): Promise<import('@creator-flow/shared/marketplace').GetSkillResult>
+  marketplaceListApps(options?: import('@creator-flow/shared/marketplace').ListAppsOptions): Promise<import('@creator-flow/shared/marketplace').ListAppsResult>
+  marketplaceGetApp(appId: string): Promise<import('@creator-flow/shared/marketplace').GetAppResult>
+  marketplaceListCategories(): Promise<import('@creator-flow/shared/marketplace').MarketplaceCategory[]>
+  marketplaceSearch(query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions): Promise<import('@creator-flow/shared/marketplace').SearchResult>
+  marketplaceInstallSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
+  marketplaceUpdateSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
+  marketplaceCheckUpdates(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').UpdateCheckResult>
+  marketplaceGetInstalled(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').InstalledSkillInfo[]>
+  onMarketplaceInstallProgress(callback: (progress: import('@creator-flow/shared/marketplace').InstallProgress) => void): () => void
+
   // Statuses (workspace-scoped)
   listStatuses(workspaceId: string): Promise<import('@creator-flow/shared/statuses').StatusConfig[]>
   reorderStatuses(workspaceId: string, orderedIds: string[]): Promise<void>
@@ -1214,6 +1240,31 @@ export interface FilesNavigationState {
 }
 
 /**
+ * Marketplace filter for filtering marketplace items (skills or apps)
+ */
+export interface MarketplaceFilter {
+  kind: 'all' | 'skills' | 'apps' | 'category'
+  /** Category ID when kind is 'category' */
+  categoryId?: string
+}
+
+/**
+ * Marketplace navigation state - shows cloud marketplace skills/apps
+ */
+export interface MarketplaceNavigationState {
+  navigator: 'marketplace'
+  /** Filter for marketplace items */
+  filter: MarketplaceFilter
+  /** Selected item details, or null for empty state */
+  details: 
+    | { type: 'skill'; skillId: string } 
+    | { type: 'app'; appId: string } 
+    | null
+  /** Optional right sidebar panel state */
+  rightSidebar?: RightSidebarPanel
+}
+
+/**
  * Unified navigation state - single source of truth for all 3 panels
  *
  * From this state we can derive:
@@ -1227,6 +1278,7 @@ export type NavigationState =
   | SettingsNavigationState
   | SkillsNavigationState
   | FilesNavigationState
+  | MarketplaceNavigationState
 
 /**
  * Type guard to check if state is chats navigation
@@ -1262,6 +1314,13 @@ export const isSkillsNavigation = (
 export const isFilesNavigation = (
   state: NavigationState
 ): state is FilesNavigationState => state.navigator === 'files'
+
+/**
+ * Type guard to check if state is marketplace navigation
+ */
+export const isMarketplaceNavigation = (
+  state: NavigationState
+): state is MarketplaceNavigationState => state.navigator === 'marketplace'
 
 /**
  * Default navigation state - allChats with no selection

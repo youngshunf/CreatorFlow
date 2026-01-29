@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Home,
   Files,
+  Store,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -105,6 +106,7 @@ import {
   type NavigationState,
   type ChatFilter,
 } from "@/contexts/NavigationContext"
+import { isMarketplaceNavigation } from "../../../shared/types"
 import type { SettingsSubpage } from "../../../shared/types"
 import { SourcesListPanel } from "./SourcesListPanel"
 import { SkillsListPanel } from "./SkillsListPanel"
@@ -113,6 +115,7 @@ import { EditPopover, getEditConfig, type EditContextKey } from "@/components/ui
 import { getDocUrl } from "@creator-flow/shared/docs/doc-links"
 import SettingsNavigator from "@/pages/settings/SettingsNavigator"
 import { RightSidebar } from "./RightSidebar"
+import { MarketplaceListPanel } from "./MarketplaceListPanel"
 import type { RichTextInputHandle } from "@/components/ui/rich-text-input"
 import { hasOpenOverlay } from "@/lib/overlay-detection"
 import { clearSourceIconCaches } from "@/lib/icon-cache"
@@ -192,8 +195,17 @@ function FilterMenuRow({
     <>
       {noIconContainer ? (
         // Wrapper for color inheritance. Clone icon to add bare prop (removes EntityIcon container).
+        // Only pass bare to EntityIcon-based components (StatusIcon, etc.) that support it.
         <span style={iconStyle}>
-          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ bare?: boolean }>, { bare: true }) : icon}
+          {(() => {
+            if (!React.isValidElement(icon)) return icon
+            const elementType = icon.type as { displayName?: string; name?: string }
+            const typeName = elementType?.displayName || elementType?.name || ''
+            const supportsBare = typeName.includes('Icon') || typeName.includes('Avatar') || typeName === 'EntityIcon'
+            return supportsBare
+              ? React.cloneElement(icon as React.ReactElement<{ bare?: boolean }>, { bare: true })
+              : icon
+          })()}
         </span>
       ) : (
         <span
@@ -1130,6 +1142,11 @@ function AppShellContent({
     navigate(routes.view.files())
   }, [])
 
+  // Handler for marketplace view
+  const handleMarketplaceClick = useCallback(() => {
+    navigate(routes.view.marketplace())
+  }, [])
+
   // Handler for settings view
   const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
     navigate(routes.view.settings(subpage))
@@ -1324,14 +1341,15 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Sources, Skills, Files, Settings
+    // 3. Sources, Skills, Files, Marketplace, Settings
     result.push({ id: 'nav:sources', type: 'nav', action: handleSourcesClick })
     result.push({ id: 'nav:skills', type: 'nav', action: handleSkillsClick })
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
+    result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
 
     return result
-  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleSettingsClick])
+  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSettingsClick])
 
   // Toggle folder expanded state
   const handleToggleFolder = React.useCallback((path: string) => {
@@ -1465,6 +1483,11 @@ function AppShellContent({
     // Skills navigator
     if (isSkillsNavigation(navState)) {
       return t('所有技能')
+    }
+
+    // Marketplace navigator
+    if (isMarketplaceNavigation(navState)) {
+      return t('市场')
     }
 
     // Settings navigator
@@ -1785,6 +1808,13 @@ function AppShellContent({
                       icon: Files,
                       variant: isFilesNavigation(navState) ? "default" : "ghost",
                       onClick: handleFilesClick,
+                    },
+                    {
+                      id: "nav:marketplace",
+                      title: t('市场'),
+                      icon: Store,
+                      variant: isMarketplaceNavigation(navState) ? "default" : "ghost",
+                      onClick: handleMarketplaceClick,
                     },
                     // --- Separator ---
                     { id: "separator:skills-settings", type: "separator" },
@@ -2200,6 +2230,33 @@ function AppShellContent({
               <SettingsNavigator
                 selectedSubpage={navState.subpage}
                 onSelectSubpage={(subpage) => handleSettingsClick(subpage)}
+              />
+            )}
+            {isMarketplaceNavigation(navState) && activeWorkspaceId && (
+              /* Marketplace List */
+              <MarketplaceListPanel
+                filter={navState.filter}
+                onFilterChange={(filter) => {
+                  // Update filter via navigation
+                  if (filter.kind === 'all') {
+                    navigate(routes.view.marketplace())
+                  } else if (filter.kind === 'skills') {
+                    navigate(routes.view.marketplaceSkills())
+                  } else if (filter.kind === 'apps') {
+                    navigate(routes.view.marketplaceApps())
+                  } else if (filter.kind === 'category' && filter.categoryId) {
+                    navigate(routes.view.marketplace({ filter: 'category', categoryId: filter.categoryId }))
+                  }
+                }}
+                onSkillClick={(skillId) => {
+                  navigate(routes.view.marketplace({ skillId }))
+                }}
+                onAppClick={(appId) => {
+                  navigate(routes.view.marketplace({ appId }))
+                }}
+                selectedSkillId={isMarketplaceNavigation(navState) && navState.details?.type === 'skill' ? navState.details.skillId : null}
+                selectedAppId={isMarketplaceNavigation(navState) && navState.details?.type === 'app' ? navState.details.appId : null}
+                workspaceId={activeWorkspaceId}
               />
             )}
             {isChatsNavigation(navState) && (

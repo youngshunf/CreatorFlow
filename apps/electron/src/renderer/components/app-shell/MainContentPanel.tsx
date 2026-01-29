@@ -28,8 +28,10 @@ import {
   isFilesNavigation,
   routes,
 } from '@/contexts/NavigationContext'
+import { isMarketplaceNavigation } from '../../../shared/types'
 import { UserProfilePage, UserProfileEditPage, AppSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
+import { MarketplaceInfoPage } from '@/pages/MarketplaceInfoPage'
 import { FileManager } from '@/components/file-manager'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { toast } from 'sonner'
@@ -207,6 +209,29 @@ export function MainContentPanel({
           rootPath={workspaceRoot}
           className="h-full"
         />
+      </Panel>
+    )
+  }
+
+  // Marketplace navigator - show skill/app details or empty state
+  if (isMarketplaceNavigation(navState)) {
+    if (navState.details) {
+      return wrapWithStoplight(
+        <Panel variant="grow" className={className}>
+          <MarketplaceInfoPage
+            type={navState.details.type}
+            itemId={navState.details.type === 'skill' ? navState.details.skillId : navState.details.appId}
+            workspaceId={activeWorkspaceId || undefined}
+          />
+        </Panel>
+      )
+    }
+    // No item selected - empty state
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">{t('从市场中选择技能或应用查看详情')}</p>
+        </div>
       </Panel>
     )
   }

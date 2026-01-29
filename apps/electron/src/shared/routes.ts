@@ -159,6 +159,32 @@ export const routes = {
         ? `files?path=${encodeURIComponent(path)}` as const
         : 'files' as const,
 
+    /** Marketplace view (cloud skill/app marketplace) */
+    marketplace: (params?: { filter?: 'skills' | 'apps' | 'category'; categoryId?: string; skillId?: string; appId?: string }) => {
+      const { filter, categoryId, skillId, appId } = params ?? {}
+      // Build base from filter
+      let base = 'marketplace'
+      if (filter === 'skills') base = 'marketplace/skills'
+      else if (filter === 'apps') base = 'marketplace/apps'
+      else if (filter === 'category' && categoryId) base = `marketplace/category/${categoryId}`
+      // Add selection
+      if (skillId) return `${base}/skill/${skillId}` as const
+      if (appId) return `${base}/app/${appId}` as const
+      return base as 'marketplace' | `marketplace/${'skills' | 'apps'}` | `marketplace/category/${string}`
+    },
+
+    /** Marketplace skills list view */
+    marketplaceSkills: (skillId?: string) =>
+      skillId
+        ? `marketplace/skills/skill/${skillId}` as const
+        : 'marketplace/skills' as const,
+
+    /** Marketplace apps list view */
+    marketplaceApps: (appId?: string) =>
+      appId
+        ? `marketplace/apps/app/${appId}` as const
+        : 'marketplace/apps' as const,
+
     /** Settings view (settings navigator) */
     settings: (subpage?: 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription') =>
       subpage && subpage !== 'user-profile'

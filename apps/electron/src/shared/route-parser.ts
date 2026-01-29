@@ -16,6 +16,7 @@ import type {
   SettingsSubpage,
   RightSidebarPanel,
   FilesNavigationState,
+  MarketplaceFilter,
 } from './types'
 
 // =============================================================================
@@ -35,7 +36,7 @@ export interface ParsedRoute {
 // Compound Route Types (new format)
 // =============================================================================
 
-export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files'
+export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files' | 'marketplace'
 
 export interface ParsedCompoundRoute {
   /** The navigator type */
@@ -44,6 +45,8 @@ export interface ParsedCompoundRoute {
   chatFilter?: ChatFilter
   /** Source filter (only for sources navigator) */
   sourceFilter?: SourceFilter
+  /** Marketplace filter (only for marketplace navigator) */
+  marketplaceFilter?: MarketplaceFilter
   /** Details page info (null for empty state) */
   details: {
     type: string
@@ -59,7 +62,7 @@ export interface ParsedCompoundRoute {
  * Known prefixes that indicate a compound route
  */
 const COMPOUND_ROUTE_PREFIXES = [
-  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files'
+  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files', 'marketplace'
 ]
 
 /**
@@ -170,6 +173,79 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
     return { navigator: 'files', details: null }
   }
 
+  // Marketplace navigator - supports filter types (skills, apps, category)
+  if (first === 'marketplace') {
+    if (segments.length === 1) {
+      return { navigator: 'marketplace', marketplaceFilter: { kind: 'all' }, details: null }
+    }
+
+    // Check for type filter: marketplace/skills, marketplace/apps
+    if (segments[1] === 'skills') {
+      const marketplaceFilter: MarketplaceFilter = { kind: 'skills' }
+      // Check for skill selection: marketplace/skills/skill/{skillId}
+      if (segments[2] === 'skill' && segments[3]) {
+        return {
+          navigator: 'marketplace',
+          marketplaceFilter,
+          details: { type: 'skill', id: segments[3] },
+        }
+      }
+      return { navigator: 'marketplace', marketplaceFilter, details: null }
+    }
+
+    if (segments[1] === 'apps') {
+      const marketplaceFilter: MarketplaceFilter = { kind: 'apps' }
+      // Check for app selection: marketplace/apps/app/{appId}
+      if (segments[2] === 'app' && segments[3]) {
+        return {
+          navigator: 'marketplace',
+          marketplaceFilter,
+          details: { type: 'app', id: segments[3] },
+        }
+      }
+      return { navigator: 'marketplace', marketplaceFilter, details: null }
+    }
+
+    // Category filter: marketplace/category/{categoryId}
+    if (segments[1] === 'category' && segments[2]) {
+      const marketplaceFilter: MarketplaceFilter = { kind: 'category', categoryId: segments[2] }
+      // Check for skill/app selection: marketplace/category/{id}/skill/{skillId}
+      if (segments[3] === 'skill' && segments[4]) {
+        return {
+          navigator: 'marketplace',
+          marketplaceFilter,
+          details: { type: 'skill', id: segments[4] },
+        }
+      }
+      if (segments[3] === 'app' && segments[4]) {
+        return {
+          navigator: 'marketplace',
+          marketplaceFilter,
+          details: { type: 'app', id: segments[4] },
+        }
+      }
+      return { navigator: 'marketplace', marketplaceFilter, details: null }
+    }
+
+    // Direct selection without filter: marketplace/skill/{skillId} or marketplace/app/{appId}
+    if (segments[1] === 'skill' && segments[2]) {
+      return {
+        navigator: 'marketplace',
+        marketplaceFilter: { kind: 'all' },
+        details: { type: 'skill', id: segments[2] },
+      }
+    }
+    if (segments[1] === 'app' && segments[2]) {
+      return {
+        navigator: 'marketplace',
+        marketplaceFilter: { kind: 'all' },
+        details: { type: 'app', id: segments[2] },
+      }
+    }
+
+    return null
+  }
+
   // Chats navigator (allChats, flagged, state)
   let chatFilter: ChatFilter
   let detailsStartIndex: number
@@ -246,6 +322,20 @@ export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
   if (parsed.navigator === 'skills') {
     if (!parsed.details) return 'skills'
     return `skills/skill/${parsed.details.id}`
+  }
+
+  // Marketplace navigator
+  if (parsed.navigator === 'marketplace') {
+    // Build base from filter (marketplace, marketplace/skills, marketplace/apps, marketplace/category/{id})
+    let base = 'marketplace'
+    const mpFilter = parsed.marketplaceFilter
+    if (mpFilter) {
+      if (mpFilter.kind === 'skills') base = 'marketplace/skills'
+      else if (mpFilter.kind === 'apps') base = 'marketplace/apps'
+      else if (mpFilter.kind === 'category' && mpFilter.categoryId) base = `marketplace/category/${mpFilter.categoryId}`
+    }
+    if (!parsed.details) return base
+    return `${base}/${parsed.details.type}/${parsed.details.id}`
   }
 
   // Chats navigator
@@ -358,6 +448,16 @@ function convertCompoundToViewRoute(compound: ParsedCompoundRoute): ParsedRoute 
       return { type: 'view', name: 'skills', params: {} }
     }
     return { type: 'view', name: 'skill-info', id: compound.details.id, params: {} }
+  }
+
+  // Marketplace
+  if (compound.navigator === 'marketplace') {
+    if (!compound.details) {
+      return { type: 'view', name: 'marketplace', params: {} }
+    }
+    // marketplace-skill-info or marketplace-app-info based on details type
+    const name = compound.details.type === 'skill' ? 'marketplace-skill-info' : 'marketplace-app-info'
+    return { type: 'view', name, id: compound.details.id, params: {} }
   }
 
   // Chats
@@ -480,6 +580,28 @@ function convertCompoundToNavigationState(compound: ParsedCompoundRoute): Naviga
   // Files
   if (compound.navigator === 'files') {
     return { navigator: 'files' }
+  }
+
+  // Marketplace
+  if (compound.navigator === 'marketplace') {
+    const filter = compound.marketplaceFilter || { kind: 'all' as const }
+    if (compound.details) {
+      if (compound.details.type === 'skill') {
+        return {
+          navigator: 'marketplace',
+          filter,
+          details: { type: 'skill', skillId: compound.details.id },
+        }
+      }
+      if (compound.details.type === 'app') {
+        return {
+          navigator: 'marketplace',
+          filter,
+          details: { type: 'app', appId: compound.details.id },
+        }
+      }
+    }
+    return { navigator: 'marketplace', filter, details: null }
   }
 
   // Chats
@@ -616,6 +738,26 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
       return { navigator: 'chats', filter: { kind: 'allChats' }, details: null }
     case 'files':
       return { navigator: 'files', path: parsed.params.path }
+    case 'marketplace':
+      return { navigator: 'marketplace', filter: { kind: 'all' }, details: null }
+    case 'marketplace-skill-info':
+      if (parsed.id) {
+        return {
+          navigator: 'marketplace',
+          filter: { kind: 'all' },
+          details: { type: 'skill', skillId: parsed.id },
+        }
+      }
+      return { navigator: 'marketplace', filter: { kind: 'all' }, details: null }
+    case 'marketplace-app-info':
+      if (parsed.id) {
+        return {
+          navigator: 'marketplace',
+          filter: { kind: 'all' },
+          details: { type: 'app', appId: parsed.id },
+        }
+      }
+      return { navigator: 'marketplace', filter: { kind: 'all' }, details: null }
     default:
       return null
   }
@@ -654,6 +796,20 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
       return `files?path=${encodeURIComponent(state.path)}`
     }
     return 'files'
+  }
+
+  // Marketplace
+  if (state.navigator === 'marketplace') {
+    // Build base from filter (marketplace, marketplace/skills, marketplace/apps, marketplace/category/{id})
+    let base = 'marketplace'
+    const mpFilter = state.filter
+    if (mpFilter.kind === 'skills') base = 'marketplace/skills'
+    else if (mpFilter.kind === 'apps') base = 'marketplace/apps'
+    else if (mpFilter.kind === 'category' && mpFilter.categoryId) base = `marketplace/category/${mpFilter.categoryId}`
+    if (state.details) {
+      return `${base}/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
+    }
+    return base
   }
 
   // Chats
