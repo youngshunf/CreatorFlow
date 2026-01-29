@@ -65,4 +65,6 @@ export {
   CREATOR_MEDIA_APP,
   registerBundledApps,
   getBundledAppManifests,
+  getBundledAppSourcePath,
+  getAppAgentsFilePath,
 } from './bundled-apps.ts';

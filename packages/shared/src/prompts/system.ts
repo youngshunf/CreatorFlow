@@ -14,6 +14,18 @@ const MAX_CONTEXT_FILE_SIZE = 10 * 1024;
 /** Maximum number of context files to discover in monorepo */
 const MAX_CONTEXT_FILES = 30;
 
+/** Simple in-memory cache entry for project context file discovery (keyed by directory). */
+interface ProjectContextCacheEntry {
+  files: string[];
+  timestamp: number;
+}
+
+/** TTL for project context cache entries (5 minutes). */
+const PROJECT_CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/** In-memory cache map for project context files. */
+const PROJECT_CONTEXT_CACHE = new Map<string, ProjectContextCacheEntry>();
+
 /**
  * Directories to exclude when searching for context files.
  * These are common build output, dependency, and cache directories.
@@ -74,6 +86,19 @@ export function findProjectContextFile(directory: string): string | null {
  * Returns relative paths sorted by depth (root first), capped at MAX_CONTEXT_FILES.
  */
 export function findAllProjectContextFiles(directory: string): string[] {
+  // Try cache first to avoid repeated glob scans for the same directory
+  try {
+    const cacheKey = directory;
+    const now = Date.now();
+    const cached = PROJECT_CONTEXT_CACHE.get(cacheKey);
+    if (cached && now - cached.timestamp < PROJECT_CONTEXT_CACHE_TTL_MS) {
+      debug(`[findAllProjectContextFiles] Using cached results for ${directory}`);
+      return cached.files;
+    }
+  } catch {
+    // If cache check fails for any reason, fall through to fresh scan
+  }
+
   try {
     // Build glob ignore patterns from excluded directories
     const ignorePatterns = EXCLUDED_DIRECTORIES.map((dir) => `**/${dir}/**`);
@@ -104,6 +129,14 @@ export function findAllProjectContextFiles(directory: string): string[] {
     const capped = sorted.slice(0, MAX_CONTEXT_FILES);
 
     debug(`[findAllProjectContextFiles] Found ${matches.length} files, returning ${capped.length}`);
+
+    // Save to cache for future lookups
+    try {
+      PROJECT_CONTEXT_CACHE.set(directory, { files: capped, timestamp: Date.now() });
+    } catch {
+      // Ignore cache write errors
+    }
+
     return capped;
   } catch (error) {
     debug(`[findAllProjectContextFiles] Error searching directory:`, error);
@@ -378,14 +411,14 @@ Sources are external data connections. Each source has:
 - \`config.json\` - Connection settings and authentication
 - \`guide.md\` - Usage guidelines (read before first use!)
 
-**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/sources/{slug}/guide.md\`.
+**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/.creator-flow/sources/{slug}/guide.md\`.
 
 **Before creating/modifying a source**, read \`${DOC_REFS.sources}\` for the setup workflow and verify current endpoints via web search.
 
 **Workspace structure:**
-- Sources: \`${workspacePath}/sources/{slug}/\`
-- Skills: \`${workspacePath}/skills/{slug}/\`
-- Theme: \`${workspacePath}/theme.json\`
+- Sources: \`${workspacePath}/.creator-flow/sources/{slug}/\`
+- Skills: \`${workspacePath}/.creator-flow/skills/{slug}/\`
+- Theme: \`${workspacePath}/.creator-flow/theme.json\`
 
 **SDK Plugin:** This workspace is mounted as a Claude Code SDK plugin. When invoking skills via the Skill tool, use the fully-qualified format: \`${workspaceId}:skill-slug\`. For example, to invoke a skill named "commit", use \`${workspaceId}:commit\`.
 

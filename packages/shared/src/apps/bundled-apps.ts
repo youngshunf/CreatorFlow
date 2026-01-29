@@ -3,6 +3,9 @@
  *
  * Built-in applications that ship with CreatorFlow.
  * These are registered at startup and provide default functionality.
+ * 
+ * Applications are loaded from bundled-apps/ directory (manifest.json files).
+ * Each app can have an AGENTS.md file that provides context for the AI agent.
  */
 
 import { existsSync, mkdirSync, readdirSync, copyFileSync, readFileSync, writeFileSync } from 'fs';
@@ -10,14 +13,138 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { AppManifest } from './types.ts';
 import { registerBundledApp, getAppPath, ensureAppsDir } from './storage.ts';
+import { debug } from '../utils/debug.ts';
 
 // ============================================================
-// General App (Default)
+// Bundled Apps Directory Discovery
+// ============================================================
+
+/**
+ * Get the path to bundled-apps directory.
+ * Works in both development and packaged (Electron) contexts.
+ */
+function getBundledAppsSourceDir(): string {
+  const possiblePaths: string[] = [];
+  
+  // 1. Try ESM context (development)
+  try {
+    const currentFile = fileURLToPath(import.meta.url);
+    possiblePaths.push(join(dirname(currentFile), 'bundled-apps'));
+  } catch {
+    // ESM not available
+  }
+  
+  // 2. Try CJS context (development)
+  if (typeof __dirname !== 'undefined') {
+    possiblePaths.push(join(__dirname, 'bundled-apps'));
+  }
+  
+  // 3. Try packaged Electron app paths (resources/bundled-apps)
+  if (typeof __dirname !== 'undefined') {
+    possiblePaths.push(join(__dirname, 'resources', 'bundled-apps'));
+    possiblePaths.push(join(__dirname, '..', 'resources', 'bundled-apps'));
+  }
+  
+  // 4. Try process.resourcesPath (Electron specific)
+  if (typeof process !== 'undefined' && (process as any).resourcesPath) {
+    possiblePaths.push(join((process as any).resourcesPath, 'bundled-apps'));
+  }
+  
+  // Return the first path that exists
+  for (const p of possiblePaths) {
+    if (existsSync(p)) {
+      debug(`[getBundledAppsSourceDir] Found bundled-apps at: ${p}`);
+      return p;
+    }
+  }
+  
+  // Fallback to first possible path
+  return possiblePaths[0] || '';
+}
+
+/**
+ * Load an app manifest from a directory.
+ * Returns null if manifest doesn't exist or is invalid.
+ */
+function loadAppManifestFromDir(appDir: string): AppManifest | null {
+  const manifestPath = join(appDir, 'manifest.json');
+  
+  if (!existsSync(manifestPath)) {
+    return null;
+  }
+  
+  try {
+    const content = readFileSync(manifestPath, 'utf-8');
+    const manifest = JSON.parse(content) as AppManifest;
+    
+    // Validate required fields
+    if (!manifest.id || !manifest.name || !manifest.version) {
+      debug(`[loadAppManifestFromDir] Invalid manifest at ${manifestPath}: missing required fields`);
+      return null;
+    }
+    
+    // Set default type
+    if (!manifest.type) {
+      manifest.type = manifest.id.startsWith('plugin.') ? 'plugin' : 'app';
+    }
+    
+    return manifest;
+  } catch (error) {
+    debug(`[loadAppManifestFromDir] Error loading manifest from ${manifestPath}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Load all bundled apps from the bundled-apps directory.
+ * Returns an array of app manifests with their source paths.
+ */
+function loadBundledAppsFromDir(): Array<{ manifest: AppManifest; sourcePath: string }> {
+  const bundledAppsDir = getBundledAppsSourceDir();
+  const apps: Array<{ manifest: AppManifest; sourcePath: string }> = [];
+  
+  if (!bundledAppsDir || !existsSync(bundledAppsDir)) {
+    debug(`[loadBundledAppsFromDir] Bundled apps directory not found: ${bundledAppsDir}`);
+    return apps;
+  }
+  
+  try {
+    const entries = readdirSync(bundledAppsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      
+      const appDir = join(bundledAppsDir, entry.name);
+      const manifest = loadAppManifestFromDir(appDir);
+      
+      if (manifest) {
+        apps.push({ manifest, sourcePath: appDir });
+        debug(`[loadBundledAppsFromDir] Loaded app: ${manifest.id} from ${appDir}`);
+      }
+    }
+  } catch (error) {
+    debug(`[loadBundledAppsFromDir] Error reading bundled apps directory:`, error);
+  }
+  
+  return apps;
+}
+
+/**
+ * Get the path to an app's AGENTS.md file in the source directory.
+ * Returns null if the file doesn't exist.
+ */
+export function getAppAgentsFilePath(appSourcePath: string): string | null {
+  const agentsPath = join(appSourcePath, 'AGENTS.md');
+  return existsSync(agentsPath) ? agentsPath : null;
+}
+
+// ============================================================
+// Fallback Hard-coded App Manifests (for backward compatibility)
 // ============================================================
 
 /**
  * General purpose app for workspaces without a specific application.
  * Used for backward compatibility and custom workspaces.
+ * @deprecated Use manifest.json in bundled-apps/app-general/ instead
  */
 export const GENERAL_APP: AppManifest = {
   id: 'app.general',
@@ -60,13 +187,10 @@ export const GENERAL_APP: AppManifest = {
   },
 };
 
-// ============================================================
-// Creator Media App (自媒体创作)
-// ============================================================
-
 /**
  * Content creation app for social media creators.
  * Supports Xiaohongshu, Douyin, WeChat Official Accounts, etc.
+ * @deprecated Use manifest.json in bundled-apps/app-creator-media/ instead
  */
 export const CREATOR_MEDIA_APP: AppManifest = {
   id: 'app.creator-media',
@@ -168,24 +292,54 @@ export const CREATOR_MEDIA_APP: AppManifest = {
   },
 };
 
+/** Fallback app manifests (used when bundled-apps directory is not available) */
+const FALLBACK_APPS: AppManifest[] = [GENERAL_APP, CREATOR_MEDIA_APP];
+
 // ============================================================
 // Skill Copying Utilities
 // ============================================================
 
 /**
  * Get the path to bundled-skills directory
- * Works in both ESM and CJS contexts
+ * Works in both development and packaged (Electron) contexts
  */
 function getBundledSkillsDir(): string {
-  // Try to get current file directory
+  const possiblePaths: string[] = [];
+  
+  // 1. Try ESM context (development)
   try {
-    // ESM context
     const currentFile = fileURLToPath(import.meta.url);
-    return join(dirname(currentFile), 'bundled-skills');
+    possiblePaths.push(join(dirname(currentFile), 'bundled-skills'));
   } catch {
-    // Fallback for CJS or other contexts
-    return join(__dirname, 'bundled-skills');
+    // ESM not available
   }
+  
+  // 2. Try CJS context (development)
+  if (typeof __dirname !== 'undefined') {
+    possiblePaths.push(join(__dirname, 'bundled-skills'));
+  }
+  
+  // 3. Try packaged Electron app paths (resources/bundled-skills)
+  if (typeof __dirname !== 'undefined') {
+    // In packaged app, __dirname might be in dist/, look for resources/bundled-skills
+    possiblePaths.push(join(__dirname, 'resources', 'bundled-skills'));
+    possiblePaths.push(join(__dirname, '..', 'resources', 'bundled-skills'));
+  }
+  
+  // 4. Try process.resourcesPath (Electron specific)
+  if (typeof process !== 'undefined' && (process as any).resourcesPath) {
+    possiblePaths.push(join((process as any).resourcesPath, 'bundled-skills'));
+  }
+  
+  // Return the first path that exists
+  for (const p of possiblePaths) {
+    if (existsSync(p)) {
+      return p;
+    }
+  }
+  
+  // Fallback to first possible path (will fail gracefully in copyBundledSkillsToApp)
+  return possiblePaths[0] || '';
 }
 
 /**
@@ -236,26 +390,82 @@ function copyBundledSkillsToApp(appId: string, skillSlugs: string[]): void {
 // Registration
 // ============================================================
 
+/** Cache for loaded bundled apps (with source paths) */
+let loadedBundledApps: Array<{ manifest: AppManifest; sourcePath: string }> | null = null;
+
 /**
  * Register all bundled apps.
  * Called at application startup.
- * Also copies bundled skills to app directories.
+ * Loads apps from bundled-apps directory (config files), falls back to hard-coded manifests.
+ * Also copies bundled skills and AGENTS.md to app directories.
  */
 export function registerBundledApps(): void {
   ensureAppsDir();
   
-  // Register General App
-  registerBundledApp(GENERAL_APP);
-  copyBundledSkillsToApp(GENERAL_APP.id, GENERAL_APP.capabilities?.skills || []);
+  // Try to load apps from bundled-apps directory first
+  loadedBundledApps = loadBundledAppsFromDir();
   
-  // Register Creator Media App
-  registerBundledApp(CREATOR_MEDIA_APP);
-  copyBundledSkillsToApp(CREATOR_MEDIA_APP.id, CREATOR_MEDIA_APP.capabilities?.skills || []);
+  if (loadedBundledApps.length > 0) {
+    // Register apps loaded from config files
+    for (const { manifest, sourcePath } of loadedBundledApps) {
+      registerBundledApp(manifest);
+      copyBundledSkillsToApp(manifest.id, manifest.capabilities?.skills || []);
+      
+      // Copy AGENTS.md to app directory if it exists
+      copyAppAgentsFile(manifest.id, sourcePath);
+    }
+    debug(`[registerBundledApps] Registered ${loadedBundledApps.length} apps from config files`);
+  } else {
+    // Fallback to hard-coded manifests
+    debug(`[registerBundledApps] Using fallback hard-coded manifests`);
+    
+    for (const manifest of FALLBACK_APPS) {
+      registerBundledApp(manifest);
+      copyBundledSkillsToApp(manifest.id, manifest.capabilities?.skills || []);
+    }
+  }
 }
 
 /**
- * Get all bundled app manifests
+ * Copy AGENTS.md from app source directory to installed app directory.
+ */
+function copyAppAgentsFile(appId: string, sourcePath: string): void {
+  const agentsSourcePath = join(sourcePath, 'AGENTS.md');
+  if (!existsSync(agentsSourcePath)) {
+    return;
+  }
+  
+  const appPath = getAppPath(appId, true);
+  const agentsTargetPath = join(appPath, 'AGENTS.md');
+  
+  try {
+    copyFileSync(agentsSourcePath, agentsTargetPath);
+    debug(`[copyAppAgentsFile] Copied AGENTS.md for ${appId}`);
+  } catch (error) {
+    debug(`[copyAppAgentsFile] Error copying AGENTS.md for ${appId}:`, error);
+  }
+}
+
+/**
+ * Get all bundled app manifests.
+ * Returns apps loaded from config files, or fallback hard-coded manifests.
  */
 export function getBundledAppManifests(): AppManifest[] {
-  return [GENERAL_APP, CREATOR_MEDIA_APP];
+  if (loadedBundledApps && loadedBundledApps.length > 0) {
+    return loadedBundledApps.map(({ manifest }) => manifest);
+  }
+  return FALLBACK_APPS;
+}
+
+/**
+ * Get the source path for a bundled app (where AGENTS.md and other resources are located).
+ * Returns null if the app is not found or was loaded from fallback.
+ */
+export function getBundledAppSourcePath(appId: string): string | null {
+  if (!loadedBundledApps) {
+    return null;
+  }
+  
+  const app = loadedBundledApps.find(({ manifest }) => manifest.id === appId);
+  return app?.sourcePath || null;
 }

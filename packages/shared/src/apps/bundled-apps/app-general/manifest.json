@@ -1,0 +1,34 @@
+{
+  "id": "app.general",
+  "name": "通用工作区",
+  "version": "1.0.0",
+  "type": "app",
+  "author": {
+    "name": "CreatorFlow Team",
+    "email": "team@creatorflow.com"
+  },
+  "description": "通用 AI 助手工作区，适合各种任务场景",
+  "license": "MIT",
+  "pricing": {
+    "type": "free"
+  },
+  "capabilities": {
+    "skills": []
+  },
+  "workspace": {
+    "defaultDirectory": "~/CreatorFlow",
+    "directoryStructure": {},
+    "defaultSettings": {
+      "autoSave": true
+    }
+  },
+  "permissions": ["filesystem", "network"],
+  "compatibility": {
+    "platform": ">=1.0.0",
+    "os": ["macos", "windows", "linux"]
+  },
+  "marketplace": {
+    "category": "general",
+    "tags": ["通用", "AI助手"]
+  }
+}

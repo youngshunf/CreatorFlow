@@ -19,12 +19,15 @@ import type { WorkspaceConfig } from '../workspaces/types.ts';
 import {
   createWorkspaceAtPath,
   getWorkspaceSkillsPath,
+  getWorkspaceDataPath,
   saveWorkspaceConfig,
   loadWorkspaceConfig,
 } from '../workspaces/storage.ts';
 import { loadAppById, getAppPath } from './storage.ts';
+import { getBundledAppSourcePath } from './bundled-apps.ts';
 import { saveStatusConfig, getDefaultStatusConfig } from '../statuses/storage.ts';
 import { saveLabelConfig, getDefaultLabelConfig } from '../labels/storage.ts';
+import { debug } from '../utils/debug.ts';
 
 // ============================================================
 // Directory Structure Creation
@@ -199,6 +202,67 @@ function applyPresetStatuses(
 }
 
 // ============================================================
+// AGENTS.md Copy
+// ============================================================
+
+/**
+ * Copy AGENTS.md from app source directory to workspace data directory.
+ * This provides workspace-specific AI agent guidance based on the app type.
+ * 
+ * The file is copied to .creator-flow/AGENTS.md in the workspace,
+ * where it will be discovered by the agent's project context file mechanism.
+ */
+function copyAppAgentsToWorkspace(appId: string, workspaceRoot: string): void {
+  // Try to find the source path for the bundled app
+  const sourcePath = getBundledAppSourcePath(appId);
+  
+  if (!sourcePath) {
+    // For non-bundled apps, check the installed app directory
+    const appPath = getAppPath(appId, false);
+    const agentsPath = join(appPath, 'AGENTS.md');
+    
+    if (existsSync(agentsPath)) {
+      copyAgentsFileToWorkspace(agentsPath, workspaceRoot);
+    } else {
+      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for app ${appId}`);
+    }
+    return;
+  }
+  
+  // Copy from bundled app source directory
+  const agentsSourcePath = join(sourcePath, 'AGENTS.md');
+  if (existsSync(agentsSourcePath)) {
+    copyAgentsFileToWorkspace(agentsSourcePath, workspaceRoot);
+  } else {
+    // Try the installed bundled app directory as fallback
+    const bundledAppPath = getAppPath(appId, true);
+    const bundledAgentsPath = join(bundledAppPath, 'AGENTS.md');
+    
+    if (existsSync(bundledAgentsPath)) {
+      copyAgentsFileToWorkspace(bundledAgentsPath, workspaceRoot);
+    } else {
+      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for bundled app ${appId}`);
+    }
+  }
+}
+
+/**
+ * Copy AGENTS.md file to workspace data directory.
+ */
+function copyAgentsFileToWorkspace(sourcePath: string, workspaceRoot: string): void {
+  const workspaceDataPath = getWorkspaceDataPath(workspaceRoot);
+  const targetPath = join(workspaceDataPath, 'AGENTS.md');
+  
+  // Ensure workspace data directory exists
+  if (!existsSync(workspaceDataPath)) {
+    mkdirSync(workspaceDataPath, { recursive: true });
+  }
+  
+  copyFileSync(sourcePath, targetPath);
+  debug(`[copyAgentsFileToWorkspace] Copied AGENTS.md to ${targetPath}`);
+}
+
+// ============================================================
 // Main Initialization Functions
 // ============================================================
 
@@ -336,6 +400,13 @@ export function initializeWorkspaceFromApp(
     } catch (error) {
       errors.push(`Failed to apply preset data: ${error}`);
     }
+  }
+  
+  // Copy AGENTS.md from app to workspace
+  try {
+    copyAppAgentsToWorkspace(options.appId, workspaceRoot);
+  } catch (error) {
+    errors.push(`Failed to copy AGENTS.md: ${error}`);
   }
   
   return {

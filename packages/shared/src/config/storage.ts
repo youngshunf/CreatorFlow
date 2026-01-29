@@ -411,9 +411,16 @@ export async function switchWorkspaceAtomic(workspaceId: string): Promise<{ work
  * @param workspace - Workspace data (must include rootPath)
  */
 export function addWorkspace(workspace: Omit<Workspace, 'id' | 'createdAt'>): Workspace {
-  const config = loadStoredConfig();
+  let config = loadStoredConfig();
+  
+  // Initialize empty config if it doesn't exist
   if (!config) {
-    throw new Error('No config found');
+    ensureConfigDir();
+    config = {
+      workspaces: [],
+      activeWorkspaceId: null,
+      activeSessionId: null,
+    };
   }
 
   // Check if workspace with same rootPath already exists

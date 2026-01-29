@@ -60,10 +60,10 @@ async function checkCapturedApiError(): Promise<CheckResult> {
   if (apiError.status === 402) {
     return {
       ok: false,
-      detail: `✗ API error: 402 ${apiError.message}`,
+      detail: `✗ API 错误: 402 ${apiError.message}`,
       failCode: 'billing_error',
-      failTitle: 'Payment Required',
-      failMessage: apiError.message || 'Your Anthropic API account has a billing issue.',
+      failTitle: '需要付款',
+      failMessage: apiError.message || '您的 Anthropic API 账户存在计费问题。',
     };
   }
 
@@ -71,10 +71,10 @@ async function checkCapturedApiError(): Promise<CheckResult> {
   if (apiError.status === 401) {
     return {
       ok: false,
-      detail: `✗ API error: 401 ${apiError.message}`,
+      detail: `✗ API 错误: 401 ${apiError.message}`,
       failCode: 'invalid_credentials',
-      failTitle: 'Invalid Credentials',
-      failMessage: apiError.message || 'Your API credentials are invalid or expired.',
+      failTitle: '凭证无效',
+      failMessage: apiError.message || '您的 API 凭证无效或已过期。',
     };
   }
 
@@ -82,10 +82,10 @@ async function checkCapturedApiError(): Promise<CheckResult> {
   if (apiError.status === 429) {
     return {
       ok: false,
-      detail: `✗ API error: 429 ${apiError.message}`,
+      detail: `✗ API 错误: 429 ${apiError.message}`,
       failCode: 'rate_limited',
-      failTitle: 'Rate Limited',
-      failMessage: 'Too many requests. Please wait a moment before trying again.',
+      failTitle: '请求频率限制',
+      failMessage: '请求过于频繁，请稍后再试。',
     };
   }
 
@@ -93,10 +93,10 @@ async function checkCapturedApiError(): Promise<CheckResult> {
   if (apiError.status >= 500) {
     return {
       ok: false,
-      detail: `✗ API error: ${apiError.status} ${apiError.message}`,
+      detail: `✗ API 错误: ${apiError.status} ${apiError.message}`,
       failCode: 'service_unavailable',
-      failTitle: 'Anthropic Service Error',
-      failMessage: `The Anthropic API returned an error (${apiError.status}). This is usually temporary.`,
+      failTitle: 'Anthropic 服务错误',
+      failMessage: `Anthropic API 返回错误 (${apiError.status})，这通常是临时问题。`,
     };
   }
 
@@ -143,24 +143,24 @@ async function checkApiAvailability(): Promise<CheckResult> {
       if (response.status >= 500) {
         return {
           ok: false,
-          detail: `✗ ${label}: Service error (${response.status})`,
+          detail: `✗ ${label}: 服务错误 (${response.status})`,
           failCode: 'service_unavailable',
-          failTitle: `${label} Service Error`,
-          failMessage: `The ${label} is experiencing issues. Please try again later.`,
+          failTitle: `${label} 服务错误`,
+          failMessage: `${label} 出现问题，请稍后再试。`,
         };
       }
 
-      return { ok: true, detail: `✓ ${label}: Reachable (${response.status})` };
+      return { ok: true, detail: `✓ ${label}: 可达 (${response.status})` };
     } catch (fetchError) {
       clearTimeout(timeoutId);
 
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         return {
           ok: false,
-          detail: `✗ ${label}: Timeout`,
+          detail: `✗ ${label}: 超时`,
           failCode: 'service_unavailable',
-          failTitle: `${label} Unreachable`,
-          failMessage: `Cannot connect to ${label}. Check your internet connection.`,
+          failTitle: `${label} 不可达`,
+          failMessage: `无法连接到 ${label}，请检查网络连接。`,
         };
       }
 
@@ -168,18 +168,18 @@ async function checkApiAvailability(): Promise<CheckResult> {
       if (msg.includes('ECONNREFUSED') || msg.includes('ENOTFOUND') || msg.includes('fetch failed')) {
         return {
           ok: false,
-          detail: `✗ ${label}: Unreachable (${msg})`,
+          detail: `✗ ${label}: 不可达 (${msg})`,
           failCode: 'service_unavailable',
-          failTitle: `${label} Unreachable`,
-          failMessage: `Cannot connect to ${label}. Check your internet connection.`,
+          failTitle: `${label} 不可达`,
+          failMessage: `无法连接到 ${label}，请检查网络连接。`,
         };
       }
 
-      return { ok: true, detail: `✓ ${label}: Unknown (${msg})` };
+      return { ok: true, detail: `✓ ${label}: 未知 (${msg})` };
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return { ok: true, detail: `✓ ${label}: Check failed (${msg})` };
+    return { ok: true, detail: `✓ ${label}: 检查失败 (${msg})` };
   }
 }
 
@@ -213,10 +213,10 @@ async function validateApiKeyWithAnthropic(apiKey: string, baseUrl?: string | nu
     if (msg.includes('401') || msg.includes('invalid') || msg.includes('Unauthorized') || msg.includes('authentication')) {
       return {
         ok: false,
-        detail: '✗ API key: Invalid or expired',
+        detail: '✗ API 密钥: 无效或已过期',
         failCode: 'invalid_credentials',
-        failTitle: 'Invalid API Key',
-        failMessage: 'Your Anthropic API key is invalid or has expired. Please update it in settings.',
+        failTitle: 'API 密钥无效',
+        failMessage: '您的 Anthropic API 密钥无效或已过期，请在设置中更新。',
       };
     }
 
@@ -224,17 +224,17 @@ async function validateApiKeyWithAnthropic(apiKey: string, baseUrl?: string | nu
     if (msg.includes('403') || msg.includes('permission') || msg.includes('Forbidden')) {
       return {
         ok: false,
-        detail: '✗ API key: Insufficient permissions',
+        detail: '✗ API 密钥: 权限不足',
         failCode: 'invalid_credentials',
-        failTitle: 'API Key Permission Error',
-        failMessage: 'Your API key does not have permission to access the API. Check your Anthropic dashboard.',
+        failTitle: 'API 密钥权限错误',
+        failMessage: '您的 API 密钥没有访问 API 的权限，请检查 Anthropic 控制台。',
       };
     }
 
     // Network/other errors - don't fail on these, just note them
     return {
       ok: true,
-      detail: `✓ API key: Validation skipped (${msg.slice(0, 50)})`,
+      detail: `✓ API 密钥: 跳过验证 (${msg.slice(0, 50)})`,
     };
   }
 }
@@ -248,10 +248,10 @@ async function checkApiKey(): Promise<CheckResult> {
     if (!apiKey) {
       return {
         ok: false,
-        detail: '✗ API key: Not found',
+        detail: '✗ API 密钥: 未找到',
         failCode: 'invalid_credentials',
-        failTitle: 'API Key Missing',
-        failMessage: 'Your Anthropic API key is missing. Please add it in settings.',
+        failTitle: 'API 密钥缺失',
+        failMessage: '您的 Anthropic API 密钥缺失，请在设置中添加。',
       };
     }
 
@@ -259,7 +259,7 @@ async function checkApiKey(): Promise<CheckResult> {
     return await validateApiKeyWithAnthropic(apiKey, baseUrl);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return { ok: true, detail: `✓ API key: Check failed (${msg})` };
+    return { ok: true, detail: `✓ API 密钥: 检查失败 (${msg})` };
   }
 }
 
@@ -270,16 +270,16 @@ async function checkOAuthToken(): Promise<CheckResult> {
     if (!token) {
       return {
         ok: false,
-        detail: '✗ OAuth token: Not found',
+        detail: '✗ OAuth 令牌: 未找到',
         failCode: 'invalid_credentials',
-        failTitle: 'OAuth Token Missing',
-        failMessage: 'Your Claude Max OAuth token is missing. Please re-authenticate.',
+        failTitle: 'OAuth 令牌缺失',
+        failMessage: '您的 Claude Max OAuth 令牌缺失，请重新认证。',
       };
     }
-    return { ok: true, detail: '✓ OAuth token: Present' };
+    return { ok: true, detail: '✓ OAuth 令牌: 已存在' };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return { ok: true, detail: `✓ OAuth token: Check failed (${msg})` };
+    return { ok: true, detail: `✓ OAuth 令牌: 检查失败 (${msg})` };
   }
 }
 
@@ -302,16 +302,16 @@ async function checkMcpConnectivity(mcpUrl: string): Promise<CheckResult> {
       clearTimeout(timeoutId);
 
       // Any response (even 4xx) means the server is reachable
-      return { ok: true, detail: `✓ MCP server: Reachable (${response.status})` };
+      return { ok: true, detail: `✓ MCP 服务器: 可达 (${response.status})` };
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         return {
           ok: false,
-          detail: '✗ MCP server: Timeout',
+          detail: '✗ MCP 服务器: 超时',
           failCode: 'mcp_unreachable',
-          failTitle: 'MCP Server Unreachable',
-          failMessage: 'Cannot connect to the Craft MCP server (timeout). Check your network connection.',
+          failTitle: 'MCP 服务器不可达',
+          failMessage: '无法连接到 Craft MCP 服务器（超时），请检查网络连接。',
         };
       }
       const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
@@ -319,17 +319,17 @@ async function checkMcpConnectivity(mcpUrl: string): Promise<CheckResult> {
       if (msg.includes('ECONNREFUSED') || msg.includes('ENOTFOUND') || msg.includes('fetch failed')) {
         return {
           ok: false,
-          detail: `✗ MCP server: Unreachable (${msg})`,
+          detail: `✗ MCP 服务器: 不可达 (${msg})`,
           failCode: 'mcp_unreachable',
-          failTitle: 'MCP Server Unreachable',
-          failMessage: 'Cannot connect to the Craft MCP server. Check your network connection.',
+          failTitle: 'MCP 服务器不可达',
+          failMessage: '无法连接到 Craft MCP 服务器，请检查网络连接。',
         };
       }
-      return { ok: true, detail: `✓ MCP server: Unknown (${msg})` };
+      return { ok: true, detail: `✓ MCP 服务器: 未知 (${msg})` };
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return { ok: true, detail: `✓ MCP server: Check failed (${msg})` };
+    return { ok: true, detail: `✓ MCP 服务器: 检查失败 (${msg})` };
   }
 }
 
@@ -390,8 +390,8 @@ export async function runErrorDiagnostics(config: DiagnosticConfig): Promise<Dia
   // All checks passed but still failed - likely Anthropic service issue
   return {
     code: 'service_unavailable',
-    title: 'Service Unavailable',
-    message: 'The AI service is experiencing issues. All credentials appear valid. Try again in a moment.',
+    title: '服务不可用',
+    message: 'AI 服务出现问题，所有凭证均有效。请稍后再试。',
     details,
   };
 }

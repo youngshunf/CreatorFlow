@@ -57,128 +57,128 @@ export interface AgentError {
  */
 const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalError' | 'details'>> = {
   invalid_api_key: {
-    title: 'Invalid API Key',
-    message: 'Your Anthropic API key was rejected. It may be invalid or expired.',
+    title: 'API 密钥无效',
+    message: '您的 Anthropic API 密钥被拒绝，可能无效或已过期。',
     actions: [
-      { key: 's', label: 'Update API key', command: '/settings', action: 'settings' },
+      { key: 's', label: '更新 API 密钥', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   invalid_credentials: {
-    title: 'Invalid Credentials',
-    message: 'Your API key or OAuth token is missing or invalid.',
+    title: '凭证无效',
+    message: '您的 API 密钥或 OAuth 令牌缺失或无效。',
     actions: [
-      { key: 's', label: 'Update credentials', command: '/settings', action: 'settings' },
+      { key: 's', label: '更新凭证', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   expired_oauth_token: {
-    title: 'Session Expired',
-    message: 'Your Claude Max session has expired.',
+    title: '会话已过期',
+    message: '您的 Claude Max 会话已过期。',
     actions: [
-      { key: 'r', label: 'Re-authenticate', action: 'reauth' },
-      { key: 's', label: 'Switch API setup', command: '/settings', action: 'settings' },
+      { key: 'r', label: '重新认证', action: 'reauth' },
+      { key: 's', label: '切换 API 设置', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   token_expired: {
-    title: 'Workspace Session Expired',
-    message: 'Your workspace authentication has expired. Please re-authenticate the workspace.',
+    title: '工作区会话已过期',
+    message: '您的工作区认证已过期，请重新认证工作区。',
     actions: [
-      { key: 'w', label: 'Open workspace menu', command: '/workspace' },
+      { key: 'w', label: '打开工作区菜单', command: '/workspace' },
     ],
     canRetry: false,
   },
   rate_limited: {
-    title: 'Rate Limited',
-    message: 'Too many requests. Please wait a moment.',
+    title: '请求频率限制',
+    message: '请求过于频繁，请稍后再试。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
     retryDelayMs: 5000,
   },
   service_error: {
-    title: 'Service Error',
-    message: 'The AI service is temporarily unavailable.',
+    title: '服务错误',
+    message: 'AI 服务暂时不可用。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
     retryDelayMs: 2000,
   },
   service_unavailable: {
-    title: 'Service Unavailable',
-    message: 'The AI service is experiencing issues. All credentials appear valid. Try again in a moment.',
+    title: '服务不可用',
+    message: 'AI 服务出现问题，所有凭证均有效。请稍后再试。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
     retryDelayMs: 2000,
   },
   network_error: {
-    title: 'Connection Error',
-    message: 'Could not connect to the server. Check your internet connection.',
+    title: '连接错误',
+    message: '无法连接到服务器，请检查网络连接。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
     retryDelayMs: 1000,
   },
   mcp_auth_required: {
-    title: 'Workspace Authentication Required',
-    message: 'Your workspace connection needs to be re-authenticated.',
+    title: '需要工作区认证',
+    message: '您的工作区连接需要重新认证。',
     actions: [
-      { key: 'w', label: 'Open workspace menu', command: '/workspace' },
+      { key: 'w', label: '打开工作区菜单', command: '/workspace' },
     ],
     canRetry: false,
   },
   mcp_unreachable: {
-    title: 'MCP Server Unreachable',
-    message: 'Cannot connect to the Craft MCP server. Check your network connection.',
+    title: 'MCP 服务器不可达',
+    message: '无法连接到 Craft MCP 服务器，请检查网络连接。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
     retryDelayMs: 2000,
   },
   billing_error: {
-    title: 'Payment Required',
-    message: 'Your account has a billing issue. Check your Anthropic account status.',
+    title: '需要付款',
+    message: '您的账户存在计费问题，请检查 Anthropic 账户状态。',
     actions: [
-      { key: 's', label: 'Update credentials', command: '/settings', action: 'settings' },
+      { key: 's', label: '更新凭证', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   model_no_tool_support: {
-    title: 'Model Does Not Support Tools',
-    message: 'The selected model does not support tool/function calling, which is required for CreatorFlow. Please choose a model with tool support (e.g., Claude, GPT-4, Gemini).',
+    title: '模型不支持工具',
+    message: '所选模型不支持工具/函数调用，而 CreatorFlow 需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。',
     actions: [
-      { key: 's', label: 'Change model', command: '/settings', action: 'settings' },
+      { key: 's', label: '更改模型', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   invalid_model: {
-    title: 'Invalid Model',
-    message: 'The selected model was not found. Please check your model configuration in settings.',
+    title: '模型无效',
+    message: '未找到所选模型，请在设置中检查模型配置。',
     actions: [
-      { key: 's', label: 'Change model', command: '/settings', action: 'settings' },
+      { key: 's', label: '更改模型', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   data_policy_error: {
-    title: 'Data Policy Restriction',
-    message: 'OpenRouter blocked this request due to your data policy settings. Configure your privacy settings at openrouter.ai/settings/privacy to allow this model.',
+    title: '数据策略限制',
+    message: 'OpenRouter 因数据策略设置阻止了此请求。请在 openrouter.ai/settings/privacy 配置隐私设置以允许此模型。',
     actions: [
-      { key: 's', label: 'Open Settings', command: '/settings', action: 'settings' },
+      { key: 's', label: '打开设置', command: '/settings', action: 'settings' },
     ],
     canRetry: false,
   },
   unknown_error: {
-    title: 'Error',
-    message: 'An unexpected error occurred.',
+    title: '错误',
+    message: '发生了意外错误。',
     actions: [
-      { key: 'r', label: 'Retry', action: 'retry' },
+      { key: 'r', label: '重试', action: 'retry' },
     ],
     canRetry: true,
   },
@@ -282,7 +282,7 @@ export function parseError(error: unknown): AgentError {
       return {
         code,
         ...definition,
-        message: `Model "${modelMatch[1]}" does not support tool/function calling, which is required for CreatorFlow. Please choose a different model with tool support in Settings.`,
+        message: `模型 "${modelMatch[1]}" 不支持工具/函数调用，而 CreatorFlow 需要此功能。请在设置中选择支持工具的模型。`,
         originalError: errorMessage,
       };
     }

@@ -1,0 +1,88 @@
+{
+  "id": "app.creator-media",
+  "name": "自媒体创作",
+  "version": "1.0.0",
+  "type": "app",
+  "author": {
+    "name": "CreatorFlow Team",
+    "email": "team@creatorflow.com"
+  },
+  "description": "完整的自媒体创作工作流，支持小红书、抖音、公众号等平台",
+  "license": "MIT",
+  "homepage": "https://creatorflow.com/apps/creator-media",
+  "pricing": {
+    "type": "free"
+  },
+  "capabilities": {
+    "skills": [
+      "material-organize",
+      "script-create",
+      "topic-research",
+      "content-review",
+      "platform-adaptation",
+      "viral-content-analysis",
+      "topic-to-publish-flow",
+      "data-review"
+    ]
+  },
+  "workspace": {
+    "defaultDirectory": "~/CreatorFlow/Media",
+    "directoryStructure": {
+      "素材库": {
+        "图片": {},
+        "视频": {},
+        "文本": {},
+        "音频": {}
+      },
+      "脚本库": {
+        "草稿": {},
+        "待审核": {},
+        "已发布": {}
+      },
+      "发布记录": {
+        "小红书": {},
+        "抖音": {},
+        "公众号": {}
+      },
+      "数据分析": {}
+    },
+    "defaultSettings": {
+      "autoSave": true,
+      "autoBackup": true,
+      "backupInterval": 3600,
+      "language": "zh-CN"
+    },
+    "presetData": {
+      "labels": [
+        { "name": "待创作", "color": "#3b82f6" },
+        { "name": "创作中", "color": "#f59e0b" },
+        { "name": "待审核", "color": "#8b5cf6" },
+        { "name": "已发布", "color": "#10b981" }
+      ],
+      "statuses": [
+        { "name": "草稿", "type": "draft" },
+        { "name": "待审核", "type": "review" },
+        { "name": "已发布", "type": "published" }
+      ]
+    }
+  },
+  "permissions": ["filesystem", "network", "clipboard"],
+  "compatibility": {
+    "platform": ">=1.0.0",
+    "os": ["macos", "windows", "linux"]
+  },
+  "marketplace": {
+    "category": "content-creation",
+    "tags": ["自媒体", "创作", "AI", "小红书", "抖音", "公众号", "内容创作"],
+    "changelog": "## v1.0.0\n- 初始版本发布\n- 支持小红书、抖音、公众号、B站等主流平台\n- 完整的创作工作流支持\n- 内置 8 个核心技能：素材整理、脚本创作、选题研究、内容审核、平台适配、爆款分析、选题到发布流程、数据复盘"
+  },
+  "plugins": {
+    "compatible": [
+      "plugin.data-analytics",
+      "plugin.seo-optimizer"
+    ],
+    "recommended": [
+      "plugin.data-analytics"
+    ]
+  }
+}

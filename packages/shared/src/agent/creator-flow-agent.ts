@@ -52,6 +52,7 @@ import { detectConfigFileType, validateConfigFileContent, formatValidationResult
 import { type ThinkingLevel, getThinkingTokens, DEFAULT_THINKING_LEVEL } from './thinking-levels.ts';
 import type { LoadedSource } from '../sources/types.ts';
 import { sourceNeedsAuthentication } from '../sources/credential-manager.ts';
+import { t, $t } from '../locale/index.ts';
 
 // Re-export permission mode functions for application usage
 export {
@@ -316,31 +317,47 @@ export type SdkMcpServerConfig =
   | { type: 'stdio'; command: string; args?: string[]; env?: Record<string, string> };
 
 /**
- * Detect the Windows ENOENT .claude/skills directory error from the Claude Code SDK.
- * The SDK scans C:\ProgramData\ClaudeCode\.claude\skills for managed/enterprise skills
+ * Detect the ENOENT .claude/skills directory error from the Claude Code SDK.
+ * The SDK scans a global skills directory for managed/enterprise skills
  * but crashes if the directory doesn't exist. This is an upstream SDK bug.
  * See: https://github.com/anthropics/claude-code/issues/20571
  *
+ * Paths by platform:
+ * - macOS: /Library/Application Support/ClaudeCode/.claude/skills
+ * - Windows: C:\ProgramData\ClaudeCode\.claude\skills
+ *
  * Returns a typed_error event with user-friendly instructions, or null if not this error.
  */
-function buildWindowsSkillsDirError(errorText: string): { type: 'typed_error'; error: AgentError } | null {
+function buildSkillsDirError(errorText: string): { type: 'typed_error'; error: AgentError } | null {
   if (!errorText.includes('ENOENT') || !errorText.includes('skills')) {
     return null;
   }
 
   const pathMatch = errorText.match(/scandir\s+'([^']+)'/);
-  const missingPath = pathMatch?.[1] || 'C:\\ProgramData\\ClaudeCode\\.claude\\skills';
+  const isWindows = process.platform === 'win32';
+  const defaultPath = isWindows
+    ? 'C:\\ProgramData\\ClaudeCode\\.claude\\skills'
+    : '/Library/Application Support/ClaudeCode/.claude/skills';
+  const missingPath = pathMatch?.[1] || defaultPath;
+
+  const title = isWindows ? t('需要 Windows 设置') : t('需要设置');
+  const details = isWindows
+    ? [
+        t('PowerShell（以管理员身份运行）：'),
+        `New-Item -ItemType Directory -Force -Path "${missingPath}"`,
+      ]
+    : [
+        t('终端（使用 sudo 运行）：'),
+        `sudo mkdir -p "${missingPath}"`,
+      ];
 
   return {
     type: 'typed_error',
     error: {
       code: 'unknown_error',
-      title: 'Windows Setup Required',
-      message: `The SDK requires a directory that doesn't exist: ${missingPath} — Create this folder in File Explorer, then restart the app.`,
-      details: [
-        `PowerShell (run as Administrator):`,
-        `New-Item -ItemType Directory -Force -Path "${missingPath}"`,
-      ],
+      title,
+      message: $t('SDK 需要一个不存在的目录：{path} — 请创建此文件夹，然后重启应用。', { path: missingPath }),
+      details,
       actions: [],
       canRetry: true,
       originalError: errorText,
@@ -1896,10 +1913,10 @@ export class CreatorFlowAgent {
             return;
           }
 
-          // Check for Windows SDK setup error (missing .claude/skills directory)
-          const windowsSkillsError = buildWindowsSkillsDirError(stderrContext || rawErrorMsg);
-          if (windowsSkillsError) {
-            yield windowsSkillsError;
+          // Check for SDK setup error (missing .claude/skills directory)
+          const skillsDirError = buildSkillsDirError(stderrContext || rawErrorMsg);
+          if (skillsDirError) {
+            yield skillsDirError;
             yield { type: 'complete' };
             return;
           }
@@ -2398,70 +2415,70 @@ Please continue the conversation naturally from where we left off.
     const errorMap: Record<SDKAssistantMessageError, AgentError> = {
       'authentication_failed': {
         code: 'invalid_api_key',
-        title: 'Authentication Failed',
-        message: 'Unable to authenticate with Anthropic. Your API key may be invalid or expired.',
-        details: ['Check your API key in settings', 'Ensure your API key has not been revoked'],
+        title: '认证失败',
+        message: '无法通过 Anthropic 认证，您的 API 密钥可能无效或已过期。',
+        details: ['请在设置中检查 API 密钥', '确保 API 密钥未被撤销'],
         actions: [
-          { key: 's', label: 'Settings', action: 'settings' },
-          { key: 'r', label: 'Retry', action: 'retry' },
+          { key: 's', label: '设置', action: 'settings' },
+          { key: 'r', label: '重试', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 1000,
       },
       'billing_error': {
         code: 'billing_error',
-        title: 'Billing Error',
-        message: 'Your account has a billing issue.',
-        details: ['Check your Anthropic account billing status'],
+        title: '计费错误',
+        message: '您的账户存在计费问题。',
+        details: ['请检查 Anthropic 账户计费状态'],
         actions: [
-          { key: 's', label: 'Update credentials', action: 'settings' },
+          { key: 's', label: '更新凭证', action: 'settings' },
         ],
         canRetry: false,
       },
       'rate_limit': {
         code: 'rate_limited',
-        title: 'Rate Limit Exceeded',
-        message: 'Too many requests. Please wait a moment before trying again.',
-        details: ['Rate limits reset after a short period', 'Consider upgrading your plan for higher limits'],
+        title: '超出频率限制',
+        message: '请求过于频繁，请稍后再试。',
+        details: ['频率限制会在短时间内重置', '可考虑升级计划以获取更高限额'],
         actions: [
-          { key: 'r', label: 'Retry', action: 'retry' },
+          { key: 'r', label: '重试', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 5000,
       },
       'invalid_request': {
         code: 'unknown_error',
-        title: 'Invalid Request',
-        message: 'The request was invalid.',
-        details: ['Try sending a new message', 'Report this issue if it persists'],
+        title: '无效请求',
+        message: '请求无效。',
+        details: ['请尝试发送新消息', '如果问题持续请报告此问题'],
         actions: [
-          { key: 'r', label: 'Retry', action: 'retry' },
+          { key: 'r', label: '重试', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 1000,
       },
       'server_error': {
         code: 'network_error',
-        title: 'Connection Error',
-        message: 'Unable to connect to the API server. Check your internet connection.',
+        title: '连接错误',
+        message: '无法连接到 API 服务器，请检查网络连接。',
         details: [
-          'Verify your network connection is active',
-          'Check if the API endpoint is accessible',
-          'Firewall or VPN may be blocking the connection',
+          '请确认网络连接正常',
+          '检查 API 端点是否可访问',
+          '防火墙或 VPN 可能正在阻止连接',
         ],
         actions: [
-          { key: 'r', label: 'Retry', action: 'retry' },
+          { key: 'r', label: '重试', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 2000,
       },
       'unknown': {
         code: 'unknown_error',
-        title: 'Unknown Error',
-        message: 'An unexpected error occurred while connecting to Anthropic.',
-        details: ['This may be a temporary issue', 'Check your network connection'],
+        title: '未知错误',
+        message: '连接 Anthropic 时发生意外错误。',
+        details: ['这可能是临时问题', '请检查网络连接'],
         actions: [
-          { key: 'r', label: 'Retry', action: 'retry' },
+          { key: 'r', label: '重试', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 2000,
@@ -3075,10 +3092,10 @@ Please continue the conversation naturally from where we left off.
           // Error result - emit error then complete with whatever usage we have
           const errorMsg = 'errors' in message ? message.errors.join(', ') : 'Query failed';
 
-          // Check for Windows SDK setup error (missing .claude/skills directory)
-          const windowsError = buildWindowsSkillsDirError(errorMsg);
-          if (windowsError) {
-            events.push(windowsError);
+          // Check for SDK setup error (missing .claude/skills directory)
+          const skillsDirError = buildSkillsDirError(errorMsg);
+          if (skillsDirError) {
+            events.push(skillsDirError);
           } else {
             events.push({ type: 'error', message: errorMsg });
           }

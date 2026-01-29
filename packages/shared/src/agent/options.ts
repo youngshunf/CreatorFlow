@@ -1,7 +1,7 @@
 import type { Options } from "@anthropic-ai/claude-agent-sdk";
 import { join, dirname } from "path";
 import { homedir } from "os";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, mkdirSync } from "fs";
 import { debug } from "../utils/debug";
 
 declare const CRAFT_AGENT_CLI_VERSION: string | undefined;
@@ -152,6 +152,41 @@ export function resetClaudeConfigCheck(): void {
     claudeConfigChecked = false;
 }
 
+/**
+ * Ensure the global SDK skills directory exists.
+ * The Claude SDK scans this directory on startup and crashes with ENOENT if missing.
+ * This is an upstream SDK bug (https://github.com/anthropics/claude-code/issues/20571)
+ * 
+ * Paths by platform:
+ * - macOS: /Library/Application Support/ClaudeCode/.claude/skills
+ * - Windows: C:\ProgramData\ClaudeCode\.claude\skills
+ * - Linux: /etc/claude-code/.claude/skills (assumed)
+ */
+function ensureSdkSkillsDir(): void {
+    let skillsDir: string;
+    
+    if (process.platform === 'darwin') {
+        // macOS: /Library/Application Support/ClaudeCode/.claude/skills
+        skillsDir = '/Library/Application Support/ClaudeCode/.claude/skills';
+    } else if (process.platform === 'win32') {
+        // Windows: C:\ProgramData\ClaudeCode\.claude\skills
+        skillsDir = join(process.env.PROGRAMDATA || 'C:\\ProgramData', 'ClaudeCode', '.claude', 'skills');
+    } else {
+        // Linux and others: try XDG or /etc path
+        skillsDir = '/etc/claude-code/.claude/skills';
+    }
+    
+    if (!existsSync(skillsDir)) {
+        try {
+            mkdirSync(skillsDir, { recursive: true });
+            debug(`[options] Created SDK skills directory: ${skillsDir}`);
+        } catch (err) {
+            // If we can't create it (e.g., permission denied), let SDK fail with a better error
+            debug(`[options] Failed to create SDK skills directory ${skillsDir}: ${err}`);
+        }
+    }
+}
+
 export function setAnthropicOptionsEnv(env: Record<string, string>) {
     optionsEnv = env;
 }
@@ -183,6 +218,9 @@ export function setExecutable(path: string) {
 export function getDefaultOptions(): Partial<Options> {
     // Repair corrupted ~/.claude.json before the SDK subprocess reads it
     ensureClaudeConfig();
+    
+    // Ensure SDK skills directory exists (upstream bug workaround)
+    ensureSdkSkillsDir();
 
     // SECURITY: Disable Bun's automatic .env file loading in the SDK subprocess.
     // Without this, Bun loads .env from the subprocess cwd (user's working directory),
