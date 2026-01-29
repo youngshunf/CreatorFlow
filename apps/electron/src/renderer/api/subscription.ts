@@ -9,6 +9,18 @@ import request from './request';
 // Types
 // ============================================
 
+export interface CreditBalance {
+  id: number;
+  credit_type: string;
+  original_amount: number;
+  used_amount: number;
+  remaining_amount: number;
+  expires_at: string | null;
+  granted_at: string;
+  source_type: string;
+  description: string | null;
+}
+
 export interface SubscriptionInfo {
   user_id: number;
   tier: string;
@@ -17,10 +29,13 @@ export interface SubscriptionInfo {
   current_credits: number;
   used_credits: number;
   purchased_credits: number;
+  monthly_remaining?: number;
+  bonus_remaining?: number;
   billing_cycle_start: string;
   billing_cycle_end: string;
   status: string;
-  auto_renew: boolean;
+  auto_renew?: boolean;
+  balances?: CreditBalance[];
 }
 
 export interface SubscriptionTier {

@@ -144,8 +144,7 @@ export default function SubscriptionSettingsPage() {
   const formatCredits = (credits: number | string) => {
     const num = Number(credits)
     if (isNaN(num)) return '0'
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toFixed(0)
+    return Math.round(num).toLocaleString()
   }
 
   const formatDate = (dateStr: string) => {
@@ -164,7 +163,9 @@ export default function SubscriptionSettingsPage() {
   }
 
   const tierColors = TIER_COLORS[subscription?.tier || 'free'] || TIER_COLORS.free
-  const availableTiers = tiers.filter(t => t.tier_name !== subscription?.tier && t.tier_name !== 'free')
+  // 显示所有非 free 等级，根据价格判断是否可升级
+  const currentTierPrice = tiers.find(t => t.tier_name === subscription?.tier)?.monthly_price ?? 0
+  const upgradeTiers = tiers.filter(t => t.tier_name !== 'free')
 
   return (
     <div className="h-full flex flex-col">
@@ -251,7 +252,7 @@ export default function SubscriptionSettingsPage() {
                             <Coins className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">积分余额</p>
+                            <p className="text-sm text-muted-foreground">总可用积分</p>
                             <p className="text-2xl font-bold">{formatCredits(subscription.current_credits)}</p>
                           </div>
                         </div>
@@ -261,36 +262,72 @@ export default function SubscriptionSettingsPage() {
                         </Button>
                       </div>
 
-                      {/* Usage progress */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">本周期已使用</span>
-                          <span className="font-medium">
-                            {formatCredits(subscription.used_credits)} / {formatCredits(subscription.monthly_credits + subscription.purchased_credits)}
-                          </span>
+                      {/* Balance records list */}
+                      {subscription.balances && subscription.balances.length > 0 ? (
+                        <div className="space-y-3">
+                          {subscription.balances.map((balance) => {
+                            const usagePercent = Number(balance.original_amount) > 0 
+                              ? (Number(balance.used_amount) / Number(balance.original_amount)) * 100 
+                              : 0
+                            return (
+                              <div key={balance.id} className="p-3 rounded-lg bg-muted/50">
+                                {/* 第一行：类型 + 过期时间 */}
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      'w-2 h-2 rounded-full',
+                                      balance.credit_type === 'monthly' ? 'bg-blue-500' :
+                                      balance.credit_type === 'purchased' ? 'bg-green-500' : 'bg-orange-500'
+                                    )} />
+                                    <span className={cn(
+                                      'font-medium text-sm',
+                                      balance.credit_type === 'monthly' ? 'text-blue-600' :
+                                      balance.credit_type === 'purchased' ? 'text-green-600' : 'text-orange-600'
+                                    )}>
+                                      {balance.credit_type === 'monthly' ? '月度积分' :
+                                       balance.credit_type === 'purchased' ? '购买积分' : '赠送积分'}
+                                    </span>
+                                    {balance.description && (
+                                      <span className="text-xs text-muted-foreground">- {balance.description}</span>
+                                    )}
+                                  </div>
+                                  {balance.expires_at ? (
+                                    <span className={cn(
+                                      'text-xs',
+                                      new Date(balance.expires_at) < new Date() ? 'text-red-500' : 'text-muted-foreground'
+                                    )}>
+                                      {new Date(balance.expires_at) < new Date() ? '已过期' : `${formatDate(balance.expires_at)} 过期`}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-green-600">永久有效</span>
+                                  )}
+                                </div>
+                                {/* 第二行：进度条 */}
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div
+                                      className={cn(
+                                        'h-full transition-all',
+                                        balance.credit_type === 'monthly' ? 'bg-blue-500' :
+                                        balance.credit_type === 'purchased' ? 'bg-green-500' : 'bg-orange-500'
+                                      )}
+                                      style={{ width: `${Math.min(100, usagePercent)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    {formatCredits(balance.used_amount)} / {formatCredits(balance.original_amount)}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full transition-all',
-                              getUsagePercentage() > 80 ? 'bg-red-500' : getUsagePercentage() > 50 ? 'bg-amber-500' : 'bg-primary'
-                            )}
-                            style={{ width: `${getUsagePercentage()}%` }}
-                          />
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Coins className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>暂无积分记录</p>
                         </div>
-                      </div>
-
-                      {/* Credits breakdown */}
-                      <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">月度配额：</span>
-                          <span className="font-medium">{formatCredits(subscription.monthly_credits)}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">购买积分：</span>
-                          <span className="font-medium">{formatCredits(subscription.purchased_credits)}</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </SettingsCard>
                 </SettingsSection>
@@ -327,26 +364,38 @@ export default function SubscriptionSettingsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {availableTiers.map((tier) => (
-                    <button
-                      key={tier.id}
-                      onClick={() => setSelectedTier(tier.tier_name)}
-                      className={cn(
-                        'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
-                        selectedTier === tier.tier_name 
-                          ? 'ring-2 ring-amber-400 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' 
-                          : 'border-border hover:border-amber-300'
-                      )}
-                    >
-                      <h4 className="font-semibold">{tier.display_name}</h4>
-                      <p className="text-2xl font-bold text-red-500">¥{tier.monthly_price}<span className="text-base">/月</span></p>
-                      <p className="text-sm text-muted-foreground mt-2">{formatCredits(tier.monthly_credits)} 积分/月</p>
-                    </button>
-                  ))}
+                  {upgradeTiers.map((tier) => {
+                    const isCurrentTier = tier.tier_name === subscription?.tier
+                    const canUpgrade = Number(tier.monthly_price) > Number(currentTierPrice)
+                    const isDisabled = !canUpgrade || isCurrentTier
+                    return (
+                      <button
+                        key={tier.id}
+                        onClick={() => !isDisabled && setSelectedTier(tier.tier_name)}
+                        disabled={isDisabled}
+                        className={cn(
+                          'p-5 rounded-xl border-2 text-left transition-all relative',
+                          isDisabled 
+                            ? 'opacity-50 cursor-not-allowed border-border' 
+                            : 'cursor-pointer hover:border-amber-300',
+                          selectedTier === tier.tier_name 
+                            ? 'ring-2 ring-amber-400 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' 
+                            : 'border-border'
+                        )}
+                      >
+                        {isCurrentTier && (
+                          <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs">当前</span>
+                        )}
+                        <h4 className="font-semibold">{tier.display_name}</h4>
+                        <p className="text-2xl font-bold text-red-500">¥{tier.monthly_price}<span className="text-base">/月</span></p>
+                        <p className="text-sm text-muted-foreground mt-2">{formatCredits(tier.monthly_credits)} 积分/月</p>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
-            {!result && availableTiers.length > 0 && (
+            {!result && upgradeTiers.length > 0 && (
               <div className="sticky bottom-0 bg-background border-t px-6 py-4 flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setShowUpgradeDialog(false)} disabled={isProcessing}>
                   取消
