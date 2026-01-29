@@ -1438,12 +1438,22 @@ function AppShellContent({
     }
   }, [sidebarFocused, focusedSidebarItemId, unifiedSidebarItems])
 
+  // Determine if we're on the home view (no session selected in allChats)
+  // Home view: chats navigator, allChats filter, no details (no session selected)
+  const isHomeView = React.useMemo(() => {
+    return isChatsNavigation(navState) && 
+           navState.filter.kind === 'allChats' && 
+           !navState.details
+  }, [navState])
+
   // Determine active route from URL for sidebar highlighting and layout tweaks
   // Depend on navState so it updates when navigation changes
   const activeRoute = React.useMemo(() => {
+    // Check home view first (since URL doesn't distinguish home from allChats)
+    if (isHomeView) return 'home'
     const params = new URLSearchParams(window.location.search)
     return (params.get('route') || 'allChats') as string
-  }, [navState])
+  }, [navState, isHomeView])
 
   // Get title based on navigation state
   const listTitle = React.useMemo(() => {
