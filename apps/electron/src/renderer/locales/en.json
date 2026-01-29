@@ -188,6 +188,202 @@
     "Never"
   ],
   [
+    "API 密钥无效",
+    "Invalid API Key"
+  ],
+  [
+    "您的 Anthropic API 密钥被拒绝，可能无效或已过期。",
+    "Your Anthropic API key was rejected. It may be invalid or expired."
+  ],
+  [
+    "更新 API 密钥",
+    "Update API key"
+  ],
+  [
+    "凭证无效",
+    "Invalid Credentials"
+  ],
+  [
+    "您的 API 密钥或 OAuth 令牌缺失或无效。",
+    "Your API key or OAuth token is missing or invalid."
+  ],
+  [
+    "更新凭证",
+    "Update credentials"
+  ],
+  [
+    "会话已过期",
+    "Session Expired"
+  ],
+  [
+    "您的 Claude Max 会话已过期。",
+    "Your Claude Max session has expired."
+  ],
+  [
+    "重新认证",
+    "Re-authenticate"
+  ],
+  [
+    "切换 API 设置",
+    "Switch API setup"
+  ],
+  [
+    "工作区会话已过期",
+    "Workspace Session Expired"
+  ],
+  [
+    "您的工作区认证已过期，请重新认证工作区。",
+    "Your workspace authentication has expired. Please re-authenticate the workspace."
+  ],
+  [
+    "打开工作区菜单",
+    "Open workspace menu"
+  ],
+  [
+    "请求频率限制",
+    "Rate Limited"
+  ],
+  [
+    "请求过于频繁，请稍后再试。",
+    "Too many requests. Please wait a moment."
+  ],
+  [
+    "重试",
+    "Retry"
+  ],
+  [
+    "服务错误",
+    "Service Error"
+  ],
+  [
+    "AI 服务暂时不可用。",
+    "The AI service is temporarily unavailable."
+  ],
+  [
+    "服务不可用",
+    "Service Unavailable"
+  ],
+  [
+    "AI 服务出现问题，所有凭证均有效。请稍后再试。",
+    "The AI service is experiencing issues. All credentials appear valid. Try again in a moment."
+  ],
+  [
+    "连接错误",
+    "Connection Error"
+  ],
+  [
+    "无法连接到服务器，请检查网络连接。",
+    "Could not connect to the server. Check your internet connection."
+  ],
+  [
+    "需要工作区认证",
+    "Workspace Authentication Required"
+  ],
+  [
+    "您的工作区连接需要重新认证。",
+    "Your workspace connection needs to be re-authenticated."
+  ],
+  [
+    "MCP 服务器不可达",
+    "MCP Server Unreachable"
+  ],
+  [
+    "无法连接到 Craft MCP 服务器，请检查网络连接。",
+    "Cannot connect to the Craft MCP server. Check your network connection."
+  ],
+  [
+    "需要付款",
+    "Payment Required"
+  ],
+  [
+    "您的账户存在计费问题，请检查 Anthropic 账户状态。",
+    "Your account has a billing issue. Check your Anthropic account status."
+  ],
+  [
+    "模型不支持工具",
+    "Model Does Not Support Tools"
+  ],
+  [
+    "所选模型不支持工具/函数调用，而 CreatorFlow 需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。",
+    "The selected model does not support tool/function calling, which is required for CreatorFlow. Please choose a model with tool support (e.g., Claude, GPT-4, Gemini)."
+  ],
+  [
+    "更改模型",
+    "Change model"
+  ],
+  [
+    "模型无效",
+    "Invalid Model"
+  ],
+  [
+    "未找到所选模型，请在设置中检查模型配置。",
+    "The selected model was not found. Please check your model configuration in settings."
+  ],
+  [
+    "数据策略限制",
+    "Data Policy Restriction"
+  ],
+  [
+    "OpenRouter 因数据策略设置阻止了此请求。请在 openrouter.ai/settings/privacy 配置隐私设置以允许此模型。",
+    "OpenRouter blocked this request due to your data policy settings. Configure your privacy settings at openrouter.ai/settings/privacy to allow this model."
+  ],
+  [
+    "超出频率限制",
+    "Rate Limit Exceeded"
+  ],
+  [
+    "频率限制会在短时间内重置",
+    "Rate limits reset after a short period"
+  ],
+  [
+    "可考虑升级计划以获取更高限额",
+    "Consider upgrading your plan for higher limits"
+  ],
+  [
+    "无效请求",
+    "Invalid Request"
+  ],
+  [
+    "请求无效。",
+    "The request was invalid."
+  ],
+  [
+    "请尝试发送新消息",
+    "Try sending a new message"
+  ],
+  [
+    "如果问题持续请报告此问题",
+    "Report this issue if it persists"
+  ],
+  [
+    "无法连接到 API 服务器，请检查网络连接。",
+    "Unable to connect to the API server. Check your internet connection."
+  ],
+  [
+    "请确认网络连接正常",
+    "Verify your network connection is active"
+  ],
+  [
+    "检查 API 端点是否可访问",
+    "Check if the API endpoint is accessible"
+  ],
+  [
+    "防火墙或 VPN 可能正在阻止连接",
+    "Firewall or VPN may be blocking the connection"
+  ],
+  [
+    "认证失败",
+    "Authentication Failed"
+  ],
+  [
+    "无法通过 Anthropic 认证，您的 API 密钥可能无效或已过期。",
+    "Unable to authenticate with Anthropic. Your API key may be invalid or expired."
+  ],
+  [
+    "您的账户存在计费问题。",
+    "Your account has a billing issue."
+  ],
+  [
     "打开",
     "Open"
   ],
@@ -506,6 +702,30 @@
   [
     "今天",
     "Today"
+  ],
+  [
+    "计费错误",
+    "Billing Error"
+  ],
+  [
+    "请检查 Anthropic 账户计费状态",
+    "Check your Anthropic account billing status"
+  ],
+  [
+    "发生了意外错误。",
+    "An unexpected error occurred."
+  ],
+  [
+    "隐藏技术详情",
+    "Hide technical details"
+  ],
+  [
+    "显示技术详情",
+    "Show technical details"
+  ],
+  [
+    "原始错误",
+    "Raw error"
   ],
   [
     "聚焦侧边栏",
@@ -924,6 +1144,14 @@
     "Settings"
   ],
   [
+    "请在设置中检查 API 密钥",
+    "Check your API key in settings"
+  ],
+  [
+    "确保 API 密钥未被撤销",
+    "Ensure your API key has not been revoked"
+  ],
+  [
     "设置 API 连接",
     "Set up API Connection"
   ],
@@ -1304,6 +1532,18 @@
     "Unknown error"
   ],
   [
+    "连接 Anthropic 时发生意外错误。",
+    "An unexpected error occurred while connecting to Anthropic."
+  ],
+  [
+    "这可能是临时问题",
+    "This may be a temporary issue"
+  ],
+  [
+    "请检查网络连接",
+    "Check your network connection"
+  ],
+  [
     "位置",
     "Location"
   ],
@@ -1338,10 +1578,6 @@
   [
     "显示此对话框",
     "Show this dialog"
-  ],
-  [
-    "新",
-    "New"
   ],
   [
     "新建",
@@ -2250,5 +2486,321 @@
   [
     "通用读取操作",
     "Generic read operations"
+  ],
+  [
+    "需要设置",
+    "Setup Required"
+  ],
+  [
+    "需要 Windows 设置",
+    "Windows Setup Required"
+  ],
+  [
+    "终端（使用 sudo 运行）：",
+    "Terminal (run with sudo):"
+  ],
+  [
+    "PowerShell（以管理员身份运行）：",
+    "PowerShell (run as Administrator):"
+  ],
+  [
+    "SDK 需要一个不存在的目录：{path} — 请创建此文件夹，然后重启应用。",
+    "The SDK requires a directory that doesn't exist: {path} — Create this folder, then restart the app."
+  ],
+  [
+    "需要权限",
+    "Permission Required"
+  ],
+  [
+    "允许",
+    "Allow"
+  ],
+  [
+    "始终允许",
+    "Always Allow"
+  ],
+  [
+    "拒绝",
+    "Deny"
+  ],
+  [
+    "\"始终允许\"会在本次会话中记住此命令",
+    "\"Always Allow\" remembers this command for the session"
+  ],
+  [
+    "正在响应...",
+    "Responding..."
+  ],
+  [
+    "个错误",
+    "error(s)"
+  ],
+  [
+    "步骤已完成",
+    "Steps Completed"
+  ],
+  [
+    "正在启动...",
+    "Starting..."
+  ],
+  [
+    "思考中...",
+    "Thinking..."
+  ],
+  [
+    "待办列表",
+    "Todo List"
+  ],
+  [
+    "正在准备响应...",
+    "Preparing response..."
+  ],
+  [
+    "读取",
+    "Read"
+  ],
+  [
+    "写入",
+    "Write"
+  ],
+  [
+    "终端",
+    "Terminal"
+  ],
+  [
+    "查找文件",
+    "Find Files"
+  ],
+  [
+    "子智能体",
+    "Agent"
+  ],
+  [
+    "获取网页",
+    "Fetch URL"
+  ],
+  [
+    "网络搜索",
+    "Web Search"
+  ],
+  [
+    "更新待办",
+    "Update Todos"
+  ],
+  [
+    "编辑笔记本",
+    "Edit Notebook"
+  ],
+  [
+    "终止 Shell",
+    "Kill Shell"
+  ],
+  [
+    "任务输出",
+    "Task Output"
+  ],
+  [
+    "处理中",
+    "Processing"
+  ],
+  [
+    "思考中",
+    "Thinking"
+  ],
+  [
+    "沉思中...",
+    "Pondering..."
+  ],
+  [
+    "凝思中...",
+    "Contemplating..."
+  ],
+  [
+    "推理中...",
+    "Reasoning..."
+  ],
+  [
+    "处理中...",
+    "Processing..."
+  ],
+  [
+    "计算中...",
+    "Computing..."
+  ],
+  [
+    "考虑中...",
+    "Considering..."
+  ],
+  [
+    "反思中...",
+    "Reflecting..."
+  ],
+  [
+    "斟酌中...",
+    "Deliberating..."
+  ],
+  [
+    "琢磨中...",
+    "Cogitating..."
+  ],
+  [
+    "回味中...",
+    "Ruminating..."
+  ],
+  [
+    "构思中...",
+    "Musing..."
+  ],
+  [
+    "正在处理...",
+    "Working on it..."
+  ],
+  [
+    "马上好...",
+    "On it..."
+  ],
+  [
+    "运算中...",
+    "Crunching..."
+  ],
+  [
+    "酝造中...",
+    "Brewing..."
+  ],
+  [
+    "连接线索...",
+    "Connecting dots..."
+  ],
+  [
+    "仔细考量...",
+    "Mulling it over..."
+  ],
+  [
+    "深入思考...",
+    "Deep in thought..."
+  ],
+  [
+    "嗯...",
+    "Hmm..."
+  ],
+  [
+    "让我看看...",
+    "Let me see..."
+  ],
+  [
+    "稍等片刻...",
+    "One moment..."
+  ],
+  [
+    "请稍候...",
+    "Hold on..."
+  ],
+  [
+    "请稍等...",
+    "Bear with me..."
+  ],
+  [
+    "马上...",
+    "Just a sec..."
+  ],
+  [
+    "稍候...",
+    "Hang tight..."
+  ],
+  [
+    "快到了...",
+    "Getting there..."
+  ],
+  [
+    "就快好了...",
+    "Almost..."
+  ],
+  [
+    "工作中...",
+    "Working..."
+  ],
+  [
+    "忙碌中...",
+    "Busy busy..."
+  ],
+  [
+    "运转中...",
+    "Whirring..."
+  ],
+  [
+    "翻涡中...",
+    "Churning..."
+  ],
+  [
+    "过滤中...",
+    "Percolating..."
+  ],
+  [
+    "慢炖中...",
+    "Simmering..."
+  ],
+  [
+    "烹饪中...",
+    "Cooking..."
+  ],
+  [
+    "烘焙中...",
+    "Baking..."
+  ],
+  [
+    "搅动中...",
+    "Stirring..."
+  ],
+  [
+    "启动中...",
+    "Spinning up..."
+  ],
+  [
+    "预热中...",
+    "Warming up..."
+  ],
+  [
+    "加速中...",
+    "Revving..."
+  ],
+  [
+    "蜂鸣中...",
+    "Buzzing..."
+  ],
+  [
+    "哼鸣中...",
+    "Humming..."
+  ],
+  [
+    "滴答中...",
+    "Ticking..."
+  ],
+  [
+    "点击中...",
+    "Clicking..."
+  ],
+  [
+    "飞速运转...",
+    "Whizzing..."
+  ],
+  [
+    "急速前进...",
+    "Zooming..."
+  ],
+  [
+    "飞奔中...",
+    "Zipping..."
+  ],
+  [
+    "加载中...",
+    "Chugging..."
+  ],
+  [
+    "转动中...",
+    "Trucking..."
+  ],
+  [
+    "滚动中...",
+    "Rolling..."
   ]
 ]

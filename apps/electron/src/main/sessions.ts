@@ -44,6 +44,7 @@ import { getCredentialManager } from '@creator-flow/shared/credentials'
 import { CraftMcpClient } from '@creator-flow/shared/mcp'
 import { type Session, type Message, type SessionEvent, type FileAttachment, type StoredAttachment, type SendMessageOptions, IPC_CHANNELS, generateMessageId } from '../shared/types'
 import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient } from '@creator-flow/shared/utils'
+import { t } from '@creator-flow/shared/locale'
 import { loadWorkspaceSkills, type LoadedSkill } from '@creator-flow/shared/skills'
 import type { ToolDisplayMeta } from '@creator-flow/core/types'
 import { DEFAULT_MODEL } from '@creator-flow/shared/config'
@@ -218,19 +219,19 @@ function resolveToolDisplayMeta(
   // Native tool display names (no icons - UI handles these with built-in icons)
   // This ensures toolDisplayMeta is always populated for consistent display
   const nativeToolNames: Record<string, string> = {
-    'Read': 'Read',
-    'Write': 'Write',
-    'Edit': 'Edit',
-    'Bash': 'Terminal',
-    'Grep': 'Search',
-    'Glob': 'Find Files',
-    'Task': 'Agent',
-    'WebFetch': 'Fetch URL',
-    'WebSearch': 'Web Search',
-    'TodoWrite': 'Update Todos',
-    'NotebookEdit': 'Edit Notebook',
-    'KillShell': 'Kill Shell',
-    'TaskOutput': 'Task Output',
+    'Read': t('读取'),
+    'Write': t('写入'),
+    'Edit': t('编辑'),
+    'Bash': t('终端'),
+    'Grep': t('搜索'),
+    'Glob': t('查找文件'),
+    'Task': t('子智能体'),
+    'WebFetch': t('获取网页'),
+    'WebSearch': t('网络搜索'),
+    'TodoWrite': t('更新待办'),
+    'NotebookEdit': t('编辑笔记本'),
+    'KillShell': t('终止 Shell'),
+    'TaskOutput': t('任务输出'),
   }
 
   const nativeDisplayName = nativeToolNames[toolName]
@@ -484,9 +485,43 @@ export class SessionManager {
    * marked as unread when assistant completes - if user is viewing it, don't mark unread.
    */
   private activeViewingSession: Map<string, string> = new Map()
+  /**
+   * Cloud LLM gateway configuration (set by renderer after login).
+   * When set, SDK uses cloud gateway instead of direct Anthropic API.
+   */
+  private cloudConfig: { gatewayUrl: string; llmToken: string } | null = null
 
   setWindowManager(wm: WindowManager): void {
     this.windowManager = wm
+  }
+
+  /**
+   * Set cloud LLM gateway configuration.
+   * Called by renderer after user logs in to cloud service.
+   * This enables SDK to use cloud gateway instead of direct Anthropic API.
+   */
+  async setCloudConfig(config: { gatewayUrl: string; llmToken: string }): Promise<void> {
+    sessionLog.info(`Setting cloud config: ${config.gatewayUrl}`)
+    this.cloudConfig = config
+    // Reinitialize auth to pick up cloud gateway
+    await this.reinitializeAuth()
+  }
+
+  /**
+   * Get current cloud configuration.
+   */
+  getCloudConfig(): { gatewayUrl: string; llmToken: string } | null {
+    return this.cloudConfig
+  }
+
+  /**
+   * Clear cloud LLM gateway configuration (logout).
+   */
+  async clearCloudConfig(): Promise<void> {
+    sessionLog.info('Clearing cloud config')
+    this.cloudConfig = null
+    // Reinitialize auth to revert to local credentials
+    await this.reinitializeAuth()
   }
 
   /**
@@ -718,6 +753,17 @@ export class SessionManager {
    */
   async reinitializeAuth(): Promise<void> {
     try {
+      // Priority 0: Cloud LLM gateway (highest priority when user is logged in)
+      // Cloud gateway uses x-api-key header for authentication
+      if (this.cloudConfig) {
+        process.env.ANTHROPIC_BASE_URL = this.cloudConfig.gatewayUrl
+        process.env.ANTHROPIC_API_KEY = this.cloudConfig.llmToken
+        delete process.env.CLAUDE_CODE_OAUTH_TOKEN
+        sessionLog.info(`Using cloud LLM gateway at ${this.cloudConfig.gatewayUrl}`)
+        resetSummarizationClient()
+        return
+      }
+
       const authState = await getAuthState()
       const { billing } = authState
       const customBaseUrl = getAnthropicBaseUrl()

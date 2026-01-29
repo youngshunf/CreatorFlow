@@ -1,6 +1,7 @@
 import { Shield, Check, X, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useT } from '@/context/LocaleContext'
 import type { PermissionRequest as PermissionRequestType } from '../../../../../shared/types'
 import type { PermissionResponse } from './types'
 
@@ -22,6 +23,7 @@ interface PermissionRequestProps {
  * - Action buttons: Allow, Always Allow, Deny
  */
 export function PermissionRequest({ request, onResponse, unstyled = false }: PermissionRequestProps) {
+  const t = useT()
 
   const handleAllow = () => {
     onResponse({ type: 'permission', allowed: true, alwaysAllow: false })
@@ -55,7 +57,7 @@ export function PermissionRequest({ request, onResponse, unstyled = false }: Per
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">
-                Permission Required
+                {t('需要权限')}
               </span>
               <span className="text-xs text-muted-foreground">({request.toolName})</span>
             </div>
@@ -81,7 +83,7 @@ export function PermissionRequest({ request, onResponse, unstyled = false }: Per
           data-tutorial="permission-allow-button"
         >
           <Check className="h-3.5 w-3.5" />
-          Allow
+          {t('允许')}
         </Button>
         <Button
           size="sm"
@@ -90,7 +92,7 @@ export function PermissionRequest({ request, onResponse, unstyled = false }: Per
           onClick={handleAlwaysAllow}
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          Always Allow
+          {t('始终允许')}
         </Button>
         <Button
           size="sm"
@@ -99,7 +101,7 @@ export function PermissionRequest({ request, onResponse, unstyled = false }: Per
           onClick={handleDeny}
         >
           <X className="h-3.5 w-3.5" />
-          Deny
+          {t('拒绝')}
         </Button>
 
         {/* Spacer */}
@@ -107,7 +109,7 @@ export function PermissionRequest({ request, onResponse, unstyled = false }: Per
 
         {/* Tip text */}
         <span className="text-[10px] text-muted-foreground">
-          "Always Allow" remembers this command for the session
+          {t('“始终允许”会在本次会话中记住此命令')}
         </span>
       </div>
     </div>

@@ -403,7 +403,7 @@ function getToolDisplayName(name: string): string {
 
   // Friendly display names for specific tools
   const displayNames: Record<string, string> = {
-    'TodoWrite': 'Todo List Updated',
+    'TodoWrite': t('更新待办'),
   }
 
   return displayNames[stripped] || stripped
@@ -512,7 +512,7 @@ function formatToolDisplay(
   }
 
   // Final fallback: Use LLM-generated displayName or tool name
-  const name = displayName || (toolName ? getToolDisplayName(toolName) : 'Processing')
+  const name = displayName || (toolName ? getToolDisplayName(toolName) : t('处理中'))
   return { name }
 }
 
@@ -532,7 +532,7 @@ function getPreviewText(
   if (activityWithIntent?.intent) return activityWithIntent.intent
 
   // Check if we're in responding state
-  if (isStreaming && hasResponse) return 'Responding...'
+  if (isStreaming && hasResponse) return t('正在响应...')
 
   // Find running Task tools and show their description
   const runningTask = activities.find(a => a.toolName === 'Task' && a.status === 'running')
@@ -567,7 +567,7 @@ function getPreviewText(
   const firstTask = activities.find(a => a.toolName === 'Task')
   if (firstTask?.toolInput?.description) {
     const errorSuffix = errorCount > 0
-      ? ` · ${errorCount} error${errorCount > 1 ? 's' : ''}`
+      ? ` · ${errorCount} ${t('个错误')}`
       : ''
     return `${firstTask.toolInput.description as string}${errorSuffix}`
   }
@@ -575,12 +575,12 @@ function getPreviewText(
   // When complete, show summary (badge already shows count)
   if (isComplete || (!isStreaming && activities.length > 0)) {
     const errorSuffix = errorCount > 0
-      ? ` · ${errorCount} error${errorCount > 1 ? 's' : ''}`
+      ? ` · ${errorCount} ${t('个错误')}`
       : ''
-    return `Steps Completed${errorSuffix}`
+    return `${t('步骤已完成')}${errorSuffix}`
   }
 
-  return 'Starting...'
+  return t('正在启动...')
 }
 
 
@@ -691,7 +691,7 @@ function ActivityRow({ activity, onOpenDetails, isLastChild, sessionFolderPath }
   // Show "Thinking" while streaming, stripped markdown content when complete
   if (activity.type === 'intermediate') {
     const isThinking = activity.status === 'running'
-    const displayContent = isThinking ? 'Thinking...' : stripMarkdown(activity.content || '')
+    const displayContent = isThinking ? t('思考中...') : stripMarkdown(activity.content || '')
     const isComplete = activity.status === 'completed'
     return (
       <div className="flex items-stretch">
@@ -771,7 +771,7 @@ function ActivityRow({ activity, onOpenDetails, isLastChild, sessionFolderPath }
   // - Params: Remaining tool input summary
   const toolDisplay = formatToolDisplay(activity)
   const displayedName = toolDisplay.name
-    || (activity.type === 'thinking' ? 'Thinking' : 'Processing')
+    || (activity.type === 'thinking' ? t('思考中') : t('处理中'))
 
   // Intent for MCP tools, description for Bash commands
   const intentOrDescription = activity.intent || (activity.toolInput?.description as string | undefined)
@@ -1473,7 +1473,7 @@ function TodoList({ todos }: TodoListProps) {
     <div className="pl-4 pr-2 pt-2.5 pb-1.5 space-y-0.5 border-l-2 border-muted ml-[13px]">
       {/* Header */}
       <div className={cn("text-muted-foreground pb-1", SIZE_CONFIG.fontSize)}>
-        Todo List
+        {t('待办列表')}
       </div>
       {/* Todo items */}
       {todos.map((todo, index) => (
@@ -1782,7 +1782,7 @@ export const TurnCard = React.memo(function TurnCard({
                       className={cn("flex items-center gap-2 py-0.5 text-muted-foreground/70", SIZE_CONFIG.fontSize)}
                     >
                       <Spinner className={SIZE_CONFIG.spinnerSize} />
-                      <span>{isBuffering ? 'Preparing response...' : 'Thinking...'}</span>
+                      <span>{isBuffering ? t('正在准备响应...') : t('思考中...')}</span>
                     </motion.div>
                   )}
                 </div>
@@ -1800,7 +1800,7 @@ export const TurnCard = React.memo(function TurnCard({
       {!hasActivities && isThinking && (
         <div className={cn("flex items-center gap-2 px-3 py-1.5 text-muted-foreground", SIZE_CONFIG.fontSize)}>
           <Spinner className={SIZE_CONFIG.spinnerSize} />
-          <span>{isBuffering ? 'Preparing response...' : 'Thinking...'}</span>
+          <span>{isBuffering ? t('正在准备响应...') : t('思考中...')}</span>
         </div>
       )}
 

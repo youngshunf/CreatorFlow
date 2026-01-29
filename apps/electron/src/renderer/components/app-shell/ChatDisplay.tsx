@@ -51,6 +51,7 @@ import { useBackgroundTasks } from "@/hooks/useBackgroundTasks"
 import { useTurnCardExpansion } from "@/hooks/useTurnCardExpansion"
 import type { SessionMeta } from "@/atoms/sessions"
 import { CHAT_LAYOUT } from "@/config/layout"
+import { useT } from "@/context/LocaleContext"
 
 // ============================================================================
 // Overlay State Types
@@ -155,59 +156,68 @@ interface ChatDisplayProps {
 /**
  * Processing status messages - cycles through these randomly
  * Inspired by Claude Code's playful status messages
+ * Note: These are i18n keys, translated at render time via useProcessingMessages hook
  */
-const PROCESSING_MESSAGES = [
-  'Thinking...',
-  'Pondering...',
-  'Contemplating...',
-  'Reasoning...',
-  'Processing...',
-  'Computing...',
-  'Considering...',
-  'Reflecting...',
-  'Deliberating...',
-  'Cogitating...',
-  'Ruminating...',
-  'Musing...',
-  'Working on it...',
-  'On it...',
-  'Crunching...',
-  'Brewing...',
-  'Connecting dots...',
-  'Mulling it over...',
-  'Deep in thought...',
-  'Hmm...',
-  'Let me see...',
-  'One moment...',
-  'Hold on...',
-  'Bear with me...',
-  'Just a sec...',
-  'Hang tight...',
-  'Getting there...',
-  'Almost...',
-  'Working...',
-  'Busy busy...',
-  'Whirring...',
-  'Churning...',
-  'Percolating...',
-  'Simmering...',
-  'Cooking...',
-  'Baking...',
-  'Stirring...',
-  'Spinning up...',
-  'Warming up...',
-  'Revving...',
-  'Buzzing...',
-  'Humming...',
-  'Ticking...',
-  'Clicking...',
-  'Whizzing...',
-  'Zooming...',
-  'Zipping...',
-  'Chugging...',
-  'Trucking...',
-  'Rolling...',
+const PROCESSING_MESSAGE_KEYS = [
+  '思考中...',
+  '沉思中...',
+  '凝思中...',
+  '推理中...',
+  '处理中...',
+  '计算中...',
+  '考虑中...',
+  '反思中...',
+  '斟酌中...',
+  '琢磨中...',
+  '回味中...',
+  '构思中...',
+  '正在处理...',
+  '马上好...',
+  '运算中...',
+  '酝造中...',
+  '连接线索...',
+  '仔细考量...',
+  '深入思考...',
+  '嗯...',
+  '让我看看...',
+  '稍等片刻...',
+  '请稍候...',
+  '请稍等...',
+  '马上...',
+  '稍候...',
+  '快到了...',
+  '就快好了...',
+  '工作中...',
+  '忙碌中...',
+  '运转中...',
+  '翻涡中...',
+  '过滤中...',
+  '慢炖中...',
+  '烹饪中...',
+  '烘焙中...',
+  '搅动中...',
+  '启动中...',
+  '预热中...',
+  '加速中...',
+  '蜂鸣中...',
+  '哼鸣中...',
+  '滴答中...',
+  '点击中...',
+  '飞速运转...',
+  '急速前进...',
+  '飞奔中...',
+  '加载中...',
+  '转动中...',
+  '滚动中...',
 ]
+
+/**
+ * Hook to get translated processing messages
+ */
+function useProcessingMessages() {
+  const t = useT()
+  return React.useMemo(() => PROCESSING_MESSAGE_KEYS.map(key => t(key)), [t])
+}
 
 /**
  * Format elapsed time: "45s" under a minute, "1:02" for 1+ minutes
@@ -231,9 +241,10 @@ interface ProcessingIndicatorProps {
  * Matches TurnCard header layout for visual continuity
  */
 function ProcessingIndicator({ startTime, statusMessage }: ProcessingIndicatorProps) {
+  const processingMessages = useProcessingMessages()
   const [elapsed, setElapsed] = React.useState(0)
   const [messageIndex, setMessageIndex] = React.useState(() =>
-    Math.floor(Math.random() * PROCESSING_MESSAGES.length)
+    Math.floor(Math.random() * processingMessages.length)
   )
 
   // Update elapsed time every second using provided startTime
@@ -254,18 +265,18 @@ function ProcessingIndicator({ startTime, statusMessage }: ProcessingIndicatorPr
     const interval = setInterval(() => {
       setMessageIndex(prev => {
         // Pick a random different message
-        let next = Math.floor(Math.random() * PROCESSING_MESSAGES.length)
-        while (next === prev && PROCESSING_MESSAGES.length > 1) {
-          next = Math.floor(Math.random() * PROCESSING_MESSAGES.length)
+        let next = Math.floor(Math.random() * processingMessages.length)
+        while (next === prev && processingMessages.length > 1) {
+          next = Math.floor(Math.random() * processingMessages.length)
         }
         return next
       })
     }, 10000)
     return () => clearInterval(interval)
-  }, [statusMessage])
+  }, [statusMessage, processingMessages.length])
 
   // Use status message if provided, otherwise cycle through default messages
-  const displayMessage = statusMessage || PROCESSING_MESSAGES[messageIndex]
+  const displayMessage = statusMessage || processingMessages[messageIndex]
 
   return (
     <div className="flex items-center gap-2 px-3 py-1 -mb-1 text-[13px] text-muted-foreground">
@@ -1121,6 +1132,7 @@ interface MessageBubbleProps {
  * ErrorMessage - Separate component for error messages to allow useState hook
  */
 function ErrorMessage({ message }: { message: Message }) {
+  const t = useT()
   const hasDetails = (message.errorDetails && message.errorDetails.length > 0) || message.errorOriginal
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
@@ -1135,7 +1147,7 @@ function ErrorMessage({ message }: { message: Message }) {
         } as React.CSSProperties}
       >
         <div className="text-xs text-destructive/50 mb-0.5 font-semibold">
-          {message.errorTitle || 'Error'}
+          {message.errorTitle || t('错误')}
         </div>
         <p className="text-sm text-destructive">{message.content}</p>
 
@@ -1147,7 +1159,7 @@ function ErrorMessage({ message }: { message: Message }) {
               className="flex items-center gap-1 text-xs text-destructive/70 hover:text-destructive transition-colors"
             >
               {detailsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              <span>{detailsOpen ? 'Hide' : 'Show'} technical details</span>
+              <span>{detailsOpen ? t('隐藏技术详情') : t('显示技术详情')}</span>
             </button>
 
             <AnimatedCollapsibleContent isOpen={detailsOpen} className="overflow-hidden">
@@ -1156,7 +1168,7 @@ function ErrorMessage({ message }: { message: Message }) {
                   <div key={i}>{detail}</div>
                 ))}
                 {message.errorOriginal && !message.errorDetails?.some(d => d.includes('Raw error:')) && (
-                  <div className="mt-1">Raw: {message.errorOriginal.slice(0, 200)}{message.errorOriginal.length > 200 ? '...' : ''}</div>
+                  <div className="mt-1">{t('原始错误')}: {message.errorOriginal.slice(0, 200)}{message.errorOriginal.length > 200 ? '...' : ''}</div>
                 )}
               </div>
             </AnimatedCollapsibleContent>
