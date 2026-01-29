@@ -1,0 +1,47 @@
+{
+  "id": "app.writing-assistant",
+  "name": "写作助手",
+  "version": "1.0.0",
+  "type": "app",
+  "author": {
+    "name": "CreatorFlow Team",
+    "email": "team@creatorflow.com"
+  },
+  "description": "AI 写作助手，提供 6 种结构化写作方法，帮助克服写作障碍、组织思路、提升写作质量",
+  "license": "MIT",
+  "pricing": {
+    "type": "free"
+  },
+  "capabilities": {
+    "skills": [
+      "ai-writing-assistant",
+      "baoyu-format-markdown",
+      "baoyu-markdown-to-html",
+      "baoyu-url-to-markdown",
+      "baoyu-danger-x-to-markdown"
+    ]
+  },
+  "workspace": {
+    "defaultDirectory": "~/CreatorFlow/Writing",
+    "directoryStructure": {
+      "草稿": {},
+      "已完成": {},
+      "素材": {},
+      "参考": {}
+    },
+    "defaultSettings": {
+      "autoSave": true,
+      "language": "zh-CN"
+    }
+  },
+  "permissions": ["filesystem", "network"],
+  "compatibility": {
+    "platform": ">=1.0.0",
+    "os": ["macos", "windows", "linux"]
+  },
+  "marketplace": {
+    "category": "writing",
+    "tags": ["写作", "文案", "创作", "AI写作", "内容"],
+    "changelog": "## v1.0.0\n- 初始版本发布\n- 支持 6 种写作方法\n- 对话式创作、大纲式创作、补充式创作\n- 灵感激发、改写优化、素材整合"
+  }
+}

@@ -763,9 +763,10 @@ export function ChatDisplay({
                     const isLastResponse = index === turns.length - 1 || !turns.slice(index + 1).some(t => t.type === 'user')
 
                     // Assistant turns - render with TurnCard (buffered streaming)
+                    // Use index in key to ensure uniqueness in case of duplicate turnIds
                     return (
                       <TurnCard
-                        key={`turn-${turn.turnId}`}
+                        key={`turn-${turn.turnId}-${index}`}
                         sessionId={session.id}
                         sessionFolderPath={session.sessionFolderPath}
                         turnId={turn.turnId}

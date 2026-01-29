@@ -22,7 +22,15 @@
       "platform-adaptation",
       "viral-content-analysis",
       "topic-to-publish-flow",
-      "data-review"
+      "data-review",
+      "baoyu-article-illustrator",
+      "baoyu-comic",
+      "baoyu-cover-image",
+      "baoyu-image-gen",
+      "baoyu-infographic",
+      "baoyu-post-to-wechat",
+      "baoyu-post-to-x",
+      "baoyu-xhs-images"
     ]
   },
   "workspace": {

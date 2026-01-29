@@ -2407,4 +2407,112 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Note: Permission mode cycling settings (cyclablePermissionModes) are now workspace-level
   // and managed via WORKSPACE_SETTINGS_GET/UPDATE channels
 
+  // ============================================================
+  // Marketplace (cloud skill/app market)
+  // ============================================================
+
+  // List skills from marketplace
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_SKILLS, async (_event, params?: { page?: number; size?: number; category?: string }) => {
+    const { listSkills } = await import('@creator-flow/shared/marketplace')
+    return listSkills(params || {})
+  })
+
+  // Get skill details
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_SKILL, async (_event, skillId: string) => {
+    const { getSkill } = await import('@creator-flow/shared/marketplace')
+    return getSkill(skillId)
+  })
+
+  // List apps from marketplace
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_APPS, async (_event, params?: { page?: number; size?: number }) => {
+    const { listApps } = await import('@creator-flow/shared/marketplace')
+    return listApps(params || {})
+  })
+
+  // Get app details
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_APP, async (_event, appId: string) => {
+    const { getApp } = await import('@creator-flow/shared/marketplace')
+    return getApp(appId)
+  })
+
+  // List categories
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES, async () => {
+    const { listCategories } = await import('@creator-flow/shared/marketplace')
+    return listCategories()
+  })
+
+  // Search marketplace
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_SEARCH, async (_event, params: { q: string; type?: 'skill' | 'app' | 'all'; category?: string }) => {
+    const { search } = await import('@creator-flow/shared/marketplace')
+    return search(params)
+  })
+
+  // Install skill to workspace
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_INSTALL_SKILL, async (event, workspaceId: string, skillId: string, version?: string) => {
+    const workspace = getWorkspaceOrThrow(workspaceId)
+    const { installSkill } = await import('@creator-flow/shared/marketplace')
+    
+    // Install with progress reporting
+    const result = await installSkill(
+      workspace.rootPath,
+      skillId,
+      version || 'latest',
+      (progress) => {
+        // Send progress to renderer
+        event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, progress)
+      }
+    )
+
+    // Notify all windows that skills changed
+    if (result.success) {
+      for (const managed of windowManager.getAllWindows()) {
+        if (!managed.window.isDestroyed() && !managed.window.webContents.isDestroyed()) {
+          managed.window.webContents.send(IPC_CHANNELS.SKILLS_CHANGED, workspaceId)
+        }
+      }
+    }
+
+    return result
+  })
+
+  // Update skill
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_UPDATE_SKILL, async (event, workspaceId: string, skillId: string, targetVersion?: string) => {
+    const workspace = getWorkspaceOrThrow(workspaceId)
+    const { updateSkill } = await import('@creator-flow/shared/marketplace')
+    
+    const result = await updateSkill(
+      workspace.rootPath,
+      skillId,
+      targetVersion || 'latest',
+      (progress) => {
+        event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, progress)
+      }
+    )
+
+    // Notify all windows that skills changed
+    if (result.success) {
+      for (const managed of windowManager.getAllWindows()) {
+        if (!managed.window.isDestroyed() && !managed.window.webContents.isDestroyed()) {
+          managed.window.webContents.send(IPC_CHANNELS.SKILLS_CHANGED, workspaceId)
+        }
+      }
+    }
+
+    return result
+  })
+
+  // Check for updates
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_CHECK_UPDATES, async (_event, workspaceId: string) => {
+    const workspace = getWorkspaceOrThrow(workspaceId)
+    const { checkForUpdates } = await import('@creator-flow/shared/marketplace')
+    return checkForUpdates(workspace.rootPath)
+  })
+
+  // Get installed skills with update status
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_INSTALLED, async (_event, workspaceId: string) => {
+    const workspace = getWorkspaceOrThrow(workspaceId)
+    const { getSkillsWithUpdateStatus } = await import('@creator-flow/shared/marketplace')
+    return getSkillsWithUpdateStatus(workspace.rootPath)
+  })
+
 }

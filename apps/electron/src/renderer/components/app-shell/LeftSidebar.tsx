@@ -534,11 +534,20 @@ function renderIcon(link: LinkItem) {
     )
   }
   // Already a React element or primitive ReactNode
-  // Clone with bare={true} to remove EntityIcon container, wrapper provides sizing
+  // Only pass bare={true} to EntityIcon-based components (StatusIcon, etc.)
+  // For other elements (like lucide-react SVGs), just render as-is in the wrapper
   const iconElement = link.icon as React.ReactNode
-  const bareIcon = React.isValidElement(iconElement)
-    ? React.cloneElement(iconElement as React.ReactElement<{ bare?: boolean }>, { bare: true })
-    : iconElement
+  let bareIcon = iconElement
+  if (React.isValidElement(iconElement)) {
+    // Check if the component accepts 'bare' prop (EntityIcon-based components)
+    // We check displayName or component name to avoid passing bare to native SVGs
+    const elementType = iconElement.type as { displayName?: string; name?: string }
+    const typeName = elementType?.displayName || elementType?.name || ''
+    const supportsBare = typeName.includes('Icon') || typeName.includes('Avatar') || typeName === 'EntityIcon'
+    if (supportsBare) {
+      bareIcon = React.cloneElement(iconElement as React.ReactElement<{ bare?: boolean }>, { bare: true })
+    }
+  }
   return (
     <span
       className="h-3.5 w-3.5 shrink-0 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"

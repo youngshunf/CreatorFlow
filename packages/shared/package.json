@@ -52,7 +52,10 @@
     "./locale": "./src/locale/index.ts",
     "./locale/types": "./src/locale/types.ts",
     "./locale/storage": "./src/locale/storage.ts",
-    "./interactive-ui": "./src/interactive-ui/index.ts"
+    "./interactive-ui": "./src/interactive-ui/index.ts",
+    "./skills": "./src/skills/index.ts",
+    "./skills/types": "./src/skills/types.ts",
+    "./marketplace": "./src/marketplace/index.ts"
   },
   "dependencies": {
     "@creator-flow/core": "workspace:*",

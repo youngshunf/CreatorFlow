@@ -236,7 +236,12 @@ export function SessionMenu({
           <span style={{ color: getStateColor(currentTodoState, todoStates) ?? 'var(--foreground)' }}>
             {(() => {
               const icon = getStateIcon(currentTodoState, todoStates)
-              return React.isValidElement(icon)
+              if (!React.isValidElement(icon)) return icon
+              // Only pass bare to EntityIcon-based components (StatusIcon, etc.) that support it
+              const elementType = icon.type as { displayName?: string; name?: string }
+              const typeName = elementType?.displayName || elementType?.name || ''
+              const supportsBare = typeName.includes('Icon') || typeName.includes('Avatar') || typeName === 'EntityIcon'
+              return supportsBare
                 ? React.cloneElement(icon as React.ReactElement<{ bare?: boolean }>, { bare: true })
                 : icon
             })()}
@@ -248,9 +253,16 @@ export function SessionMenu({
             // Only apply color if icon is colorable (uses currentColor)
             const applyColor = state.iconColorable
             // Clone icon with bare prop to render without EntityIcon container
-            const bareIcon = React.isValidElement(state.icon)
-              ? React.cloneElement(state.icon as React.ReactElement<{ bare?: boolean }>, { bare: true })
-              : state.icon
+            // Only pass bare to EntityIcon-based components (StatusIcon, etc.) that support it
+            let bareIcon = state.icon
+            if (React.isValidElement(state.icon)) {
+              const elementType = state.icon.type as { displayName?: string; name?: string }
+              const typeName = elementType?.displayName || elementType?.name || ''
+              const supportsBare = typeName.includes('Icon') || typeName.includes('Avatar') || typeName === 'EntityIcon'
+              if (supportsBare) {
+                bareIcon = React.cloneElement(state.icon as React.ReactElement<{ bare?: boolean }>, { bare: true })
+              }
+            }
             return (
               <MenuItem
                 key={state.id}

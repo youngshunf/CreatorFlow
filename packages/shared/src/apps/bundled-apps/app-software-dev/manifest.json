@@ -1,0 +1,44 @@
+{
+  "id": "app.software-dev",
+  "name": "软件开发",
+  "version": "1.0.0",
+  "type": "app",
+  "author": {
+    "name": "CreatorFlow Team",
+    "email": "team@creatorflow.com"
+  },
+  "description": "软件开发助手，支持代码审查、测试生成、变更日志、MCP 服务器开发等开发工作流",
+  "license": "MIT",
+  "pricing": {
+    "type": "free"
+  },
+  "capabilities": {
+    "skills": [
+      "changelog-generator",
+      "mcp-builder"
+    ]
+  },
+  "workspace": {
+    "defaultDirectory": "~/CreatorFlow/Dev",
+    "directoryStructure": {
+      "src": {},
+      "tests": {},
+      "docs": {},
+      "scripts": {}
+    },
+    "defaultSettings": {
+      "autoSave": true,
+      "language": "en"
+    }
+  },
+  "permissions": ["filesystem", "network", "shell"],
+  "compatibility": {
+    "platform": ">=1.0.0",
+    "os": ["macos", "windows", "linux"]
+  },
+  "marketplace": {
+    "category": "developer",
+    "tags": ["开发", "编程", "代码", "Git", "MCP", "测试"],
+    "changelog": "## v1.0.0\n- 初始版本发布\n- 支持变更日志自动生成\n- 支持 MCP 服务器开发指南"
+  }
+}

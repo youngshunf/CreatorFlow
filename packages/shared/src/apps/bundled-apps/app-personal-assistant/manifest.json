@@ -1,0 +1,48 @@
+{
+  "id": "app.personal-assistant",
+  "name": "个人助理",
+  "version": "1.0.0",
+  "type": "app",
+  "author": {
+    "name": "CreatorFlow Team",
+    "email": "team@creatorflow.com"
+  },
+  "description": "智能个人助理，帮助处理日常任务、邮件起草、日程规划、信息整理等个人效率工作",
+  "license": "MIT",
+  "pricing": {
+    "type": "free"
+  },
+  "capabilities": {
+    "skills": [
+      "email-assistant",
+      "task-manager",
+      "quick-research"
+    ]
+  },
+  "workspace": {
+    "defaultDirectory": "~/CreatorFlow/Personal",
+    "directoryStructure": {
+      "邮件": {
+        "草稿": {},
+        "模板": {}
+      },
+      "任务": {},
+      "笔记": {},
+      "资料": {}
+    },
+    "defaultSettings": {
+      "autoSave": true,
+      "language": "zh-CN"
+    }
+  },
+  "permissions": ["filesystem", "network", "clipboard"],
+  "compatibility": {
+    "platform": ">=1.0.0",
+    "os": ["macos", "windows", "linux"]
+  },
+  "marketplace": {
+    "category": "productivity",
+    "tags": ["个人助理", "效率", "邮件", "任务管理", "日程"],
+    "changelog": "## v1.0.0\n- 初始版本发布\n- 邮件起草和回复\n- 任务管理和优先级\n- 快速信息调研"
+  }
+}
