@@ -89,6 +89,9 @@ export const routes = {
   // View Routes - Compound sidebar/navigator/details routes
   // ============================================
   view: {
+    /** Workspace home view (skills grid + chats navigator, no selection) */
+    home: () => 'home' as const,
+
     /** All chats view (chats navigator, allChats filter) */
     allChats: (sessionId?: string) =>
       sessionId ? `allChats/chat/${sessionId}` as const : 'allChats' as const,
@@ -150,8 +153,14 @@ export const routes = {
         ? `skills/skill/${skillSlug}` as const
         : 'skills' as const,
 
+    /** Files view (file manager) */
+    files: (path?: string) =>
+      path
+        ? `files?path=${encodeURIComponent(path)}` as const
+        : 'files' as const,
+
     /** Settings view (settings navigator) */
-    settings: (subpage?: 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile') =>
+    settings: (subpage?: 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription') =>
       subpage && subpage !== 'user-profile'
         ? `settings/${subpage}` as const
         : 'settings' as const,

@@ -19,6 +19,7 @@ import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
 import { setPerfEnabled, enableDebug } from '@creator-flow/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
 import { checkForUpdatesOnLaunch, setWindowManager as setAutoUpdateWindowManager, isUpdating } from './auto-update'
+import { registerBundledApps } from '@creator-flow/shared/apps'
 
 // Initialize electron-log for renderer process support
 log.initialize()
@@ -146,6 +147,9 @@ async function createInitialWindows(): Promise<void> {
 app.whenReady().then(async () => {
   // Initialize bundled docs
   initializeDocs()
+
+  // Register bundled apps (must happen early so apps are available for workspace creation)
+  registerBundledApps()
 
   // Ensure default permissions file exists (copies bundled default.json on first run)
   const bundledPermissionsDir = join(__dirname, 'resources/permissions')

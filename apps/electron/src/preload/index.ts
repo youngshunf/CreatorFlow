@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS, type SessionEvent, type ElectronAPI, type FileAttachment, type AuthType } from '../shared/types'
+import { IPC_CHANNELS, type SessionEvent, type ElectronAPI, type FileAttachment, type AuthType, type FMDirectoryChangeEvent } from '../shared/types'
 
 const api: ElectronAPI = {
   // Session management
@@ -143,6 +143,14 @@ const api: ElectronAPI = {
   showLogoutConfirmation: () => ipcRenderer.invoke(IPC_CHANNELS.SHOW_LOGOUT_CONFIRMATION),
   showDeleteSessionConfirmation: (name: string) => ipcRenderer.invoke(IPC_CHANNELS.SHOW_DELETE_SESSION_CONFIRMATION, name),
   logout: () => ipcRenderer.invoke(IPC_CHANNELS.LOGOUT),
+
+  // Cloud LLM Gateway
+  setCloudConfig: (config: { gatewayUrl: string; llmToken: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_SET_CONFIG, config),
+  getCloudConfig: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_GET_CONFIG) as Promise<{ gatewayUrl: string; llmToken: string } | null>,
+  clearCloudConfig: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_CLEAR_CONFIG),
 
   // Onboarding
   getAuthState: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_GET_AUTH_STATE).then(r => r.authState),
@@ -409,6 +417,29 @@ const api: ElectronAPI = {
   checkGitBash: () => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_CHECK),
   browseForGitBash: () => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_BROWSE),
   setGitBashPath: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.GITBASH_SET_PATH, path),
+
+  // File Manager
+  fm: {
+    listDirectory: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_LIST_DIRECTORY, path),
+    createFolder: (fullPath: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_CREATE_FOLDER, fullPath),
+    delete: (paths: string[]) => ipcRenderer.invoke(IPC_CHANNELS.FM_DELETE, paths),
+    rename: (oldPath: string, newName: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_RENAME, oldPath, newName),
+    move: (srcPaths: string[], destDir: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_MOVE, srcPaths, destDir),
+    copy: (srcPaths: string[], destDir: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_COPY, srcPaths, destDir),
+    getFileInfo: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_GET_FILE_INFO, path),
+    readFileBase64: (path: string, maxSize?: number) => ipcRenderer.invoke(IPC_CHANNELS.FM_READ_FILE_BASE64, path, maxSize),
+    watchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_WATCH_DIRECTORY, path),
+    unwatchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_UNWATCH_DIRECTORY, path),
+    onDirectoryChanged: (callback: (event: FMDirectoryChangeEvent) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, fmEvent: FMDirectoryChangeEvent) => {
+        callback(fmEvent)
+      }
+      ipcRenderer.on(IPC_CHANNELS.FM_DIRECTORY_CHANGED, handler)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.FM_DIRECTORY_CHANGED, handler)
+      }
+    },
+  },
 
   // Menu actions (for unified Craft menu)
   menuQuit: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_QUIT),

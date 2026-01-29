@@ -9,6 +9,7 @@ import { SessionManager } from './sessions'
 import { ipcLog, windowLog } from './logger'
 import { WindowManager } from './window-manager'
 import { registerOnboardingHandlers } from './onboarding'
+import { registerFileManagerIpc } from './file-manager'
 import { IPC_CHANNELS, type FileAttachment, type StoredAttachment, type AuthType, type ApiSetupInfo, type SendMessageOptions } from '../shared/types'
 import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@creator-flow/shared/utils'
 import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, type Workspace, SUMMARIZATION_MODEL } from '@creator-flow/shared/config'
@@ -1122,11 +1123,35 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         // Ignore if file doesn't exist
       })
 
+      // Clear cloud config on logout
+      await sessionManager.clearCloudConfig()
+
       ipcLog.info('Logout complete - cleared all credentials and config')
     } catch (error) {
       ipcLog.error('Logout error:', error)
       throw error
     }
+  })
+
+  // ============================================================
+  // Cloud LLM Gateway
+  // ============================================================
+
+  // Set cloud LLM gateway configuration (called by renderer after login)
+  ipcMain.handle(IPC_CHANNELS.CLOUD_SET_CONFIG, async (_event, config: { gatewayUrl: string; llmToken: string }) => {
+    ipcLog.info('Setting cloud LLM config:', config.gatewayUrl)
+    await sessionManager.setCloudConfig(config)
+  })
+
+  // Get current cloud configuration
+  ipcMain.handle(IPC_CHANNELS.CLOUD_GET_CONFIG, () => {
+    return sessionManager.getCloudConfig()
+  })
+
+  // Clear cloud LLM gateway configuration (logout)
+  ipcMain.handle(IPC_CHANNELS.CLOUD_CLEAR_CONFIG, async () => {
+    ipcLog.info('Clearing cloud LLM config')
+    await sessionManager.clearCloudConfig()
   })
 
   // ============================================================
@@ -2269,6 +2294,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Register onboarding handlers
   registerOnboardingHandlers(sessionManager)
+
+  // Register file manager handlers
+  registerFileManagerIpc()
 
   // ============================================================
   // Theme (app-level only)

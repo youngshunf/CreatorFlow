@@ -15,18 +15,25 @@
 import * as React from 'react'
 import { Panel } from './Panel'
 import { cn } from '@/lib/utils'
-import { useAppShellContext } from '@/context/AppShellContext'
+import { useAppShellContext, useActiveWorkspace } from '@/context/AppShellContext'
 import { StoplightProvider } from '@/context/StoplightContext'
 import { useT } from '@/context/LocaleContext'
 import {
   useNavigationState,
+  useNavigation,
   isChatsNavigation,
   isSourcesNavigation,
   isSettingsNavigation,
   isSkillsNavigation,
+  isFilesNavigation,
+  routes,
 } from '@/contexts/NavigationContext'
-import { UserProfilePage, AppSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage } from '@/pages'
+import { UserProfilePage, UserProfileEditPage, AppSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
+import { FileManager } from '@/components/file-manager'
+import { SkillAvatar } from '@/components/ui/skill-avatar'
+import { toast } from 'sonner'
+import type { LoadedSkill } from '../../../shared/types'
 
 export interface MainContentPanelProps {
   /** Whether the app is in focused mode (single chat, no sidebar) */
@@ -41,13 +48,47 @@ export function MainContentPanel({
 }: MainContentPanelProps) {
   const t = useT()
   const navState = useNavigationState()
-  const { activeWorkspaceId } = useAppShellContext()
+  const { navigate } = useNavigation()
+  const { activeWorkspaceId, skills = [], onCreateSession, onRenameSession, onSendMessage } = useAppShellContext()
+  const activeWorkspace = useActiveWorkspace()
 
   // Wrap content with StoplightProvider so PanelHeaders auto-compensate in focused mode
   const wrapWithStoplight = (content: React.ReactNode) => (
     <StoplightProvider value={isFocusedMode}>
       {content}
     </StoplightProvider>
+  )
+
+  const handleSkillStartChat = React.useCallback(
+    async (skill: LoadedSkill) => {
+      if (!activeWorkspaceId) return
+
+      try {
+        const session = await onCreateSession(activeWorkspaceId)
+
+        const name = skill.metadata.name?.trim()
+        if (name) {
+          onRenameSession(session.id, name)
+        }
+
+        // Build initial prompt that activates the skill via mention syntax
+        const initialMessage = activeWorkspaceId
+          ? `[skill:${activeWorkspaceId}:${skill.slug}] ${t('请根据该技能的说明开始处理当前工作。')}`
+          : `${skill.metadata.name}\n\n${t('请根据该技能的说明开始处理当前工作。')}`
+
+        // Auto-send the initial message with the selected skill as context
+        onSendMessage(session.id, initialMessage, undefined, [skill.slug])
+
+        // Navigate to the new chat session
+        navigate(routes.view.allChats(session.id))
+      } catch (error) {
+        console.error('[MainContentPanel] Failed to start chat with skill:', skill.slug, error)
+        toast.error(t('创建会话失败'), {
+          description: error instanceof Error ? error.message : String(error),
+        })
+      }
+    },
+    [activeWorkspaceId, onCreateSession, onRenameSession, onSendMessage, navigate, t]
   )
 
   // Settings navigator - always has content (subpage determines which page)
@@ -57,6 +98,12 @@ export function MainContentPanel({
         return wrapWithStoplight(
           <Panel variant="grow" className={className}>
             <UserProfilePage />
+          </Panel>
+        )
+      case 'user-profile-edit':
+        return wrapWithStoplight(
+          <Panel variant="grow" className={className}>
+            <UserProfileEditPage />
           </Panel>
         )
       case 'workspace':
@@ -87,6 +134,12 @@ export function MainContentPanel({
         return wrapWithStoplight(
           <Panel variant="grow" className={className}>
             <PreferencesPage />
+          </Panel>
+        )
+      case 'subscription':
+        return wrapWithStoplight(
+          <Panel variant="grow" className={className}>
+            <SubscriptionSettingsPage />
           </Panel>
         )
       case 'app':
@@ -143,6 +196,21 @@ export function MainContentPanel({
     )
   }
 
+  // Files navigator - show file manager
+  if (isFilesNavigation(navState)) {
+    // Use workspace rootPath as boundary - users cannot navigate above it
+    const workspaceRoot = activeWorkspace?.rootPath
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <FileManager
+          initialPath={navState.path || workspaceRoot}
+          rootPath={workspaceRoot}
+          className="h-full"
+        />
+      </Panel>
+    )
+  }
+
   // Chats navigator - show chat or empty state
   if (isChatsNavigation(navState)) {
     if (navState.details) {
@@ -152,16 +220,67 @@ export function MainContentPanel({
         </Panel>
       )
     }
-    // No session selected - empty state
+
+    const hasSkills = skills.length > 0
+
+    // No session selected - show skills grid home if skills exist, otherwise fallback empty state
     return wrapWithStoplight(
       <Panel variant="grow" className={className}>
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">
-            {navState.filter.kind === 'flagged'
-              ? t('暂无标记的对话')
-              : t('暂无对话')}
-          </p>
-        </div>
+        {hasSkills ? (
+          <div className="flex flex-col h-full">
+            <div className="px-8 pt-6 pb-4 border-b border-border/40">
+              <h1 className="text-base font-semibold text-foreground">
+                {t('选择一个技能开始对话')}
+              </h1>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('根据当前工作区的技能快速启动一个新的对话。')}
+              </p>
+            </div>
+            <div className="flex-1 overflow-auto px-6 py-6">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+                {skills.map((skill) => (
+                  <button
+                    key={skill.slug}
+                    type="button"
+                    onClick={() => handleSkillStartChat(skill)}
+                    className="group flex flex-col items-start gap-3 rounded-[12px] border border-border/60 bg-background/40 px-4 py-3 text-left shadow-[0_0_0_1px_rgba(15,23,42,0.02)] hover:border-border hover:bg-foreground/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="shrink-0">
+                        <SkillAvatar
+                          skill={skill}
+                          size="md"
+                          workspaceId={activeWorkspaceId || undefined}
+                        />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="text-sm font-medium text-foreground line-clamp-2">
+                          {skill.metadata.name}
+                        </div>
+                        {skill.metadata.description && (
+                          <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                            {skill.metadata.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-[11px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      {t('使用该技能新建一个对话')}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">
+              {navState.filter.kind === 'flagged'
+                ? t('暂无标记的对话')
+                : t('暂无对话')}
+            </p>
+          </div>
+        )}
       </Panel>
     )
   }

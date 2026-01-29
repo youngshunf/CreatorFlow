@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { authApi } from '@/api/auth'
+import { authApi, type LoginResult } from '@/api/auth'
 import { cn } from '@/lib/utils'
+import { enableCloudMode, type CloudConfig, getCloudApiUrl, getCurrentEnv, isDebugMode } from '@creator-flow/shared/cloud'
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
@@ -85,12 +86,47 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   }
 
-  const handleSuccess = (res: any) => {
+  const handleSuccess = async (res: LoginResult) => {
+    // Save tokens to localStorage
     localStorage.setItem('access_token', res.access_token)
     if (res.llm_token) {
-        localStorage.setItem('llm_token', res.llm_token)
+      localStorage.setItem('llm_token', res.llm_token)
     }
-    // 也可以保存用户信息到 Store
+    
+    // Enable cloud mode for LLM calls
+    if (res.llm_token) {
+      // Get API URL from environment configuration
+      const apiBaseUrl = getCloudApiUrl()
+      
+      if (isDebugMode()) {
+        console.log(`[Login] Environment: ${getCurrentEnv()}, API URL: ${apiBaseUrl}`)
+      }
+      
+      const cloudConfig: CloudConfig = {
+        apiBaseUrl,
+        accessToken: res.access_token,
+        llmToken: res.llm_token,
+        expiresAt: res.access_token_expire_time ? new Date(res.access_token_expire_time).getTime() : undefined,
+      }
+      // Save to localStorage for renderer access
+      enableCloudMode(cloudConfig)
+      
+      // Notify main process to use cloud gateway for SDK
+      // Build full gateway URL: apiBaseUrl + /llm/proxy
+      const gatewayUrl = `${apiBaseUrl.replace(/\/$/, '')}/llm/proxy`
+      try {
+        await window.electronAPI.setCloudConfig({
+          gatewayUrl,
+          llmToken: res.llm_token,
+        })
+        if (isDebugMode()) {
+          console.log(`[Login] Cloud config set in main process: ${gatewayUrl}`)
+        }
+      } catch (err) {
+        console.error('[Login] Failed to set cloud config in main process:', err)
+      }
+    }
+    
     onLoginSuccess()
   }
 

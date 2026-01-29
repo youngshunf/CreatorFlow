@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import { useAtomValue } from "jotai"
+import type { FMFileEntry } from "../../../shared/types"
 import { motion, AnimatePresence } from "motion/react"
 import {
   CheckCircle2,
@@ -23,6 +24,8 @@ import {
   FolderOpen,
   HelpCircle,
   ExternalLink,
+  Home,
+  Files,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -98,6 +101,7 @@ import {
   isSourcesNavigation,
   isSettingsNavigation,
   isSkillsNavigation,
+  isFilesNavigation,
   type NavigationState,
   type ChatFilter,
 } from "@/contexts/NavigationContext"
@@ -113,6 +117,7 @@ import type { RichTextInputHandle } from "@/components/ui/rich-text-input"
 import { hasOpenOverlay } from "@/lib/overlay-detection"
 import { clearSourceIconCaches } from "@/lib/icon-cache"
 import { useT } from "@/context/LocaleContext"
+import { FileTreePanel, FilePreviewPanel } from "@/components/file-manager"
 
 /**
  * Label name translation mapping for existing workspaces with English labels.
@@ -585,6 +590,9 @@ function AppShellContent({
   }, [])
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId)
+
+  // File manager state - selected file for preview
+  const [selectedFile, setSelectedFile] = useState<FMFileEntry | null>(null)
 
   // Load dynamic statuses from workspace config
   const { statuses: statusConfigs, isLoading: isLoadingStatuses } = useStatuses(activeWorkspace?.id || null)
@@ -1060,6 +1068,10 @@ function AppShellContent({
     storage.set(storage.KEYS.collapsedSidebarItems, [...collapsedItems])
   }, [collapsedItems])
 
+  const handleHomeClick = useCallback(() => {
+    navigate(routes.view.home())
+  }, [])
+
   const handleAllChatsClick = useCallback(() => {
     navigate(routes.view.allChats())
   }, [])
@@ -1111,6 +1123,11 @@ function AppShellContent({
   // Handler for skills view
   const handleSkillsClick = useCallback(() => {
     navigate(routes.view.skills())
+  }, [])
+
+  // Handler for files view (file manager)
+  const handleFilesClick = useCallback(() => {
+    navigate(routes.view.files())
   }, [])
 
   // Handler for settings view
@@ -1283,6 +1300,9 @@ function AppShellContent({
   const unifiedSidebarItems = React.useMemo((): SidebarItem[] => {
     const result: SidebarItem[] = []
 
+    // 0. Home section: explicit workspace home view
+    result.push({ id: 'nav:home', type: 'nav', action: handleHomeClick })
+
     // 1. Chats section: All Chats, Flagged, States header, States items
     result.push({ id: 'nav:allChats', type: 'nav', action: handleAllChatsClick })
     result.push({ id: 'nav:flagged', type: 'nav', action: handleFlaggedClick })
@@ -1304,13 +1324,14 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Sources, Skills, Settings
+    // 3. Sources, Skills, Files, Settings
     result.push({ id: 'nav:sources', type: 'nav', action: handleSourcesClick })
     result.push({ id: 'nav:skills', type: 'nav', action: handleSkillsClick })
+    result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
 
     return result
-  }, [handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleSettingsClick])
+  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleSettingsClick])
 
   // Toggle folder expanded state
   const handleToggleFolder = React.useCallback((path: string) => {
@@ -1416,6 +1437,13 @@ function AppShellContent({
       })
     }
   }, [sidebarFocused, focusedSidebarItemId, unifiedSidebarItems])
+
+  // Determine active route from URL for sidebar highlighting and layout tweaks
+  // Depend on navState so it updates when navigation changes
+  const activeRoute = React.useMemo(() => {
+    const params = new URLSearchParams(window.location.search)
+    return (params.get('route') || 'allChats') as string
+  }, [navState])
 
   // Get title based on navigation state
   const listTitle = React.useMemo(() => {
@@ -1593,13 +1621,21 @@ function AppShellContent({
                   getItemProps={getSidebarItemProps}
                   focusedItemId={focusedSidebarItemId}
                   links={[
+                    // --- Home ---
+                    {
+                      id: "nav:home",
+                      title: t('开始'),
+                      icon: Home,
+                      variant: activeRoute === 'home' ? "default" : "ghost",
+                      onClick: handleHomeClick,
+                    },
                     // --- Chats Section ---
                     {
                       id: "nav:allChats",
                       title: t('所有对话'),
                       label: String(workspaceSessionMetas.length),
                       icon: Inbox,
-                      variant: chatFilter?.kind === 'allChats' ? "default" : "ghost",
+                      variant: chatFilter?.kind === 'allChats' && activeRoute !== 'home' ? "default" : "ghost",
                       onClick: handleAllChatsClick,
                     },
                     {
@@ -1733,6 +1769,13 @@ function AppShellContent({
                         onAddSkill: openAddSkill,
                       },
                     },
+                    {
+                      id: "nav:files",
+                      title: t('文件'),
+                      icon: Files,
+                      variant: isFilesNavigation(navState) ? "default" : "ghost",
+                      onClick: handleFilesClick,
+                    },
                     // --- Separator ---
                     { id: "separator:skills-settings", type: "separator" },
                     // --- Settings ---
@@ -1846,8 +1889,49 @@ function AppShellContent({
           className="flex-1 overflow-hidden min-w-0 flex h-full"
           style={{ padding: PANEL_WINDOW_EDGE_SPACING, gap: PANEL_PANEL_SPACING / 2 }}
         >
-          {/* === SESSION LIST PANEL === (hidden in focused mode) */}
-          {!isFocusedMode && (
+          {/* === FILES NAVIGATION: Two-panel layout (tree + preview) === */}
+          {isFilesNavigation(navState) && activeWorkspace && (
+            <>
+              {/* File Tree Panel (left) */}
+              <div
+                className="h-full flex flex-col min-w-0 bg-background shrink-0 shadow-middle overflow-hidden rounded-l-[14px] rounded-r-[10px]"
+                style={{ width: sessionListWidth }}
+              >
+                <FileTreePanel
+                  rootPath={activeWorkspace.rootPath}
+                  onSelectFile={setSelectedFile}
+                  selectedPath={selectedFile?.path}
+                />
+              </div>
+              {/* Resize Handle */}
+              <div
+                ref={sessionListHandleRef}
+                onMouseDown={(e) => { e.preventDefault(); setIsResizing('session-list') }}
+                onMouseMove={(e) => {
+                  if (sessionListHandleRef.current) {
+                    const rect = sessionListHandleRef.current.getBoundingClientRect()
+                    setSessionListHandleY(e.clientY - rect.top)
+                  }
+                }}
+                onMouseLeave={() => { if (isResizing !== 'session-list') setSessionListHandleY(null) }}
+                className="relative w-0 h-full cursor-col-resize flex justify-center shrink-0"
+              >
+                <div className="absolute inset-y-0 -left-1.5 -right-1.5 flex justify-center cursor-col-resize">
+                  <div
+                    className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5"
+                    style={getResizeGradientStyle(sessionListHandleY)}
+                  />
+                </div>
+              </div>
+              {/* File Preview Panel (right) */}
+              <div className="flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle rounded-l-[10px] rounded-r-[14px]">
+                <FilePreviewPanel file={selectedFile} />
+              </div>
+            </>
+          )}
+
+          {/* === SESSION LIST PANEL === (hidden in focused mode, home view, and files navigation) */}
+          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && (
           <div
             className="h-full flex flex-col min-w-0 bg-background shrink-0 shadow-middle overflow-hidden rounded-l-[14px] rounded-r-[10px]"
             style={{ width: sessionListWidth }}
@@ -2166,8 +2250,8 @@ function AppShellContent({
           </div>
           )}
 
-          {/* Session List Resize Handle (hidden in focused mode) */}
-          {!isFocusedMode && (
+          {/* Session List Resize Handle (hidden in focused mode, home view, and files navigation) */}
+          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && (
           <div
             ref={sessionListHandleRef}
             onMouseDown={(e) => { e.preventDefault(); setIsResizing('session-list') }}
@@ -2190,16 +2274,18 @@ function AppShellContent({
           </div>
           )}
 
-          {/* === MAIN CONTENT PANEL === */}
+          {/* === MAIN CONTENT PANEL === (hidden in files navigation) */}
+          {!isFilesNavigation(navState) && (
           <div className={cn(
             "flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle",
             isFocusedMode ? "rounded-[14px]" : (isRightSidebarVisible ? "rounded-l-[10px] rounded-r-[10px]" : "rounded-l-[10px] rounded-r-[14px]")
           )}>
             <MainContentPanel isFocusedMode={isFocusedMode} />
           </div>
+          )}
 
-          {/* Right Sidebar - Inline Mode (≥ 920px) */}
-          {!isFocusedMode && !shouldUseOverlay && (
+          {/* Right Sidebar - Inline Mode (≥ 920px) - hidden in files navigation */}
+          {!isFocusedMode && !shouldUseOverlay && !isFilesNavigation(navState) && (
             <>
               {/* Resize Handle */}
               {isRightSidebarVisible && (
@@ -2255,8 +2341,8 @@ function AppShellContent({
             </>
           )}
 
-          {/* Right Sidebar - Overlay Mode (< 920px) */}
-          {!isFocusedMode && shouldUseOverlay && (
+          {/* Right Sidebar - Overlay Mode (< 920px) - hidden in files navigation */}
+          {!isFocusedMode && shouldUseOverlay && !isFilesNavigation(navState) && (
             <AnimatePresence>
               {isRightSidebarVisible && (
                 <>

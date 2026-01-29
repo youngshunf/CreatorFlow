@@ -114,6 +114,23 @@ const ShieldIcon = ({ className }: { className?: string }) => (
     />
   </svg>
 )
+
+/** Crown icon for subscription */
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2 8L6 12L12 4L18 12L22 8V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V8Z"
+      fill="currentColor"
+    />
+  </svg>
+)
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { useT } from '@/context/LocaleContext'
@@ -162,6 +179,12 @@ const settingsItems: SettingsItem[] = [
     labelKey: '用户资料',
     icon: UserProfileIcon,
     descriptionKey: '头像、昵称、个人信息',
+  },
+  {
+    id: 'subscription',
+    labelKey: '订阅与积分',
+    icon: CrownIcon,
+    descriptionKey: '查看用量、升级订阅、购买积分',
   },
   {
     id: 'app',

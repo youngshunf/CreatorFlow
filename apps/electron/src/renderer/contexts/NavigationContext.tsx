@@ -57,6 +57,7 @@ import {
   isSourcesNavigation,
   isSettingsNavigation,
   isSkillsNavigation,
+  isFilesNavigation,
   DEFAULT_NAVIGATION_STATE,
 } from '../../shared/types'
 import { sessionMetaMapAtom, updateSessionMetaAtom, type SessionMeta } from '@/atoms/sessions'
@@ -69,7 +70,7 @@ export type { Route }
 
 // Re-export navigation state types for consumers
 export type { NavigationState, ChatFilter }
-export { isChatsNavigation, isSourcesNavigation, isSettingsNavigation, isSkillsNavigation }
+export { isChatsNavigation, isSourcesNavigation, isSettingsNavigation, isSkillsNavigation, isFilesNavigation }
 
 interface NavigationContextValue {
   /** Navigate to a route */
@@ -213,7 +214,11 @@ export function NavigationProvider({
     (sessionId: string): boolean => {
       if (!workspaceId) return true // No workspace filter
       const session = sessionMetaMap.get(sessionId)
-      return session?.workspaceId === workspaceId
+      // IMPORTANT: treat "unknown session" as valid so freshly-created sessions
+      // (not yet in sessionMetaMap) are not discarded as invalid. Only treat as
+      // invalid when we know the session exists and belongs to a different workspace.
+      if (!session) return true
+      return session.workspaceId === workspaceId
     },
     [sessionMetaMap, workspaceId]
   )
@@ -378,9 +383,19 @@ export function NavigationProvider({
    * so the caller can update the URL with the correct route.
    */
   const applyNavigationState = useCallback(
-    (newState: NavigationState): NavigationState => {
-      // For chats: validate and auto-select session
+    (newState: NavigationState, sourceRoute?: Route): NavigationState => {
+      const isHomeRoute = sourceRoute === 'home'
+
+      // For chats: validate and auto-select session (except for explicit home route)
       if (isChatsNavigation(newState)) {
+        // For home route, never auto-select a session — always show empty/home state
+        if (isHomeRoute) {
+          setSession({ selected: null })
+          setNavigationState(newState)
+          return newState
+        }
+
+        // For other chats routes: validate and auto-select session
         // If details provided, verify session belongs to current workspace
         // This prevents "ghost sessions" when switching workspaces
         if (newState.details) {
@@ -499,7 +514,7 @@ export function NavigationProvider({
 
       if (newNavState) {
         // Apply navigation state (may auto-select first item)
-        const finalState = applyNavigationState(newNavState)
+        const finalState = applyNavigationState(newNavState, route)
 
         // Build route from final state (includes auto-selection)
         // This ensures the URL reflects the actual displayed content

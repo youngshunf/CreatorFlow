@@ -33,7 +33,7 @@ function Calendar({
         ...formatters,
       }}
       className={cn(
-        'bg-background p-3 [--cell-size:2rem]',
+        'bg-background p-3 [--cell-size:2.25rem]',
         className
       )}
       classNames={{
@@ -44,17 +44,17 @@ function Calendar({
         ),
         month: cn('relative flex w-full flex-col gap-4', defaultClassNames.month),
         nav: cn(
-          'absolute inset-x-0 top-1.5 flex h-[--cell-size] w-full items-center justify-between gap-1',
+          'absolute inset-x-0 top-1.5 flex h-[--cell-size] w-full items-center justify-between gap-1 z-10 pointer-events-none',
           defaultClassNames.nav
         ),
         button_previous: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50',
+          'h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50 pointer-events-auto cursor-pointer',
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50',
+          'h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50 pointer-events-auto cursor-pointer',
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -62,8 +62,9 @@ function Calendar({
           defaultClassNames.month_caption
         ),
         // Dropdown container for month/year selectors
+        // Use flex-row-reverse to show year before month (Chinese convention)
         dropdowns: cn(
-          'flex h-[--cell-size] w-full items-center justify-center gap-1.5 text-sm font-medium',
+          'flex flex-row-reverse h-[--cell-size] w-full items-center justify-center gap-1.5 text-sm font-medium',
           defaultClassNames.dropdowns
         ),
         // Individual dropdown wrapper (month or year)

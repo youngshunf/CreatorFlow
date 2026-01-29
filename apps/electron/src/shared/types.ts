@@ -61,6 +61,48 @@ export interface SkillFile {
   children?: SkillFile[]
 }
 
+// ============================================
+// File Manager Types
+// ============================================
+
+/**
+ * File entry for file manager
+ */
+export interface FMFileEntry {
+  /** Full path */
+  path: string
+  /** File/folder name */
+  name: string
+  /** Whether this is a directory */
+  isDirectory: boolean
+  /** File size in bytes (undefined for directories) */
+  size?: number
+  /** Last modified timestamp (ms since epoch) */
+  modifiedTime?: number
+  /** File extension (lowercase, e.g. 'txt') */
+  extension?: string
+}
+
+/**
+ * File info with additional metadata
+ */
+export interface FMFileInfo {
+  path: string
+  name: string
+  size: number
+  isDir: boolean
+  createdAt: Date
+  modifiedAt: Date
+}
+
+/**
+ * Directory change event for file watcher
+ */
+export interface FMDirectoryChangeEvent {
+  type: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir'
+  path: string
+}
+
 /**
  * File/directory entry in a session folder
  * Supports recursive tree structure with children for directories
@@ -155,6 +197,20 @@ import type { PermissionRequest as BasePermissionRequest } from '@creator-flow/c
  */
 export interface PermissionRequest extends BasePermissionRequest {
   sessionId: string
+}
+
+// ============================================
+// Cloud LLM Gateway Config
+// ============================================
+
+/**
+ * Configuration for cloud LLM gateway (main process)
+ */
+export interface CloudLLMConfig {
+  /** Cloud LLM gateway URL (e.g., https://api.example.com/llm/proxy) */
+  gatewayUrl: string
+  /** LLM token for x-api-key header authentication */
+  llmToken: string
 }
 
 // ============================================
@@ -564,6 +620,11 @@ export const IPC_CHANNELS = {
   SHOW_LOGOUT_CONFIRMATION: 'auth:showLogoutConfirmation',
   SHOW_DELETE_SESSION_CONFIRMATION: 'auth:showDeleteSessionConfirmation',
 
+  // Cloud LLM Gateway
+  CLOUD_SET_CONFIG: 'cloud:setConfig',
+  CLOUD_GET_CONFIG: 'cloud:getConfig',
+  CLOUD_CLEAR_CONFIG: 'cloud:clearConfig',
+
   // Onboarding
   ONBOARDING_GET_AUTH_STATE: 'onboarding:getAuthState',
   ONBOARDING_VALIDATE_MCP: 'onboarding:validateMcp',
@@ -677,6 +738,19 @@ export const IPC_CHANNELS = {
   WINDOW_FOCUS_STATE: 'window:focusState',  // Broadcast: boolean (isFocused)
   WINDOW_GET_FOCUS_STATE: 'window:getFocusState',
 
+  // File Manager (workspace file browsing)
+  FM_LIST_DIRECTORY: 'fm:listDirectory',
+  FM_CREATE_FOLDER: 'fm:createFolder',
+  FM_DELETE: 'fm:delete',
+  FM_RENAME: 'fm:rename',
+  FM_MOVE: 'fm:move',
+  FM_COPY: 'fm:copy',
+  FM_GET_FILE_INFO: 'fm:getFileInfo',
+  FM_READ_FILE_BASE64: 'fm:readFileBase64',
+  FM_WATCH_DIRECTORY: 'fm:watchDirectory',
+  FM_UNWATCH_DIRECTORY: 'fm:unwatchDirectory',
+  FM_DIRECTORY_CHANGED: 'fm:directoryChanged',
+
   // Git operations
   GET_GIT_BRANCH: 'git:getBranch',
 
@@ -758,6 +832,21 @@ export interface ElectronAPI {
   // Debug: send renderer logs to main process log file
   debugLog(...args: unknown[]): void
 
+  // File Manager
+  fm: {
+    listDirectory(path: string): Promise<FMFileEntry[]>
+    createFolder(fullPath: string): Promise<string>
+    delete(paths: string[]): Promise<void>
+    rename(oldPath: string, newName: string): Promise<string>
+    move(srcPaths: string[], destDir: string): Promise<void>
+    copy(srcPaths: string[], destDir: string): Promise<void>
+    getFileInfo(path: string): Promise<FMFileInfo>
+    readFileBase64(path: string, maxSize?: number): Promise<{ data: string; mimeType: string }>
+    watchDirectory(path: string): void
+    unwatchDirectory(path: string): void
+    onDirectoryChanged(callback: (event: FMDirectoryChangeEvent) => void): () => void
+  }
+
   // Theme
   getSystemTheme(): Promise<boolean>
   onSystemThemeChange(callback: (isDark: boolean) => void): () => void
@@ -793,6 +882,11 @@ export interface ElectronAPI {
   showLogoutConfirmation(): Promise<boolean>
   showDeleteSessionConfirmation(name: string): Promise<boolean>
   logout(): Promise<void>
+
+  // Cloud LLM Gateway
+  setCloudConfig(config: CloudLLMConfig): Promise<void>
+  getCloudConfig(): Promise<CloudLLMConfig | null>
+  clearCloudConfig(): Promise<void>
 
   // Onboarding
   getAuthState(): Promise<AuthState>
@@ -1051,7 +1145,7 @@ export type ChatFilter =
 /**
  * Settings subpage options
  */
-export type SettingsSubpage = 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile'
+export type SettingsSubpage = 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription'
 
 /**
  * Chats navigation state - shows SessionList in navigator
@@ -1109,6 +1203,17 @@ export interface SkillsNavigationState {
 }
 
 /**
+ * Files navigation state - shows FileManager in main content
+ */
+export interface FilesNavigationState {
+  navigator: 'files'
+  /** Current directory path */
+  path?: string
+  /** Optional right sidebar panel state */
+  rightSidebar?: RightSidebarPanel
+}
+
+/**
  * Unified navigation state - single source of truth for all 3 panels
  *
  * From this state we can derive:
@@ -1121,6 +1226,7 @@ export type NavigationState =
   | SourcesNavigationState
   | SettingsNavigationState
   | SkillsNavigationState
+  | FilesNavigationState
 
 /**
  * Type guard to check if state is chats navigation
@@ -1149,6 +1255,13 @@ export const isSettingsNavigation = (
 export const isSkillsNavigation = (
   state: NavigationState
 ): state is SkillsNavigationState => state.navigator === 'skills'
+
+/**
+ * Type guard to check if state is files navigation
+ */
+export const isFilesNavigation = (
+  state: NavigationState
+): state is FilesNavigationState => state.navigator === 'files'
 
 /**
  * Default navigation state - allChats with no selection

@@ -15,6 +15,7 @@ import type {
   SourceFilter,
   SettingsSubpage,
   RightSidebarPanel,
+  FilesNavigationState,
 } from './types'
 
 // =============================================================================
@@ -34,7 +35,7 @@ export interface ParsedRoute {
 // Compound Route Types (new format)
 // =============================================================================
 
-export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings'
+export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files'
 
 export interface ParsedCompoundRoute {
   /** The navigator type */
@@ -58,7 +59,7 @@ export interface ParsedCompoundRoute {
  * Known prefixes that indicate a compound route
  */
 const COMPOUND_ROUTE_PREFIXES = [
-  'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings'
+  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files'
 ]
 
 /**
@@ -91,10 +92,19 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
 
   const first = segments[0]
 
+  // Workspace home (maps to chats navigator with allChats filter, no selection)
+  if (first === 'home') {
+    return {
+      navigator: 'chats',
+      chatFilter: { kind: 'allChats' },
+      details: null,
+    }
+  }
+
   // Settings navigator
   if (first === 'settings') {
     const subpage = (segments[1] || 'user-profile') as SettingsSubpage
-    const validSubpages: SettingsSubpage[] = ['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile']
+    const validSubpages: SettingsSubpage[] = ['app', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription']
     if (!validSubpages.includes(subpage)) return null
     return {
       navigator: 'settings',
@@ -153,6 +163,11 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
     }
 
     return null
+  }
+
+  // Files navigator
+  if (first === 'files') {
+    return { navigator: 'files', details: null }
   }
 
   // Chats navigator (allChats, flagged, state)
@@ -462,6 +477,11 @@ function convertCompoundToNavigationState(compound: ParsedCompoundRoute): Naviga
     }
   }
 
+  // Files
+  if (compound.navigator === 'files') {
+    return { navigator: 'files' }
+  }
+
   // Chats
   const filter = compound.chatFilter || { kind: 'allChats' as const }
   if (compound.details) {
@@ -492,6 +512,8 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
       return { navigator: 'settings', subpage: 'user-profile' }
     case 'user-profile':
       return { navigator: 'settings', subpage: 'user-profile' }
+    case 'user-profile-edit':
+      return { navigator: 'settings', subpage: 'user-profile-edit' }
     case 'workspace':
       return { navigator: 'settings', subpage: 'workspace' }
     case 'permissions':
@@ -504,6 +526,8 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
       return { navigator: 'settings', subpage: 'preferences' }
     case 'app':
       return { navigator: 'settings', subpage: 'app' }
+    case 'subscription':
+      return { navigator: 'settings', subpage: 'subscription' }
     case 'sources':
       return { navigator: 'sources', details: null }
     case 'source-info':
@@ -590,6 +614,8 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
         }
       }
       return { navigator: 'chats', filter: { kind: 'allChats' }, details: null }
+    case 'files':
+      return { navigator: 'files', path: parsed.params.path }
     default:
       return null
   }
@@ -620,6 +646,14 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
       return `skills/skill/${state.details.skillSlug}`
     }
     return 'skills'
+  }
+
+  // Files
+  if (state.navigator === 'files') {
+    if (state.path) {
+      return `files?path=${encodeURIComponent(state.path)}`
+    }
+    return 'files'
   }
 
   // Chats

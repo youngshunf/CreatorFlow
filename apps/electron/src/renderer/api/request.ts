@@ -7,7 +7,11 @@ export interface ApiResponse<T = any> {
   data: T;
 }
 
-const BASE_URL = import.meta.env.VITE_GLOB_API_URL || 'http://localhost:8020/api/v1';
+// 从环境变量获取 API URL
+// 优先级: VITE_CLOUD_API_URL > VITE_GLOB_API_URL > 默认值
+const BASE_URL = import.meta.env.VITE_CLOUD_API_URL 
+  || import.meta.env.VITE_GLOB_API_URL 
+  || 'http://localhost:8020/api/v1';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;

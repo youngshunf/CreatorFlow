@@ -3,3 +3,8 @@ vendor/
 packages/
 release/
 node_modules/@anthropic-ai/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local

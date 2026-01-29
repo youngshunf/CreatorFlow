@@ -148,6 +148,33 @@ export default function App() {
     setIsLoggedIn(true)
   }, [])
 
+  // Restore cloud config to main process on app startup if user is already logged in
+  // This ensures SDK uses cloud gateway even after app restart
+  useEffect(() => {
+    const restoreCloudConfig = async () => {
+      const cloudConfigStr = localStorage.getItem('cloud_config')
+      if (!cloudConfigStr) return
+      
+      try {
+        const cloudConfig = JSON.parse(cloudConfigStr)
+        if (cloudConfig.apiBaseUrl && cloudConfig.llmToken) {
+          const gatewayUrl = `${cloudConfig.apiBaseUrl.replace(/\/$/, '')}/llm/proxy`
+          await window.electronAPI.setCloudConfig({
+            gatewayUrl,
+            llmToken: cloudConfig.llmToken,
+          })
+          console.log('[App] Restored cloud config to main process:', gatewayUrl)
+        }
+      } catch (err) {
+        console.error('[App] Failed to restore cloud config:', err)
+      }
+    }
+    
+    if (isLoggedIn) {
+      restoreCloudConfig()
+    }
+  }, [isLoggedIn])
+
   // Per-session Jotai atom setters for isolated updates
   // NOTE: No sessionsAtom - we don't store a Session[] array anywhere to prevent memory leaks
   // Instead we use:
@@ -320,6 +347,13 @@ export default function App() {
         const wsId = await window.electronAPI.getWindowWorkspace()
         setWindowWorkspaceId(wsId)
 
+        // If user is logged in, skip onboarding and go directly to ready state
+        // Users only need to login, they don't need to configure API connections
+        if (isLoggedIn) {
+          setAppState('ready')
+          return
+        }
+
         const needs = await window.electronAPI.getSetupNeeds()
         setSetupNeeds(needs)
 
@@ -337,7 +371,7 @@ export default function App() {
     }
 
     initialize()
-  }, [])
+  }, [isLoggedIn])
 
   // Session selection state
   const [, setSession] = useSession()
@@ -1077,6 +1111,18 @@ export default function App() {
     setShowResetDialog(true)
   }, [])
 
+  // Handle logout - clears auth tokens and returns to login screen
+  const handleLogout = useCallback(() => {
+    // Clear auth tokens from localStorage
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('cloud_config')
+    // Clear cloud config from main process
+    window.electronAPI.clearCloudConfig()
+    // Update state to show login screen
+    setIsLoggedIn(false)
+  }, [])
+
   // Execute reset after user confirms in dialog
   const executeReset = useCallback(async () => {
     try {
@@ -1187,6 +1233,7 @@ export default function App() {
     onOpenKeyboardShortcuts: handleOpenKeyboardShortcuts,
     onOpenStoredUserPreferences: handleOpenStoredUserPreferences,
     onReset: handleReset,
+    onLogout: handleLogout,
     // Session options
     onSessionOptionsChange: handleSessionOptionsChange,
     onInputChange: handleInputChange,
@@ -1224,6 +1271,7 @@ export default function App() {
     handleOpenKeyboardShortcuts,
     handleOpenStoredUserPreferences,
     handleReset,
+    handleLogout,
     handleSessionOptionsChange,
     handleInputChange,
     openNewChat,
