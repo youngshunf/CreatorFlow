@@ -14,7 +14,7 @@ import {
   writeFileSync,
 } from 'fs';
 import { join, basename } from 'path';
-import type { AppManifest, DirectoryStructure, PresetData } from './types.ts';
+import type { AppManifest, DirectoryStructure, PresetData, PresetLabelConfig, PresetStatusConfig } from './types.ts';
 import type { WorkspaceConfig } from '../workspaces/types.ts';
 import {
   createWorkspaceAtPath,
@@ -161,24 +161,109 @@ function installBundledSkills(
 // ============================================================
 
 /**
+ * Generate a slug ID from a label/status name
+ */
+function generateSlugId(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')  // Allow Chinese characters
+    .replace(/^-|-$/g, '')
+    .substring(0, 50) || 'item';
+}
+
+/**
+ * Convert PresetLabelConfig to LabelConfig
+ */
+function convertPresetLabel(preset: PresetLabelConfig): import('../labels/types.ts').LabelConfig {
+  const id = preset.id || generateSlugId(preset.name);
+  
+  const label: import('../labels/types.ts').LabelConfig = {
+    id,
+    name: preset.name,
+  };
+  
+  // Handle color (can be string or { light, dark } object)
+  if (preset.color) {
+    label.color = preset.color as import('../colors/types.ts').EntityColor;
+  }
+  
+  // Handle children recursively
+  if (preset.children && preset.children.length > 0) {
+    label.children = preset.children.map(child => convertPresetLabel(child));
+  }
+  
+  // Handle valueType
+  if (preset.valueType) {
+    label.valueType = preset.valueType;
+  }
+  
+  return label;
+}
+
+/**
+ * Convert PresetStatusConfig to StatusConfig
+ */
+function convertPresetStatus(
+  preset: PresetStatusConfig,
+  index: number
+): import('../statuses/types.ts').StatusConfig {
+  const id = preset.id || generateSlugId(preset.label);
+  
+  return {
+    id,
+    label: preset.label,
+    color: preset.color as import('../colors/types.ts').EntityColor | undefined,
+    icon: preset.icon,
+    category: preset.category || 'open',
+    isFixed: preset.isFixed || false,
+    isDefault: !preset.isFixed,  // Non-fixed statuses are considered default (can be modified)
+    order: preset.order !== undefined ? preset.order : index,
+  };
+}
+
+/**
  * Apply preset labels to workspace
  */
 function applyPresetLabels(
   workspaceRoot: string,
-  labels: PresetData['labels']
+  presetData: PresetData
 ): void {
-  if (!labels || labels.length === 0) {
+  const presetLabels = presetData.labels;
+  if (!presetLabels || presetLabels.length === 0) {
     return;
   }
   
-  // Load current label config or create default
-  const labelConfig = getDefaultLabelConfig();
+  // Convert preset labels to full LabelConfig format
+  const convertedLabels = presetLabels.map(preset => convertPresetLabel(preset));
   
-  // Add preset labels to workspace
-  // Note: Label config structure may vary, this is a simplified implementation
-  // In practice, you'd want to properly integrate with the label system
-  
-  saveLabelConfig(workspaceRoot, labelConfig);
+  if (presetData.replaceDefaultLabels) {
+    // Replace default labels entirely
+    const labelConfig: import('../labels/types.ts').WorkspaceLabelConfig = {
+      version: 1,
+      labels: convertedLabels,
+    };
+    saveLabelConfig(workspaceRoot, labelConfig);
+  } else {
+    // Merge with defaults: add preset labels to the end of default labels
+    const defaultConfig = getDefaultLabelConfig();
+    
+    // Avoid duplicate IDs - filter out any preset labels that already exist in defaults
+    const existingIds = new Set<string>();
+    const collectIds = (labels: import('../labels/types.ts').LabelConfig[]) => {
+      for (const label of labels) {
+        existingIds.add(label.id);
+        if (label.children) {
+          collectIds(label.children);
+        }
+      }
+    };
+    collectIds(defaultConfig.labels);
+    
+    const newLabels = convertedLabels.filter(label => !existingIds.has(label.id));
+    defaultConfig.labels.push(...newLabels);
+    
+    saveLabelConfig(workspaceRoot, defaultConfig);
+  }
 }
 
 /**
@@ -186,19 +271,73 @@ function applyPresetLabels(
  */
 function applyPresetStatuses(
   workspaceRoot: string,
-  statuses: PresetData['statuses']
+  presetData: PresetData
 ): void {
-  if (!statuses || statuses.length === 0) {
+  const presetStatuses = presetData.statuses;
+  if (!presetStatuses || presetStatuses.length === 0) {
     return;
   }
   
-  // Load current status config or create default
-  const statusConfig = getDefaultStatusConfig();
+  // Convert preset statuses to full StatusConfig format
+  const convertedStatuses = presetStatuses.map((preset, index) => 
+    convertPresetStatus(preset, index)
+  );
   
-  // Preset statuses can be used to customize the default statuses
-  // For now, we use defaults - can be extended later
+  // Get default config (contains fixed statuses that must be preserved)
+  const defaultConfig = getDefaultStatusConfig();
   
-  saveStatusConfig(workspaceRoot, statusConfig);
+  // Fixed status IDs that cannot be replaced
+  const fixedStatusIds = new Set(['todo', 'done', 'cancelled']);
+  
+  if (presetData.replaceDefaultStatuses) {
+    // Replace non-fixed statuses, preserve fixed ones
+    const fixedStatuses = defaultConfig.statuses.filter(s => fixedStatusIds.has(s.id));
+    const presetNonFixed = convertedStatuses.filter(s => !fixedStatusIds.has(s.id));
+    
+    // Recalculate order
+    const allStatuses = [...presetNonFixed, ...fixedStatuses].map((s, i) => ({
+      ...s,
+      order: i,
+    }));
+    
+    const statusConfig: import('../statuses/types.ts').WorkspaceStatusConfig = {
+      version: 1,
+      statuses: allStatuses,
+      defaultStatusId: defaultConfig.defaultStatusId,
+    };
+    saveStatusConfig(workspaceRoot, statusConfig);
+  } else {
+    // Merge: add new statuses, update existing non-fixed ones
+    const existingIds = new Set(defaultConfig.statuses.map(s => s.id));
+    
+    for (const preset of convertedStatuses) {
+      if (fixedStatusIds.has(preset.id)) {
+        // Cannot modify fixed statuses, skip
+        continue;
+      }
+      
+      const existingIndex = defaultConfig.statuses.findIndex(s => s.id === preset.id);
+      if (existingIndex >= 0) {
+        // Update existing status (preserve isFixed and isDefault from original)
+        const existing = defaultConfig.statuses[existingIndex];
+        defaultConfig.statuses[existingIndex] = {
+          ...preset,
+          isFixed: existing.isFixed,
+          isDefault: existing.isDefault,
+        };
+      } else {
+        // Add new status
+        defaultConfig.statuses.push(preset);
+      }
+    }
+    
+    // Recalculate order based on array position
+    defaultConfig.statuses.forEach((s, i) => {
+      s.order = i;
+    });
+    
+    saveStatusConfig(workspaceRoot, defaultConfig);
+  }
 }
 
 // ============================================================
@@ -334,10 +473,21 @@ export function initializeWorkspaceFromApp(
   
   // Create workspace with app binding
   // Map app settings to workspace defaults format
+  const appSettings = manifest.workspace?.defaultSettings;
   const workspaceDefaults: WorkspaceConfig['defaults'] = {
-    model: manifest.workspace?.defaultSettings?.defaultModel as string | undefined,
+    // Model configuration
+    model: appSettings?.defaultModel as string | undefined,
     workingDirectory: workspaceRoot,
     enabledSourceSlugs: [],
+    
+    // Permission configuration from app manifest
+    permissionMode: appSettings?.permissionMode,
+    cyclablePermissionModes: appSettings?.cyclablePermissionModes,
+    
+    // Thinking level from app manifest
+    thinkingLevel: appSettings?.thinkingLevel,
+    
+    // Custom settings override everything
     ...options.customSettings,
   };
   
@@ -349,6 +499,11 @@ export function initializeWorkspaceFromApp(
     config.appId = options.appId;
     config.installedPluginApps = [];
     config.appSettings = {};
+    
+    // Apply localMcpServers configuration from app manifest
+    if (manifest.workspace?.localMcpServers) {
+      config.localMcpServers = manifest.workspace.localMcpServers;
+    }
     
     saveWorkspaceConfig(workspaceRoot, config);
   } catch (error) {
@@ -391,12 +546,11 @@ export function initializeWorkspaceFromApp(
     const presetData = manifest.workspace.presetData;
     
     try {
-      if (presetData.labels) {
-        applyPresetLabels(workspaceRoot, presetData.labels);
-      }
-      if (presetData.statuses) {
-        applyPresetStatuses(workspaceRoot, presetData.statuses);
-      }
+      // Apply preset labels (will merge with or replace defaults based on config)
+      applyPresetLabels(workspaceRoot, presetData);
+      
+      // Apply preset statuses (will merge with defaults, preserving fixed statuses)
+      applyPresetStatuses(workspaceRoot, presetData);
     } catch (error) {
       errors.push(`Failed to apply preset data: ${error}`);
     }

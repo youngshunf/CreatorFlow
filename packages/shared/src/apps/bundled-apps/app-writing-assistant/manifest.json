@@ -31,7 +31,13 @@
     },
     "defaultSettings": {
       "autoSave": true,
-      "language": "zh-CN"
+      "language": "zh-CN",
+      "permissionMode": "safe",
+      "cyclablePermissionModes": ["safe", "ask", "allow-all"],
+      "thinkingLevel": "think"
+    },
+    "localMcpServers": {
+      "enabled": true
     }
   },
   "permissions": ["filesystem", "network"],

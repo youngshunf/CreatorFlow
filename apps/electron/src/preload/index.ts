@@ -301,6 +301,10 @@ const api: ElectronAPI = {
     }
   },
 
+  // Apps (local bundled apps)
+  listBundledApps: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.APPS_LIST_BUNDLED),
+
   // Marketplace
   marketplaceListSkills: (options?: import('@creator-flow/shared/marketplace').ListSkillsOptions) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_SKILLS, options),

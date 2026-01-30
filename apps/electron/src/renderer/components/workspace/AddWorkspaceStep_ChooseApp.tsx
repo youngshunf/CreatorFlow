@@ -94,25 +94,24 @@ export function AddWorkspaceStep_ChooseApp({
   useEffect(() => {
     const loadApps = async () => {
       try {
-        // TODO: Implement electronAPI.getAvailableApps()
-        // For now, use hardcoded bundled apps
-        const bundledApps: AppOption[] = [
-          {
-            id: 'app.general',
-            name: t('通用工作区'),
-            description: t('通用 AI 助手工作区，适合各种任务场景'),
-            icon: '🤖'
-          },
-          {
-            id: 'app.creator-media',
-            name: t('自媒体创作'),
-            description: t('完整的自媒体创作工作流，支持小红书、抖音、公众号等平台'),
-            icon: '✨'
-          }
-        ]
-        setApps(bundledApps)
+        const bundledApps = await window.electronAPI.listBundledApps()
+        // Map to AppOption format with default icons for apps without iconPath
+        const appOptions: AppOption[] = bundledApps.map(app => ({
+          id: app.id,
+          name: app.name,
+          description: app.description,
+          icon: getAppIcon(app.id) // Use emoji icon based on app ID
+        }))
+        setApps(appOptions)
       } catch (error) {
         console.error('Failed to load apps:', error)
+        // Fallback to general app if loading fails
+        setApps([{
+          id: 'app.general',
+          name: t('通用工作区'),
+          description: t('通用 AI 助手工作区，适合各种任务场景'),
+          icon: '🤖'
+        }])
       } finally {
         setLoading(false)
       }
@@ -120,6 +119,19 @@ export function AddWorkspaceStep_ChooseApp({
 
     loadApps()
   }, [t])
+
+  // Get default icon for app based on ID
+  function getAppIcon(appId: string): string {
+    const iconMap: Record<string, string> = {
+      'app.general': '🤖',
+      'app.creator-media': '✨',
+      'app.software-dev': '💻',
+      'app.personal-assistant': '🗓️',
+      'app.smart-office': '📊',
+      'app.writing-assistant': '✍️',
+    }
+    return iconMap[appId] || '📦'
+  }
 
   const handleNext = () => {
     if (selectedAppId) {

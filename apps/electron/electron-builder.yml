@@ -22,6 +22,7 @@ files:
   - dist/assets/themes/**/*
   - dist/assets/permissions/**/*
   - dist/assets/config-defaults.json
+  - dist/assets/bundled-apps/**/*
   # Include SDK for subprocess execution
   - node_modules/@anthropic-ai/claude-agent-sdk/**/*
   # Include network interceptor for API error capture and MCP schema injection

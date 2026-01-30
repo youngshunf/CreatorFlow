@@ -11,6 +11,11 @@
  * they declare dependencies and configuration.
  */
 
+import type { PermissionMode } from '../agent/mode-manager.ts';
+import type { ThinkingLevel } from '../agent/thinking-levels.ts';
+import type { LabelConfig } from '../labels/types.ts';
+import type { StatusConfig, StatusCategory } from '../statuses/types.ts';
+
 /**
  * Application pricing model
  */
@@ -48,21 +53,80 @@ export interface DirectoryStructure {
 }
 
 /**
+ * Preset label configuration for app manifest.
+ * Simplified version of LabelConfig - id and children are optional.
+ * If id is omitted, it will be generated from name.
+ */
+export interface PresetLabelConfig {
+  /** Unique ID (if omitted, generated from name as slug) */
+  id?: string;
+  /** Display name */
+  name: string;
+  /** Color in EntityColor format (hex string or { light, dark } object) */
+  color?: string | { light: string; dark: string };
+  /** Child labels */
+  children?: PresetLabelConfig[];
+  /** Value type for valued labels */
+  valueType?: 'string' | 'number' | 'date';
+}
+
+/**
+ * Preset status configuration for app manifest.
+ * Simplified version of StatusConfig with sensible defaults.
+ */
+export interface PresetStatusConfig {
+  /** Unique ID (if omitted, generated from label as slug) */
+  id?: string;
+  /** Display name */
+  label: string;
+  /** Color in EntityColor format */
+  color?: string | { light: string; dark: string };
+  /** Icon (emoji or URL) */
+  icon?: string;
+  /** Category: 'open' (inbox) or 'closed' (archive). Default: 'open' */
+  category?: StatusCategory;
+  /** If true, cannot be deleted. Default: false */
+  isFixed?: boolean;
+  /** Display order (lower = first). If omitted, uses array index */
+  order?: number;
+}
+
+/**
  * Preset data for workspace initialization
  */
 export interface PresetData {
-  /** Labels to create in the workspace */
-  labels?: Array<{
-    name: string;
-    color: string;
-  }>;
-  /** Statuses to create in the workspace */
-  statuses?: Array<{
-    name: string;
-    type: string;
-  }>;
+  /**
+   * Labels to create in the workspace.
+   * These will be merged with/replace default labels.
+   * If 'replaceDefaults' is true, these replace the default labels entirely.
+   */
+  labels?: PresetLabelConfig[];
+  /** If true, preset labels replace defaults instead of merging. Default: false */
+  replaceDefaultLabels?: boolean;
+  
+  /**
+   * Statuses to create in the workspace.
+   * These will be merged with default statuses.
+   * Fixed statuses (todo, done, cancelled) cannot be replaced.
+   */
+  statuses?: PresetStatusConfig[];
+  /** If true, preset statuses replace non-fixed defaults. Default: false */
+  replaceDefaultStatuses?: boolean;
+  
   /** Custom preset data (app-specific) */
   [key: string]: unknown;
+}
+
+/**
+ * Local MCP server configuration for workspace
+ */
+export interface WorkspaceLocalMcpConfig {
+  /**
+   * Whether local (stdio) MCP servers are enabled for this workspace.
+   * When false, only HTTP-based MCP servers will be used.
+   * Default: true (can be overridden by CRAFT_LOCAL_MCP_ENABLED env var)
+   */
+  enabled: boolean;
 }
 
 /**
@@ -75,14 +139,37 @@ export interface WorkspaceInitConfig {
   directoryStructure?: DirectoryStructure;
   /** Default settings for new sessions */
   defaultSettings?: {
+    // AI model configuration
     defaultModel?: string;
+    
+    // Permission configuration
+    /** Default permission mode ('safe', 'ask', 'allow-all'). Default: from global config */
+    permissionMode?: PermissionMode;
+    /** Which modes can be cycled with SHIFT+TAB (min 2). Default: ['safe', 'ask', 'allow-all'] */
+    cyclablePermissionModes?: PermissionMode[];
+    
+    // Thinking configuration
+    /** Default thinking level ('off', 'think', 'max'). Default: 'think' */
+    thinkingLevel?: ThinkingLevel;
+    
+    // File management
     autoSave?: boolean;
     autoBackup?: boolean;
     backupInterval?: number;
+    
+    // UI preferences
     theme?: string;
     language?: string;
+    
     [key: string]: unknown;
   };
+  
+  /**
+   * Local MCP server configuration.
+   * Controls whether stdio-based MCP servers can be spawned in workspaces using this app.
+   */
+  localMcpServers?: WorkspaceLocalMcpConfig;
+  
   /** Preset data to initialize */
   presetData?: PresetData;
 }

@@ -19,7 +19,13 @@
     "defaultDirectory": "~/CreatorFlow",
     "directoryStructure": {},
     "defaultSettings": {
-      "autoSave": true
+      "autoSave": true,
+      "permissionMode": "safe",
+      "cyclablePermissionModes": ["safe", "ask", "allow-all"],
+      "thinkingLevel": "think"
+    },
+    "localMcpServers": {
+      "enabled": true
     }
   },
   "permissions": ["filesystem", "network"],

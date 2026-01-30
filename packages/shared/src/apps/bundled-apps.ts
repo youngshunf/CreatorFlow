@@ -26,7 +26,7 @@ import { debug } from '../utils/debug.ts';
 function getBundledAppsSourceDir(): string {
   const possiblePaths: string[] = [];
   
-  // 1. Try ESM context (development)
+  // 1. Try ESM context (development - source directory)
   try {
     const currentFile = fileURLToPath(import.meta.url);
     possiblePaths.push(join(dirname(currentFile), 'bundled-apps'));
@@ -34,18 +34,24 @@ function getBundledAppsSourceDir(): string {
     // ESM not available
   }
   
-  // 2. Try CJS context (development)
+  // 2. Try CJS context (development - source directory)
   if (typeof __dirname !== 'undefined') {
     possiblePaths.push(join(__dirname, 'bundled-apps'));
   }
   
-  // 3. Try packaged Electron app paths (resources/bundled-apps)
+  // 3. Try dist/assets/bundled-apps (Electron dev mode after copy-assets)
+  if (typeof __dirname !== 'undefined') {
+    possiblePaths.push(join(__dirname, 'assets', 'bundled-apps'));
+    possiblePaths.push(join(__dirname, '..', 'assets', 'bundled-apps'));
+  }
+  
+  // 4. Try packaged Electron app paths (resources/bundled-apps)
   if (typeof __dirname !== 'undefined') {
     possiblePaths.push(join(__dirname, 'resources', 'bundled-apps'));
     possiblePaths.push(join(__dirname, '..', 'resources', 'bundled-apps'));
   }
   
-  // 4. Try process.resourcesPath (Electron specific)
+  // 5. Try process.resourcesPath (Electron specific)
   if (typeof process !== 'undefined' && (process as any).resourcesPath) {
     possiblePaths.push(join((process as any).resourcesPath, 'bundled-apps'));
   }

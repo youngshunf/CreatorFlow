@@ -566,6 +566,8 @@ export const IPC_CHANNELS = {
 
   // File operations
   READ_FILE: 'file:read',
+  READ_FILE_DATA_URL: 'file:readDataUrl',
+  READ_FILE_BINARY: 'file:readBinary',
   OPEN_FILE_DIALOG: 'file:openDialog',
   READ_FILE_ATTACHMENT: 'file:readAttachment',
   STORE_ATTACHMENT: 'file:storeAttachment',
@@ -687,6 +689,9 @@ export const IPC_CHANNELS = {
   SKILLS_OPEN_FINDER: 'skills:openFinder',
   SKILLS_CHANGED: 'skills:changed',
 
+  // Apps (local bundled apps)
+  APPS_LIST_BUNDLED: 'apps:listBundled',
+
   // Marketplace (cloud skill/app market)
   MARKETPLACE_LIST_SKILLS: 'marketplace:listSkills',
   MARKETPLACE_GET_SKILL: 'marketplace:getSkill',
@@ -734,6 +739,9 @@ export const IPC_CHANNELS = {
   THEME_SET_COLOR_THEME: 'theme:setColorTheme',
   THEME_BROADCAST_PREFERENCES: 'theme:broadcastPreferences',  // Send preferences to main for broadcast
   THEME_PREFERENCES_CHANGED: 'theme:preferencesChanged',  // Broadcast: preferences changed in another window
+
+  // Tool icons (for Appearance settings)
+  TOOL_ICONS_GET_MAPPINGS: 'toolIcons:getMappings',
 
   // Logo URL resolution (uses Node.js filesystem cache)
   LOGO_GET_URL: 'logo:getUrl',
@@ -982,6 +990,9 @@ export interface ElectronAPI {
 
   // Skills change listener (live updates when skills are added/removed/modified)
   onSkillsChanged(callback: (skills: LoadedSkill[]) => void): () => void
+
+  // Apps (local bundled apps)
+  listBundledApps(): Promise<Array<{ id: string; name: string; description: string; version: string; iconPath?: string }>>
 
   // Marketplace
   marketplaceListSkills(options?: import('@creator-flow/shared/marketplace').ListSkillsOptions): Promise<import('@creator-flow/shared/marketplace').ListSkillsResult>

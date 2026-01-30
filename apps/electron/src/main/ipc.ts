@@ -2481,6 +2481,24 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // and managed via WORKSPACE_SETTINGS_GET/UPDATE channels
 
   // ============================================================
+  // Apps (local bundled apps)
+  // ============================================================
+
+  // List bundled apps (main apps, not plugins) for workspace creation
+  ipcMain.handle(IPC_CHANNELS.APPS_LIST_BUNDLED, async () => {
+    const { listMainApps } = await import('@creator-flow/shared/apps')
+    const apps = listMainApps()
+    // Return simplified app info for UI
+    return apps.map(app => ({
+      id: app.manifest.id,
+      name: app.manifest.name,
+      description: app.manifest.description || '',
+      version: app.manifest.version,
+      iconPath: app.iconPath,
+    }))
+  })
+
+  // ============================================================
   // Marketplace (cloud skill/app market)
   // ============================================================
 

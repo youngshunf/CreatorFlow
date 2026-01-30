@@ -37,6 +37,12 @@ for (const dir of ['docs', 'tool-icons']) {
   }
 }
 
+// Bundled apps from packages/shared/src/apps/bundled-apps/
+const bundledAppsSrc = '../../packages/shared/src/apps/bundled-apps';
+if (existsSync(bundledAppsSrc)) {
+  cpSync(bundledAppsSrc, 'dist/assets/bundled-apps', { recursive: true });
+}
+
 // Config assets from resources/ → also copy to dist/assets/
 // (themes and permissions currently live under resources/ alongside Electron icons)
 for (const dir of ['themes', 'permissions']) {

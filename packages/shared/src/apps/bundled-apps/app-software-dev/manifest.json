@@ -28,7 +28,13 @@
     },
     "defaultSettings": {
       "autoSave": true,
-      "language": "en"
+      "language": "en",
+      "permissionMode": "ask",
+      "cyclablePermissionModes": ["safe", "ask", "allow-all"],
+      "thinkingLevel": "think"
+    },
+    "localMcpServers": {
+      "enabled": true
     }
   },
   "permissions": ["filesystem", "network", "shell"],
