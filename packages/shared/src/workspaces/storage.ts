@@ -280,17 +280,33 @@ export function generateUniqueWorkspacePath(name: string, baseDir: string): stri
 }
 
 /**
+ * Options for creating a workspace
+ */
+export interface CreateWorkspaceAtPathOptions {
+  /** Optional default settings for new sessions */
+  defaults?: WorkspaceConfig['defaults'];
+  /** Skip initializing default labels (when app will provide custom labels) */
+  skipDefaultLabels?: boolean;
+  /** Skip initializing default statuses (when app will provide custom statuses) */
+  skipDefaultStatuses?: boolean;
+}
+
+/**
  * Create workspace folder structure at a given path
  * @param rootPath - Absolute path where workspace folder will be created
  * @param name - Display name for the workspace
- * @param defaults - Optional default settings for new sessions
+ * @param options - Optional configuration for workspace creation
  * @returns The created WorkspaceConfig
  */
 export function createWorkspaceAtPath(
   rootPath: string,
   name: string,
-  defaults?: WorkspaceConfig['defaults']
+  options?: CreateWorkspaceAtPathOptions | WorkspaceConfig['defaults']
 ): WorkspaceConfig {
+  // Support legacy signature: createWorkspaceAtPath(path, name, defaults)
+  const opts: CreateWorkspaceAtPathOptions = options && 'skipDefaultLabels' in options
+    ? options
+    : { defaults: options as WorkspaceConfig['defaults'] };
   const now = Date.now();
   const slug = generateSlug(name);
 
@@ -306,7 +322,7 @@ export function createWorkspaceAtPath(
     thinkingLevel: globalDefaults.workspaceDefaults.thinkingLevel,
     enabledSourceSlugs: [],
     workingDirectory: rootPath, // Default to workspace root path
-    ...defaults, // User-provided defaults override global defaults
+    ...opts.defaults, // User-provided defaults override global defaults
   };
 
   const config: WorkspaceConfig = {
@@ -329,12 +345,16 @@ export function createWorkspaceAtPath(
   // Save config
   saveWorkspaceConfig(rootPath, config);
 
-  // Initialize status configuration with defaults
-  saveStatusConfig(rootPath, getDefaultStatusConfig());
-  ensureDefaultIconFiles(rootPath);
+  // Initialize status configuration with defaults (skip if app will provide custom statuses)
+  if (!opts.skipDefaultStatuses) {
+    saveStatusConfig(rootPath, getDefaultStatusConfig());
+    ensureDefaultIconFiles(rootPath);
+  }
 
-  // Initialize label configuration with defaults (two nested groups + valued labels)
-  saveLabelConfig(rootPath, getDefaultLabelConfig());
+  // Initialize label configuration with defaults (skip if app will provide custom labels)
+  if (!opts.skipDefaultLabels) {
+    saveLabelConfig(rootPath, getDefaultLabelConfig());
+  }
 
   // Initialize views configuration with defaults
   const defaultViewsConfig: ViewsConfig = { version: 1, views: getDefaultViews() };

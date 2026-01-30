@@ -157,6 +157,46 @@ function installBundledSkills(
 // ============================================================
 
 /**
+ * Check if app has custom labels configuration.
+ * Returns the app path if found, null otherwise.
+ */
+function getAppPathWithCustomLabels(appId: string): string | null {
+  // Try bundled app source path first
+  let appPath = getBundledAppSourcePath(appId);
+  if (appPath && existsSync(join(appPath, 'labels', 'config.json'))) {
+    return appPath;
+  }
+  
+  // Fall back to installed app path
+  appPath = getAppPath(appId, false);
+  if (existsSync(appPath) && existsSync(join(appPath, 'labels', 'config.json'))) {
+    return appPath;
+  }
+  
+  return null;
+}
+
+/**
+ * Check if app has custom statuses configuration.
+ * Returns the app path if found, null otherwise.
+ */
+function getAppPathWithCustomStatuses(appId: string): string | null {
+  // Try bundled app source path first
+  let appPath = getBundledAppSourcePath(appId);
+  if (appPath && existsSync(join(appPath, 'statuses', 'config.json'))) {
+    return appPath;
+  }
+  
+  // Fall back to installed app path
+  appPath = getAppPath(appId, false);
+  if (existsSync(appPath) && existsSync(join(appPath, 'statuses', 'config.json'))) {
+    return appPath;
+  }
+  
+  return null;
+}
+
+/**
  * Copy labels directory from app to workspace.
  * If the app has labels/config.json, copy it to workspace.
  * Otherwise, workspace will use default labels.
@@ -396,9 +436,17 @@ export function initializeWorkspaceFromApp(
     ...options.customSettings,
   };
   
+  // Check if app has custom labels/statuses before creating workspace
+  const hasCustomLabels = !options.skipPresetData && !!getAppPathWithCustomLabels(options.appId);
+  const hasCustomStatuses = !options.skipPresetData && !!getAppPathWithCustomStatuses(options.appId);
+  
   let config: WorkspaceConfig;
   try {
-    config = createWorkspaceAtPath(workspaceRoot, options.name, workspaceDefaults);
+    config = createWorkspaceAtPath(workspaceRoot, options.name, {
+      defaults: workspaceDefaults,
+      skipDefaultLabels: hasCustomLabels,
+      skipDefaultStatuses: hasCustomStatuses,
+    });
     
     // Add app binding
     config.appId = options.appId;
