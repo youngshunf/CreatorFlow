@@ -224,7 +224,7 @@ export function markSkillModified(skillDir: string): void {
 export function getInstalledSkills(
   workspaceRoot: string
 ): InstalledSkillInfo[] {
-  const skillsDir = join(workspaceRoot, 'skills');
+  const skillsDir = join(workspaceRoot, '.creator-flow', 'skills');
   if (!existsSync(skillsDir)) {
     return [];
   }
@@ -286,7 +286,7 @@ export function isSkillInstalled(
   workspaceRoot: string,
   skillId: string
 ): boolean {
-  const skillDir = join(workspaceRoot, 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
   const skillFile = join(skillDir, 'SKILL.md');
   return existsSync(skillFile);
 }
@@ -298,7 +298,7 @@ export function getInstalledSkillVersion(
   workspaceRoot: string,
   skillId: string
 ): string | null {
-  const skillDir = join(workspaceRoot, 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
   const meta = readSkillMeta(skillDir);
   return meta?.baseVersion || null;
 }

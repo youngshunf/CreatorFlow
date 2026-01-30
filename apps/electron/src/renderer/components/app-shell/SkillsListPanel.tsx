@@ -51,9 +51,12 @@ export function SkillsListPanel({
   className,
 }: SkillsListPanelProps) {
   const t = useT()
+  
+  // Ensure skills is always an array
+  const skillsList = Array.isArray(skills) ? skills : []
 
   // Empty state - rendered outside ScrollArea for proper vertical centering
-  if (skills.length === 0) {
+  if (skillsList.length === 0) {
     return (
       <Empty className={cn('flex-1', className)}>
         <EmptyHeader>
@@ -92,7 +95,7 @@ export function SkillsListPanel({
     <ScrollArea className={cn('flex-1', className)}>
       <div className="pb-2">
         <div className="pt-2">
-          {skills.map((skill, index) => (
+          {skillsList.map((skill, index) => (
             <SkillItem
               key={skill.slug}
               skill={skill}

@@ -2490,10 +2490,14 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return listSkills(params || {})
   })
 
-  // Get skill details
+  // Get skill details with versions
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_SKILL, async (_event, skillId: string) => {
-    const { getSkill } = await import('@creator-flow/shared/marketplace')
-    return getSkill(skillId)
+    const { getSkill, getSkillVersions } = await import('@creator-flow/shared/marketplace')
+    const [skill, versionsResult] = await Promise.all([
+      getSkill(skillId),
+      getSkillVersions(skillId),
+    ])
+    return { skill, versions: versionsResult.items || [] }
   })
 
   // List apps from marketplace
@@ -2502,10 +2506,14 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return listApps(params || {})
   })
 
-  // Get app details
+  // Get app details with versions
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_APP, async (_event, appId: string) => {
-    const { getApp } = await import('@creator-flow/shared/marketplace')
-    return getApp(appId)
+    const { getApp, getAppVersions } = await import('@creator-flow/shared/marketplace')
+    const [app, versionsResult] = await Promise.all([
+      getApp(appId),
+      getAppVersions(appId),
+    ])
+    return { app, versions: versionsResult.items || [] }
   })
 
   // List categories

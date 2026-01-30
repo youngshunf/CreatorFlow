@@ -1662,7 +1662,7 @@ function AppShellContent({
                       variant: activeRoute === 'home' ? "default" : "ghost",
                       onClick: handleHomeClick,
                     },
-                    // --- Chats Section ---
+                    // --- Chats Section (with Flagged, States, Labels as sub-items) ---
                     {
                       id: "nav:allChats",
                       title: t('所有对话'),
@@ -1670,65 +1670,87 @@ function AppShellContent({
                       icon: Inbox,
                       variant: chatFilter?.kind === 'allChats' && activeRoute !== 'home' ? "default" : "ghost",
                       onClick: handleAllChatsClick,
-                    },
-                    {
-                      id: "nav:flagged",
-                      title: t('已标记'),
-                      label: String(flaggedCount),
-                      icon: <Flag className="h-3.5 w-3.5" />,
-                      variant: chatFilter?.kind === 'flagged' ? "default" : "ghost",
-                      onClick: handleFlaggedClick,
-                    },
-                    // States: expandable section with status sub-items (drag-and-drop reorder)
-                    {
-                      id: "nav:states",
-                      title: t('状态'),
-                      icon: CheckCircle2,
-                      variant: "ghost",
-                      onClick: () => toggleExpanded('nav:states'),
                       expandable: true,
-                      expanded: isExpanded('nav:states'),
-                      onToggle: () => toggleExpanded('nav:states'),
-                      contextMenu: {
-                        type: 'allChats',
-                        onConfigureStatuses: openConfigureStatuses,
-                      },
-                      // Enable flat DnD reorder for status items
-                      sortable: { onReorder: handleStatusReorder },
-                      items: effectiveTodoStates.map(state => ({
-                        id: `nav:state:${state.id}`,
-                        title: state.label,
-                        label: String(todoStateCounts[state.id] || 0),
-                        icon: state.icon,
-                        iconColor: state.resolvedColor,
-                        iconColorable: state.iconColorable,
-                        variant: (chatFilter?.kind === 'state' && chatFilter.stateId === state.id ? "default" : "ghost") as "default" | "ghost",
-                        onClick: () => handleTodoStateClick(state.id),
-                        contextMenu: {
-                          type: 'status' as const,
-                          statusId: state.id,
-                          onConfigureStatuses: openConfigureStatuses,
+                      expanded: isExpanded('nav:allChats'),
+                      onToggle: () => toggleExpanded('nav:allChats'),
+                      items: [
+                        // Flagged
+                        {
+                          id: "nav:flagged",
+                          title: t('已标记'),
+                          label: String(flaggedCount),
+                          icon: <Flag className="h-3.5 w-3.5" />,
+                          variant: chatFilter?.kind === 'flagged' ? "default" : "ghost",
+                          onClick: handleFlaggedClick,
                         },
-                      })),
+                        // States: expandable section with status sub-items (drag-and-drop reorder)
+                        {
+                          id: "nav:states",
+                          title: t('状态'),
+                          icon: CheckCircle2,
+                          variant: "ghost",
+                          onClick: () => toggleExpanded('nav:states'),
+                          expandable: true,
+                          expanded: isExpanded('nav:states'),
+                          onToggle: () => toggleExpanded('nav:states'),
+                          contextMenu: {
+                            type: 'allChats',
+                            onConfigureStatuses: openConfigureStatuses,
+                          },
+                          // Enable flat DnD reorder for status items
+                          sortable: { onReorder: handleStatusReorder },
+                          items: effectiveTodoStates.map(state => ({
+                            id: `nav:state:${state.id}`,
+                            title: state.label,
+                            label: String(todoStateCounts[state.id] || 0),
+                            icon: state.icon,
+                            iconColor: state.resolvedColor,
+                            iconColorable: state.iconColorable,
+                            variant: (chatFilter?.kind === 'state' && chatFilter.stateId === state.id ? "default" : "ghost") as "default" | "ghost",
+                            onClick: () => handleTodoStateClick(state.id),
+                            contextMenu: {
+                              type: 'status' as const,
+                              statusId: state.id,
+                              onConfigureStatuses: openConfigureStatuses,
+                            },
+                          })),
+                        },
+                        // Labels: navigable header (shows all labeled sessions) + hierarchical tree (drag-and-drop reorder + re-parent)
+                        {
+                          id: "nav:labels",
+                          title: t('标签'),
+                          icon: Tag,
+                          // Only highlighted when "Labels" itself is selected (not sub-labels)
+                          variant: (chatFilter?.kind === 'label' && chatFilter.labelId === '__all__') ? "default" as const : "ghost" as const,
+                          // Clicking navigates to "all labeled sessions" view
+                          onClick: () => handleLabelClick('__all__'),
+                          expandable: true,
+                          expanded: isExpanded('nav:labels'),
+                          onToggle: () => toggleExpanded('nav:labels'),
+                          contextMenu: {
+                            type: 'labels' as const,
+                            onConfigureLabels: openConfigureLabels,
+                            onAddLabel: handleAddLabel,
+                          },
+                          items: buildLabelSidebarItems(labelTree),
+                        },
+                      ],
                     },
-                    // Labels: navigable header (shows all labeled sessions) + hierarchical tree (drag-and-drop reorder + re-parent)
+                    // --- Files ---
                     {
-                      id: "nav:labels",
-                      title: t('标签'),
-                      icon: Tag,
-                      // Only highlighted when "Labels" itself is selected (not sub-labels)
-                      variant: (chatFilter?.kind === 'label' && chatFilter.labelId === '__all__') ? "default" as const : "ghost" as const,
-                      // Clicking navigates to "all labeled sessions" view
-                      onClick: () => handleLabelClick('__all__'),
-                      expandable: true,
-                      expanded: isExpanded('nav:labels'),
-                      onToggle: () => toggleExpanded('nav:labels'),
-                      contextMenu: {
-                        type: 'labels' as const,
-                        onConfigureLabels: openConfigureLabels,
-                        onAddLabel: handleAddLabel,
-                      },
-                      items: buildLabelSidebarItems(labelTree),
+                      id: "nav:files",
+                      title: t('文件'),
+                      icon: Files,
+                      variant: isFilesNavigation(navState) ? "default" : "ghost",
+                      onClick: handleFilesClick,
+                    },
+                    // --- Marketplace ---
+                    {
+                      id: "nav:marketplace",
+                      title: t('市场'),
+                      icon: Store,
+                      variant: isMarketplaceNavigation(navState) ? "default" : "ghost",
+                      onClick: handleMarketplaceClick,
                     },
                     // --- Separator ---
                     { id: "separator:chats-sources", type: "separator" },
@@ -1801,20 +1823,6 @@ function AppShellContent({
                         type: 'skills',
                         onAddSkill: openAddSkill,
                       },
-                    },
-                    {
-                      id: "nav:files",
-                      title: t('文件'),
-                      icon: Files,
-                      variant: isFilesNavigation(navState) ? "default" : "ghost",
-                      onClick: handleFilesClick,
-                    },
-                    {
-                      id: "nav:marketplace",
-                      title: t('市场'),
-                      icon: Store,
-                      variant: isMarketplaceNavigation(navState) ? "default" : "ghost",
-                      onClick: handleMarketplaceClick,
                     },
                     // --- Separator ---
                     { id: "separator:skills-settings", type: "separator" },
@@ -1970,8 +1978,8 @@ function AppShellContent({
             </>
           )}
 
-          {/* === SESSION LIST PANEL === (hidden in focused mode, home view, and files navigation) */}
-          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && (
+          {/* === SESSION LIST PANEL === (hidden in focused mode, home view, files navigation, and marketplace navigation) */}
+          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && (
           <div
             className="h-full flex flex-col min-w-0 bg-background shrink-0 shadow-middle overflow-hidden rounded-l-[14px] rounded-r-[10px]"
             style={{ width: sessionListWidth }}
@@ -2232,33 +2240,7 @@ function AppShellContent({
                 onSelectSubpage={(subpage) => handleSettingsClick(subpage)}
               />
             )}
-            {isMarketplaceNavigation(navState) && activeWorkspaceId && (
-              /* Marketplace List */
-              <MarketplaceListPanel
-                filter={navState.filter}
-                onFilterChange={(filter) => {
-                  // Update filter via navigation
-                  if (filter.kind === 'all') {
-                    navigate(routes.view.marketplace())
-                  } else if (filter.kind === 'skills') {
-                    navigate(routes.view.marketplaceSkills())
-                  } else if (filter.kind === 'apps') {
-                    navigate(routes.view.marketplaceApps())
-                  } else if (filter.kind === 'category' && filter.categoryId) {
-                    navigate(routes.view.marketplace({ filter: 'category', categoryId: filter.categoryId }))
-                  }
-                }}
-                onSkillClick={(skillId) => {
-                  navigate(routes.view.marketplace({ skillId }))
-                }}
-                onAppClick={(appId) => {
-                  navigate(routes.view.marketplace({ appId }))
-                }}
-                selectedSkillId={isMarketplaceNavigation(navState) && navState.details?.type === 'skill' ? navState.details.skillId : null}
-                selectedAppId={isMarketplaceNavigation(navState) && navState.details?.type === 'app' ? navState.details.appId : null}
-                workspaceId={activeWorkspaceId}
-              />
-            )}
+            {/* Marketplace now uses full-page layout in MainContentPanel */}
             {isChatsNavigation(navState) && (
               /* Sessions List */
               <>
@@ -2317,8 +2299,8 @@ function AppShellContent({
           </div>
           )}
 
-          {/* Session List Resize Handle (hidden in focused mode, home view, and files navigation) */}
-          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && (
+          {/* Session List Resize Handle (hidden in focused mode, home view, files navigation, and marketplace navigation) */}
+          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && (
           <div
             ref={sessionListHandleRef}
             onMouseDown={(e) => { e.preventDefault(); setIsResizing('session-list') }}
@@ -2341,7 +2323,7 @@ function AppShellContent({
           </div>
           )}
 
-          {/* === MAIN CONTENT PANEL === (hidden in files navigation) */}
+          {/* === MAIN CONTENT PANEL === (hidden in files navigation; full-width for marketplace navigation) */}
           {!isFilesNavigation(navState) && (
           <div className={cn(
             "flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle",

@@ -179,8 +179,11 @@ export async function downloadSkillPackage(
     };
   }
 
-  // Create cache directory
+  // Create cache directory - ensure all parent directories exist
   const cacheDir = getMarketplaceSkillsDir();
+  if (!existsSync(cacheDir)) {
+    mkdirSync(cacheDir, { recursive: true });
+  }
   const skillCacheDir = join(cacheDir, skillId);
   const versionDir = join(skillCacheDir, actualVersion);
   const zipPath = join(skillCacheDir, `${actualVersion}.zip`);
@@ -222,6 +225,11 @@ export async function downloadSkillPackage(
     message: '正在解压...',
     skillId,
   });
+
+  // Ensure version directory exists before extraction
+  if (!existsSync(versionDir)) {
+    mkdirSync(versionDir, { recursive: true });
+  }
 
   await extractZip(zipPath, versionDir);
 
@@ -290,7 +298,7 @@ export async function installSkill(
       skillId,
     });
 
-    const skillsDir = join(workspaceRoot, 'skills');
+    const skillsDir = join(workspaceRoot, '.creator-flow', 'skills');
     const targetDir = join(skillsDir, skillId);
 
     // Ensure skills directory exists

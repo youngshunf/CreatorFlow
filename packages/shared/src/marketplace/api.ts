@@ -14,6 +14,7 @@ import type {
   PaginatedResponse,
   DownloadResponse,
   AppDownloadResponse,
+  SkillDependencyDownload,
   SyncRequest,
   SyncResponse,
   SearchResponse,
@@ -134,9 +135,23 @@ export async function getSkill(skillId: string): Promise<MarketplaceSkill> {
 export async function getSkillVersions(
   skillId: string
 ): Promise<PaginatedResponse<MarketplaceSkillVersion>> {
+  if (!skillId) {
+    return { items: [], total: 0, page: 1, size: 0 };
+  }
   return apiFetch<PaginatedResponse<MarketplaceSkillVersion>>(
-    `/skills/versions?skill_id=${skillId}`
+    `/skills/${skillId}/versions`
   );
+}
+
+/**
+ * Backend download response format
+ */
+interface BackendDownloadResponse {
+  id: string;
+  version: string;
+  package_url: string;
+  file_hash: string | null;
+  file_size: number | null;
 }
 
 /**
@@ -146,7 +161,13 @@ export async function getSkillDownload(
   skillId: string,
   version: string = 'latest'
 ): Promise<DownloadResponse> {
-  return apiFetch<DownloadResponse>(`/download/skill/${skillId}/${version}`);
+  const response = await apiFetch<BackendDownloadResponse>(`/download/skill/${skillId}/${version}`);
+  // Map backend field name to frontend field name
+  return {
+    download_url: response.package_url,
+    file_hash: response.file_hash,
+    file_size: response.file_size,
+  };
 }
 
 // ============================================================
@@ -193,8 +214,11 @@ export async function getApp(appId: string): Promise<MarketplaceApp> {
 export async function getAppVersions(
   appId: string
 ): Promise<PaginatedResponse<MarketplaceAppVersion>> {
+  if (!appId) {
+    return { items: [], total: 0, page: 1, size: 0 };
+  }
   return apiFetch<PaginatedResponse<MarketplaceAppVersion>>(
-    `/apps/versions?app_id=${appId}`
+    `/apps/${appId}/versions`
   );
 }
 
@@ -205,7 +229,14 @@ export async function getAppDownload(
   appId: string,
   version: string = 'latest'
 ): Promise<AppDownloadResponse> {
-  return apiFetch<AppDownloadResponse>(`/download/app/${appId}/${version}`);
+  const response = await apiFetch<BackendDownloadResponse & { skill_dependencies?: SkillDependencyDownload[] | null }>(`/download/app/${appId}/${version}`);
+  // Map backend field name to frontend field name
+  return {
+    download_url: response.package_url,
+    file_hash: response.file_hash,
+    file_size: response.file_size,
+    skill_dependencies: response.skill_dependencies || null,
+  };
 }
 
 // ============================================================

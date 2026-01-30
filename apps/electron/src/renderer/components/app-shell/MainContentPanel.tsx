@@ -31,7 +31,7 @@ import {
 import { isMarketplaceNavigation } from '../../../shared/types'
 import { UserProfilePage, UserProfileEditPage, AppSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
-import { MarketplaceInfoPage } from '@/pages/MarketplaceInfoPage'
+import { MarketplacePage } from '@/pages/MarketplacePage'
 import { FileManager } from '@/components/file-manager'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { toast } from 'sonner'
@@ -213,25 +213,26 @@ export function MainContentPanel({
     )
   }
 
-  // Marketplace navigator - show skill/app details or empty state
+  // Marketplace navigator - show full marketplace page with card grid
   if (isMarketplaceNavigation(navState)) {
-    if (navState.details) {
-      return wrapWithStoplight(
-        <Panel variant="grow" className={className}>
-          <MarketplaceInfoPage
-            type={navState.details.type}
-            itemId={navState.details.type === 'skill' ? navState.details.skillId : navState.details.appId}
-            workspaceId={activeWorkspaceId || undefined}
-          />
-        </Panel>
-      )
-    }
-    // No item selected - empty state
     return wrapWithStoplight(
       <Panel variant="grow" className={className}>
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">{t('从市场中选择技能或应用查看详情')}</p>
-        </div>
+        <MarketplacePage
+          filter={navState.filter}
+          onFilterChange={(filter) => {
+            // Update filter via navigation
+            if (filter.kind === 'all') {
+              navigate(routes.view.marketplace())
+            } else if (filter.kind === 'skills') {
+              navigate(routes.view.marketplaceSkills())
+            } else if (filter.kind === 'apps') {
+              navigate(routes.view.marketplaceApps())
+            } else if (filter.kind === 'category' && filter.categoryId) {
+              navigate(routes.view.marketplace({ filter: 'category', categoryId: filter.categoryId }))
+            }
+          }}
+          workspaceId={activeWorkspaceId || undefined}
+        />
       </Panel>
     )
   }
