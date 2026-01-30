@@ -140,29 +140,80 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Create a new workspace at a folder path (Obsidian-style: folder IS the workspace)
-  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string) => {
+  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace') => {
     const rootPath = folderPath
     
     // Initialize workspace from app manifest if appId provided
     if (appId && appId !== 'app.general') {
-      const { initializeWorkspaceFromApp } = await import('@creator-flow/shared/apps')
-      try {
-        const result = initializeWorkspaceFromApp({
-          name,
-          rootPath,
-          appId,
-        })
-        if (result.success) {
-          ipcLog.info(`Initialized workspace "${name}" with app "${appId}" at ${rootPath}`)
-          if (result.skillsInstalled.length > 0) {
-            ipcLog.info(`Installed skills: ${result.skillsInstalled.join(', ')}`)
+      if (appSource === 'marketplace') {
+        // Install marketplace app: download app package, install skills, copy to workspace
+        const { installApp } = await import('@creator-flow/shared/marketplace')
+        try {
+          const result = await installApp(
+            rootPath,
+            appId,
+            'latest',
+            (progress) => {
+              ipcLog.info(`[${appId}] ${progress.stage}: ${progress.message} (${progress.percent}%)`)
+            }
+          )
+          if (result.success) {
+            ipcLog.info(`Installed marketplace app "${appId}" to workspace at ${rootPath}`)
+            if (result.skillResults && result.skillResults.length > 0) {
+              const installed = result.skillResults.filter(r => r.success).map(r => r.skillId)
+              const failed = result.skillResults.filter(r => !r.success).map(r => r.skillId)
+              if (installed.length > 0) {
+                ipcLog.info(`Installed skills: ${installed.join(', ')}`)
+              }
+              if (failed.length > 0) {
+                ipcLog.warn(`Failed to install skills: ${failed.join(', ')}`)
+              }
+            }
+          } else {
+            ipcLog.error(`Failed to install marketplace app "${appId}": ${result.error}`)
           }
-        } else {
-          ipcLog.warn(`Workspace initialized with errors: ${result.errors.join(', ')}`)
+        } catch (error) {
+          ipcLog.error(`Failed to install marketplace app "${appId}":`, error)
+          // Continue with workspace creation even if app installation fails
         }
-      } catch (error) {
-        ipcLog.error(`Failed to initialize workspace with app "${appId}":`, error)
-        // Continue with workspace creation even if app initialization fails
+      } else {
+        // Bundled app: initialize from local app manifest
+        // Skip bundled skills and download from cloud instead
+        const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById, getBundledAppSourcePath } = await import('@creator-flow/shared/apps')
+        try {
+          const result = initializeWorkspaceFromApp({
+            name,
+            rootPath,
+            appId,
+            skipSkills: true, // Skip bundled skills, will download from cloud
+          })
+          if (result.success) {
+            ipcLog.info(`Initialized workspace "${name}" with app "${appId}" at ${rootPath}`)
+          } else {
+            ipcLog.warn(`Workspace initialized with errors: ${result.errors.join(', ')}`)
+          }
+          
+          // Download skills from cloud (with bundled fallback)
+          const app = loadAppById(appId)
+          if (app?.manifest.capabilities?.skills && app.manifest.capabilities.skills.length > 0) {
+            ipcLog.info(`Downloading skills from cloud for app "${appId}"...`)
+            const bundledPath = getBundledAppSourcePath(appId) || app.path
+            const skillResult = await installSkillsFromCloud(
+              rootPath,
+              app.manifest.capabilities.skills,
+              bundledPath
+            )
+            if (skillResult.installed.length > 0) {
+              ipcLog.info(`Installed skills from cloud: ${skillResult.installed.join(', ')}`)
+            }
+            if (skillResult.failed.length > 0) {
+              ipcLog.warn(`Failed to install skills: ${skillResult.failed.join(', ')}`)
+            }
+          }
+        } catch (error) {
+          ipcLog.error(`Failed to initialize workspace with app "${appId}":`, error)
+          // Continue with workspace creation even if app initialization fails
+        }
       }
     }
     

@@ -822,7 +822,7 @@ export interface ElectronAPI {
 
   // Workspace management
   getWorkspaces(): Promise<Workspace[]>
-  createWorkspace(folderPath: string, name: string, appId?: string): Promise<Workspace>
+  createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace'): Promise<Workspace>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
 
   // Window management

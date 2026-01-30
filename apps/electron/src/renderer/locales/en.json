@@ -2802,5 +2802,45 @@
   [
     "滚动中...",
     "Rolling..."
+  ],
+  [
+    "管理工作区...",
+    "Manage Workspaces..."
+  ],
+  [
+    "管理工作区",
+    "Manage Workspaces"
+  ],
+  [
+    "查看和管理所有工作区",
+    "View and manage all workspaces"
+  ],
+  [
+    "当前工作区",
+    "Current Workspace"
+  ],
+  [
+    "暂无工作区",
+    "No workspaces"
+  ],
+  [
+    "打开",
+    "Open"
+  ],
+  [
+    "内置应用",
+    "Built-in Apps"
+  ],
+  [
+    "市场应用",
+    "Marketplace Apps"
+  ],
+  [
+    "加载市场应用...",
+    "Loading marketplace apps..."
+  ],
+  [
+    "使用",
+    "Use"
   ]
 ]

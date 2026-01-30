@@ -51,6 +51,8 @@ export interface MarketplaceDetailDialogProps {
   type: 'skill' | 'app' | null
   itemId: string | null
   workspaceId?: string
+  /** Callback when user clicks "Use" for an app */
+  onUseApp?: (appId: string, appName: string) => void
 }
 
 export function MarketplaceDetailDialog({
@@ -59,6 +61,7 @@ export function MarketplaceDetailDialog({
   type,
   itemId,
   workspaceId,
+  onUseApp,
 }: MarketplaceDetailDialogProps) {
   const t = useT()
   const { onOpenFile } = useAppShellContext()
@@ -453,7 +456,18 @@ export function MarketplaceDetailDialog({
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                       {t('关闭')}
                     </Button>
-                    {hasUpdate ? (
+                    {type === 'app' ? (
+                      // Apps: "Use" button to create workspace
+                      <Button onClick={() => {
+                        if (app && onUseApp) {
+                          onOpenChange(false)
+                          onUseApp(app.app_id, app.name)
+                        }
+                      }}>
+                        <Package className="h-4 w-4 mr-2" />
+                        {t('使用')}
+                      </Button>
+                    ) : hasUpdate ? (
                       <Button onClick={handleUpdate}>
                         <RefreshCw className="h-4 w-4 mr-2" />
                         {t('更新')}

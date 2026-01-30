@@ -1,0 +1,589 @@
+/**
+ * App Installer
+ *
+ * Handles downloading and installing apps from the marketplace.
+ * Supports:
+ * - Download app packages from cloud
+ * - Extract and validate packages
+ * - Parse skill dependencies
+ * - Download and install required skills
+ * - Initialize workspace with app
+ */
+
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  copyFileSync,
+  rmSync,
+  createWriteStream,
+} from 'fs';
+import { join } from 'path';
+import { pipeline } from 'stream/promises';
+import { createHash } from 'crypto';
+import { Extract } from 'unzipper';
+import type {
+  InstallProgress,
+  InstallProgressCallback,
+  AppDownloadResponse,
+  SkillDependencyDownload,
+} from './types.ts';
+import { getAppDownload } from './api.ts';
+import {
+  getCachedAppPackagePath,
+  isAppPackageCached,
+  getMarketplaceAppsDir,
+} from './storage.ts';
+import { installSkill } from './skill-installer.ts';
+
+// ============================================================
+// Types
+// ============================================================
+
+export interface AppInstallProgress extends InstallProgress {
+  appId?: string;
+  currentSkill?: string;
+  totalSkills?: number;
+  installedSkills?: number;
+}
+
+export type AppInstallProgressCallback = (progress: AppInstallProgress) => void;
+
+export interface AppInstallResult {
+  success: boolean;
+  appId: string;
+  version: string;
+  appPath?: string;
+  skillResults?: Array<{
+    skillId: string;
+    success: boolean;
+    error?: string;
+  }>;
+  error?: string;
+}
+
+// ============================================================
+// Download Utilities
+// ============================================================
+
+/**
+ * Download a file from URL to local path
+ */
+async function downloadFile(
+  url: string,
+  destPath: string,
+  onProgress?: (percent: number) => void
+): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+
+  const fileStream = createWriteStream(destPath);
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error('Unable to read response body');
+  }
+
+  let downloadedSize = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    fileStream.write(value);
+    downloadedSize += value.length;
+
+    if (totalSize > 0 && onProgress) {
+      const percent = Math.round((downloadedSize / totalSize) * 100);
+      onProgress(percent);
+    }
+  }
+
+  fileStream.end();
+
+  // Wait for file to be fully written
+  await new Promise<void>((resolve, reject) => {
+    fileStream.on('finish', resolve);
+    fileStream.on('error', reject);
+  });
+}
+
+/**
+ * Calculate SHA256 hash of a file
+ */
+function calculateFileHash(filePath: string): string {
+  const content = readFileSync(filePath);
+  return createHash('sha256').update(content).digest('hex');
+}
+
+/**
+ * Extract a zip file to a directory
+ */
+async function extractZip(zipPath: string, destDir: string): Promise<void> {
+  // Ensure destination exists
+  if (!existsSync(destDir)) {
+    mkdirSync(destDir, { recursive: true });
+  }
+
+  // Extract using unzipper
+  const extract = Extract({ path: destDir });
+  const readStream = require('fs').createReadStream(zipPath);
+
+  await pipeline(readStream, extract);
+}
+
+/**
+ * Copy directory recursively
+ */
+function copyDir(src: string, dest: string): void {
+  if (!existsSync(dest)) {
+    mkdirSync(dest, { recursive: true });
+  }
+
+  const entries = readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+// ============================================================
+// App Installation
+// ============================================================
+
+/**
+ * Download and cache an app package
+ */
+export async function downloadAppPackage(
+  appId: string,
+  version: string = 'latest',
+  onProgress?: AppInstallProgressCallback
+): Promise<{
+  packageDir: string;
+  actualVersion: string;
+  skillDependencies: SkillDependencyDownload[] | null;
+}> {
+  onProgress?.({
+    stage: 'downloading',
+    percent: 0,
+    message: `正在获取应用信息: ${appId}`,
+    appId,
+  });
+
+  // Get download URL from API
+  const downloadInfo = await getAppDownload(appId, version);
+
+  if (!downloadInfo.download_url) {
+    throw new Error('无法获取下载链接');
+  }
+
+  // Determine actual version from URL or use 'latest'
+  const actualVersion =
+    version === 'latest'
+      ? extractVersionFromUrl(downloadInfo.download_url) || 'latest'
+      : version;
+
+  // Check if already cached
+  if (isAppPackageCached(appId, actualVersion)) {
+    onProgress?.({
+      stage: 'downloading',
+      percent: 30,
+      message: '已使用缓存版本',
+      appId,
+    });
+    return {
+      packageDir: getCachedAppPackagePath(appId, actualVersion),
+      actualVersion,
+      skillDependencies: downloadInfo.skill_dependencies,
+    };
+  }
+
+  // Create cache directory
+  const cacheDir = getMarketplaceAppsDir();
+  if (!existsSync(cacheDir)) {
+    mkdirSync(cacheDir, { recursive: true });
+  }
+  const appCacheDir = join(cacheDir, appId);
+  const versionDir = join(appCacheDir, actualVersion);
+  const zipPath = join(appCacheDir, `${actualVersion}.zip`);
+
+  if (!existsSync(appCacheDir)) {
+    mkdirSync(appCacheDir, { recursive: true });
+  }
+
+  // Download the package
+  onProgress?.({
+    stage: 'downloading',
+    percent: 5,
+    message: `正在下载应用: ${appId}@${actualVersion}`,
+    appId,
+  });
+
+  await downloadFile(downloadInfo.download_url, zipPath, (percent) => {
+    onProgress?.({
+      stage: 'downloading',
+      percent: 5 + Math.round(percent * 0.2), // 5-25%
+      message: `正在下载应用: ${percent}%`,
+      appId,
+    });
+  });
+
+  // Verify hash if provided
+  if (downloadInfo.file_hash) {
+    const actualHash = calculateFileHash(zipPath);
+    if (actualHash !== downloadInfo.file_hash) {
+      rmSync(zipPath);
+      throw new Error('文件校验失败，下载可能已损坏');
+    }
+  }
+
+  // Extract package
+  onProgress?.({
+    stage: 'extracting',
+    percent: 28,
+    message: '正在解压应用...',
+    appId,
+  });
+
+  if (!existsSync(versionDir)) {
+    mkdirSync(versionDir, { recursive: true });
+  }
+
+  await extractZip(zipPath, versionDir);
+
+  // Clean up zip file
+  rmSync(zipPath);
+
+  // Validate extracted content - check for manifest.json
+  const manifestFile = join(versionDir, 'manifest.json');
+  if (!existsSync(manifestFile)) {
+    // Check if content is in a subdirectory
+    const entries = readdirSync(versionDir, { withFileTypes: true });
+    const subDir = entries.find((e) => e.isDirectory());
+    if (subDir) {
+      const subDirPath = join(versionDir, subDir.name);
+      if (existsSync(join(subDirPath, 'manifest.json'))) {
+        // Move contents up one level
+        const subEntries = readdirSync(subDirPath);
+        for (const entry of subEntries) {
+          const src = join(subDirPath, entry);
+          const dest = join(versionDir, entry);
+          require('fs').renameSync(src, dest);
+        }
+        rmSync(subDirPath, { recursive: true });
+      }
+    }
+  }
+
+  // Final validation
+  if (!existsSync(join(versionDir, 'manifest.json'))) {
+    rmSync(versionDir, { recursive: true });
+    throw new Error('无效的应用包：缺少 manifest.json 文件');
+  }
+
+  onProgress?.({
+    stage: 'downloading',
+    percent: 30,
+    message: '应用下载完成',
+    appId,
+  });
+
+  return {
+    packageDir: versionDir,
+    actualVersion,
+    skillDependencies: downloadInfo.skill_dependencies,
+  };
+}
+
+/**
+ * Install skill dependencies for an app
+ */
+async function installSkillDependencies(
+  workspaceRoot: string,
+  dependencies: SkillDependencyDownload[],
+  onProgress?: AppInstallProgressCallback
+): Promise<Array<{ skillId: string; success: boolean; error?: string }>> {
+  const results: Array<{ skillId: string; success: boolean; error?: string }> = [];
+  const total = dependencies.length;
+
+  for (const dep of dependencies) {
+    onProgress?.({
+      stage: 'installing',
+      percent: 35 + Math.round(((results.length + 0.5) / total) * 50), // 35-85%
+      message: `正在安装技能: ${dep.id} (${results.length + 1}/${total})`,
+      currentSkill: dep.id,
+      totalSkills: total,
+      installedSkills: results.length,
+    });
+
+    try {
+      const result = await installSkill(workspaceRoot, dep.id, dep.version);
+      results.push({
+        skillId: dep.id,
+        success: result.success,
+        error: result.error,
+      });
+    } catch (error) {
+      results.push({
+        skillId: dep.id,
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Install an app to a workspace
+ * This downloads the app, its skill dependencies, and copies everything to the workspace
+ */
+export async function installApp(
+  workspaceRoot: string,
+  appId: string,
+  version: string = 'latest',
+  onProgress?: AppInstallProgressCallback
+): Promise<AppInstallResult> {
+  try {
+    // Download app package
+    const { packageDir, actualVersion, skillDependencies } = await downloadAppPackage(
+      appId,
+      version,
+      onProgress
+    );
+
+    // Install skill dependencies if any
+    let skillResults: Array<{ skillId: string; success: boolean; error?: string }> = [];
+    if (skillDependencies && skillDependencies.length > 0) {
+      skillResults = await installSkillDependencies(
+        workspaceRoot,
+        skillDependencies,
+        onProgress
+      );
+
+      // Check if any skills failed
+      const failedSkills = skillResults.filter((r) => !r.success);
+      if (failedSkills.length > 0) {
+        console.warn(
+          `部分技能安装失败: ${failedSkills.map((s) => s.skillId).join(', ')}`
+        );
+      }
+    }
+
+    // Copy app package to workspace
+    onProgress?.({
+      stage: 'installing',
+      percent: 90,
+      message: '正在复制应用到工作区...',
+      appId,
+    });
+
+    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    if (!existsSync(creatorFlowDir)) {
+      mkdirSync(creatorFlowDir, { recursive: true });
+    }
+
+    // Copy manifest.json to workspace
+    const sourceManifest = join(packageDir, 'manifest.json');
+    const targetManifest = join(creatorFlowDir, 'app-manifest.json');
+    copyFileSync(sourceManifest, targetManifest);
+
+    // Copy other app files (prompts, guides, etc.) if they exist
+    const appDirs = ['prompts', 'guides', 'sources'];
+    for (const dir of appDirs) {
+      const sourceDir = join(packageDir, dir);
+      if (existsSync(sourceDir)) {
+        const targetDir = join(creatorFlowDir, dir);
+        copyDir(sourceDir, targetDir);
+      }
+    }
+
+    onProgress?.({
+      stage: 'complete',
+      percent: 100,
+      message: '应用安装完成',
+      appId,
+    });
+
+    return {
+      success: true,
+      appId,
+      version: actualVersion,
+      appPath: creatorFlowDir,
+      skillResults,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+    onProgress?.({
+      stage: 'error',
+      percent: 0,
+      message: errorMessage,
+      appId,
+      error: errorMessage,
+    });
+
+    return {
+      success: false,
+      appId,
+      version,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Install app from a local package path (for bundled apps)
+ */
+export async function installAppFromLocal(
+  workspaceRoot: string,
+  packageDir: string,
+  onProgress?: AppInstallProgressCallback
+): Promise<AppInstallResult> {
+  try {
+    // Read manifest to get app info and skill dependencies
+    const manifestPath = join(packageDir, 'manifest.json');
+    if (!existsSync(manifestPath)) {
+      throw new Error('无效的应用包：缺少 manifest.json 文件');
+    }
+
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+    const appId = manifest.id || 'local-app';
+
+    onProgress?.({
+      stage: 'installing',
+      percent: 10,
+      message: '正在解析应用配置...',
+      appId,
+    });
+
+    // Parse skill dependencies from manifest
+    const skillDependencies = manifest.skill_dependencies || [];
+    let skillResults: Array<{ skillId: string; success: boolean; error?: string }> = [];
+
+    if (skillDependencies.length > 0) {
+      onProgress?.({
+        stage: 'installing',
+        percent: 20,
+        message: `正在安装 ${skillDependencies.length} 个技能...`,
+        appId,
+        totalSkills: skillDependencies.length,
+      });
+
+      // Install skills from cloud
+      const total = skillDependencies.length;
+      for (let i = 0; i < skillDependencies.length; i++) {
+        const skillId = skillDependencies[i];
+
+        onProgress?.({
+          stage: 'installing',
+          percent: 20 + Math.round(((i + 0.5) / total) * 60), // 20-80%
+          message: `正在安装技能: ${skillId} (${i + 1}/${total})`,
+          appId,
+          currentSkill: skillId,
+          totalSkills: total,
+          installedSkills: i,
+        });
+
+        try {
+          const result = await installSkill(workspaceRoot, skillId, 'latest');
+          skillResults.push({
+            skillId,
+            success: result.success,
+            error: result.error,
+          });
+        } catch (error) {
+          skillResults.push({
+            skillId,
+            success: false,
+            error: error instanceof Error ? error.message : '未知错误',
+          });
+        }
+      }
+    }
+
+    // Copy app package to workspace
+    onProgress?.({
+      stage: 'installing',
+      percent: 85,
+      message: '正在复制应用到工作区...',
+      appId,
+    });
+
+    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    if (!existsSync(creatorFlowDir)) {
+      mkdirSync(creatorFlowDir, { recursive: true });
+    }
+
+    // Copy manifest.json
+    const targetManifest = join(creatorFlowDir, 'app-manifest.json');
+    copyFileSync(manifestPath, targetManifest);
+
+    // Copy other app directories
+    const appDirs = ['prompts', 'guides', 'sources'];
+    for (const dir of appDirs) {
+      const sourceDir = join(packageDir, dir);
+      if (existsSync(sourceDir)) {
+        const targetDir = join(creatorFlowDir, dir);
+        copyDir(sourceDir, targetDir);
+      }
+    }
+
+    onProgress?.({
+      stage: 'complete',
+      percent: 100,
+      message: '应用安装完成',
+      appId,
+    });
+
+    return {
+      success: true,
+      appId,
+      version: manifest.version || '1.0.0',
+      appPath: creatorFlowDir,
+      skillResults,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+    onProgress?.({
+      stage: 'error',
+      percent: 0,
+      message: errorMessage,
+      error: errorMessage,
+    });
+
+    return {
+      success: false,
+      appId: 'unknown',
+      version: 'unknown',
+      error: errorMessage,
+    };
+  }
+}
+
+// ============================================================
+// Utility Functions
+// ============================================================
+
+/**
+ * Extract version from download URL
+ */
+function extractVersionFromUrl(url: string): string | null {
+  const match = url.match(/\/(\d+\.\d+\.\d+)\.zip/);
+  return match?.[1] ?? null;
+}

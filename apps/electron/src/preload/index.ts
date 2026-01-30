@@ -28,8 +28,8 @@ const api: ElectronAPI = {
 
   // Workspace management
   getWorkspaces: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WORKSPACES),
-  createWorkspace: (folderPath: string, name: string, appId?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId),
+  createWorkspace: (folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace') =>
+    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId, appSource),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
 

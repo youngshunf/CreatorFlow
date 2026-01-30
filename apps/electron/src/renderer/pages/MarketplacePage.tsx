@@ -37,6 +37,8 @@ export interface MarketplacePageProps {
   onFilterChange: (filter: MarketplaceFilter) => void
   workspaceId?: string
   className?: string
+  /** Callback when user clicks "Use" on a marketplace app */
+  onUseMarketplaceApp?: (appId: string, appName: string) => void
 }
 
 export function MarketplacePage({
@@ -44,6 +46,7 @@ export function MarketplacePage({
   onFilterChange,
   workspaceId,
   className,
+  onUseMarketplaceApp,
 }: MarketplacePageProps) {
   const t = useT()
   const [skills, setSkills] = useState<MarketplaceSkill[]>([])
@@ -376,6 +379,7 @@ export function MarketplacePage({
         type={selectedItem?.type || null}
         itemId={selectedItem?.id || null}
         workspaceId={workspaceId}
+        onUseApp={onUseMarketplaceApp}
       />
     </div>
   )

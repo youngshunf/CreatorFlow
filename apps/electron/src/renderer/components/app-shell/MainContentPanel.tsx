@@ -42,11 +42,14 @@ export interface MainContentPanelProps {
   isFocusedMode?: boolean
   /** Optional className for the container */
   className?: string
+  /** Callback when user clicks "Use" on a marketplace app */
+  onUseMarketplaceApp?: (appId: string, appName: string) => void
 }
 
 export function MainContentPanel({
   isFocusedMode = false,
   className,
+  onUseMarketplaceApp,
 }: MainContentPanelProps) {
   const t = useT()
   const navState = useNavigationState()
@@ -232,6 +235,7 @@ export function MainContentPanel({
             }
           }}
           workspaceId={activeWorkspaceId || undefined}
+          onUseMarketplaceApp={onUseMarketplaceApp}
         />
       </Panel>
     )

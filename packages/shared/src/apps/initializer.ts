@@ -14,6 +14,7 @@ import {
 import { join } from 'path';
 import type { DirectoryStructure } from './types.ts';
 import type { WorkspaceConfig } from '../workspaces/types.ts';
+import { installSkill } from '../marketplace/skill-installer.ts';
 import {
   createWorkspaceAtPath,
   getWorkspaceSkillsPath,
@@ -109,6 +110,7 @@ function copyDirectory(source: string, target: string): void {
 
 /**
  * Install bundled skills from app to workspace
+ * First tries to download from cloud, falls back to local bundled skills
  */
 function installBundledSkills(
   appPath: string,
@@ -128,7 +130,7 @@ function installBundledSkills(
   
   for (const skillRef of skillRefs) {
     // Parse skill reference (format: "skill-slug" or "skill-slug@version")
-    const skillSlug = skillRef.split('@')[0];
+    const [skillSlug, version] = skillRef.split('@');
     if (!skillSlug) {
       failed.push(skillRef);
       continue;
@@ -147,6 +149,71 @@ function installBundledSkills(
       // Skill not bundled, might be from marketplace (skip for now)
       failed.push(skillSlug);
     }
+  }
+  
+  return { installed, failed };
+}
+
+/**
+ * Install skills from cloud (marketplace)
+ * Used for both bundled and marketplace apps to ensure latest versions
+ */
+export async function installSkillsFromCloud(
+  workspaceRoot: string,
+  skillRefs: string[],
+  fallbackAppPath?: string
+): Promise<{ installed: string[]; failed: string[] }> {
+  const workspaceSkillsPath = getWorkspaceSkillsPath(workspaceRoot);
+  const appSkillsPath = fallbackAppPath ? join(fallbackAppPath, 'skills') : null;
+  
+  const installed: string[] = [];
+  const failed: string[] = [];
+  
+  // Ensure workspace skills directory exists
+  if (!existsSync(workspaceSkillsPath)) {
+    mkdirSync(workspaceSkillsPath, { recursive: true });
+  }
+  
+  for (const skillRef of skillRefs) {
+    // Parse skill reference (format: "skill-slug" or "skill-slug@version")
+    const [skillSlug, version] = skillRef.split('@');
+    if (!skillSlug) {
+      failed.push(skillRef);
+      continue;
+    }
+    
+    // Try to download from cloud first
+    try {
+      debug(`[installSkillsFromCloud] Downloading skill ${skillSlug} from cloud...`);
+      const result = await installSkill(
+        workspaceRoot,
+        skillSlug,
+        version || 'latest'
+      );
+      
+      if (result.success) {
+        installed.push(skillSlug);
+        debug(`[installSkillsFromCloud] Successfully installed ${skillSlug} from cloud`);
+        continue;
+      }
+    } catch (error) {
+      debug(`[installSkillsFromCloud] Failed to download ${skillSlug} from cloud: ${error}`);
+    }
+    
+    // Fall back to local bundled skill if cloud download fails
+    if (appSkillsPath) {
+      const skillSourcePath = join(appSkillsPath, skillSlug);
+      if (existsSync(skillSourcePath)) {
+        debug(`[installSkillsFromCloud] Falling back to bundled skill for ${skillSlug}`);
+        const success = copySkillToWorkspace(skillSourcePath, workspaceSkillsPath, skillSlug);
+        if (success) {
+          installed.push(skillSlug);
+          continue;
+        }
+      }
+    }
+    
+    failed.push(skillSlug);
   }
   
   return { installed, failed };
@@ -283,6 +350,46 @@ function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
   
   // Copy statuses (if app has custom statuses)
   copyAppStatusesToWorkspace(appPath, workspaceRoot);
+}
+
+// ============================================================
+// App Manifest Copy
+// ============================================================
+
+/**
+ * Copy app manifest.json to workspace root for app info display.
+ * The manifest is copied to .creator-flow/app-manifest.json.
+ */
+function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void {
+  // Try bundled app source path first
+  let appPath = getBundledAppSourcePath(appId);
+  
+  if (!appPath) {
+    // Fall back to installed app path
+    appPath = getAppPath(appId, false);
+  }
+  
+  if (!existsSync(appPath)) {
+    debug(`[copyAppManifestToWorkspace] App path not found: ${appPath}`);
+    return;
+  }
+  
+  const manifestSource = join(appPath, 'manifest.json');
+  if (!existsSync(manifestSource)) {
+    debug(`[copyAppManifestToWorkspace] No manifest.json found at ${manifestSource}`);
+    return;
+  }
+  
+  const workspaceDataPath = getWorkspaceDataPath(workspaceRoot);
+  const manifestTarget = join(workspaceDataPath, 'app-manifest.json');
+  
+  // Ensure workspace data directory exists
+  if (!existsSync(workspaceDataPath)) {
+    mkdirSync(workspaceDataPath, { recursive: true });
+  }
+  
+  copyFileSync(manifestSource, manifestTarget);
+  debug(`[copyAppManifestToWorkspace] Copied manifest to ${manifestTarget}`);
 }
 
 // ============================================================
@@ -508,6 +615,13 @@ export function initializeWorkspaceFromApp(
     copyAppAgentsToWorkspace(options.appId, workspaceRoot);
   } catch (error) {
     errors.push(`Failed to copy AGENTS.md: ${error}`);
+  }
+  
+  // Copy app manifest.json to workspace for app info display
+  try {
+    copyAppManifestToWorkspace(options.appId, workspaceRoot);
+  } catch (error) {
+    errors.push(`Failed to copy app manifest: ${error}`);
   }
   
   return {

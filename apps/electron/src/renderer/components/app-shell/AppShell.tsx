@@ -67,6 +67,7 @@ import {
   springTransition as collapsibleSpring,
 } from "@/components/ui/collapsible"
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher"
+import { WorkspaceManagerScreen } from "@/components/workspace"
 import { SessionList } from "./SessionList"
 import { MainContentPanel } from "./MainContentPanel"
 import { LeftSidebar } from "./LeftSidebar"
@@ -605,6 +606,31 @@ function AppShellContent({
 
   // File manager state - selected file for preview
   const [selectedFile, setSelectedFile] = useState<FMFileEntry | null>(null)
+
+  // Workspace manager overlay state
+  const [showWorkspaceManager, setShowWorkspaceManager] = useState(false)
+  
+  // Pending marketplace app for workspace creation (when user clicks "Use" in marketplace)
+  const [pendingMarketplaceApp, setPendingMarketplaceApp] = useState<{ id: string; name: string } | undefined>(undefined)
+
+  // Handle manage workspaces click from workspace switcher
+  const handleManageWorkspaces = React.useCallback(() => {
+    setShowWorkspaceManager(true)
+  }, [])
+  
+  // Handle "Use" click on marketplace app - triggers workspace creation with that app
+  const handleUseMarketplaceApp = React.useCallback((appId: string, appName: string) => {
+    setPendingMarketplaceApp({ id: appId, name: appName })
+    setShowWorkspaceManager(true)
+  }, [])
+
+  // Handle edit workspace from workspace manager
+  const handleEditWorkspace = React.useCallback((workspaceId: string) => {
+    setShowWorkspaceManager(false)
+    // Select the workspace and navigate to settings
+    onSelectWorkspace(workspaceId)
+    navigate(routes.view.settings('workspace'))
+  }, [onSelectWorkspace])
 
   // Load dynamic statuses from workspace config
   const { statuses: statusConfigs, isLoading: isLoadingStatuses } = useStatuses(activeWorkspace?.id || null)
@@ -1852,6 +1878,7 @@ function AppShellContent({
                       activeWorkspaceId={activeWorkspaceId}
                       onSelect={onSelectWorkspace}
                       onWorkspaceCreated={() => onRefreshWorkspaces?.()}
+                      onManageWorkspaces={handleManageWorkspaces}
                     />
                   </div>
                   {/* Help button - icon only with tooltip */}
@@ -2329,7 +2356,7 @@ function AppShellContent({
             "flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle",
             isFocusedMode ? "rounded-[14px]" : (isRightSidebarVisible ? "rounded-l-[10px] rounded-r-[10px]" : "rounded-l-[10px] rounded-r-[14px]")
           )}>
-            <MainContentPanel isFocusedMode={isFocusedMode} />
+            <MainContentPanel isFocusedMode={isFocusedMode} onUseMarketplaceApp={handleUseMarketplaceApp} />
           </div>
           )}
 
@@ -2543,6 +2570,27 @@ function AppShellContent({
       )}
 
       </TooltipProvider>
+
+      {/* Workspace Manager Overlay */}
+      <WorkspaceManagerScreen
+        isOpen={showWorkspaceManager}
+        onClose={() => {
+          setShowWorkspaceManager(false)
+          setPendingMarketplaceApp(undefined)
+        }}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        onOpenWorkspace={(workspaceId) => {
+          window.electronAPI.openWorkspace(workspaceId)
+        }}
+        onEditWorkspace={handleEditWorkspace}
+        onWorkspaceCreated={(workspace) => {
+          onRefreshWorkspaces?.()
+          onSelectWorkspace(workspace.id)
+        }}
+        initialMarketplaceApp={pendingMarketplaceApp}
+        onClearInitialApp={() => setPendingMarketplaceApp(undefined)}
+      />
     </AppShellProvider>
   )
 }

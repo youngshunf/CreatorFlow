@@ -57,6 +57,7 @@ export {
   installPluginToWorkspace,
   uninstallPluginFromWorkspace,
   migrateWorkspaceToApp,
+  installSkillsFromCloud,
 } from './initializer.ts';
 
 // Bundled Apps

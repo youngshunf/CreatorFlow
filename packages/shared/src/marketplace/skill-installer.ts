@@ -363,7 +363,10 @@ export async function installSkills(
   const total = skills.length;
 
   for (let i = 0; i < skills.length; i++) {
-    const { skillId, version } = skills[i];
+    const skill = skills[i];
+    if (!skill) continue;
+    
+    const { skillId, version } = skill;
     
     const result = await installSkill(
       workspaceRoot,

@@ -10,12 +10,15 @@ import { AddWorkspaceStep_CreateNew } from "./AddWorkspaceStep_CreateNew"
 import type { Workspace } from "../../../shared/types"
 
 type CreationStep = 'choose-app' | 'create'
+type AppSource = 'bundled' | 'marketplace'
 
 interface WorkspaceCreationScreenProps {
   /** Callback when a workspace is created successfully */
   onWorkspaceCreated: (workspace: Workspace) => void
   /** Callback when the screen is dismissed */
   onClose: () => void
+  /** Initial marketplace app to use (skips app selection step) */
+  initialMarketplaceApp?: { id: string; name: string }
   className?: string
 }
 
@@ -29,11 +32,22 @@ interface WorkspaceCreationScreenProps {
 export function WorkspaceCreationScreen({
   onWorkspaceCreated,
   onClose,
+  initialMarketplaceApp,
   className
 }: WorkspaceCreationScreenProps) {
-  const [step, setStep] = useState<CreationStep>('choose-app')
-  const [selectedAppId, setSelectedAppId] = useState<string>('app.general')
-  const [selectedAppName, setSelectedAppName] = useState<string>('')
+  // If initialMarketplaceApp is provided, skip to create step
+  const [step, setStep] = useState<CreationStep>(
+    initialMarketplaceApp ? 'create' : 'choose-app'
+  )
+  const [selectedAppId, setSelectedAppId] = useState<string>(
+    initialMarketplaceApp ? `marketplace:${initialMarketplaceApp.id}` : 'app.general'
+  )
+  const [selectedAppName, setSelectedAppName] = useState<string>(
+    initialMarketplaceApp?.name || ''
+  )
+  const [selectedAppSource, setSelectedAppSource] = useState<AppSource>(
+    initialMarketplaceApp ? 'marketplace' : 'bundled'
+  )
   const [isCreating, setIsCreating] = useState(false)
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
 
@@ -55,22 +69,33 @@ export function WorkspaceCreationScreen({
     }
   }, [isCreating, onClose])
 
-  const handleChooseApp = useCallback((appId: string, appName: string) => {
+  const handleChooseApp = useCallback((appId: string, appName: string, source: AppSource) => {
     setSelectedAppId(appId)
     setSelectedAppName(appName)
+    setSelectedAppSource(source)
     setStep('create')
   }, [])
 
   const handleCreateWorkspace = useCallback(async (folderPath: string, name: string) => {
     setIsCreating(true)
     try {
-      // Pass the selected app ID to workspace creation
-      const workspace = await window.electronAPI.createWorkspace(folderPath, name, selectedAppId)
+      // For marketplace apps, extract the actual app ID
+      const appId = selectedAppSource === 'marketplace' 
+        ? selectedAppId.replace('marketplace:', '')
+        : selectedAppId
+      
+      // Pass the selected app ID and source to workspace creation
+      const workspace = await window.electronAPI.createWorkspace(
+        folderPath, 
+        name, 
+        appId,
+        selectedAppSource === 'marketplace' ? 'marketplace' : undefined
+      )
       onWorkspaceCreated(workspace)
     } finally {
       setIsCreating(false)
     }
-  }, [onWorkspaceCreated, selectedAppId])
+  }, [onWorkspaceCreated, selectedAppId, selectedAppSource])
 
   const renderStep = () => {
     switch (step) {
@@ -174,7 +199,10 @@ export function WorkspaceCreationScreen({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={overlayTransitionIn}
-          className="relative flex flex-1 items-center justify-center p-8"
+          className={cn(
+            "relative flex flex-1 overflow-hidden",
+            step === 'choose-app' ? 'p-0' : 'items-center justify-center p-8'
+          )}
         >
           {renderStep()}
         </motion.main>

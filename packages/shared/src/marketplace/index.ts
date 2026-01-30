@@ -91,6 +91,16 @@ export {
   updateSkill,
 } from './skill-installer.ts';
 
+// App Installer
+export {
+  downloadAppPackage,
+  installApp,
+  installAppFromLocal,
+  type AppInstallProgress,
+  type AppInstallProgressCallback,
+  type AppInstallResult,
+} from './app-installer.ts';
+
 // Update Checker
 export {
   checkForUpdates,
