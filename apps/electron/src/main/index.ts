@@ -314,7 +314,11 @@ app.whenReady().then(async () => {
       mainLog.info('Debug mode enabled - logs at:', getLogFilePath())
     }
   } catch (error) {
-    mainLog.error('Failed to initialize app:', error)
+    // Log full error details (error objects may not serialize properly)
+    const errorMessage = error instanceof Error 
+      ? `${error.message}\n${error.stack}` 
+      : String(error)
+    mainLog.error('Failed to initialize app:', errorMessage)
     // Continue anyway - the app will show errors in the UI
   }
 

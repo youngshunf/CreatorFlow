@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { Check, FolderPlus, ExternalLink, ChevronDown } from "lucide-react"
+import { Check, FolderPlus, ExternalLink, ChevronDown, Settings2 } from "lucide-react"
 import { AnimatePresence } from "motion/react"
 import { useSetAtom } from "jotai"
 import { toast } from "sonner"
@@ -26,6 +26,7 @@ interface WorkspaceSwitcherProps {
   activeWorkspaceId: string | null
   onSelect: (workspaceId: string, openInNewWindow?: boolean) => void
   onWorkspaceCreated?: (workspace: Workspace) => void
+  onManageWorkspaces?: () => void
 }
 
 /**
@@ -45,6 +46,7 @@ export function WorkspaceSwitcher({
   activeWorkspaceId,
   onSelect,
   onWorkspaceCreated,
+  onManageWorkspaces,
 }: WorkspaceSwitcherProps) {
   const t = useT()
   const $t = use$T()
@@ -220,6 +222,15 @@ export function WorkspaceSwitcher({
           <FolderPlus className="h-4 w-4" />
           {t('添加工作区...')}
         </StyledDropdownMenuItem>
+        {onManageWorkspaces && (
+          <StyledDropdownMenuItem
+            onClick={onManageWorkspaces}
+            className="font-sans"
+          >
+            <Settings2 className="h-4 w-4" />
+            {t('管理工作区...')}
+          </StyledDropdownMenuItem>
+        )}
       </StyledDropdownMenuContent>
     </DropdownMenu>
     </>
