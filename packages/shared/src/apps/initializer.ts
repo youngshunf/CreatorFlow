@@ -10,11 +10,9 @@ import {
   mkdirSync,
   copyFileSync,
   readdirSync,
-  readFileSync,
-  writeFileSync,
 } from 'fs';
-import { join, basename } from 'path';
-import type { AppManifest, DirectoryStructure, PresetData, PresetLabelConfig, PresetStatusConfig } from './types.ts';
+import { join } from 'path';
+import type { DirectoryStructure } from './types.ts';
 import type { WorkspaceConfig } from '../workspaces/types.ts';
 import {
   createWorkspaceAtPath,
@@ -25,8 +23,6 @@ import {
 } from '../workspaces/storage.ts';
 import { loadAppById, getAppPath } from './storage.ts';
 import { getBundledAppSourcePath } from './bundled-apps.ts';
-import { saveStatusConfig, getDefaultStatusConfig } from '../statuses/storage.ts';
-import { saveLabelConfig, getDefaultLabelConfig } from '../labels/storage.ts';
 import { debug } from '../utils/debug.ts';
 
 // ============================================================
@@ -157,187 +153,96 @@ function installBundledSkills(
 }
 
 // ============================================================
-// Preset Data Application
+// App Data Directory Copy (Labels & Statuses)
 // ============================================================
 
 /**
- * Generate a slug ID from a label/status name
+ * Copy labels directory from app to workspace.
+ * If the app has labels/config.json, copy it to workspace.
+ * Otherwise, workspace will use default labels.
  */
-function generateSlugId(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')  // Allow Chinese characters
-    .replace(/^-|-$/g, '')
-    .substring(0, 50) || 'item';
+function copyAppLabelsToWorkspace(appPath: string, workspaceRoot: string): boolean {
+  const appLabelsConfig = join(appPath, 'labels', 'config.json');
+  
+  if (!existsSync(appLabelsConfig)) {
+    debug(`[copyAppLabelsToWorkspace] No labels/config.json in app, using defaults`);
+    return false;
+  }
+  
+  const workspaceLabelsDir = join(workspaceRoot, '.creator-flow', 'labels');
+  const workspaceLabelsConfig = join(workspaceLabelsDir, 'config.json');
+  
+  // Ensure workspace labels directory exists
+  if (!existsSync(workspaceLabelsDir)) {
+    mkdirSync(workspaceLabelsDir, { recursive: true });
+  }
+  
+  // Copy config file
+  copyFileSync(appLabelsConfig, workspaceLabelsConfig);
+  debug(`[copyAppLabelsToWorkspace] Copied labels config to ${workspaceLabelsConfig}`);
+  
+  return true;
 }
 
 /**
- * Convert PresetLabelConfig to LabelConfig
+ * Copy statuses directory from app to workspace.
+ * If the app has statuses/config.json, copy it along with any icons.
+ * Otherwise, workspace will use default statuses.
  */
-function convertPresetLabel(preset: PresetLabelConfig): import('../labels/types.ts').LabelConfig {
-  const id = preset.id || generateSlugId(preset.name);
+function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boolean {
+  const appStatusesConfig = join(appPath, 'statuses', 'config.json');
   
-  const label: import('../labels/types.ts').LabelConfig = {
-    id,
-    name: preset.name,
-  };
-  
-  // Handle color (can be string or { light, dark } object)
-  if (preset.color) {
-    label.color = preset.color as import('../colors/types.ts').EntityColor;
+  if (!existsSync(appStatusesConfig)) {
+    debug(`[copyAppStatusesToWorkspace] No statuses/config.json in app, using defaults`);
+    return false;
   }
   
-  // Handle children recursively
-  if (preset.children && preset.children.length > 0) {
-    label.children = preset.children.map(child => convertPresetLabel(child));
+  const workspaceStatusesDir = join(workspaceRoot, '.creator-flow', 'statuses');
+  const workspaceStatusesConfig = join(workspaceStatusesDir, 'config.json');
+  const workspaceIconsDir = join(workspaceStatusesDir, 'icons');
+  
+  // Ensure workspace statuses directory exists
+  if (!existsSync(workspaceStatusesDir)) {
+    mkdirSync(workspaceStatusesDir, { recursive: true });
   }
   
-  // Handle valueType
-  if (preset.valueType) {
-    label.valueType = preset.valueType;
+  // Copy config file
+  copyFileSync(appStatusesConfig, workspaceStatusesConfig);
+  debug(`[copyAppStatusesToWorkspace] Copied statuses config to ${workspaceStatusesConfig}`);
+  
+  // Copy icons directory if exists
+  const appIconsDir = join(appPath, 'statuses', 'icons');
+  if (existsSync(appIconsDir)) {
+    copyDirectory(appIconsDir, workspaceIconsDir);
+    debug(`[copyAppStatusesToWorkspace] Copied status icons to ${workspaceIconsDir}`);
   }
   
-  return label;
+  return true;
 }
 
 /**
- * Convert PresetStatusConfig to StatusConfig
+ * Copy app-specific labels and statuses to workspace.
+ * This is the simplified approach: directly copy directory contents.
  */
-function convertPresetStatus(
-  preset: PresetStatusConfig,
-  index: number
-): import('../statuses/types.ts').StatusConfig {
-  const id = preset.id || generateSlugId(preset.label);
+function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
+  // Try bundled app source path first
+  let appPath = getBundledAppSourcePath(appId);
   
-  return {
-    id,
-    label: preset.label,
-    color: preset.color as import('../colors/types.ts').EntityColor | undefined,
-    icon: preset.icon,
-    category: preset.category || 'open',
-    isFixed: preset.isFixed || false,
-    isDefault: !preset.isFixed,  // Non-fixed statuses are considered default (can be modified)
-    order: preset.order !== undefined ? preset.order : index,
-  };
-}
-
-/**
- * Apply preset labels to workspace
- */
-function applyPresetLabels(
-  workspaceRoot: string,
-  presetData: PresetData
-): void {
-  const presetLabels = presetData.labels;
-  if (!presetLabels || presetLabels.length === 0) {
+  if (!appPath) {
+    // Fall back to installed app path
+    appPath = getAppPath(appId, false);
+  }
+  
+  if (!existsSync(appPath)) {
+    debug(`[copyAppDataToWorkspace] App path not found: ${appPath}`);
     return;
   }
   
-  // Convert preset labels to full LabelConfig format
-  const convertedLabels = presetLabels.map(preset => convertPresetLabel(preset));
+  // Copy labels (if app has custom labels)
+  copyAppLabelsToWorkspace(appPath, workspaceRoot);
   
-  if (presetData.replaceDefaultLabels) {
-    // Replace default labels entirely
-    const labelConfig: import('../labels/types.ts').WorkspaceLabelConfig = {
-      version: 1,
-      labels: convertedLabels,
-    };
-    saveLabelConfig(workspaceRoot, labelConfig);
-  } else {
-    // Merge with defaults: add preset labels to the end of default labels
-    const defaultConfig = getDefaultLabelConfig();
-    
-    // Avoid duplicate IDs - filter out any preset labels that already exist in defaults
-    const existingIds = new Set<string>();
-    const collectIds = (labels: import('../labels/types.ts').LabelConfig[]) => {
-      for (const label of labels) {
-        existingIds.add(label.id);
-        if (label.children) {
-          collectIds(label.children);
-        }
-      }
-    };
-    collectIds(defaultConfig.labels);
-    
-    const newLabels = convertedLabels.filter(label => !existingIds.has(label.id));
-    defaultConfig.labels.push(...newLabels);
-    
-    saveLabelConfig(workspaceRoot, defaultConfig);
-  }
-}
-
-/**
- * Apply preset statuses to workspace
- */
-function applyPresetStatuses(
-  workspaceRoot: string,
-  presetData: PresetData
-): void {
-  const presetStatuses = presetData.statuses;
-  if (!presetStatuses || presetStatuses.length === 0) {
-    return;
-  }
-  
-  // Convert preset statuses to full StatusConfig format
-  const convertedStatuses = presetStatuses.map((preset, index) => 
-    convertPresetStatus(preset, index)
-  );
-  
-  // Get default config (contains fixed statuses that must be preserved)
-  const defaultConfig = getDefaultStatusConfig();
-  
-  // Fixed status IDs that cannot be replaced
-  const fixedStatusIds = new Set(['todo', 'done', 'cancelled']);
-  
-  if (presetData.replaceDefaultStatuses) {
-    // Replace non-fixed statuses, preserve fixed ones
-    const fixedStatuses = defaultConfig.statuses.filter(s => fixedStatusIds.has(s.id));
-    const presetNonFixed = convertedStatuses.filter(s => !fixedStatusIds.has(s.id));
-    
-    // Recalculate order
-    const allStatuses = [...presetNonFixed, ...fixedStatuses].map((s, i) => ({
-      ...s,
-      order: i,
-    }));
-    
-    const statusConfig: import('../statuses/types.ts').WorkspaceStatusConfig = {
-      version: 1,
-      statuses: allStatuses,
-      defaultStatusId: defaultConfig.defaultStatusId,
-    };
-    saveStatusConfig(workspaceRoot, statusConfig);
-  } else {
-    // Merge: add new statuses, update existing non-fixed ones
-    const existingIds = new Set(defaultConfig.statuses.map(s => s.id));
-    
-    for (const preset of convertedStatuses) {
-      if (fixedStatusIds.has(preset.id)) {
-        // Cannot modify fixed statuses, skip
-        continue;
-      }
-      
-      const existingIndex = defaultConfig.statuses.findIndex(s => s.id === preset.id);
-      if (existingIndex >= 0) {
-        // Update existing status (preserve isFixed and isDefault from original)
-        const existing = defaultConfig.statuses[existingIndex];
-        defaultConfig.statuses[existingIndex] = {
-          ...preset,
-          isFixed: existing.isFixed,
-          isDefault: existing.isDefault,
-        };
-      } else {
-        // Add new status
-        defaultConfig.statuses.push(preset);
-      }
-    }
-    
-    // Recalculate order based on array position
-    defaultConfig.statuses.forEach((s, i) => {
-      s.order = i;
-    });
-    
-    saveStatusConfig(workspaceRoot, defaultConfig);
-  }
+  // Copy statuses (if app has custom statuses)
+  copyAppStatusesToWorkspace(appPath, workspaceRoot);
 }
 
 // ============================================================
@@ -541,18 +446,12 @@ export function initializeWorkspaceFromApp(
     }
   }
   
-  // Apply preset data
-  if (!options.skipPresetData && manifest.workspace?.presetData) {
-    const presetData = manifest.workspace.presetData;
-    
+  // Copy app-specific labels and statuses (direct directory copy)
+  if (!options.skipPresetData) {
     try {
-      // Apply preset labels (will merge with or replace defaults based on config)
-      applyPresetLabels(workspaceRoot, presetData);
-      
-      // Apply preset statuses (will merge with defaults, preserving fixed statuses)
-      applyPresetStatuses(workspaceRoot, presetData);
+      copyAppDataToWorkspace(options.appId, workspaceRoot);
     } catch (error) {
-      errors.push(`Failed to apply preset data: ${error}`);
+      errors.push(`Failed to copy app data: ${error}`);
     }
   }
   

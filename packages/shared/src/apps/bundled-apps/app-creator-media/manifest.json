@@ -65,38 +65,6 @@
     },
     "localMcpServers": {
       "enabled": true
-    },
-    "presetData": {
-      "labels": [
-        {
-          "id": "content-creation",
-          "name": "内容创作",
-          "color": { "light": "#8B5CF6", "dark": "#A78BFA" },
-          "children": [
-            { "id": "to-create", "name": "待创作", "color": { "light": "#3B82F6", "dark": "#60A5FA" } },
-            { "id": "creating", "name": "创作中", "color": { "light": "#F59E0B", "dark": "#FBBF24" } },
-            { "id": "to-review", "name": "待审核", "color": { "light": "#8B5CF6", "dark": "#A78BFA" } },
-            { "id": "published", "name": "已发布", "color": { "light": "#10B981", "dark": "#34D399" } }
-          ]
-        },
-        {
-          "id": "platform",
-          "name": "平台",
-          "color": { "light": "#EC4899", "dark": "#F472B6" },
-          "children": [
-            { "id": "xiaohongshu", "name": "小红书", "color": { "light": "#FF2442", "dark": "#FF6B81" } },
-            { "id": "douyin", "name": "抖音", "color": { "light": "#000000", "dark": "#333333" } },
-            { "id": "wechat", "name": "公众号", "color": { "light": "#07C160", "dark": "#2DC76D" } },
-            { "id": "bilibili", "name": "B站", "color": { "light": "#00A1D6", "dark": "#23ADE5" } }
-          ]
-        }
-      ],
-      "statuses": [
-        { "id": "draft", "label": "草稿", "category": "open" },
-        { "id": "review", "label": "待审核", "category": "open" },
-        { "id": "scheduled", "label": "待发布", "category": "open" },
-        { "id": "live", "label": "已发布", "category": "closed" }
-      ]
     }
   },
   "permissions": ["filesystem", "network", "clipboard"],

@@ -263,9 +263,9 @@ export const CREATOR_MEDIA_APP: AppManifest = {
         { name: '已发布', color: '#10b981' },
       ],
       statuses: [
-        { name: '草稿', type: 'draft' },
-        { name: '待审核', type: 'review' },
-        { name: '已发布', type: 'published' },
+        { id: 'draft', label: '草稿', category: 'open' },
+        { id: 'review', label: '待审核', category: 'open' },
+        { id: 'published', label: '已发布', category: 'closed' },
       ],
     },
   },
