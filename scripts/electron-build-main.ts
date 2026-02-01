@@ -46,7 +46,10 @@ function getBuildDefines(): string[] {
     "MICROSOFT_OAUTH_CLIENT_ID",
     "MICROSOFT_OAUTH_CLIENT_SECRET",
     "SENTRY_ELECTRON_INGEST_URL",
-    "VITE_APP_ENV",  // For staging DevTools support
+    "VITE_APP_ENV",           // For staging DevTools support
+    "VITE_CLOUD_API_URL",     // Cloud API URL for marketplace etc.
+    "VITE_CLOUD_MODE_ENABLED",
+    "VITE_DEBUG_MODE",
   ];
 
   return definedVars.map((varName) => {

@@ -39,9 +39,11 @@ const DEFAULT_CONFIG: Record<AppEnvironment, Omit<EnvConfig, 'env'>> = {
     debugMode: true,
   },
   staging: {
-    cloudApiUrl: 'https://staging-api.creator-flow.com/api/v1',
+    // Default to localhost for local development/staging
+    // For remote staging server, set VITE_CLOUD_API_URL in .env.staging
+    cloudApiUrl: 'http://localhost:8020/api/v1',
     llmGatewayPath: '/llm/proxy',
-    llmGatewayUrl: 'https://staging-api.creator-flow.com/api/v1/llm/proxy',
+    llmGatewayUrl: 'http://localhost:8020/api/v1/llm/proxy',
     cloudModeEnabled: true,
     debugMode: true,
   },
