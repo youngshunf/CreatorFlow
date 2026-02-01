@@ -3,7 +3,7 @@
 import { loadShellEnv } from './shell-env'
 loadShellEnv()
 
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 import { createHash } from 'crypto'
 import { hostname, homedir } from 'os'
 import * as Sentry from '@sentry/electron/main'
@@ -211,6 +211,44 @@ async function createInitialWindows(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  // ============================================================
+  // CORS Bypass for Cloud API
+  // ============================================================
+  // Electron's renderer process is subject to CORS restrictions when making
+  // fetch requests to external APIs. We intercept responses and add the
+  // necessary CORS headers to allow requests to our cloud API endpoints.
+  //
+  // This is safe because:
+  // 1. We only modify responses from our own API domains
+  // 2. The main process has full control over what domains are whitelisted
+  // 3. contextIsolation is enabled, preventing renderer from accessing Node
+  // ============================================================
+  const cloudApiDomains = [
+    '192.168.1.92',           // Staging (internal network)
+    'api.ai.dcfuture.cn',      // Production
+    'localhost',               // Development
+  ]
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const url = new URL(details.url)
+    const isCloudApi = cloudApiDomains.some(domain => url.hostname.includes(domain))
+
+    if (isCloudApi) {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Access-Control-Allow-Origin': ['*'],
+          'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
+          'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
+        },
+      })
+    } else {
+      callback({ responseHeaders: details.responseHeaders })
+    }
+  })
+
+  mainLog.info('CORS bypass configured for cloud API domains:', cloudApiDomains)
+
   // Register bundled assets root so all seeding functions can find their files
   // (docs, permissions, themes, tool-icons resolve via getBundledAssetsDir)
   setBundledAssetsRoot(__dirname)
