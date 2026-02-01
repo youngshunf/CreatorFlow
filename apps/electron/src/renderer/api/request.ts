@@ -13,6 +13,12 @@ const BASE_URL = import.meta.env.VITE_CLOUD_API_URL
   || import.meta.env.VITE_GLOB_API_URL 
   || 'http://localhost:8020/api/v1';
 
+// Debug: Log BASE_URL in staging/development
+if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+  console.log('[Request] BASE_URL:', BASE_URL);
+  console.log('[Request] Environment:', import.meta.env.VITE_APP_ENV);
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
 }
@@ -46,11 +52,22 @@ class RequestClient {
       headers.set('Authorization', `Bearer ${token}`);
     }
 
+    // Debug logging
+    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+      console.log('[Request] Fetching:', fullUrl);
+      console.log('[Request] Method:', init.method || 'GET');
+    }
+
     try {
+      const startTime = Date.now();
       const response = await fetch(fullUrl, {
         ...init,
         headers,
       });
+      
+      if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+        console.log(`[Request] Response: ${response.status} in ${Date.now() - startTime}ms`);
+      }
 
       // 处理 401 未授权
       if (response.status === 401) {
@@ -86,7 +103,8 @@ class RequestClient {
       return (res.code === 200 && res.data !== undefined) ? res.data : res;
 
     } catch (error: any) {
-      console.error('Request Error:', error);
+      console.error('[Request] Error:', error.message || error);
+      console.error('[Request] URL was:', fullUrl);
       throw error;
     }
   }
