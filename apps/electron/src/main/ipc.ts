@@ -2111,7 +2111,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     }
 
     const { searchSessions } = await import('./search')
-    const { getWorkspaceSessionsPath } = await import('@craft-agent/shared/workspaces')
+    const { getWorkspaceSessionsPath } = await import('@creator-flow/shared/workspaces')
 
     const sessionsDir = getWorkspaceSessionsPath(workspace.rootPath)
     ipcLog.debug(`SEARCH_SESSIONS: Searching "${query}" in ${sessionsDir}`)
