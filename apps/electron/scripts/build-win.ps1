@@ -212,9 +212,21 @@ if ($env:SLACK_OAUTH_CLIENT_SECRET) {
 if ($env:MICROSOFT_OAUTH_CLIENT_ID) {
     $MainArgs += "--define:process.env.MICROSOFT_OAUTH_CLIENT_ID=`"'$env:MICROSOFT_OAUTH_CLIENT_ID'`""
 }
-# Pass VITE_APP_ENV to main process for staging DevTools support
+# Pass VITE environment variables to main process
 if ($env:VITE_APP_ENV) {
     $MainArgs += "--define:process.env.VITE_APP_ENV=`"'$env:VITE_APP_ENV'`""
+}
+if ($env:VITE_CLOUD_API_URL) {
+    $MainArgs += "--define:process.env.VITE_CLOUD_API_URL=`"'$env:VITE_CLOUD_API_URL'`""
+}
+if ($env:VITE_LLM_GATEWAY_PATH) {
+    $MainArgs += "--define:process.env.VITE_LLM_GATEWAY_PATH=`"'$env:VITE_LLM_GATEWAY_PATH'`""
+}
+if ($env:VITE_CLOUD_MODE_ENABLED) {
+    $MainArgs += "--define:process.env.VITE_CLOUD_MODE_ENABLED=`"'$env:VITE_CLOUD_MODE_ENABLED'`""
+}
+if ($env:VITE_DEBUG_MODE) {
+    $MainArgs += "--define:process.env.VITE_DEBUG_MODE=`"'$env:VITE_DEBUG_MODE'`""
 }
 Push-Location $RootDir
 try {

@@ -39,11 +39,9 @@ const DEFAULT_CONFIG: Record<AppEnvironment, Omit<EnvConfig, 'env'>> = {
     debugMode: true,
   },
   staging: {
-    // Default to localhost for local development/staging
-    // For remote staging server, set VITE_CLOUD_API_URL in .env.staging
-    cloudApiUrl: 'http://localhost:8020/api/v1',
+    cloudApiUrl: 'http://192.168.1.92:8020/api/v1',
     llmGatewayPath: '/llm/proxy',
-    llmGatewayUrl: 'http://localhost:8020/api/v1/llm/proxy',
+    llmGatewayUrl: 'http://192.168.1.92:8020/api/v1/llm/proxy',
     cloudModeEnabled: true,
     debugMode: true,
   },
@@ -112,10 +110,43 @@ function parseBool(value: string | undefined, defaultValue: boolean): boolean {
 }
 
 /**
+ * Get build-time injected environment variable
+ * 
+ * IMPORTANT: These must use literal process.env.VITE_XXX syntax
+ * for esbuild --define to work. Dynamic access like process.env[key]
+ * will NOT be replaced at build time.
+ */
+function getBuildTimeEnv(key: 'VITE_APP_ENV' | 'VITE_CLOUD_API_URL' | 'VITE_LLM_GATEWAY_PATH' | 'VITE_CLOUD_MODE_ENABLED' | 'VITE_DEBUG_MODE'): string | undefined {
+  // Use literal property access for esbuild --define to work
+  // These get replaced at build time with actual values
+  switch (key) {
+    case 'VITE_APP_ENV':
+      return typeof process !== 'undefined' ? process.env.VITE_APP_ENV : undefined;
+    case 'VITE_CLOUD_API_URL':
+      return typeof process !== 'undefined' ? process.env.VITE_CLOUD_API_URL : undefined;
+    case 'VITE_LLM_GATEWAY_PATH':
+      return typeof process !== 'undefined' ? process.env.VITE_LLM_GATEWAY_PATH : undefined;
+    case 'VITE_CLOUD_MODE_ENABLED':
+      return typeof process !== 'undefined' ? process.env.VITE_CLOUD_MODE_ENABLED : undefined;
+    case 'VITE_DEBUG_MODE':
+      return typeof process !== 'undefined' ? process.env.VITE_DEBUG_MODE : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Get current environment from VITE_APP_ENV
  */
 export function getCurrentEnv(): AppEnvironment {
-  const env = getEnvVar('VITE_APP_ENV');
+  // Try build-time injected value first (for main process)
+  let env = getBuildTimeEnv('VITE_APP_ENV');
+  
+  // Fallback to dynamic access (for renderer with Vite)
+  if (!env) {
+    env = getEnvVar('VITE_APP_ENV');
+  }
+  
   if (env === 'staging' || env === 'production') {
     return env;
   }
@@ -126,18 +157,25 @@ export function getCurrentEnv(): AppEnvironment {
  * Load environment configuration
  * 
  * Priority:
- * 1. Environment variables (VITE_*)
- * 2. Default values for current environment
+ * 1. Build-time injected values (process.env.VITE_XXX - for main process)
+ * 2. Runtime environment variables (for renderer)
+ * 3. Default values for current environment
  */
 export function loadEnvConfig(): EnvConfig {
   const env = getCurrentEnv();
   const defaults = DEFAULT_CONFIG[env];
   
-  // Get values from environment variables or use defaults
-  const cloudApiUrl = getEnvVar('VITE_CLOUD_API_URL') || defaults.cloudApiUrl;
-  const llmGatewayPath = getEnvVar('VITE_LLM_GATEWAY_PATH') || defaults.llmGatewayPath;
-  const cloudModeEnabled = parseBool(getEnvVar('VITE_CLOUD_MODE_ENABLED'), defaults.cloudModeEnabled);
-  const debugMode = parseBool(getEnvVar('VITE_DEBUG_MODE'), defaults.debugMode);
+  // Get values - try build-time injection first, then runtime, then defaults
+  const cloudApiUrl = getBuildTimeEnv('VITE_CLOUD_API_URL') || getEnvVar('VITE_CLOUD_API_URL') || defaults.cloudApiUrl;
+  const llmGatewayPath = getBuildTimeEnv('VITE_LLM_GATEWAY_PATH') || getEnvVar('VITE_LLM_GATEWAY_PATH') || defaults.llmGatewayPath;
+  const cloudModeEnabled = parseBool(
+    getBuildTimeEnv('VITE_CLOUD_MODE_ENABLED') || getEnvVar('VITE_CLOUD_MODE_ENABLED'),
+    defaults.cloudModeEnabled
+  );
+  const debugMode = parseBool(
+    getBuildTimeEnv('VITE_DEBUG_MODE') || getEnvVar('VITE_DEBUG_MODE'),
+    defaults.debugMode
+  );
   
   // Construct full gateway URL
   const baseUrl = cloudApiUrl.replace(/\/$/, ''); // Remove trailing slash

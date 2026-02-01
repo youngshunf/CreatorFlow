@@ -48,6 +48,7 @@ function getBuildDefines(): string[] {
     "SENTRY_ELECTRON_INGEST_URL",
     "VITE_APP_ENV",           // For staging DevTools support
     "VITE_CLOUD_API_URL",     // Cloud API URL for marketplace etc.
+    "VITE_LLM_GATEWAY_PATH",  // LLM gateway path
     "VITE_CLOUD_MODE_ENABLED",
     "VITE_DEBUG_MODE",
   ];
