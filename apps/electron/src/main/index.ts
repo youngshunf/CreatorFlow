@@ -210,6 +210,29 @@ async function createInitialWindows(): Promise<void> {
   mainLog.info(`Created window for first workspace: ${workspaces[0].name}`)
 }
 
+// ============================================================
+// Certificate Error Handler for Staging (self-signed certs)
+// ============================================================
+// In staging/development environments, we may connect to internal servers
+// with self-signed certificates. This handler allows those connections.
+// In production, this only affects our whitelisted internal domains.
+// ============================================================
+app.on('certificate-error', (event, _webContents, url, _error, _certificate, callback) => {
+  // Allow self-signed certs for internal staging/dev servers
+  const allowedHosts = ['192.168.1.92', 'localhost', '127.0.0.1']
+  try {
+    const parsedUrl = new URL(url)
+    if (allowedHosts.some(host => parsedUrl.hostname === host)) {
+      event.preventDefault()
+      callback(true) // Trust this certificate
+      return
+    }
+  } catch {
+    // Invalid URL, reject
+  }
+  callback(false) // Use default behavior (reject invalid certs)
+})
+
 app.whenReady().then(async () => {
   // ============================================================
   // CORS Bypass for Cloud API
