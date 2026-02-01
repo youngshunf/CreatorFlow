@@ -519,6 +519,11 @@ export class SessionManager {
    * This enables SDK to use cloud gateway instead of direct Anthropic API.
    */
   async setCloudConfig(config: { gatewayUrl: string; llmToken: string }): Promise<void> {
+    // Validate config to prevent undefined URL errors in SDK
+    if (!config.gatewayUrl || !config.llmToken) {
+      sessionLog.error('Invalid cloud config - missing gatewayUrl or llmToken:', config)
+      throw new Error('Invalid cloud config: gatewayUrl and llmToken are required')
+    }
     sessionLog.info(`Setting cloud config: ${config.gatewayUrl}`)
     this.cloudConfig = config
     // Reinitialize auth to pick up cloud gateway
