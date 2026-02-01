@@ -20,6 +20,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [sendingCode, setSendingCode] = useState(false)
   
   // Password Login State
   const [username, setUsername] = useState('')
@@ -40,14 +41,18 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       setError('请输入手机号')
       return
     }
+    setSendingCode(true)
+    setError(null)
     try {
-      setError(null)
       await authApi.sendSmsCode(phone)
       setCountdown(60)
+      toast.success('验证码已发送')
     } catch (err: any) {
       const msg = err.message || '发送验证码失败'
       setError(msg)
       toast.error(msg)
+    } finally {
+      setSendingCode(false)
     }
   }
 
@@ -181,11 +186,11 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    disabled={countdown > 0 || !phone}
+                    disabled={countdown > 0 || !phone || sendingCode}
                     onClick={handleSendCode}
                     className="w-32"
                   >
-                    {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                    {sendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
                   </Button>
                 </div>
               </div>
