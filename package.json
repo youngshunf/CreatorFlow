@@ -1,6 +1,6 @@
 {
   "name": "creator-flow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "AI创作操作系统 - 面向自媒体创作者的智能创作平台",
   "type": "module",
   "private": true,
@@ -15,6 +15,8 @@
     "typecheck": "cd packages/shared && bun run tsc --noEmit",
     "typecheck:all": "cd packages/core && bun run tsc --noEmit && cd ../shared && bun run tsc --noEmit",
     "lint:electron": "cd apps/electron && bun run lint",
+    "lint:shared": "cd packages/shared && npx eslint .",
+    "lint": "bun run lint:electron && bun run lint:shared",
     "link": "bun link",
     "electron:clean": "bun run scripts/electron-clean.ts",
     "electron:build:main": "bun run scripts/electron-build-main.ts",

@@ -9,6 +9,7 @@ export { default as UserProfilePage, meta as UserProfileMeta } from './UserProfi
 export { default as UserProfileEditPage, meta as UserProfileEditMeta } from './UserProfileEditPage'
 export { default as AppSettingsPage, meta as AppSettingsMeta } from './AppSettingsPage'
 export { default as AppearanceSettingsPage, meta as AppearanceMeta } from './AppearanceSettingsPage'
+export { default as InputSettingsPage, meta as InputMeta } from './InputSettingsPage'
 export { default as WorkspaceSettingsPage, meta as WorkspaceSettingsMeta } from './WorkspaceSettingsPage'
 export { default as PermissionsSettingsPage, meta as PermissionsMeta } from './PermissionsSettingsPage'
 export { default as LabelsSettingsPage, meta as LabelsMeta } from './LabelsSettingsPage'

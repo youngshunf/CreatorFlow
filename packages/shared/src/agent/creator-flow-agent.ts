@@ -120,6 +120,8 @@ export interface CreatorFlowAgentConfig {
     enabled: boolean;          // Whether debug mode is active
     logFilePath?: string;      // Path to the log file for querying
   };
+  /** System prompt preset for mini agents ('default' | 'mini' or custom string) */
+  systemPromptPreset?: 'default' | 'mini' | string;
 }
 
 // Permission request tracking
@@ -822,26 +824,46 @@ export class CreatorFlowAgent {
         return;
       }
 
+      // Detect mini agent mode early (needed for tool/MCP restrictions)
+      const isMiniAgent = this.config.systemPromptPreset === 'mini';
+
       // Block SDK tools that require UI we don't have:
       // - EnterPlanMode/ExitPlanMode: We use safe mode instead (user-controlled via UI)
       // - AskUserQuestion: Requires interactive UI to show question options to user
+      // Note: Mini agents use a minimal tool list directly, so no additional blocking needed
       const disallowedTools: string[] = ['EnterPlanMode', 'ExitPlanMode', 'AskUserQuestion'];
 
-      // Build MCP servers config - always use HTTP (SDK handles sources efficiently)
-      // Filter out stdio servers if local MCP is disabled
+      // Build MCP servers config
+      // Mini agents: only session tools (config_validate) to minimize token usage
+      // Regular agents: full set including preferences, docs, and user sources
       const sourceMcpResult = this.getSourceMcpServersFiltered();
 
       debug('[chat] sourceMcpServers:', sourceMcpResult.servers);
       debug('[chat] sourceApiServers:', this.sourceApiServers);
 
-      const mcpServers: Options['mcpServers'] = {
-        preferences: getPreferencesServer(false),
-        // Session-scoped tools (SubmitPlan, source_test, etc.)
-        session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-        // Add user-defined source servers (MCP and API, filtered by local MCP setting)
-        ...sourceMcpResult.servers,
-        ...this.sourceApiServers,
-      };
+      const mcpServers: Options['mcpServers'] = isMiniAgent
+        ? {
+            // Mini agents need session tools (config_validate) and docs for reference
+            session: getSessionScopedTools(sessionId, this.workspaceRootPath),
+            'creator-flows-docs': {
+              type: 'http',
+              url: 'https://agents.craft.do/docs/mcp',
+            },
+          }
+        : {
+            preferences: getPreferencesServer(false),
+            // Session-scoped tools (SubmitPlan, source_test, etc.)
+            session: getSessionScopedTools(sessionId, this.workspaceRootPath),
+            // CreatorFlow documentation - always available for searching setup guides
+            // This is a public Mintlify MCP server, no auth needed
+            'creator-flows-docs': {
+              type: 'http',
+              url: 'https://agents.craft.do/docs/mcp',
+            },
+            // Add user-defined source servers (MCP and API, filtered by local MCP setting)
+            ...sourceMcpResult.servers,
+            ...this.sourceApiServers,
+          };
       
       // Configure SDK options
       // Resolve model: use tier name when using custom API (OpenRouter), else specific version
@@ -869,6 +891,18 @@ export class CreatorFlowAgent {
       // support Anthropic-specific betas or extended thinking parameters
       const isClaude = isClaudeModel(model);
 
+      // Log mini agent mode details
+      if (isMiniAgent) {
+        debug('[CraftAgent] 🤖 MINI AGENT mode - optimized for quick config edits');
+        debug('[CraftAgent] Mini agent optimizations:', {
+          model,
+          tools: ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash'],
+          mcpServers: ['session', 'craft-agents-docs'],
+          thinking: 'disabled',
+          systemPrompt: 'lean (no Claude Code preset)',
+        });
+      }
+
       const options: Options = {
         ...getDefaultOptions(),
         model,
@@ -886,28 +920,40 @@ export class CreatorFlowAgent {
         },
         // Extended thinking: tokens based on effective thinking level (session level + ultrathink override)
         // Non-Claude models don't support extended thinking, so pass 0 to disable
-        maxThinkingTokens: isClaude ? thinkingTokens : 0,
-        // Option A: Append to Claude Code's system prompt (recommended by docs)
-        // Use pinned values for consistency after compaction (SDK expects stable system prompt)
-        systemPrompt: {
-          type: 'preset',
-          preset: 'claude_code',
-          // Working directory included for monorepo context file discovery
-          append: getSystemPrompt(
-            this.pinnedPreferencesPrompt ?? undefined,
-            this.config.debugMode,
-            this.workspaceRootPath,
-            this.config.session?.workingDirectory
-          ),
-        },
+        // Mini agents also disable thinking for efficiency (quick config edits don't need deep reasoning)
+        maxThinkingTokens: isMiniAgent ? 0 : (isClaude ? thinkingTokens : 0),
+        // System prompt configuration:
+        // - Mini agents: Use custom (lean) system prompt without Claude Code preset
+        // - Normal agents: Append to Claude Code's system prompt (recommended by docs)
+        systemPrompt: this.config.systemPromptPreset === 'mini'
+          ? getSystemPrompt(undefined, undefined, this.workspaceRootPath, undefined, 'mini')
+          : {
+              type: 'preset' as const,
+              preset: 'claude_code' as const,
+              // Working directory included for monorepo context file discovery
+              append: getSystemPrompt(
+                this.pinnedPreferencesPrompt ?? undefined,
+                this.config.debugMode,
+                this.workspaceRootPath,
+                this.config.session?.workingDirectory
+              ),
+            },
         // Use sdkCwd for SDK session storage - this is set once at session creation and never changes.
         // This ensures SDK can always find session transcripts regardless of workingDirectory changes.
         // Note: workingDirectory is still used for context injection and shown to the agent.
         cwd: this.config.session?.sdkCwd ??
           (sessionId ? getSessionPath(this.workspaceRootPath, sessionId) : this.workspaceRootPath),
         includePartialMessages: true,
-        // Enable the full Claude Code toolset
-        tools: { type: 'preset', preset: 'claude_code' },
+        // Tools configuration:
+        // - Mini agents: minimal set for quick config edits (reduces token count ~70%)
+        // - Regular agents: full Claude Code toolset
+        tools: (() => {
+          const toolsValue = isMiniAgent
+            ? ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash']
+            : { type: 'preset' as const, preset: 'claude_code' as const };
+          debug('[CraftAgent] 🔧 Tools configuration:', JSON.stringify(toolsValue));
+          return toolsValue;
+        })(),
         // Bypass SDK's built-in permission system - we handle all permissions via PreToolUse hook
         // This allows Safe Mode to properly allow read-only bash commands without SDK interference
         permissionMode: 'bypassPermissions',
@@ -1649,7 +1695,7 @@ export class CreatorFlowAgent {
             this.config.onSdkSessionIdUpdate?.(message.session_id);
           }
 
-          const events = this.convertSDKMessage(
+          const events = await this.convertSDKMessage(
             message,
             pendingToolUses,
             emittedToolStarts,
@@ -2409,6 +2455,77 @@ Please continue the conversation naturally from where we left off.
   }
 
   /**
+   * Parse actual API error from SDK debug log file.
+   * The SDK logs errors like: [ERROR] Error in non-streaming fallback: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Could not process image"},"request_id":"req_..."}
+   * These go to ~/.claude/debug/{sessionId}.txt, NOT to stderr.
+   *
+   * Uses async retries with non-blocking delays to handle race condition where
+   * SDK may still be writing to the debug file when the error event is received.
+   */
+  private async parseApiErrorFromDebugLog(): Promise<{ errorType: string; message: string; requestId?: string } | null> {
+    if (!this.sessionId) return null;
+
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const debugFilePath = path.join(os.homedir(), '.claude', 'debug', `${this.sessionId}.txt`);
+
+    // Helper for non-blocking delay
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Retry up to 3 times with 50ms delays to handle race condition
+    // where SDK emits error event before finishing debug file write
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (!fs.existsSync(debugFilePath)) {
+          // File doesn't exist yet, wait and retry
+          if (attempt < 2) {
+            await delay(50);
+            continue;
+          }
+          return null;
+        }
+
+        // Read the file and get last 50 lines to find recent errors
+        const content = fs.readFileSync(debugFilePath, 'utf-8');
+        const lines = content.split('\n').slice(-50);
+
+        // Search backwards for the most recent [ERROR] line with JSON
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = lines[i];
+          // Match [ERROR] lines containing JSON with error details
+          const errorMatch = line.match(/\[ERROR\].*?(\{.*\})/);
+          if (errorMatch && errorMatch[1]) {
+            try {
+              const parsed = JSON.parse(errorMatch[1]);
+              if (parsed?.error?.message) {
+                return {
+                  errorType: parsed.error.type || 'error',
+                  message: parsed.error.message,
+                  requestId: parsed.request_id,
+                };
+              }
+            } catch {
+              // Not valid JSON, continue searching
+            }
+          }
+        }
+
+        // File exists but no error found yet, wait and retry
+        if (attempt < 2) {
+          await delay(50);
+        }
+      } catch {
+        // File read error, wait and retry
+        if (attempt < 2) {
+          await delay(50);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Map SDK assistant message error codes to typed error events with user-friendly messages.
    * 
    * IMPORTANT: The Claude Agent SDK has a bug where it doesn't properly map API errors
@@ -2416,7 +2533,10 @@ Please continue the conversation naturally from where we left off.
    * To work around this, when we receive 'unknown', we check the captured API error from
    * the network interceptor to get the actual HTTP status code.
    */
-  private mapSDKErrorToTypedError(errorCode: SDKAssistantMessageError): { type: 'typed_error'; error: AgentError } {
+  private async mapSDKErrorToTypedError(errorCode: SDKAssistantMessageError): Promise<{ type: 'typed_error'; error: AgentError }> {
+    // Try to extract actual error message from SDK debug log file
+    const actualError = await this.parseApiErrorFromDebugLog();
+    
     // Check for captured API error to get the real HTTP status code
     // This helps us correctly identify errors that the SDK maps to 'unknown'
     const capturedError = getLastApiError();
@@ -2531,10 +2651,18 @@ Please continue the conversation naturally from where we left off.
         retryDelayMs: 5000,
       },
       'invalid_request': {
-        code: 'unknown_error',
+        code: 'invalid_request',
         title: '无效请求',
-        message: '请求无效。',
-        details: ['请尝试发送新消息', '如果问题持续请报告此问题'],
+        message: 'API 拒绝了此请求。',
+        details: [
+          ...(actualError ? [
+            `错误: ${actualError.message}`,
+            `类型: ${actualError.errorType}`,
+            ...(actualError.requestId ? [`请求 ID: ${actualError.requestId}`] : []),
+          ] : []),
+          '尝试移除附件并重新发送',
+          '检查图片格式是否支持 (PNG, JPEG, GIF, WebP)',
+        ],
         actions: [
           { key: 'r', label: '重试', action: 'retry' },
         ],
@@ -2559,8 +2687,16 @@ Please continue the conversation naturally from where we left off.
       'unknown': {
         code: 'unknown_error',
         title: '未知错误',
-        message: '连接 大模型 时发生意外错误。',
-        details: ['这可能是临时问题', '请检查网络连接'],
+        message: '连接 AI 时发生意外错误。',
+        details: [
+          ...(actualError ? [
+            `错误: ${actualError.message}`,
+            `类型: ${actualError.errorType}`,
+            ...(actualError.requestId ? [`请求 ID: ${actualError.requestId}`] : []),
+          ] : []),
+          '这可能是临时问题',
+          '请检查网络连接',
+        ],
         actions: [
           { key: 'r', label: '重试', action: 'retry' },
         ],
@@ -2576,7 +2712,7 @@ Please continue the conversation naturally from where we left off.
     };
   }
 
-  private convertSDKMessage(
+  private async convertSDKMessage(
     message: SDKMessage,
     pendingToolUses: Map<string, { name: string; input: Record<string, unknown> }>,
     emittedToolStarts: Set<string>,
@@ -2591,7 +2727,7 @@ Please continue the conversation naturally from where we left off.
     setPendingText: (text: string | null) => void,
     turnId: string | null,
     setTurnId: (id: string | null) => void
-  ): AgentEvent[] {
+  ): Promise<AgentEvent[]> {
     const events: AgentEvent[] = [];
 
     // Debug: log all SDK message types to understand MCP tool result flow
@@ -2610,7 +2746,9 @@ Please continue the conversation naturally from where we left off.
           // DEBUG: Log the exact error code from SDK for troubleshooting
           console.error(`[CreatorFlowAgent] SDK returned error code: '${message.error}' (type: ${typeof message.error})`);
           debug(`[SDK ERROR] message.error = '${message.error}'`);
-          const errorEvent = this.mapSDKErrorToTypedError(message.error);
+          // Extract actual API error from SDK debug log for better error details
+          // Uses async to allow retry with delays for race condition handling
+          const errorEvent = await this.mapSDKErrorToTypedError(message.error);
           events.push(errorEvent);
           // Don't process content blocks when there's an error
           break;

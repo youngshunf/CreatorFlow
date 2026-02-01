@@ -354,6 +354,8 @@ function createComponents(
     strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
     del: ({ children }) => <del className="line-through text-muted-foreground">{children}</del>,
+    // Handle unknown <markdown> tags that may come through rehype-raw
+    markdown: ({ children }) => <>{children}</>,
   }
 }
 

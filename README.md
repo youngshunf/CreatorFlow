@@ -3,6 +3,14 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
+## 工作原理（视频）
+要了解 CreatorFlow 的功能和工作原理，请观看这个视频。
+
+[![Demo Video](https://img.youtube.com/vi/xQouiAIilvU/hqdefault.jpg)](https://www.youtube.com/watch?v=xQouiAIilvU)
+
+[点击此处（或上图）在 YouTube 上观看视频 →](https://www.youtube.com/watch?v=xQouiAIilvU)
+
+## 为什么构建 CreatorFlow
 CreatorFlow 是我们（craft.do 团队）为了更高效地与 AI 智能体协作而构建的工具。它支持直观的多任务处理、无缝连接任何 API 或服务、共享会话，以及更注重文档（而非代码）的工作流程——所有这些都在一个精美流畅的界面中呈现。
 
 它基于 Claude Agent SDK 构建，延续了 Claude Code 的优秀特性，同时改进了我们认为需要提升的领域。

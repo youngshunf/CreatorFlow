@@ -29,7 +29,7 @@ import {
   routes,
 } from '@/contexts/NavigationContext'
 import { isMarketplaceNavigation } from '../../../shared/types'
-import { UserProfilePage, UserProfileEditPage, AppSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage } from '@/pages'
+import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
 import { FileManager } from '@/components/file-manager'
@@ -109,6 +109,18 @@ export function MainContentPanel({
         return wrapWithStoplight(
           <Panel variant="grow" className={className}>
             <UserProfileEditPage />
+          </Panel>
+        )
+      case 'appearance':
+        return wrapWithStoplight(
+          <Panel variant="grow" className={className}>
+            <AppearanceSettingsPage />
+          </Panel>
+        )
+      case 'input':
+        return wrapWithStoplight(
+          <Panel variant="grow" className={className}>
+            <InputSettingsPage />
           </Panel>
         )
       case 'workspace':

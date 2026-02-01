@@ -186,7 +186,7 @@ export const routes = {
         : 'marketplace/apps' as const,
 
     /** Settings view (settings navigator) */
-    settings: (subpage?: 'app' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription') =>
+    settings: (subpage?: 'app' | 'appearance' | 'input' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription') =>
       subpage && subpage !== 'user-profile'
         ? `settings/${subpage}` as const
         : 'settings' as const,

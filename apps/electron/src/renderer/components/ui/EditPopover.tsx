@@ -2,18 +2,24 @@
  * EditPopover
  *
  * A popover with title, subtitle, and multiline textarea for editing settings.
- * On submit, opens a new focused window with a chat session containing explicit
- * context for fast execution.
+ * Supports two modes:
+ * - Legacy: Opens a new focused window with a chat session
+ * - Inline: Executes mini agent inline within the popover using compact ChatDisplay
  */
 
 import * as React from 'react'
-import { useState, useRef, useEffect } from 'react'
-import { ArrowUp } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { GripHorizontal } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react' // motion used for backdrop only
 import { Popover, PopoverTrigger, PopoverContent } from './popover'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
 import { useT } from '@/context/LocaleContext'
-import type { ContentBadge } from '../../../shared/types'
+import { usePlatform } from '@creator-flow/ui'
+import type { ContentBadge, Session, CreateSessionOptions } from '../../../shared/types'
+import { useActiveWorkspace, useAppShellContext, useSession } from '@/context/AppShellContext'
+import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
+import { ChatDisplay } from '../app-shell/ChatDisplay'
 
 /**
  * Context passed to the new chat session so the agent knows exactly
@@ -71,6 +77,7 @@ export type EditContextKey =
   | 'edit-auto-rules'
   | 'add-label'
   | 'edit-views'
+  | 'edit-tool-icons'
 
 /**
  * Full edit configuration including context for agent and example for UI.
@@ -83,6 +90,12 @@ export interface EditConfig {
   example: string
   /** Optional custom placeholder text - overrides the default "Describe what you'd like to change" */
   overridePlaceholder?: string
+  /** Optional model for mini agent (e.g., 'haiku', 'sonnet') */
+  model?: string
+  /** Optional system prompt preset for mini agent (e.g., 'mini' for focused edits) */
+  systemPromptPreset?: 'default' | 'mini'
+  /** When true, executes inline within the popover instead of opening a new window */
+  inlineExecution?: boolean
 }
 
 /**
@@ -103,6 +116,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '在探索模式中允许运行 make build',
+    model: 'sonnet',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   'default-permissions': (location) => ({
@@ -119,6 +135,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '允许 git fetch 命令',
+    model: 'sonnet',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Skill editing contexts
@@ -135,6 +154,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '添加错误处理指南',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   'skill-metadata': (location) => ({
@@ -149,6 +171,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '更新技能描述',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Source editing contexts
@@ -163,6 +188,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '补充限流文档',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   'source-config': (location) => ({
@@ -177,6 +205,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '更新显示名称',
+    model: 'sonnet',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   'source-permissions': (location) => ({
@@ -191,6 +222,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '探索模式允许 list 操作',
+    model: 'sonnet',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   'source-tool-permissions': (location) => ({
@@ -207,6 +241,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '仅允许只读操作（list、get、search）',
+    model: 'sonnet',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Preferences editing context
@@ -222,6 +259,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '添加编码风格偏好',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Add new source/skill contexts - use overridePlaceholder for inspiring, contextual prompts
@@ -324,7 +364,10 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'After editing, call config_validate with target "statuses" to verify the changes. ' +
         'Confirm clearly when done.',
     },
-    example: '添加“阻塞”状态',
+    example: '添加"阻塞"状态',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Label configuration context
@@ -342,7 +385,10 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
-    example: '添加“缺陷”标签（红色）',
+    example: '添加"缺陷"标签（红色）',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Auto-label rules context (focused on regex patterns within labels)
@@ -360,6 +406,9 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Confirm clearly when done.',
     },
     example: '添加检测 GitHub Issue 链接的规则',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Add new label context (triggered from the # menu when no labels match)
@@ -376,8 +425,11 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
-    example: '一个红色的“缺陷”标签',
+    example: '一个红色的"缺陷"标签',
     overridePlaceholder: '你想创建什么标签？',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 
   // Views configuration context
@@ -395,7 +447,31 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Colors use EntityColor format: string shorthand (e.g. "orange") or { light, dark } object. ' +
         'Confirm clearly when done.',
     },
-    example: '添加“过期”视图（7 天未活跃）',
+    example: '添加"过期"视图（7 天未活跃）',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
+  }),
+
+  // Tool icons configuration context
+  'edit-tool-icons': (location) => ({
+    context: {
+      label: 'Tool Icons',
+      filePath: location, // location is the full path to tool-icons.json
+      context:
+        'The user wants to edit CLI tool icon mappings. ' +
+        'The file is tool-icons.json in ~/.creator-flow/tool-icons/. Icon image files live in the same directory. ' +
+        'Schema: { version: 1, tools: [{ id, displayName, icon, commands }] }. ' +
+        'Each tool has: id (unique slug), displayName (shown in UI), icon (filename like "git.ico"), commands (array of CLI command names). ' +
+        'Supported icon formats: .png, .ico, .svg, .jpg. Icons display at 20x20px. ' +
+        'Read ~/.creator-flow/docs/tool-icons.md for full format reference. ' +
+        'After editing, call config_validate with target "tool-icons" to verify the changes are valid. ' +
+        'Confirm clearly when done.',
+    },
+    example: '为我的自定义 CLI 工具 "deploy" 添加图标',
+    model: 'haiku',
+    systemPromptPreset: 'mini',
+    inlineExecution: true,
   }),
 }
 
@@ -443,6 +519,10 @@ export interface EditPopoverProps {
    * - Absolute path string: Use this specific path
    */
   workingDirectory?: string | 'user_default' | 'none'
+  /** Model override for mini agent (e.g., 'haiku', 'sonnet') */
+  model?: string
+  /** System prompt preset for mini agent (e.g., 'mini' for focused edits) */
+  systemPromptPreset?: 'default' | 'mini'
   /** Width of the popover (default: 320) */
   width?: number
   /** Additional className for the trigger */
@@ -467,6 +547,17 @@ export interface EditPopoverProps {
    * Useful for context menu triggered popovers where focus management is tricky.
    */
   modal?: boolean
+  /**
+   * Default value to pre-fill the input with.
+   * Useful when the user types something (e.g., "#Test") and clicks "Add new label" -
+   * the input can be pre-filled with "Add new label Test".
+   */
+  defaultValue?: string
+  /**
+   * When true, executes the mini agent inline within the popover instead of
+   * opening a new window. Best for quick config edits with mini agents.
+   */
+  inlineExecution?: boolean
 }
 
 /**
@@ -532,7 +623,9 @@ export function EditPopover({
   context,
   permissionMode = 'allow-all',
   workingDirectory = 'none', // Default to session folder for config edits
-  width = 320,
+  model,
+  systemPromptPreset,
+  width = 400, // Default 400px for compact chat embedding
   triggerClassName,
   side = 'bottom',
   align = 'end',
@@ -541,15 +634,30 @@ export function EditPopover({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   modal = false,
+  defaultValue = '',
+  inlineExecution = false,
 }: EditPopoverProps) {
   const t = useT()
-  // Build placeholder: use override if provided, otherwise default to "change" wording
+  const { onOpenFile, onOpenUrl } = usePlatform()
+  const workspace = useActiveWorkspace()
+
+  // Build placeholder: for inline execution use rotating array, otherwise build descriptive string with i18n
   // overridePlaceholder allows contexts like add-source/add-skill to say "add" instead of "change"
-  const basePlaceholder = overridePlaceholder ? t(overridePlaceholder) : t('描述您想要进行的更改...')
-  const exampleText = example ? t(example) : undefined
-  const placeholder = exampleText
-    ? `${basePlaceholder.replace(/\.{3}$/, '')}，${t('例如')}："${exampleText}"`
-    : basePlaceholder
+  const COMPACT_PLACEHOLDERS = [
+    t('告诉我您想改什么'),
+    t('描述您的更新'),
+    t('您想让我修改什么？'),
+  ]
+  const placeholder = inlineExecution
+    ? COMPACT_PLACEHOLDERS
+    : (() => {
+        const basePlaceholder = overridePlaceholder ? t(overridePlaceholder) : t('描述您想要进行的更改...')
+        const exampleText = example ? t(example) : undefined
+        return exampleText
+          ? `${basePlaceholder.replace(/\.{3}$/, '')}，${t('例如')}："${exampleText}"`
+          : basePlaceholder
+      })()
+
   // Support both controlled and uncontrolled modes:
   // - Uncontrolled (default): internal state manages open/close
   // - Controlled: parent manages state via open/onOpenChange props
@@ -563,137 +671,298 @@ export function EditPopover({
       setInternalOpen(value)
     }
   }
-  const [input, setInput] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-focus textarea when popover opens
+  // Use App context for session management (same code path as main chat)
+  const { onCreateSession, onSendMessage } = useAppShellContext()
+
+  // Session ID for inline execution (created on first message)
+  const [inlineSessionId, setInlineSessionId] = useState<string | null>(null)
+
+  // Get session data from Jotai atom (same as main chat - includes optimistic updates)
+  // Pass empty string when no session yet - atom returns null for unknown IDs
+  const inlineSession = useSession(inlineSessionId || '')
+
+  // Model state for ChatDisplay (starts with prop value, can be changed by user)
+  const [currentModel, setCurrentModel] = useState(model || 'haiku')
+
+  // Create a stub session for ChatDisplay when no real session exists yet
+  // This allows showing the input before the first message is sent
+  const stubSession = useMemo((): Session => ({
+    id: 'pending',
+    workspaceId: workspace?.id || '',
+    workspaceName: workspace?.name || '',
+    messages: [],
+    isProcessing: false,
+    lastMessageAt: Date.now(),
+  }), [workspace?.id, workspace?.name])
+
+  // Use real session if available, otherwise stub
+  const displaySession = inlineSession || stubSession
+
+  // Track processing state for close prevention and backdrop
+  const isProcessing = displaySession.isProcessing
+
+  // Use existing escape interrupt context for double-ESC flow
+  // This shows the "Press Esc again to interrupt" overlay in the input field
+  const { handleEscapePress } = useEscapeInterrupt()
+
+  // Reset inline session when popover closes
+  const resetInlineSession = useCallback(() => {
+    setInlineSessionId(null)
+  }, [])
+
+  // Stop/cancel generation for the inline session
+  const handleStopGeneration = useCallback(() => {
+    if (inlineSessionId && isProcessing) {
+      window.electronAPI.cancelProcessing(inlineSessionId, false)
+    }
+  }, [inlineSessionId, isProcessing])
+
+  // Handle ESC key during generation:
+  // Uses EscapeInterruptContext for double-ESC flow (shows overlay, then interrupts)
+  const handleEscapeKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isProcessing) {
+      // Not processing - allow normal close behavior
+      return
+    }
+
+    // Prevent default close behavior during processing
+    e.preventDefault()
+
+    // Use context's double-ESC handler
+    // Returns true if this is the second press (should interrupt)
+    const shouldInterrupt = handleEscapePress()
+    if (shouldInterrupt) {
+      handleStopGeneration()
+    }
+  }, [isProcessing, handleEscapePress, handleStopGeneration])
+
+  // Handle click outside during generation:
+  // Show the ESC overlay via context, prevent closing
+  const handleInteractOutside = useCallback((e: Event) => {
+    if (isProcessing) {
+      // Prevent close during processing
+      e.preventDefault()
+      // Show the ESC overlay so user knows how to cancel
+      handleEscapePress()
+    }
+  }, [isProcessing, handleEscapePress])
+
+  // Drag state for movable popover
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  // Resize state for dynamic sizing
+  const [containerSize, setContainerSize] = useState({ width: width || 400, height: 480 })
+  const [isResizing, setIsResizing] = useState(false)
+  const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 })
+
+  // Reset drag position and size when popover opens
   useEffect(() => {
     if (open) {
-      // Small delay to let the popover render and avoid focus race conditions
-      const timer = setTimeout(() => {
-        textareaRef.current?.focus()
-      }, 0)
-      return () => clearTimeout(timer)
+      setDragOffset({ x: 0, y: 0 })
+      setContainerSize({ width: width || 400, height: 480 })
     }
-  }, [open])
+  }, [open, width])
 
-  // Reset input when popover closes
+  // Handle drag events
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      offsetX: dragOffset.x,
+      offsetY: dragOffset.y,
+    }
+  }, [dragOffset])
+
   useEffect(() => {
-    if (!open) {
-      setInput('')
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartRef.current.x
+      const deltaY = e.clientY - dragStartRef.current.y
+      setDragOffset({
+        x: dragStartRef.current.offsetX + deltaX,
+        y: dragStartRef.current.offsetY + deltaY,
+      })
     }
-  }, [open])
 
-  const handleSubmit = async () => {
-    if (!input.trim()) return
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
 
-    const { prompt, badges } = buildEditPrompt(context, input.trim())
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging])
+
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsResizing(true)
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: containerSize.width,
+      height: containerSize.height,
+    }
+  }, [containerSize])
+
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartRef.current.x
+      const deltaY = e.clientY - resizeStartRef.current.y
+      setContainerSize({
+        width: Math.max(300, resizeStartRef.current.width + deltaX),
+        height: Math.max(250, resizeStartRef.current.height + deltaY),
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing])
+
+  // Reset state when popover opens
+  useEffect(() => {
+    if (open) {
+      setCurrentModel(model || 'haiku')
+      resetInlineSession()
+    }
+  }, [open, model, resetInlineSession])
+
+  // Handle sending message from ChatDisplay (inline mode)
+  // Creates hidden session on first message, then uses App context for sending
+  const handleInlineSendMessage = useCallback(async (message: string) => {
+    const { prompt, badges } = buildEditPrompt(context, message)
+
+    // Create session on first message
+    let sessionId = inlineSessionId
+    if (!sessionId && workspace?.id) {
+      const createOptions: CreateSessionOptions = {
+        model: model || 'haiku',
+        systemPromptPreset: systemPromptPreset || 'mini',
+        permissionMode,
+        workingDirectory,
+        hidden: true, // Hidden sessions use same App code path but don't appear in list
+      }
+      const newSession = await onCreateSession(workspace.id, createOptions)
+      sessionId = newSession.id
+      setInlineSessionId(sessionId)
+    }
+
+    // Send message via App context (includes optimistic user message update)
+    // Pass badges to hide the <edit_request> XML metadata in the user message bubble
+    if (sessionId) {
+      onSendMessage(sessionId, prompt, undefined, undefined, badges)
+    }
+  }, [context, inlineSessionId, workspace?.id, model, systemPromptPreset, permissionMode, workingDirectory, onCreateSession, onSendMessage])
+
+  // Legacy mode: navigates to chat in the same window
+  const handleLegacySendMessage = useCallback((message: string) => {
+    const { prompt, badges } = buildEditPrompt(context, message)
     const encodedInput = encodeURIComponent(prompt)
-    // Encode badges as JSON for passing through deep link
     const encodedBadges = encodeURIComponent(JSON.stringify(badges))
 
-    // Open new focused window with auto-send
-    // The ?window=focused creates a smaller window (900x700) focused on single session
-    // The &send=true auto-sends the message immediately
-    // The &mode= sets the permission mode for the new session
-    // The &badges= passes badge metadata for hiding the XML context in UI
-    // The &workdir= sets the working directory (user_default, none, or absolute path)
     const workdirParam = workingDirectory ? `&workdir=${encodeURIComponent(workingDirectory)}` : ''
-    const url = `craftagents://action/new-chat?window=focused&input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}`
+    const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
+    const systemPromptParam = systemPromptPreset ? `&systemPrompt=${encodeURIComponent(systemPromptPreset)}` : ''
+    // Navigate in same window by omitting window=focused parameter
+    const url = `craftagents://action/new-chat?input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}${modelParam}${systemPromptParam}`
 
-    try {
-      await window.electronAPI.openUrl(url)
-    } catch (error) {
-      console.error('[EditPopover] Failed to open new chat window:', error)
-    }
-
-    // Close the popover
+    window.electronAPI.openUrl(url)
     setOpen(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter submits, Shift+Enter inserts newline
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
-    }
-    // Escape closes the popover
-    if (e.key === 'Escape') {
-      setOpen(false)
-    }
-  }
+  }, [context, workingDirectory, model, systemPromptPreset, permissionMode, setOpen])
 
   return (
     <>
-      {/* Subtle backdrop when popover is open — rendered outside Popover to avoid
-        * stacking context issues. Uses CSS @keyframes for reliable fade-in on mount. */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[99] pointer-events-none"
-          style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            animation: 'editPopoverFadeIn 100ms ease-out forwards',
-          }}
-          aria-hidden="true"
-        />
-      )}
+      {/* Full-screen backdrop - rendered BEHIND the popover during processing */}
+      <AnimatePresence>
+        {open && isProcessing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="fixed inset-0 bg-black/5 z-40"
+          />
+        )}
+      </AnimatePresence>
+
       <Popover open={open} onOpenChange={setOpen} modal={modal}>
         <PopoverTrigger asChild className={triggerClassName}>
           {trigger}
         </PopoverTrigger>
         <PopoverContent
-          side={side}
-          align={align}
-          className="p-4"
-          style={{ width, borderRadius: 16 }}
-        >
-          {/* Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            autoFocus
-            className={cn(
-              'w-full min-h-[100px] resize-none px-0 py-0 text-sm leading-relaxed',
-              'bg-transparent border-none',
-              'placeholder:text-muted-foreground placeholder:leading-relaxed',
-              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
-              'field-sizing-content'
-            )}
-          />
-
-          {/* Footer row: secondary action on left, send button on right */}
-          <div className="flex items-center justify-between mt-2">
-            {/* Secondary action - plain text link */}
-            {secondaryAction ? (
-              <button
-                type="button"
-                onClick={() => {
-                  secondaryAction.onClick()
-                  setOpen(false)
-                }}
-                className="text-sm text-muted-foreground hover:underline"
-              >
-                {secondaryAction.label}
-              </button>
-            ) : (
-              <div />
-            )}
-
-            {/* Send button */}
-            <Button
-              type="button"
-              size="icon"
-              className="h-7 w-7 rounded-full shrink-0"
-              onClick={handleSubmit}
-              disabled={!input.trim()}
+            side={side}
+            align={align}
+            className="p-0 overflow-visible"
+            style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+            onInteractOutside={handleInteractOutside}
+            onEscapeKeyDown={handleEscapeKeyDown}
+          >
+            {/* Container */}
+            <div
+              ref={popoverRef}
+              className="relative bg-foreground-2 overflow-hidden"
+              style={{
+                width: containerSize.width,
+                height: containerSize.height,
+                transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+                borderRadius: 16,
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              }}
             >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-          </div>
-        </PopoverContent>
+              {/* Drag handle - floating overlay */}
+              <div
+                onMouseDown={handleDragStart}
+                className={cn(
+                  "absolute top-0 left-1/2 -translate-x-1/2 z-50 px-4 py-2 cursor-grab rounded pointer-events-auto",
+                  isDragging && "cursor-grabbing"
+                )}
+              >
+                <GripHorizontal className="w-4 h-4 text-muted-foreground/30" />
+              </div>
+
+              {/* Content area - always uses compact ChatDisplay */}
+              <div className="flex-1 flex flex-col bg-foreground-2" style={{ height: '100%' }}>
+                <ChatDisplay
+                  session={displaySession}
+                  onSendMessage={inlineExecution ? handleInlineSendMessage : handleLegacySendMessage}
+                  onOpenFile={onOpenFile || (() => {})}
+                  onOpenUrl={onOpenUrl || (() => {})}
+                  currentModel={currentModel}
+                  onModelChange={setCurrentModel}
+                  compactMode={true}
+                  placeholder={placeholder}
+                  emptyStateLabel={context.label}
+                />
+              </div>
+
+              {/* Bottom-right resize handle - invisible hit area */}
+              <div
+                onMouseDown={handleResizeStart}
+                className="absolute -bottom-2 -right-2 w-6 h-6 cursor-nwse-resize pointer-events-auto z-50"
+              />
+            </div>
+          </PopoverContent>
       </Popover>
     </>
   )

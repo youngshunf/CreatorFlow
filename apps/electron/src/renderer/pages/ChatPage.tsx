@@ -8,7 +8,7 @@
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { AlertCircle, Globe, Copy, RefreshCw, Link2Off, Info } from 'lucide-react'
-import { ChatDisplay } from '@/components/app-shell/ChatDisplay'
+import { ChatDisplay, type ChatDisplayHandle } from '@/components/app-shell/ChatDisplay'
 import { PanelHeader } from '@/components/app-shell/PanelHeader'
 import { SessionMenu } from '@/components/app-shell/SessionMenu'
 import { RenameDialog } from '@/components/ui/rename-dialog'
@@ -62,6 +62,10 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
     onTodoStateChange,
     onDeleteSession,
     rightSidebarButton,
+    sessionListSearchQuery,
+    isSearchModeActive,
+    chatDisplayRef,
+    onChatMatchInfoChange,
   } = useAppShellContext()
 
   // Use the unified session options hook for clean access
@@ -447,6 +451,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
             <PanelHeader  title={displayTitle} titleMenu={titleMenu} actions={shareButton} rightSidebarButton={rightSidebarButton} isRegeneratingTitle={isAsyncOperationOngoing} />
             <div className="flex-1 flex flex-col min-h-0">
               <ChatDisplay
+                ref={chatDisplayRef}
                 session={skeletonSession}
                 onSendMessage={() => {}}
                 onOpenFile={handleOpenFile}
@@ -476,6 +481,9 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
                 workingDirectory={sessionMeta.workingDirectory}
                 onWorkingDirectoryChange={handleWorkingDirectoryChange}
                 messagesLoading={true}
+                searchQuery={sessionListSearchQuery}
+                isSearchModeActive={isSearchModeActive}
+                onMatchInfoChange={onChatMatchInfoChange}
               />
             </div>
           </div>
@@ -510,6 +518,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
         <PanelHeader  title={displayTitle} titleMenu={titleMenu} actions={shareButton} rightSidebarButton={rightSidebarButton} isRegeneratingTitle={isAsyncOperationOngoing} />
         <div className="flex-1 flex flex-col min-h-0">
           <ChatDisplay
+            ref={chatDisplayRef}
             session={session}
             onSendMessage={(message, attachments, skillSlugs) => {
               if (session) {
@@ -546,6 +555,9 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
             onWorkingDirectoryChange={handleWorkingDirectoryChange}
             sessionFolderPath={session?.sessionFolderPath}
             messagesLoading={!messagesLoaded}
+            searchQuery={sessionListSearchQuery}
+            isSearchModeActive={isSearchModeActive}
+            onMatchInfoChange={onChatMatchInfoChange}
           />
         </div>
       </div>
