@@ -212,6 +212,10 @@ if ($env:SLACK_OAUTH_CLIENT_SECRET) {
 if ($env:MICROSOFT_OAUTH_CLIENT_ID) {
     $MainArgs += "--define:process.env.MICROSOFT_OAUTH_CLIENT_ID=`"'$env:MICROSOFT_OAUTH_CLIENT_ID'`""
 }
+# Pass VITE_APP_ENV to main process for staging DevTools support
+if ($env:VITE_APP_ENV) {
+    $MainArgs += "--define:process.env.VITE_APP_ENV=`"'$env:VITE_APP_ENV'`""
+}
 Push-Location $RootDir
 try {
     & npx esbuild @MainArgs

@@ -155,8 +155,9 @@ export class WindowManager {
       }
     })
 
-    // Enable right-click context menu in development
-    if (!app.isPackaged) {
+    // Enable right-click context menu in development or staging
+    const isDevOrStaging = !app.isPackaged || process.env.VITE_APP_ENV === 'staging'
+    if (isDevOrStaging) {
       window.webContents.on('context-menu', (_event, params) => {
         Menu.buildFromTemplate([
           { label: 'Inspect Element', click: () => window.webContents.inspectElement(params.x, params.y) },
@@ -165,6 +166,16 @@ export class WindowManager {
           { label: 'Copy', role: 'copy', enabled: params.editFlags.canCopy },
           { label: 'Paste', role: 'paste', enabled: params.editFlags.canPaste },
         ]).popup()
+      })
+
+      // Register keyboard shortcut for DevTools (F12 or Ctrl+Shift+I)
+      window.webContents.on('before-input-event', (_event, input) => {
+        if (input.type === 'keyDown') {
+          // F12 or Ctrl+Shift+I to toggle DevTools
+          if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+            window.webContents.toggleDevTools()
+          }
+        }
       })
     }
 
