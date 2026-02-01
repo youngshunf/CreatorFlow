@@ -60,6 +60,7 @@ export function MarketplaceInfoPage({
   const [isInstalling, setIsInstalling] = useState(false)
   const [installProgress, setInstallProgress] = useState<InstallProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [imgError, setImgError] = useState(false)
 
   // Load item details
   const loadItemDetails = useCallback(async () => {
@@ -108,6 +109,11 @@ export function MarketplaceInfoPage({
     })
     return cleanup
   }, [workspaceId, loadItemDetails])
+
+  // Reset imgError when item changes
+  useEffect(() => {
+    setImgError(false)
+  }, [skill?.icon_url, app?.icon_url])
 
   // Install handler
   const handleInstall = async () => {
@@ -191,12 +197,6 @@ export function MarketplaceInfoPage({
   const latestVersion = versions.find(v => v.is_latest)
   const isInstalled = installedInfo !== null
   const hasUpdate = isInstalled && installedInfo.hasUpdate
-  const [imgError, setImgError] = useState(false)
-
-  // Reset imgError when item changes
-  useEffect(() => {
-    setImgError(false)
-  }, [item?.icon_url])
 
   return (
     <ScrollArea className={cn('flex-1 h-full', className)}>
