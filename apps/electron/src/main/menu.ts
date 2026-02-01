@@ -194,10 +194,12 @@ export async function rebuildMenu(): Promise<void> {
     {
       label: 'Help',
       submenu: [
-        {
-          label: 'Help & Documentation',
-          click: () => shell.openExternal('https://agents.craft.do/docs')
-        },
+        // NOTE: External documentation link disabled
+        // TODO: Set up local or self-hosted documentation
+        // {
+        //   label: 'Help & Documentation',
+        //   click: () => shell.openExternal('https://agents.craft.do/docs')
+        // },
         {
           label: 'Keyboard Shortcuts',
           accelerator: 'CmdOrCtrl+/',

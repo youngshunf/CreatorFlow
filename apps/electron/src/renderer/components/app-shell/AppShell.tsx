@@ -1953,11 +1953,7 @@ function AppShellContent({
                         <span className="flex-1">{t('权限')}</span>
                         <ExternalLink className="h-3 w-3 text-muted-foreground" />
                       </StyledDropdownMenuItem>
-                      <StyledDropdownMenuSeparator />
-                      <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs')}>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="flex-1">{t('全部文档')}</span>
-                      </StyledDropdownMenuItem>
+                      {/* Documentation link disabled - external service removed */}
                     </StyledDropdownMenuContent>
                   </DropdownMenu>
                 </div>

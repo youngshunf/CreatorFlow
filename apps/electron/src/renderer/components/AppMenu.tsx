@@ -232,11 +232,7 @@ export function AppMenu({
               {t('帮助')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
-              <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs')}>
-                <HelpCircle className="h-3.5 w-3.5" />
-                {t('帮助与文档')}
-                <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-              </StyledDropdownMenuItem>
+              {/* Documentation link disabled - external service removed */}
               <StyledDropdownMenuItem onClick={onOpenKeyboardShortcuts}>
                 <Keyboard className="h-3.5 w-3.5" />
                 {t('键盘快捷键')}

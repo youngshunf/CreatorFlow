@@ -359,10 +359,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
               <span className="flex-1">{t('停止分享')}</span>
             </StyledDropdownMenuItem>
             <StyledDropdownMenuSeparator />
-            <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs/go-further/sharing')}>
-              <Info className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('了解更多')}</span>
-            </StyledDropdownMenuItem>
+            {/* Documentation link disabled - external service removed */}
           </>
         ) : (
           <>
@@ -372,11 +369,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
               </svg>
               <span className="flex-1">{t('在线分享')}</span>
             </StyledDropdownMenuItem>
-            <StyledDropdownMenuSeparator />
-            <StyledDropdownMenuItem onClick={() => window.electronAPI.openUrl('https://agents.craft.do/docs/go-further/sharing')}>
-              <Info className="h-3.5 w-3.5" />
-              <span className="flex-1">{t('了解更多')}</span>
-            </StyledDropdownMenuItem>
+            {/* Documentation link disabled - external service removed */}
           </>
         )}
       </StyledDropdownMenuContent>

@@ -36,14 +36,13 @@ interface HeaderProps {
 export function Header({ hasSession, sessionTitle, isDark, onToggleTheme, onClear }: HeaderProps) {
   return (
     <header className="shrink-0 grid grid-cols-[auto_1fr_auto] items-center px-4 py-3">
-      {/* Logo - links to main site */}
-      <a
-        href="https://agents.craft.do"
+      {/* Logo */}
+      <div
         className="hover:opacity-80 transition-opacity"
         title="CreatorFlow"
       >
         <CreatorFlowAgentLogo className="w-6 h-6 text-[#9570BE]" />
-      </a>
+      </div>
 
       {/* Session title - centered */}
       <div className="flex justify-center">

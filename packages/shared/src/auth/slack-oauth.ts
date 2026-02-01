@@ -275,11 +275,13 @@ export async function startSlackOAuth(options: SlackOAuthOptions = {}): Promise<
 
     // Extract port from local callback URL
     const localUrl = new URL(callbackServer.url);
-    const port = localUrl.port;
+    const _port = localUrl.port;
 
-    // Use Cloudflare Worker relay for Slack OAuth (Slack requires HTTPS)
-    // The relay redirects: https://agents.craft.do/auth/slack/callback → http://localhost:{port}/callback
-    const redirectUri = `https://agents.craft.do/auth/slack/callback?port=${port}`;
+    // NOTE: External Slack OAuth relay has been disabled.
+    // Slack OAuth requires HTTPS callback URLs, which previously used a Cloudflare Worker relay.
+    // TODO: Set up your own HTTPS relay service or use a different OAuth flow.
+    // For now, Slack OAuth will not work until a new relay is configured.
+    throw new Error('Slack OAuth is temporarily unavailable. External relay service has been removed.');
 
     // Build authorization URL
     // Use user_scope (not scope) to get a user token instead of bot token

@@ -843,23 +843,13 @@ export class CreatorFlowAgent {
 
       const mcpServers: Options['mcpServers'] = isMiniAgent
         ? {
-            // Mini agents need session tools (config_validate) and docs for reference
+            // Mini agents need session tools (config_validate)
             session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-            'creator-flows-docs': {
-              type: 'http',
-              url: 'https://agents.craft.do/docs/mcp',
-            },
           }
         : {
             preferences: getPreferencesServer(false),
             // Session-scoped tools (SubmitPlan, source_test, etc.)
             session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-            // CreatorFlow documentation - always available for searching setup guides
-            // This is a public Mintlify MCP server, no auth needed
-            'creator-flows-docs': {
-              type: 'http',
-              url: 'https://agents.craft.do/docs/mcp',
-            },
             // Add user-defined source servers (MCP and API, filtered by local MCP setting)
             ...sourceMcpResult.servers,
             ...this.sourceApiServers,

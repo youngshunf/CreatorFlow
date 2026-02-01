@@ -1,9 +1,13 @@
 /**
  * Documentation links and summaries for contextual help throughout the UI.
  * Summaries provide quick context; "Learn more" opens the full docs.
+ * 
+ * NOTE: External documentation service has been disabled.
+ * TODO: Set up local documentation or replace with new doc service URL.
  */
 
-const DOC_BASE_URL = 'https://agents.craft.do/docs'
+// Disabled - external documentation service removed
+const DOC_BASE_URL = ''
 
 export type DocFeature =
   | 'sources'
