@@ -128,7 +128,11 @@ export class WindowManager {
         // is disabled - the preload only exposes safe, read-only version data via IPC.
         // If sandbox is re-enabled, process.versions becomes undefined.
         sandbox: false,
-        webviewTag: true // Enable webview for browser panel
+        webviewTag: true, // Enable webview for browser panel
+        // STAGING ONLY: Disable web security to allow cross-origin requests from file:// protocol
+        // This is necessary because Electron's file:// protocol has strict CORS restrictions
+        // In production, this should be handled by proper CORS headers from the server
+        webSecurity: process.env.VITE_APP_ENV !== 'staging',
       }
     })
 
