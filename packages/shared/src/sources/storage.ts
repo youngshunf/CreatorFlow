@@ -69,8 +69,9 @@ export function loadSourceConfig(
     const config = JSON.parse(readFileSync(configPath, 'utf-8')) as FolderSourceConfig;
 
     // Expand path variables in local source paths for portability
+    // Relative paths (starting with ./) are expanded relative to workspace root
     if (config.type === 'local' && config.local?.path) {
-      config.local.path = expandPath(config.local.path);
+      config.local.path = expandPath(config.local.path, workspaceRootPath);
     }
 
     return config;

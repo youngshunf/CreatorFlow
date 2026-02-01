@@ -1,0 +1,24 @@
+{
+  "id": "github_preset",
+  "name": "GitHub",
+  "slug": "github",
+  "enabled": false,
+  "provider": "github",
+  "type": "api",
+  "api": {
+    "baseUrl": "https://api.github.com",
+    "authType": "bearer",
+    "authScheme": "Bearer",
+    "defaultHeaders": {
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    "testEndpoint": {
+      "method": "GET",
+      "path": "/user"
+    }
+  },
+  "icon": "🐙",
+  "tagline": "访问 GitHub 仓库、Issues、Pull Requests",
+  "connectionStatus": "needs_auth"
+}

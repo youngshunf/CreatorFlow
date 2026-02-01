@@ -21,6 +21,7 @@
   "workspace": {
     "defaultDirectory": "~/CreatorFlow/Dev",
     "directoryStructure": {
+      "项目": {},
       "src": {},
       "tests": {},
       "docs": {},

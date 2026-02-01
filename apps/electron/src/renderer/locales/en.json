@@ -1532,7 +1532,7 @@
     "Unknown error"
   ],
   [
-    "连接 Anthropic 时发生意外错误。",
+    "连接 大模型 时发生意外错误。",
     "An unexpected error occurred while connecting to Anthropic."
   ],
   [

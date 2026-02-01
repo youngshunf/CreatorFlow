@@ -697,6 +697,7 @@ export const IPC_CHANNELS = {
   MARKETPLACE_GET_SKILL: 'marketplace:getSkill',
   MARKETPLACE_LIST_APPS: 'marketplace:listApps',
   MARKETPLACE_GET_APP: 'marketplace:getApp',
+  MARKETPLACE_GET_APP_SKILLS: 'marketplace:getAppSkills',
   MARKETPLACE_LIST_CATEGORIES: 'marketplace:listCategories',
   MARKETPLACE_SEARCH: 'marketplace:search',
   MARKETPLACE_INSTALL_SKILL: 'marketplace:installSkill',
@@ -799,6 +800,21 @@ export const IPC_CHANNELS = {
 // Re-import types for ElectronAPI
 import type { Workspace, SessionMetadata, StoredAttachment as StoredAttachmentType } from '@creator-flow/core/types';
 
+/**
+ * Result of workspace creation with app installation
+ */
+export interface CreateWorkspaceResult {
+  /** The created workspace (null if blocked by existing app) */
+  workspace: Workspace | null;
+  /** App installation error message if any */
+  appInstallError?: string;
+  /** Info about existing app if installation was blocked */
+  existingApp?: {
+    name: string;
+    version: string;
+  };
+}
+
 // Type-safe IPC API exposed to renderer
 export interface ElectronAPI {
   // Session management
@@ -822,7 +838,8 @@ export interface ElectronAPI {
 
   // Workspace management
   getWorkspaces(): Promise<Workspace[]>
-  createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace'): Promise<Workspace>
+  /** @param installMode - 'force' to overwrite with backup, 'merge' to merge files */
+  createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge'): Promise<CreateWorkspaceResult>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
 
   // Window management
@@ -999,6 +1016,7 @@ export interface ElectronAPI {
   marketplaceGetSkill(skillId: string): Promise<import('@creator-flow/shared/marketplace').GetSkillResult>
   marketplaceListApps(options?: import('@creator-flow/shared/marketplace').ListAppsOptions): Promise<import('@creator-flow/shared/marketplace').ListAppsResult>
   marketplaceGetApp(appId: string): Promise<import('@creator-flow/shared/marketplace').GetAppResult>
+  marketplaceGetAppSkills(appId: string): Promise<import('@creator-flow/shared/marketplace').MarketplaceSkill[]>
   marketplaceListCategories(): Promise<import('@creator-flow/shared/marketplace').MarketplaceCategory[]>
   marketplaceSearch(query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions): Promise<import('@creator-flow/shared/marketplace').SearchResult>
   marketplaceInstallSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>

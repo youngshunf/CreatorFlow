@@ -6,6 +6,7 @@ import { getSystemPrompt, getDateTimeContext, getWorkingDirectoryContext } from 
 // Plan types are used by UI components; not needed in creator-flow.ts since Safe Mode is user-controlled
 import { parseError, type AgentError } from './errors.ts';
 import { runErrorDiagnostics } from './diagnostics.ts';
+import { getLastApiError } from '../network-interceptor.ts';
 import { loadStoredConfig, loadConfigDefaults, getAnthropicBaseUrl, resolveModelId, type Workspace } from '../config/storage.ts';
 import { isLocalMcpEnabled } from '../workspaces/storage.ts';
 import { loadPlanFromPath, type SessionConfig as Session } from '../sessions/storage.ts';
@@ -784,6 +785,8 @@ export class CreatorFlowAgent {
     attachments?: FileAttachment[],
     _isRetry: boolean = false // Internal flag for session expiry retry
   ): AsyncGenerator<AgentEvent> {
+    const chatStartTime = Date.now();
+    debug(`[chat] 开始执行 chat()`);
     try {
       const sessionId = this.config.session?.id || `temp-${Date.now()}`;
 
@@ -835,14 +838,7 @@ export class CreatorFlowAgent {
         preferences: getPreferencesServer(false),
         // Session-scoped tools (SubmitPlan, source_test, etc.)
         session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-        // CreatorFlow documentation - always available for searching setup guides
-        // This is a public Mintlify MCP server, no auth needed
-        'creator-flows-docs': {
-          type: 'http',
-          url: 'https://agents.craft.do/docs/mcp',
-        },
         // Add user-defined source servers (MCP and API, filtered by local MCP setting)
-        // Note: Craft MCP server is now added via sources system
         ...sourceMcpResult.servers,
         ...this.sourceApiServers,
       };
@@ -872,7 +868,6 @@ export class CreatorFlowAgent {
       // Detect if resolved model is Claude — non-Claude models (via OpenRouter/Ollama) don't
       // support Anthropic-specific betas or extended thinking parameters
       const isClaude = isClaudeModel(model);
-      const useAnthropicBetas = isClaude;
 
       const options: Options = {
         ...getDefaultOptions(),
@@ -889,9 +884,6 @@ export class CreatorFlowAgent {
             this.lastStderrOutput.shift();
           }
         },
-        // Beta features (only when using direct Anthropic API, not OpenRouter/etc.)
-        // - advanced-tool-use-2025-11-20: Enhanced tool use capabilities
-        ...(useAnthropicBetas ? { betas: ['advanced-tool-use-2025-11-20'] as any } : {}),
         // Extended thinking: tokens based on effective thinking level (session level + ultrathink override)
         // Non-Claude models don't support extended thinking, so pass 0 to disable
         maxThinkingTokens: isClaude ? thinkingTokens : 0,
@@ -1493,6 +1485,7 @@ export class CreatorFlowAgent {
 
       // Track whether we're trying to resume a session (for error handling)
       const wasResuming = !_isRetry && !!this.sessionId;
+      debug(`[chat] 构建 options 完成，耗时 ${Date.now() - chatStartTime}ms`);
 
       // Log resume attempt for debugging session failures
       if (wasResuming) {
@@ -1525,6 +1518,7 @@ export class CreatorFlowAgent {
         !attachments?.length;
 
       // Create the query - handle slash commands, binary attachments, or regular messages
+      const queryCreateStart = Date.now();
       if (isSlashCommand) {
         // Send slash commands directly to SDK without context wrapping.
         // The SDK processes these as internal commands (e.g., /compact triggers compaction).
@@ -1541,6 +1535,7 @@ export class CreatorFlowAgent {
         const prompt = this.buildTextPrompt(userMessage, attachments);
         this.currentQuery = query({ prompt, options: optionsWithAbort });
       }
+      debug(`[chat] query() 创建完成，耗时 ${Date.now() - queryCreateStart}ms，累计 ${Date.now() - chatStartTime}ms`);
 
       // Track tool uses for mapping results and preventing duplicates
       const pendingToolUses = new Map<string, { name: string; input: Record<string, unknown> }>();
@@ -1625,8 +1620,13 @@ export class CreatorFlowAgent {
       // Track whether we received any assistant content (for empty response detection)
       // When SDK returns empty response (e.g., failed resume), we need to detect and recover
       let receivedAssistantContent = false;
+      let firstMessageReceived = false;
       try {
         for await (const message of this.currentQuery) {
+          if (!firstMessageReceived) {
+            firstMessageReceived = true;
+            debug(`[chat] SDK 返回第一条消息，从 chat() 开始到现在耗时 ${Date.now() - chatStartTime}ms`);
+          }
           // Track if we got any text content from assistant
           if ('type' in message && message.type === 'assistant' && 'message' in message) {
             const assistantMsg = message.message as { content?: unknown[] };
@@ -2410,8 +2410,92 @@ Please continue the conversation naturally from where we left off.
 
   /**
    * Map SDK assistant message error codes to typed error events with user-friendly messages.
+   * 
+   * IMPORTANT: The Claude Agent SDK has a bug where it doesn't properly map API errors
+   * to specific error codes. For example, HTTP 429 (rate limit) may be returned as 'unknown'.
+   * To work around this, when we receive 'unknown', we check the captured API error from
+   * the network interceptor to get the actual HTTP status code.
    */
   private mapSDKErrorToTypedError(errorCode: SDKAssistantMessageError): { type: 'typed_error'; error: AgentError } {
+    // Check for captured API error to get the real HTTP status code
+    // This helps us correctly identify errors that the SDK maps to 'unknown'
+    const capturedError = getLastApiError();
+    if (capturedError) {
+      debug(`[mapSDKErrorToTypedError] Captured API error: status=${capturedError.status}, message=${capturedError.message}`);
+      console.error(`[CreatorFlowAgent] Captured API error: ${capturedError.status} ${capturedError.message}`);
+      
+      // Map HTTP status codes to proper error types
+      if (capturedError.status === 429) {
+        // Rate limit error - use the message from the API if available
+        return {
+          type: 'typed_error',
+          error: {
+            code: 'rate_limited',
+            title: '额度限制',
+            message: capturedError.message || '今日额度已用完，请明天再来',
+            details: ['您的 AI 使用额度已达到上限', '额度将在明天重置'],
+            actions: [
+              { key: 'r', label: '重试', action: 'retry' },
+            ],
+            canRetry: true,
+            retryDelayMs: 5000,
+          },
+        };
+      }
+      
+      if (capturedError.status === 401) {
+        return {
+          type: 'typed_error',
+          error: {
+            code: 'invalid_api_key',
+            title: '认证失败',
+            message: capturedError.message || '无法通过 API 认证，您的 API 密钥可能无效或已过期。',
+            details: ['请在设置中检查 API 密钥', '确保 API 密钥未被撤销'],
+            actions: [
+              { key: 's', label: '设置', action: 'settings' },
+              { key: 'r', label: '重试', action: 'retry' },
+            ],
+            canRetry: true,
+            retryDelayMs: 1000,
+          },
+        };
+      }
+      
+      if (capturedError.status === 402) {
+        return {
+          type: 'typed_error',
+          error: {
+            code: 'billing_error',
+            title: '计费错误',
+            message: capturedError.message || '您的账户存在计费问题。',
+            details: ['请检查账户计费状态'],
+            actions: [
+              { key: 's', label: '更新凭证', action: 'settings' },
+            ],
+            canRetry: false,
+          },
+        };
+      }
+      
+      if (capturedError.status >= 500) {
+        return {
+          type: 'typed_error',
+          error: {
+            code: 'network_error',
+            title: '服务错误',
+            message: capturedError.message || 'API 服务出现问题，请稍后重试。',
+            details: ['这可能是临时问题', '请稍后重试'],
+            actions: [
+              { key: 'r', label: '重试', action: 'retry' },
+            ],
+            canRetry: true,
+            retryDelayMs: 2000,
+          },
+        };
+      }
+    }
+    
+    // Standard error mapping for when SDK correctly identifies the error
     const errorMap: Record<SDKAssistantMessageError, AgentError> = {
       'authentication_failed': {
         code: 'invalid_api_key',
@@ -2437,9 +2521,9 @@ Please continue the conversation naturally from where we left off.
       },
       'rate_limit': {
         code: 'rate_limited',
-        title: '超出频率限制',
-        message: '请求过于频繁，请稍后再试。',
-        details: ['频率限制会在短时间内重置', '可考虑升级计划以获取更高限额'],
+        title: '额度限制',
+        message: '今日额度已用完，请明天再来',
+        details: ['您的 AI 使用额度已达到上限', '额度将在明天重置'],
         actions: [
           { key: 'r', label: '重试', action: 'retry' },
         ],
@@ -2475,7 +2559,7 @@ Please continue the conversation naturally from where we left off.
       'unknown': {
         code: 'unknown_error',
         title: '未知错误',
-        message: '连接 Anthropic 时发生意外错误。',
+        message: '连接 大模型 时发生意外错误。',
         details: ['这可能是临时问题', '请检查网络连接'],
         actions: [
           { key: 'r', label: '重试', action: 'retry' },
@@ -2523,6 +2607,9 @@ Please continue the conversation naturally from where we left off.
         // Check for SDK-level errors FIRST (auth, network, rate limits, etc.)
         // These errors are set by the SDK when API calls fail
         if ('error' in message && message.error) {
+          // DEBUG: Log the exact error code from SDK for troubleshooting
+          console.error(`[CreatorFlowAgent] SDK returned error code: '${message.error}' (type: ${typeof message.error})`);
+          debug(`[SDK ERROR] message.error = '${message.error}'`);
           const errorEvent = this.mapSDKErrorToTypedError(message.error);
           events.push(errorEvent);
           // Don't process content blocks when there's an error

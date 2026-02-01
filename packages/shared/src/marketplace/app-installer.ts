@@ -62,6 +62,44 @@ export interface AppInstallResult {
     error?: string;
   }>;
   error?: string;
+  /** Backup path if existing app was backed up */
+  backupPath?: string;
+}
+
+/**
+ * Installed app information
+ */
+export interface InstalledAppInfo {
+  appId: string;
+  name: string;
+  version: string;
+  description?: string;
+  installedAt?: string;
+  skillDependencies?: string[];
+}
+
+/**
+ * App install options
+ */
+export interface AppInstallOptions {
+  /** Force install even if app already exists (will backup first) */
+  force?: boolean;
+  /** Merge install - keep existing files and only add/update from package */
+  merge?: boolean;
+  /** Skip backup when force installing */
+  skipBackup?: boolean;
+  /** Progress callback */
+  onProgress?: AppInstallProgressCallback;
+}
+
+/**
+ * App uninstall options
+ */
+export interface AppUninstallOptions {
+  /** Also remove skills that were installed with the app */
+  removeSkills?: boolean;
+  /** Create backup before uninstalling */
+  backup?: boolean;
 }
 
 // ============================================================
@@ -157,6 +195,194 @@ function copyDir(src: string, dest: string): void {
     } else {
       copyFileSync(srcPath, destPath);
     }
+  }
+}
+
+/**
+ * Merge directory - copy new files and overwrite existing, but keep files not in source
+ */
+function mergeDir(src: string, dest: string): void {
+  if (!existsSync(dest)) {
+    mkdirSync(dest, { recursive: true });
+  }
+
+  const entries = readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      mergeDir(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+// ============================================================
+// App Status & Management
+// ============================================================
+
+/**
+ * Check if an app is already installed in the workspace
+ * @returns InstalledAppInfo if app exists, null otherwise
+ */
+export function checkInstalledApp(workspaceRoot: string): InstalledAppInfo | null {
+  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const manifestPath = join(creatorFlowDir, 'app-manifest.json');
+
+  if (!existsSync(manifestPath)) {
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+    return {
+      appId: manifest.id || 'unknown',
+      name: manifest.name || manifest.id || 'Unknown App',
+      version: manifest.version || 'unknown',
+      description: manifest.description,
+      installedAt: manifest.installed_at,
+      skillDependencies: manifest.skill_dependencies,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Backup app data before reinstalling
+ * @returns Backup directory path
+ */
+export function backupAppData(workspaceRoot: string): string | null {
+  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  
+  if (!existsSync(creatorFlowDir)) {
+    return null;
+  }
+
+  // Create backup directory with timestamp
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupDir = join(workspaceRoot, '.creator-flow-backup', timestamp);
+  
+  if (!existsSync(join(workspaceRoot, '.creator-flow-backup'))) {
+    mkdirSync(join(workspaceRoot, '.creator-flow-backup'), { recursive: true });
+  }
+
+  // Copy directories that might have user customizations
+  const dirsToBackup = ['prompts', 'guides', 'sources', 'skills'];
+  let hasBackup = false;
+
+  for (const dir of dirsToBackup) {
+    const sourceDir = join(creatorFlowDir, dir);
+    if (existsSync(sourceDir)) {
+      const targetDir = join(backupDir, dir);
+      copyDir(sourceDir, targetDir);
+      hasBackup = true;
+    }
+  }
+
+  // Also backup manifest
+  const manifestPath = join(creatorFlowDir, 'app-manifest.json');
+  if (existsSync(manifestPath)) {
+    if (!existsSync(backupDir)) {
+      mkdirSync(backupDir, { recursive: true });
+    }
+    copyFileSync(manifestPath, join(backupDir, 'app-manifest.json'));
+    hasBackup = true;
+  }
+
+  return hasBackup ? backupDir : null;
+}
+
+/**
+ * Uninstall an app from workspace
+ */
+export function uninstallApp(
+  workspaceRoot: string,
+  options: AppUninstallOptions = {}
+): { success: boolean; backupPath?: string; error?: string } {
+  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+
+  // Check if app exists
+  const installedApp = checkInstalledApp(workspaceRoot);
+  if (!installedApp) {
+    return { success: false, error: '没有找到已安装的应用' };
+  }
+
+  try {
+    let backupPath: string | undefined;
+
+    // Backup if requested
+    if (options.backup) {
+      backupPath = backupAppData(workspaceRoot) || undefined;
+    }
+
+    // Remove app-specific directories
+    const dirsToRemove = ['prompts', 'guides', 'sources'];
+    for (const dir of dirsToRemove) {
+      const dirPath = join(creatorFlowDir, dir);
+      if (existsSync(dirPath)) {
+        rmSync(dirPath, { recursive: true });
+      }
+    }
+
+    // Remove manifest
+    const manifestPath = join(creatorFlowDir, 'app-manifest.json');
+    if (existsSync(manifestPath)) {
+      rmSync(manifestPath);
+    }
+
+    // Optionally remove skills
+    if (options.removeSkills && installedApp.skillDependencies) {
+      const skillsDir = join(creatorFlowDir, 'skills');
+      for (const skillId of installedApp.skillDependencies) {
+        const skillDir = join(skillsDir, skillId);
+        if (existsSync(skillDir)) {
+          rmSync(skillDir, { recursive: true });
+        }
+      }
+    }
+
+    return { success: true, backupPath };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '卸载失败',
+    };
+  }
+}
+
+/**
+ * Restore app data from backup
+ */
+export function restoreAppData(workspaceRoot: string, backupPath: string): boolean {
+  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+
+  if (!existsSync(backupPath)) {
+    return false;
+  }
+
+  try {
+    // Restore directories
+    const dirsToRestore = ['prompts', 'guides', 'sources', 'skills'];
+    for (const dir of dirsToRestore) {
+      const sourceDir = join(backupPath, dir);
+      if (existsSync(sourceDir)) {
+        const targetDir = join(creatorFlowDir, dir);
+        mergeDir(sourceDir, targetDir);
+      }
+    }
+
+    // Restore manifest
+    const manifestPath = join(backupPath, 'app-manifest.json');
+    if (existsSync(manifestPath)) {
+      copyFileSync(manifestPath, join(creatorFlowDir, 'app-manifest.json'));
+    }
+
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -351,14 +577,56 @@ async function installSkillDependencies(
 /**
  * Install an app to a workspace
  * This downloads the app, its skill dependencies, and copies everything to the workspace
+ * @param workspaceRoot - Workspace root directory
+ * @param appId - App ID to install
+ * @param version - Version to install (default: 'latest')
+ * @param options - Install options (force, skipBackup, onProgress)
  */
 export async function installApp(
   workspaceRoot: string,
   appId: string,
   version: string = 'latest',
-  onProgress?: AppInstallProgressCallback
+  options: AppInstallOptions | AppInstallProgressCallback = {}
 ): Promise<AppInstallResult> {
+  // Support legacy signature: installApp(workspaceRoot, appId, version, onProgress)
+  const opts: AppInstallOptions =
+    typeof options === 'function' ? { onProgress: options } : options;
+  const { force = false, merge = false, skipBackup = false, onProgress } = opts;
+
   try {
+    // Check for existing installation
+    const existingApp = checkInstalledApp(workspaceRoot);
+    if (existingApp) {
+      // merge mode allows installation without force flag
+      if (!force && !merge) {
+        return {
+          success: false,
+          appId,
+          version,
+          error: `工作区已安装应用 "${existingApp.name}" (${existingApp.version})。如需覆盖安装，请使用 force 选项。`,
+        };
+      }
+
+      onProgress?.({
+        stage: 'installing',
+        percent: 2,
+        message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
+        appId,
+      });
+    }
+
+    // Backup existing data if force installing (not merge) and not skipping backup
+    let backupPath: string | undefined;
+    if (existingApp && force && !merge && !skipBackup) {
+      onProgress?.({
+        stage: 'installing',
+        percent: 5,
+        message: '正在备份现有数据...',
+        appId,
+      });
+      backupPath = backupAppData(workspaceRoot) || undefined;
+    }
+
     // Download app package
     const { packageDir, actualVersion, skillDependencies } = await downloadAppPackage(
       appId,
@@ -397,18 +665,19 @@ export async function installApp(
       mkdirSync(creatorFlowDir, { recursive: true });
     }
 
-    // Copy manifest.json to workspace
+    // Copy manifest.json to workspace (always overwrite)
     const sourceManifest = join(packageDir, 'manifest.json');
     const targetManifest = join(creatorFlowDir, 'app-manifest.json');
     copyFileSync(sourceManifest, targetManifest);
 
-    // Copy other app files (prompts, guides, etc.) if they exist
-    const appDirs = ['prompts', 'guides', 'sources'];
+    // Merge app directories - always use mergeDir to preserve user customizations
+    // Extended list includes labels, statuses, resources for merge install
+    const appDirs = ['prompts', 'guides', 'sources', 'labels', 'statuses', 'resources', 'skills'];
     for (const dir of appDirs) {
       const sourceDir = join(packageDir, dir);
       if (existsSync(sourceDir)) {
         const targetDir = join(creatorFlowDir, dir);
-        copyDir(sourceDir, targetDir);
+        mergeDir(sourceDir, targetDir);
       }
     }
 
@@ -425,6 +694,7 @@ export async function installApp(
       version: actualVersion,
       appPath: creatorFlowDir,
       skillResults,
+      backupPath,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -448,12 +718,20 @@ export async function installApp(
 
 /**
  * Install app from a local package path (for bundled apps)
+ * @param workspaceRoot - Workspace root directory
+ * @param packageDir - Path to the local app package
+ * @param options - Install options (force, skipBackup, onProgress)
  */
 export async function installAppFromLocal(
   workspaceRoot: string,
   packageDir: string,
-  onProgress?: AppInstallProgressCallback
+  options: AppInstallOptions | AppInstallProgressCallback = {}
 ): Promise<AppInstallResult> {
+  // Support legacy signature: installAppFromLocal(workspaceRoot, packageDir, onProgress)
+  const opts: AppInstallOptions =
+    typeof options === 'function' ? { onProgress: options } : options;
+  const { force = false, merge = false, skipBackup = false, onProgress } = opts;
+
   try {
     // Read manifest to get app info and skill dependencies
     const manifestPath = join(packageDir, 'manifest.json');
@@ -463,6 +741,39 @@ export async function installAppFromLocal(
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
     const appId = manifest.id || 'local-app';
+
+    // Check for existing installation
+    const existingApp = checkInstalledApp(workspaceRoot);
+    if (existingApp) {
+      // merge mode allows installation without force flag
+      if (!force && !merge) {
+        return {
+          success: false,
+          appId,
+          version: manifest.version || '1.0.0',
+          error: `工作区已安装应用 "${existingApp.name}" (${existingApp.version})。如需覆盖安装，请使用 force 选项。`,
+        };
+      }
+
+      onProgress?.({
+        stage: 'installing',
+        percent: 2,
+        message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
+        appId,
+      });
+    }
+
+    // Backup existing data if force installing (not merge) and not skipping backup
+    let backupPath: string | undefined;
+    if (existingApp && force && !merge && !skipBackup) {
+      onProgress?.({
+        stage: 'installing',
+        percent: 5,
+        message: '正在备份现有数据...',
+        appId,
+      });
+      backupPath = backupAppData(workspaceRoot) || undefined;
+    }
 
     onProgress?.({
       stage: 'installing',
@@ -529,17 +840,18 @@ export async function installAppFromLocal(
       mkdirSync(creatorFlowDir, { recursive: true });
     }
 
-    // Copy manifest.json
+    // Copy manifest.json (always overwrite)
     const targetManifest = join(creatorFlowDir, 'app-manifest.json');
     copyFileSync(manifestPath, targetManifest);
 
-    // Copy other app directories
-    const appDirs = ['prompts', 'guides', 'sources'];
+    // Merge app directories - always use mergeDir to preserve user customizations
+    // Extended list includes labels, statuses, resources for merge install
+    const appDirs = ['prompts', 'guides', 'sources', 'labels', 'statuses', 'resources', 'skills'];
     for (const dir of appDirs) {
       const sourceDir = join(packageDir, dir);
       if (existsSync(sourceDir)) {
         const targetDir = join(creatorFlowDir, dir);
-        copyDir(sourceDir, targetDir);
+        mergeDir(sourceDir, targetDir);
       }
     }
 
@@ -556,6 +868,7 @@ export async function installAppFromLocal(
       version: manifest.version || '1.0.0',
       appPath: creatorFlowDir,
       skillResults,
+      backupPath,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';

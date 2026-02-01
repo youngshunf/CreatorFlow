@@ -46,6 +46,7 @@ export {
   getApp,
   getAppVersions,
   getAppDownload,
+  getAppSkills,
   listCategories,
   search,
   syncInstalled,
@@ -96,9 +97,18 @@ export {
   downloadAppPackage,
   installApp,
   installAppFromLocal,
+  // App management
+  checkInstalledApp,
+  backupAppData,
+  uninstallApp,
+  restoreAppData,
+  // Types
   type AppInstallProgress,
   type AppInstallProgressCallback,
   type AppInstallResult,
+  type InstalledAppInfo,
+  type AppInstallOptions,
+  type AppUninstallOptions,
 } from './app-installer.ts';
 
 // Update Checker

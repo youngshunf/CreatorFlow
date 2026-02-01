@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { X } from "lucide-react"
+import { X, AlertTriangle } from "lucide-react"
 import { motion } from "motion/react"
 import { Dithering } from "@paper-design/shaders-react"
 import { FullscreenOverlayBase } from "@creator-flow/ui"
@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils"
 import { overlayTransitionIn } from "@/lib/animations"
 import { AddWorkspaceStep_ChooseApp } from "./AddWorkspaceStep_ChooseApp"
 import { AddWorkspaceStep_CreateNew } from "./AddWorkspaceStep_CreateNew"
+import { Button } from "@/components/ui/button"
+import { useT } from "@/context/LocaleContext"
 import type { Workspace } from "../../../shared/types"
 
 type CreationStep = 'choose-app' | 'create'
@@ -35,6 +37,7 @@ export function WorkspaceCreationScreen({
   initialMarketplaceApp,
   className
 }: WorkspaceCreationScreenProps) {
+  const t = useT()
   // If initialMarketplaceApp is provided, skip to create step
   const [step, setStep] = useState<CreationStep>(
     initialMarketplaceApp ? 'create' : 'choose-app'
@@ -50,6 +53,11 @@ export function WorkspaceCreationScreen({
   )
   const [isCreating, setIsCreating] = useState(false)
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
+  
+  // State for existing app confirmation dialog
+  const [showExistingAppDialog, setShowExistingAppDialog] = useState(false)
+  const [existingAppInfo, setExistingAppInfo] = useState<{ name: string; version: string } | null>(null)
+  const [pendingCreateParams, setPendingCreateParams] = useState<{ folderPath: string; name: string } | null>(null)
 
   // Track window dimensions for shader
   useEffect(() => {
@@ -76,7 +84,7 @@ export function WorkspaceCreationScreen({
     setStep('create')
   }, [])
 
-  const handleCreateWorkspace = useCallback(async (folderPath: string, name: string) => {
+  const handleCreateWorkspace = useCallback(async (folderPath: string, name: string, installMode?: 'force' | 'merge') => {
     setIsCreating(true)
     try {
       // For marketplace apps, extract the actual app ID
@@ -85,17 +93,55 @@ export function WorkspaceCreationScreen({
         : selectedAppId
       
       // Pass the selected app ID and source to workspace creation
-      const workspace = await window.electronAPI.createWorkspace(
+      const result = await window.electronAPI.createWorkspace(
         folderPath, 
         name, 
         appId,
-        selectedAppSource === 'marketplace' ? 'marketplace' : undefined
+        selectedAppSource === 'marketplace' ? 'marketplace' : undefined,
+        installMode
       )
-      onWorkspaceCreated(workspace)
+      
+      console.log('[WorkspaceCreation] createWorkspace result:', result)
+      
+      // Check if there's an existing app conflict (workspace will be null)
+      if (result.existingApp && !result.workspace) {
+        console.log('[WorkspaceCreation] Showing existing app dialog:', result.existingApp)
+        // Show confirmation dialog
+        setExistingAppInfo(result.existingApp)
+        setPendingCreateParams({ folderPath, name })
+        setShowExistingAppDialog(true)
+        return
+      }
+      
+      if (result.workspace) {
+        onWorkspaceCreated(result.workspace)
+      }
     } finally {
       setIsCreating(false)
     }
   }, [onWorkspaceCreated, selectedAppId, selectedAppSource])
+
+  // Handle force install (overwrite with backup) after user confirms
+  const handleForceInstall = useCallback(async () => {
+    if (!pendingCreateParams) return
+    setShowExistingAppDialog(false)
+    await handleCreateWorkspace(pendingCreateParams.folderPath, pendingCreateParams.name, 'force')
+  }, [pendingCreateParams, handleCreateWorkspace])
+
+  // Handle merge install (keep existing, add new files)
+  const handleMergeInstall = useCallback(async () => {
+    if (!pendingCreateParams) return
+    setShowExistingAppDialog(false)
+    await handleCreateWorkspace(pendingCreateParams.folderPath, pendingCreateParams.name, 'merge')
+  }, [pendingCreateParams, handleCreateWorkspace])
+
+  // Handle choosing different folder
+  const handleChooseDifferentFolder = useCallback(() => {
+    setShowExistingAppDialog(false)
+    setExistingAppInfo(null)
+    setPendingCreateParams(null)
+    // Stay on create step so user can choose different folder
+  }, [])
 
   const renderStep = () => {
     switch (step) {
@@ -206,6 +252,63 @@ export function WorkspaceCreationScreen({
         >
           {renderStep()}
         </motion.main>
+
+        {/* Existing App Confirmation Dialog */}
+        {showExistingAppDialog && existingAppInfo && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-md rounded-xl border bg-background p-6 shadow-lg"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-500/10">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">
+                    {t('工作区已有应用')}
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('该工作区已安装应用')} <span className="font-medium text-foreground">"{existingAppInfo.name}"</span> ({existingAppInfo.version})。
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('您可以选择其他工作区，或选择安装方式：')}
+                  </p>
+                  <ul className="mt-2 text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li>{t('合并安装：保留现有文件，只添加/更新新文件')}</li>
+                    <li>{t('覆盖安装：先备份现有数据，再安装新应用')}</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={handleMergeInstall}
+                  >
+                    {t('合并安装')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleForceInstall}
+                  >
+                    {t('覆盖安装')}
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handleChooseDifferentFolder}
+                >
+                  {t('选择其他工作区')}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </motion.div>
     </FullscreenOverlayBase>
   )

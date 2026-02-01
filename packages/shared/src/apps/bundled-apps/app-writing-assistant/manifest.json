@@ -24,8 +24,10 @@
   "workspace": {
     "defaultDirectory": "~/CreatorFlow/Writing",
     "directoryStructure": {
-      "草稿": {},
-      "已完成": {},
+      "写作": {
+        "草稿": {},
+        "已完成": {}
+      },
       "素材": {},
       "参考": {}
     },

@@ -75,6 +75,16 @@ function ensureDir(dir: string): void {
   }
 }
 
+/**
+ * Expand ~ to home directory in path
+ */
+function expandPath(path: string): string {
+  if (path.startsWith('~')) {
+    return path.replace(/^~/, homedir());
+  }
+  return path;
+}
+
 // ============================================================
 // Marketplace Cache Operations
 // ============================================================
@@ -224,7 +234,8 @@ export function markSkillModified(skillDir: string): void {
 export function getInstalledSkills(
   workspaceRoot: string
 ): InstalledSkillInfo[] {
-  const skillsDir = join(workspaceRoot, '.creator-flow', 'skills');
+  const expandedRoot = expandPath(workspaceRoot);
+  const skillsDir = join(expandedRoot, '.creator-flow', 'skills');
   if (!existsSync(skillsDir)) {
     return [];
   }
@@ -262,11 +273,26 @@ export function getInstalledSkills(
         // Ignore parsing errors
       }
 
+      // Get version: prefer meta, fallback to config.yaml
+      let version = meta?.localVersion;
+      if (!version) {
+        const configPath = join(skillDir, 'config.yaml');
+        if (existsSync(configPath)) {
+          try {
+            const configContent = readFileSync(configPath, 'utf-8');
+            const versionMatch = configContent.match(/^version:\s*(.+)$/m);
+            if (versionMatch) version = versionMatch[1].trim();
+          } catch {
+            // Ignore parsing errors
+          }
+        }
+      }
+
       result.push({
         skillId: meta?.sourceId || entry.name,
         name,
         description,
-        version: meta?.localVersion || 'unknown',
+        version: version || 'unknown',
         isModified: meta?.isModified || false,
         hasUpdate: false, // Will be updated by sync
         path: skillDir,

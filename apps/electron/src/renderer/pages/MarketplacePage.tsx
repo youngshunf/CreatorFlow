@@ -16,6 +16,8 @@ import {
   Tag, 
   CheckCircle2,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty'
@@ -59,31 +61,44 @@ export function MarketplacePage({
   const [error, setError] = useState<string | null>(null)
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null)
   
+  // Pagination state
+  const [skillsPage, setSkillsPage] = useState(1)
+  const [appsPage, setAppsPage] = useState(1)
+  const [skillsTotal, setSkillsTotal] = useState(0)
+  const [appsTotal, setAppsTotal] = useState(0)
+  const PAGE_SIZE = 20
+  
   // Keep original data for when search is cleared
   const [originalSkills, setOriginalSkills] = useState<MarketplaceSkill[]>([])
   const [originalApps, setOriginalApps] = useState<MarketplaceApp[]>([])
+  const [originalSkillsTotal, setOriginalSkillsTotal] = useState(0)
+  const [originalAppsTotal, setOriginalAppsTotal] = useState(0)
   
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<{ type: 'skill' | 'app'; id: string } | null>(null)
 
   // Load marketplace data
-  const loadMarketplaceData = useCallback(async () => {
+  const loadMarketplaceData = useCallback(async (skillPage = 1, appPage = 1) => {
     if (!workspaceId) return
     setIsLoading(true)
     setError(null)
     try {
       const [skillsResult, appsResult, categoriesResult, installedResult] = await Promise.all([
-        window.electronAPI.marketplaceListSkills(),
-        window.electronAPI.marketplaceListApps(),
+        window.electronAPI.marketplaceListSkills({ page: skillPage, size: PAGE_SIZE }),
+        window.electronAPI.marketplaceListApps({ page: appPage, size: PAGE_SIZE }),
         window.electronAPI.marketplaceListCategories(),
         window.electronAPI.marketplaceGetInstalled(workspaceId),
       ])
       setSkills(skillsResult.items)
       setApps(appsResult.items)
+      setSkillsTotal(skillsResult.total)
+      setAppsTotal(appsResult.total)
       setOriginalSkills(skillsResult.items)
       setOriginalApps(appsResult.items)
-      setCategories(categoriesResult)
+      setOriginalSkillsTotal(skillsResult.total)
+      setOriginalAppsTotal(appsResult.total)
+      setCategories(Array.isArray(categoriesResult) ? categoriesResult : categoriesResult.items || [])
       setInstalledSkills(installedResult)
     } catch (err) {
       console.error('Failed to load marketplace data:', err)
@@ -94,8 +109,8 @@ export function MarketplacePage({
   }, [workspaceId])
 
   useEffect(() => {
-    loadMarketplaceData()
-  }, [loadMarketplaceData])
+    loadMarketplaceData(skillsPage, appsPage)
+  }, [loadMarketplaceData, skillsPage, appsPage])
 
   // Search handler with debounce
   const handleSearchInput = useCallback((query: string) => {
@@ -110,6 +125,8 @@ export function MarketplacePage({
     if (!query.trim()) {
       setSkills(originalSkills)
       setApps(originalApps)
+      setSkillsTotal(originalSkillsTotal)
+      setAppsTotal(originalAppsTotal)
       setIsSearching(false)
       return
     }
@@ -126,13 +143,15 @@ export function MarketplacePage({
         const result = await window.electronAPI.marketplaceSearch(query)
         setSkills(result.skills)
         setApps(result.apps)
+        setSkillsTotal(result.total_skills || result.skills.length)
+        setAppsTotal(result.total_apps || result.apps.length)
       } catch (err) {
         console.error('Search failed:', err)
       } finally {
         setIsSearching(false)
       }
     }, 300)
-  }, [originalSkills, originalApps])
+  }, [originalSkills, originalApps, originalSkillsTotal, originalAppsTotal])
   
   // Cleanup timer on unmount
   useEffect(() => {
@@ -254,8 +273,8 @@ export function MarketplacePage({
           </div>
         </div>
 
-        {/* Filter tabs - centered */}
-        <div className="flex justify-center mb-3">
+        {/* Filter tabs - left aligned */}
+        <div className="flex justify-start mb-3">
           <Tabs value={filter.kind} onValueChange={handleTabChange}>
             <TabsList className="h-9 p-1">
               <TabsTrigger value="all" className="h-7 px-6 text-sm">
@@ -292,11 +311,11 @@ export function MarketplacePage({
                 key={cat.id}
                 className={cn(
                   "inline-flex items-center h-7 px-2.5 text-xs rounded-full transition-colors cursor-pointer",
-                  filter.kind === 'category' && filter.categoryId === cat.slug
+                  filter.kind === 'category' && filter.categoryId === cat.name
                     ? "bg-accent text-accent-foreground"
                     : "bg-foreground/5 hover:bg-foreground/10"
                 )}
-                onClick={() => onFilterChange({ kind: 'category', categoryId: cat.slug })}
+                onClick={() => onFilterChange({ kind: 'category', categoryId: cat.name })}
               >
                 {cat.icon && <span className="mr-1">{cat.icon}</span>}
                 {cat.name}
@@ -332,7 +351,7 @@ export function MarketplacePage({
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="h-4 w-4 text-accent" />
                   <h2 className="text-sm font-medium">{t('技能')}</h2>
-                  <span className="text-xs text-muted-foreground">({filteredSkills.length})</span>
+                  <span className="text-xs text-muted-foreground">({skillsTotal})</span>
                 </div>
               )}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -345,6 +364,30 @@ export function MarketplacePage({
                   />
                 ))}
               </div>
+              {/* Skills pagination */}
+              {!searchQuery && skillsTotal > PAGE_SIZE && (filter.kind === 'all' || filter.kind === 'skills') && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <button
+                    type="button"
+                    disabled={skillsPage <= 1}
+                    onClick={() => setSkillsPage(p => Math.max(1, p - 1))}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-border/60 bg-background hover:bg-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-muted-foreground px-2">
+                    {t('第')} {skillsPage} {t('页')} / {Math.ceil(skillsTotal / PAGE_SIZE)} {t('页')}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={skillsPage >= Math.ceil(skillsTotal / PAGE_SIZE)}
+                    onClick={() => setSkillsPage(p => p + 1)}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-border/60 bg-background hover:bg-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -355,7 +398,7 @@ export function MarketplacePage({
                 <div className="flex items-center gap-2 mb-4">
                   <Package className="h-4 w-4 text-purple-500" />
                   <h2 className="text-sm font-medium">{t('应用')}</h2>
-                  <span className="text-xs text-muted-foreground">({filteredApps.length})</span>
+                  <span className="text-xs text-muted-foreground">({appsTotal})</span>
                 </div>
               )}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -367,6 +410,30 @@ export function MarketplacePage({
                   />
                 ))}
               </div>
+              {/* Apps pagination */}
+              {!searchQuery && appsTotal > PAGE_SIZE && (filter.kind === 'all' || filter.kind === 'apps') && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <button
+                    type="button"
+                    disabled={appsPage <= 1}
+                    onClick={() => setAppsPage(p => Math.max(1, p - 1))}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-border/60 bg-background hover:bg-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-muted-foreground px-2">
+                    {t('第')} {appsPage} {t('页')} / {Math.ceil(appsTotal / PAGE_SIZE)} {t('页')}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={appsPage >= Math.ceil(appsTotal / PAGE_SIZE)}
+                    onClick={() => setAppsPage(p => p + 1)}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-border/60 bg-background hover:bg-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -393,6 +460,7 @@ interface SkillCardProps {
 
 function SkillCard({ skill, isInstalled, onClick }: SkillCardProps) {
   const t = useT()
+  const [imgError, setImgError] = useState(false)
 
   return (
     <button
@@ -403,8 +471,13 @@ function SkillCard({ skill, isInstalled, onClick }: SkillCardProps) {
       {/* Header: Icon + Title */}
       <div className="flex items-start gap-3 w-full mb-3">
         <div className="shrink-0">
-          {skill.icon_url ? (
-            <img src={skill.icon_url} alt="" className="w-10 h-10 rounded-lg" />
+          {skill.icon_url && !imgError ? (
+            <img 
+              src={skill.icon_url} 
+              alt="" 
+              className="w-10 h-10 rounded-lg object-cover" 
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
               <Zap className="h-5 w-5 text-accent" />
@@ -418,11 +491,19 @@ function SkillCard({ skill, isInstalled, onClick }: SkillCardProps) {
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
             )}
           </div>
-          {skill.is_official && (
-            <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
-              {t('官方')}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded font-medium">
+              {t('技能')}
             </span>
-          )}
+            {skill.latest_version && (
+              <span className="text-[10px] text-muted-foreground">v{skill.latest_version}</span>
+            )}
+            {skill.is_official && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
+                {t('官方')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -459,6 +540,7 @@ interface AppCardProps {
 
 function AppCard({ app, onClick }: AppCardProps) {
   const t = useT()
+  const [imgError, setImgError] = useState(false)
 
   return (
     <button
@@ -469,8 +551,13 @@ function AppCard({ app, onClick }: AppCardProps) {
       {/* Header: Icon + Title */}
       <div className="flex items-start gap-3 w-full mb-3">
         <div className="shrink-0">
-          {app.icon_url ? (
-            <img src={app.icon_url} alt="" className="w-10 h-10 rounded-lg" />
+          {app.icon_url && !imgError ? (
+            <img 
+              src={app.icon_url} 
+              alt="" 
+              className="w-10 h-10 rounded-lg object-cover" 
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
               <Package className="h-5 w-5 text-purple-500" />
@@ -481,11 +568,19 @@ function AppCard({ app, onClick }: AppCardProps) {
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm line-clamp-1">{app.name}</span>
           </div>
-          {app.is_official && (
-            <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
-              {t('官方')}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded font-medium">
+              {t('应用')}
             </span>
-          )}
+            {app.latest_version && (
+              <span className="text-[10px] text-muted-foreground">v{app.latest_version}</span>
+            )}
+            {app.is_official && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
+                {t('官方')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

@@ -26,6 +26,7 @@ import {
 
 import { DatePicker } from '@/components/ui/date-picker'
 import { RegionPicker, type RegionValue } from '@/components/ui/region-picker'
+import { AvatarUploader } from '@/components/ui/avatar-uploader'
 import { userApi, type UserProfile, type UpdateUserProfileParams } from '@/api/user'
 
 export const meta: DetailsPageMeta = {
@@ -179,14 +180,21 @@ export default function UserProfileEditPage() {
                   placeholder={t('请输入昵称')}
                   inCard
                 />
-                <SettingsInput
-                  label={t('头像')}
-                  description={t('头像 URL 地址')}
-                  value={editedProfile.avatar || ''}
-                  onChange={(v) => updateEditField('avatar', v)}
-                  placeholder={t('https://example.com/avatar.png')}
-                  inCard
-                />
+                {/* 头像上传 */}
+                <SettingsCardContent>
+                  <div className="space-y-2">
+                    <div className="space-y-0.5">
+                      <label className="text-sm font-medium">{t('头像')}</label>
+                      <p className="text-sm text-muted-foreground">{t('点击上传或更换您的头像')}</p>
+                    </div>
+                    <AvatarUploader
+                      value={editedProfile.avatar || ''}
+                      onChange={(url) => updateEditField('avatar', url)}
+                      onUpload={userApi.uploadAvatar}
+                      size={80}
+                    />
+                  </div>
+                </SettingsCardContent>
                 <SettingsSelect
                   label={t('性别')}
                   description={t('您的性别')}

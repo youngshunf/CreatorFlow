@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authApi, type LoginResult } from '@/api/auth'
 import { cn } from '@/lib/utils'
 import { enableCloudMode, type CloudConfig, getCloudApiUrl, getCurrentEnv, isDebugMode } from '@creator-flow/shared/cloud'
+import { toast } from 'sonner'
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
@@ -44,7 +45,9 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       await authApi.sendSmsCode(phone)
       setCountdown(60)
     } catch (err: any) {
-      setError(err.message || '发送验证码失败')
+      const msg = err.message || '发送验证码失败'
+      setError(msg)
+      toast.error(msg)
     }
   }
 
@@ -61,7 +64,9 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       const res = await authApi.loginByPhone(phone, code)
       handleSuccess(res)
     } catch (err: any) {
-      setError(err.message || '登录失败')
+      const msg = err.message || '登录失败'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -70,7 +75,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username || !password) {
-      setError('请输入用户名和密码')
+      setError('请输入手机号和密码')
       return
     }
 
@@ -80,7 +85,9 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       const res = await authApi.loginByPassword(username, password)
       handleSuccess(res)
     } catch (err: any) {
-      setError(err.message || '登录失败')
+      const msg = err.message || '登录失败'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -192,10 +199,10 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           <TabsContent value="password">
             <form onSubmit={handlePasswordLogin} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="username">用户名</Label>
+                <Label htmlFor="username">手机号</Label>
                 <Input
                   id="username"
-                  placeholder="请输入用户名"
+                  placeholder="请输入手机号"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />

@@ -322,6 +322,7 @@ function MarketplaceSkillItem({
 }: MarketplaceSkillItemProps) {
   const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [imgError, setImgError] = useState(false)
 
   return (
     <div className="marketplace-item" data-selected={isSelected || undefined}>
@@ -334,8 +335,13 @@ function MarketplaceSkillItem({
       <div className="marketplace-content relative group select-none pl-2 mr-2">
         {/* Avatar - positioned absolutely */}
         <div className="absolute left-[18px] top-3.5 z-10 flex items-center justify-center">
-          {skill.icon_url ? (
-            <img src={skill.icon_url} alt="" className="w-5 h-5 rounded" />
+          {skill.icon_url && !imgError ? (
+            <img 
+              src={skill.icon_url} 
+              alt="" 
+              className="w-5 h-5 rounded object-cover" 
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div className="w-5 h-5 rounded bg-accent/10 flex items-center justify-center">
               <Zap className="h-3 w-3 text-accent" />
@@ -361,11 +367,14 @@ function MarketplaceSkillItem({
               <span className="font-medium font-sans line-clamp-1 min-w-0">
                 {skill.name}
               </span>
+              {skill.latest_version && (
+                <span className="text-[10px] text-muted-foreground shrink-0">v{skill.latest_version}</span>
+              )}
               {isInstalled && (
                 <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
               )}
               {skill.is_official && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
+                <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded shrink-0">
                   {t('官方')}
                 </span>
               )}
@@ -438,6 +447,7 @@ interface MarketplaceAppItemProps {
 
 function MarketplaceAppItem({ app, isSelected, isFirst, onClick }: MarketplaceAppItemProps) {
   const t = useT()
+  const [imgError, setImgError] = useState(false)
 
   return (
     <div className="marketplace-item" data-selected={isSelected || undefined}>
@@ -450,8 +460,13 @@ function MarketplaceAppItem({ app, isSelected, isFirst, onClick }: MarketplaceAp
       <div className="marketplace-content relative group select-none pl-2 mr-2">
         {/* Avatar - positioned absolutely */}
         <div className="absolute left-[18px] top-3.5 z-10 flex items-center justify-center">
-          {app.icon_url ? (
-            <img src={app.icon_url} alt="" className="w-5 h-5 rounded" />
+          {app.icon_url && !imgError ? (
+            <img 
+              src={app.icon_url} 
+              alt="" 
+              className="w-5 h-5 rounded object-cover" 
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div className="w-5 h-5 rounded bg-purple-500/10 flex items-center justify-center">
               <Package className="h-3 w-3 text-purple-500" />
@@ -477,8 +492,11 @@ function MarketplaceAppItem({ app, isSelected, isFirst, onClick }: MarketplaceAp
               <span className="font-medium font-sans line-clamp-1 min-w-0">
                 {app.name}
               </span>
+              {app.latest_version && (
+                <span className="text-[10px] text-muted-foreground shrink-0">v{app.latest_version}</span>
+              )}
               {app.is_official && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded">
+                <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded shrink-0">
                   {t('官方')}
                 </span>
               )}

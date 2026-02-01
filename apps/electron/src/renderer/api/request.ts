@@ -63,12 +63,15 @@ class RequestClient {
       // 处理 HTTP 错误
       if (!response.ok) {
         const errorText = await response.text();
+        let errorMessage = response.statusText;
         try {
           const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.msg || errorJson.error || response.statusText);
-        } catch (e) {
-          throw new Error(errorText || response.statusText);
+          errorMessage = errorJson.msg || errorJson.error || errorMessage;
+        } catch {
+          // JSON 解析失败，使用原始文本或状态文本
+          if (errorText) errorMessage = errorText;
         }
+        throw new Error(errorMessage);
       }
 
       // 解析 JSON
@@ -110,6 +113,14 @@ class RequestClient {
 
   delete<T>(url: string, options?: RequestOptions) {
     return this.request<T>(url, { ...options, method: 'DELETE' });
+  }
+
+  upload<T>(url: string, formData: FormData, options?: RequestOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: formData,
+    });
   }
 }
 

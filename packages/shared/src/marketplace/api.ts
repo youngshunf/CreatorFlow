@@ -239,6 +239,18 @@ export async function getAppDownload(
   };
 }
 
+/**
+ * Get skills contained in an app
+ */
+export async function getAppSkills(
+  appId: string
+): Promise<MarketplaceSkill[]> {
+  if (!appId) {
+    return [];
+  }
+  return apiFetch<MarketplaceSkill[]>(`/apps/${appId}/skills`);
+}
+
 // ============================================================
 // Categories API
 // ============================================================

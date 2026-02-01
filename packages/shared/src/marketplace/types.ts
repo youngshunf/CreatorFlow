@@ -26,6 +26,7 @@ export interface MarketplaceSkill {
   is_private: boolean;
   is_official: boolean;
   download_count: number;
+  latest_version?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -61,6 +62,7 @@ export interface MarketplaceApp {
   is_official: boolean;
   download_count: number;
   skill_dependencies: string | null;
+  latest_version?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -103,6 +105,8 @@ export interface MarketplaceCategory {
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
+  page?: number;
+  size?: number;
 }
 
 /**

@@ -70,6 +70,7 @@ export function MarketplaceDetailDialog({
   const [skillVersions, setSkillVersions] = useState<MarketplaceSkillVersion[]>([])
   const [appVersions, setAppVersions] = useState<MarketplaceAppVersion[]>([])
   const [installedInfo, setInstalledInfo] = useState<InstalledSkillInfo | null>(null)
+  const [dependencySkills, setDependencySkills] = useState<MarketplaceSkill[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isInstalling, setIsInstalling] = useState(false)
   const [installProgress, setInstallProgress] = useState<InstallProgress | null>(null)
@@ -98,6 +99,10 @@ export function MarketplaceDetailDialog({
           const result = await window.electronAPI.marketplaceGetApp(itemId)
           setApp(result.app)
           setAppVersions(result.versions)
+          
+          // Load skills for app dependencies (single batch API call)
+          const skills = await window.electronAPI.marketplaceGetAppSkills(itemId)
+          setDependencySkills(skills || [])
         }
       } catch (err) {
         console.error('Failed to load item details:', err)
@@ -119,6 +124,7 @@ export function MarketplaceDetailDialog({
       setSkillVersions([])
       setAppVersions([])
       setInstalledInfo(null)
+      setDependencySkills([])
       setInstallProgress(null)
       setError(null)
       setIsLoading(true) // Reset to loading state for next open
@@ -199,12 +205,20 @@ export function MarketplaceDetailDialog({
   const item = type === 'skill' ? skill : app
   const versions = type === 'skill' ? skillVersions : appVersions
   const latestVersion = versions?.find(v => v.is_latest)
+  // Use item.latest_version as fallback if no version found in versions array
+  const displayVersion = latestVersion?.version || item?.latest_version
   const isInstalled = installedInfo !== null
   const hasUpdate = isInstalled && installedInfo?.hasUpdate
+  const [imgError, setImgError] = useState(false)
+
+  // Reset imgError when item changes
+  useEffect(() => {
+    setImgError(false)
+  }, [item?.icon_url])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] p-0 gap-0 overflow-hidden" showCloseButton={false} aria-describedby={undefined}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden" showCloseButton={false} aria-describedby={undefined}>
         {/* Loading state */}
         {isLoading && (
           <>
@@ -249,10 +263,15 @@ export function MarketplaceDetailDialog({
             {/* Header - Icon, Title, Badges */}
             <DialogHeader className="p-6 pb-4">
               <div className="flex items-start gap-4">
-                {/* Icon */}
+              {/* Icon */}
                 <div className="shrink-0">
-                  {item.icon_url ? (
-                    <img src={item.icon_url} alt="" className="w-16 h-16 rounded-xl" />
+                  {item.icon_url && !imgError ? (
+                    <img 
+                      src={item.icon_url} 
+                      alt="" 
+                      className="w-16 h-16 rounded-xl object-cover" 
+                      onError={() => setImgError(true)}
+                    />
                   ) : (
                     <div className={cn(
                       "w-16 h-16 rounded-xl flex items-center justify-center",
@@ -271,6 +290,23 @@ export function MarketplaceDetailDialog({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <DialogTitle className="text-xl font-semibold">{item.name}</DialogTitle>
+                    {/* Type badge */}
+                    {type === 'skill' ? (
+                      <Badge variant="secondary" className="bg-accent/10 text-accent border-0">
+                        <Zap className="h-3 w-3 mr-1" />
+                        {t('技能')}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-0">
+                        <Package className="h-3 w-3 mr-1" />
+                        {t('应用')}
+                      </Badge>
+                    )}
+                    {displayVersion && (
+                      <Badge variant="secondary" className="bg-foreground/5 text-muted-foreground border-0">
+                        v{displayVersion}
+                      </Badge>
+                    )}
                     {item.is_official && (
                       <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-0">
                         {t('官方')}
@@ -307,8 +343,8 @@ export function MarketplaceDetailDialog({
 
             <Separator />
 
-            {/* Scrollable content */}
-            <ScrollArea className="flex-1 max-h-[55vh]">
+            {/* Scrollable content - fixed height */}
+            <ScrollArea className="h-[400px]">
               <div className="p-6 space-y-6">
                 {/* Description */}
                 {item.description && (
@@ -386,15 +422,31 @@ export function MarketplaceDetailDialog({
                 )}
 
                 {/* App dependencies */}
-                {type === 'app' && app?.skill_dependencies && (
+                {type === 'app' && dependencySkills.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium mb-3">{t('依赖技能')}</h3>
+                    <h3 className="text-sm font-medium mb-3">{t('包含技能')}</h3>
                     <div className="p-4 rounded-lg bg-foreground/[0.02] border border-foreground/5">
-                      <div className="text-sm text-muted-foreground">
-                        {app.skill_dependencies.split(',').map((dep) => (
-                          <div key={dep} className="flex items-center gap-2 py-1">
-                            <Zap className="h-3.5 w-3.5 text-accent" />
-                            <span>{dep.trim()}</span>
+                      <div className="space-y-2">
+                        {dependencySkills.map((depSkill) => (
+                          <div key={depSkill.skill_id} className="flex items-center gap-3 py-1">
+                            {depSkill.icon_url ? (
+                              <img 
+                                src={depSkill.icon_url} 
+                                alt="" 
+                                className="w-6 h-6 rounded object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                                }}
+                              />
+                            ) : null}
+                            <div className={cn("w-6 h-6 rounded bg-accent/10 flex items-center justify-center", depSkill.icon_url && "hidden")}>
+                              <Zap className="h-3.5 w-3.5 text-accent" />
+                            </div>
+                            <span className="text-sm">{depSkill.name}</span>
+                            {depSkill.latest_version && (
+                              <span className="text-xs text-muted-foreground">v{depSkill.latest_version}</span>
+                            )}
                           </div>
                         ))}
                       </div>

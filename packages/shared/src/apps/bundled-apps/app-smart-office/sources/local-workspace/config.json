@@ -1,0 +1,15 @@
+{
+  "id": "local-workspace_preset",
+  "name": "本地工作目录",
+  "slug": "local-workspace",
+  "enabled": false,
+  "provider": "local",
+  "type": "local",
+  "local": {
+    "path": "./工作文档",
+    "format": "filesystem"
+  },
+  "icon": "💼",
+  "tagline": "管理工作文档、报告和办公资料",
+  "connectionStatus": "untested"
+}

@@ -90,8 +90,8 @@ const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalEr
     canRetry: false,
   },
   rate_limited: {
-    title: '请求频率限制',
-    message: '请求过于频繁，请稍后再试。',
+    title: '额度限制',
+    message: '今日额度已用完，请明天再来',
     actions: [
       { key: 'r', label: '重试', action: 'retry' },
     ],
@@ -252,7 +252,7 @@ export function parseError(error: unknown): AgentError {
     } else {
       code = 'invalid_api_key';
     }
-  } else if (lowerMessage.includes('429') || lowerMessage.includes('rate limit') || lowerMessage.includes('too many requests')) {
+  } else if (lowerMessage.includes('429') || lowerMessage.includes('rate limit') || lowerMessage.includes('too many requests') || lowerMessage.includes('额度已用完') || lowerMessage.includes('额度不足') || lowerMessage.includes('quota')) {
     code = 'rate_limited';
   } else if (lowerMessage.includes('500') || lowerMessage.includes('502') || lowerMessage.includes('503') || lowerMessage.includes('504') || lowerMessage.includes('internal server error') || lowerMessage.includes('service unavailable')) {
     code = 'service_error';

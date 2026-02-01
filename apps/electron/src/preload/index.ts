@@ -28,8 +28,8 @@ const api: ElectronAPI = {
 
   // Workspace management
   getWorkspaces: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WORKSPACES),
-  createWorkspace: (folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace') =>
-    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId, appSource),
+  createWorkspace: (folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') =>
+    ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId, appSource, installMode),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
 
@@ -314,6 +314,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_APPS, options),
   marketplaceGetApp: (appId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_APP, appId),
+  marketplaceGetAppSkills: (appId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_APP_SKILLS, appId),
   marketplaceListCategories: () =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES),
   marketplaceSearch: (query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions) =>

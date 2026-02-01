@@ -140,41 +140,64 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Create a new workspace at a folder path (Obsidian-style: folder IS the workspace)
-  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace') => {
+  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') => {
     const rootPath = folderPath
+    let appInstallError: string | undefined
+    let existingApp: { name: string; version: string } | undefined
     
     // Initialize workspace from app manifest if appId provided
     if (appId && appId !== 'app.general') {
       if (appSource === 'marketplace') {
         // Install marketplace app: download app package, install skills, copy to workspace
-        const { installApp } = await import('@creator-flow/shared/marketplace')
-        try {
-          const result = await installApp(
-            rootPath,
-            appId,
-            'latest',
-            (progress) => {
-              ipcLog.info(`[${appId}] ${progress.stage}: ${progress.message} (${progress.percent}%)`)
-            }
-          )
-          if (result.success) {
-            ipcLog.info(`Installed marketplace app "${appId}" to workspace at ${rootPath}`)
-            if (result.skillResults && result.skillResults.length > 0) {
-              const installed = result.skillResults.filter(r => r.success).map(r => r.skillId)
-              const failed = result.skillResults.filter(r => !r.success).map(r => r.skillId)
-              if (installed.length > 0) {
-                ipcLog.info(`Installed skills: ${installed.join(', ')}`)
-              }
-              if (failed.length > 0) {
-                ipcLog.warn(`Failed to install skills: ${failed.join(', ')}`)
-              }
-            }
-          } else {
-            ipcLog.error(`Failed to install marketplace app "${appId}": ${result.error}`)
+        const { installApp, checkInstalledApp } = await import('@creator-flow/shared/marketplace')
+        
+        // Check if app already exists
+        ipcLog.info(`[checkInstalledApp] Checking path: ${rootPath}`)
+        const existing = checkInstalledApp(rootPath)
+        ipcLog.info(`[checkInstalledApp] Result:`, existing)
+        if (existing && !installMode) {
+          // Return immediately without creating workspace - let frontend show confirmation
+          ipcLog.warn(`Workspace already has app "${existing.name}" installed, requesting user confirmation`)
+          return {
+            workspace: null,
+            existingApp: { name: existing.name, version: existing.version },
+            appInstallError: `工作区已安装应用 "${existing.name}" (${existing.version})`
           }
-        } catch (error) {
-          ipcLog.error(`Failed to install marketplace app "${appId}":`, error)
-          // Continue with workspace creation even if app installation fails
+        } else {
+          try {
+            const result = await installApp(
+              rootPath,
+              appId,
+              'latest',
+              {
+                force: installMode === 'force',
+                merge: installMode === 'merge',
+                onProgress: (progress) => {
+                  ipcLog.info(`[${appId}] ${progress.stage}: ${progress.message} (${progress.percent}%)`)
+                }
+              }
+            )
+            if (result.success) {
+              ipcLog.info(`Installed marketplace app "${appId}" to workspace at ${rootPath}`)
+              if (result.skillResults && result.skillResults.length > 0) {
+                const installed = result.skillResults.filter(r => r.success).map(r => r.skillId)
+                const failed = result.skillResults.filter(r => !r.success).map(r => r.skillId)
+                if (installed.length > 0) {
+                  ipcLog.info(`Installed skills: ${installed.join(', ')}`)
+                }
+                if (failed.length > 0) {
+                  ipcLog.warn(`Failed to install skills: ${failed.join(', ')}`)
+                }
+              }
+            } else {
+              appInstallError = result.error
+              ipcLog.error(`Failed to install marketplace app "${appId}": ${result.error}`)
+            }
+          } catch (error) {
+            appInstallError = error instanceof Error ? error.message : '安装失败'
+            ipcLog.error(`Failed to install marketplace app "${appId}":`, error)
+            // Continue with workspace creation even if app installation fails
+          }
         }
       } else {
         // Bundled app: initialize from local app manifest
@@ -211,6 +234,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
             }
           }
         } catch (error) {
+          appInstallError = error instanceof Error ? error.message : '安装失败'
           ipcLog.error(`Failed to initialize workspace with app "${appId}":`, error)
           // Continue with workspace creation even if app initialization fails
         }
@@ -221,7 +245,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     // Make it active
     setActiveWorkspace(workspace.id)
     ipcLog.info(`Created workspace "${name}" at ${rootPath}`)
-    return workspace
+    return { workspace, appInstallError, existingApp }
   })
 
   // Check if a workspace slug already exists (for validation before creation)
@@ -2585,6 +2609,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return { app, versions: versionsResult.items || [] }
   })
 
+  // Get app skills (batch fetch for app dependencies)
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_GET_APP_SKILLS, async (_event, appId: string) => {
+    const { getAppSkills } = await import('@creator-flow/shared/marketplace')
+    return getAppSkills(appId)
+  })
+
   // List categories
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES, async () => {
     const { listCategories } = await import('@creator-flow/shared/marketplace')
@@ -2592,9 +2622,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Search marketplace
-  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_SEARCH, async (_event, params: { q: string; type?: 'skill' | 'app' | 'all'; category?: string }) => {
+  ipcMain.handle(IPC_CHANNELS.MARKETPLACE_SEARCH, async (_event, query: string, options?: { type?: 'skill' | 'app' | 'all'; category?: string }) => {
     const { search } = await import('@creator-flow/shared/marketplace')
-    return search(params)
+    return search({ q: query, ...options })
   })
 
   // Install skill to workspace

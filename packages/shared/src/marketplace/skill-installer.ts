@@ -114,7 +114,7 @@ async function extractZip(zipPath: string, destDir: string): Promise<void> {
 }
 
 /**
- * Copy directory recursively
+ * Copy directory recursively (overwrite existing files)
  */
 function copyDir(src: string, dest: string): void {
   if (!existsSync(dest)) {
@@ -129,6 +129,28 @@ function copyDir(src: string, dest: string): void {
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * Merge directory - copy new files and overwrite existing, but keep files not in source
+ */
+function mergeDir(src: string, dest: string): void {
+  if (!existsSync(dest)) {
+    mkdirSync(dest, { recursive: true });
+  }
+
+  const entries = readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      mergeDir(srcPath, destPath);
+    } else {
+      // Overwrite existing file or create new
       copyFileSync(srcPath, destPath);
     }
   }
@@ -306,13 +328,9 @@ export async function installSkill(
       mkdirSync(skillsDir, { recursive: true });
     }
 
-    // Remove existing if present
-    if (existsSync(targetDir)) {
-      rmSync(targetDir, { recursive: true });
-    }
-
-    // Copy from cache to workspace
-    copyDir(packageDir, targetDir);
+    // Merge with existing skill directory (overwrite same-name files, keep others)
+    // This preserves user customizations that don't conflict with the package
+    mergeDir(packageDir, targetDir);
 
     // Write skill meta
     const meta = createSkillMeta(skillId, actualVersion);

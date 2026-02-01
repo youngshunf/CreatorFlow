@@ -86,6 +86,7 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
   const span = perf.span('sources.buildServers', { count: sources.length })
   const credManager = getSourceCredentialManager()
   const serverBuilder = getSourceServerBuilder()
+  const start = Date.now()
 
   // Load credentials for all sources
   const sourcesWithCreds: SourceWithCredential[] = await Promise.all(
@@ -95,7 +96,9 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
       credential: await credManager.getApiCredential(source),
     }))
   )
+  const credsMs = Date.now() - start
   span.mark('credentials.loaded')
+  sessionLog.info(`构建 Source 服务器：为 ${sources.length} 个来源加载凭据耗时 ${credsMs}ms`)
 
   // Build token getter for OAuth sources (Google, Slack, Microsoft use OAuth)
   // Automatically refreshes expired or expiring tokens before API calls
@@ -128,10 +131,14 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
   }
 
   // Pass sessionPath to enable saving large API responses to session folder
+  const buildStart = Date.now()
   const result = await serverBuilder.buildAll(sourcesWithCreds, getTokenForSource, sessionPath)
+  const buildMs = Date.now() - buildStart
+  const totalMs = Date.now() - start
   span.mark('servers.built')
   span.setMetadata('mcpCount', Object.keys(result.mcpServers).length)
   span.setMetadata('apiCount', Object.keys(result.apiServers).length)
+  sessionLog.info(`构建 Source 服务器：生成 ${Object.keys(result.mcpServers).length} 个 MCP、${Object.keys(result.apiServers).length} 个 API 服务器，构建耗时 ${buildMs}ms，总耗时 ${totalMs}ms`)
 
   // Update source configs for auth errors so UI reflects actual state
   for (const error of result.errors) {
@@ -2398,6 +2405,9 @@ export class SessionManager {
       throw new Error(`Session ${sessionId} not found`)
     }
 
+    const sendStart = Date.now()
+    sessionLog.info(`sendMessage[${sessionId}] 开始处理消息`)
+
     // Clear any pending plan execution state when a new user message is sent.
     // This acts as a safety valve - if the user moves on, we don't want to
     // auto-execute an old plan later.
@@ -2405,6 +2415,7 @@ export class SessionManager {
 
     // Ensure messages are loaded before we try to add new ones
     await this.ensureMessagesLoaded(managed)
+    sessionLog.info(`sendMessage[${sessionId}] ensureMessagesLoaded 完成，耗时 ${Date.now() - sendStart}ms`)
 
     // If currently processing, queue the message and interrupt via forceAbort.
     // The abort throws an AbortError (caught in the catch block) which calls
@@ -2553,13 +2564,19 @@ export class SessionManager {
     const sendSpan = perf.span('session.sendMessage', { sessionId })
 
     // Get or create the agent (lazy loading)
+    const agentStart = Date.now()
     const agent = await this.getOrCreateAgent(managed)
+    const agentMs = Date.now() - agentStart
+    sessionLog.info(`sendMessage[${sessionId}] getOrCreateAgent 完成，耗时 ${agentMs}ms，累计耗时 ${Date.now() - sendStart}ms`)
     sendSpan.mark('agent.ready')
 
     // Always set all sources for context (even if none are enabled), including built-ins
     const workspaceRootPath = managed.workspace.rootPath
+    const sourcesLoadStart = Date.now()
     const allSources = loadAllSources(workspaceRootPath)
     agent.setAllSources(allSources)
+    const sourcesMs = Date.now() - sourcesLoadStart
+    sessionLog.info(`sendMessage[${sessionId}] loadAllSources 加载 ${allSources.length} 个 Source，耗时 ${sourcesMs}ms，累计耗时 ${Date.now() - sendStart}ms`)
     sendSpan.mark('sources.loaded')
 
     // Apply source servers if any are enabled
@@ -2568,10 +2585,13 @@ export class SessionManager {
       const sources = getSourcesBySlugs(workspaceRootPath, managed.enabledSourceSlugs)
       // Pass session path so large API responses can be saved to session folder
       const sessionPath = getSessionStoragePath(workspaceRootPath, sessionId)
+      const serversStart = Date.now()
       const { mcpServers, apiServers, errors } = await buildServersFromSources(sources, sessionPath)
+      const serversMs = Date.now() - serversStart
       if (errors.length > 0) {
-        sessionLog.warn(`Source build errors:`, errors)
+        sessionLog.warn(`构建 Source 服务器时发生错误`, errors)
       }
+      sessionLog.info(`sendMessage[${sessionId}] buildServersFromSources 完成，耗时 ${serversMs}ms，累计耗时 ${Date.now() - sendStart}ms`)
 
       // Apply source servers to the agent
       const mcpCount = Object.keys(mcpServers).length

@@ -1,0 +1,15 @@
+{
+  "id": "local-notes_preset",
+  "name": "本地笔记",
+  "slug": "local-notes",
+  "enabled": false,
+  "provider": "local",
+  "type": "local",
+  "local": {
+    "path": "./笔记",
+    "format": "filesystem"
+  },
+  "icon": "📝",
+  "tagline": "管理个人笔记、备忘录和待办事项",
+  "connectionStatus": "untested"
+}

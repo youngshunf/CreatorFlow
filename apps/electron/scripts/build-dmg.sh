@@ -97,29 +97,46 @@ echo "Installing dependencies..."
 cd "$ROOT_DIR"
 bun install
 
-# 3. Download Bun binary with checksum verification
-echo "Downloading Bun ${BUN_VERSION} for darwin-${ARCH}..."
+# 3. Get Bun binary (download or use local)
 mkdir -p "$ELECTRON_DIR/vendor/bun"
 BUN_DOWNLOAD="bun-darwin-$([ "$ARCH" = "arm64" ] && echo "aarch64" || echo "x64")"
 
-# Create temp directory to avoid race conditions
+# Try to download Bun, fall back to local installation if it fails
+echo "Downloading Bun ${BUN_VERSION} for darwin-${ARCH}..."
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-# Download binary and checksums
-curl -fSL "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip"
-curl -fSL "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt" -o "$TEMP_DIR/SHASUMS256.txt"
+DOWNLOAD_SUCCESS=false
+if curl -fSL --connect-timeout 30 --max-time 120 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" 2>/dev/null && \
+   curl -fSL --connect-timeout 30 --max-time 60 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt" -o "$TEMP_DIR/SHASUMS256.txt" 2>/dev/null; then
+    # Verify checksum
+    echo "Verifying checksum..."
+    cd "$TEMP_DIR"
+    if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c - 2>/dev/null; then
+        cd - > /dev/null
+        # Extract and install
+        unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
+        cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun" "$ELECTRON_DIR/vendor/bun/"
+        chmod +x "$ELECTRON_DIR/vendor/bun/bun"
+        DOWNLOAD_SUCCESS=true
+        echo "Downloaded Bun ${BUN_VERSION} successfully"
+    else
+        cd - > /dev/null
+    fi
+fi
 
-# Verify checksum
-echo "Verifying checksum..."
-cd "$TEMP_DIR"
-grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c -
-cd - > /dev/null
-
-# Extract and install
-unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
-cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun" "$ELECTRON_DIR/vendor/bun/"
-chmod +x "$ELECTRON_DIR/vendor/bun/bun"
+# Fall back to local bun if download failed
+if [ "$DOWNLOAD_SUCCESS" = false ]; then
+    echo "Download failed, using local Bun installation as fallback..."
+    LOCAL_BUN=$(which bun)
+    if [ -z "$LOCAL_BUN" ]; then
+        echo "ERROR: Could not download Bun and no local installation found"
+        exit 1
+    fi
+    cp "$LOCAL_BUN" "$ELECTRON_DIR/vendor/bun/"
+    chmod +x "$ELECTRON_DIR/vendor/bun/bun"
+    echo "Using local Bun: $LOCAL_BUN (version: $(bun --version))"
+fi
 
 # 4. Copy SDK from root node_modules (monorepo hoisting)
 # Note: The SDK is hoisted to root node_modules by the package manager.
@@ -177,8 +194,8 @@ fi
 npx electron-builder $BUILDER_ARGS
 
 # 8. Verify the DMG was built
-# electron-builder.yml uses artifactName to output: Craft-Agent-${arch}.dmg
-DMG_NAME="Craft-Agent-${ARCH}.dmg"
+# electron-builder.yml uses artifactName to output: CreatorFlow-${arch}.dmg
+DMG_NAME="CreatorFlow-${ARCH}.dmg"
 DMG_PATH="$ELECTRON_DIR/release/$DMG_NAME"
 
 if [ ! -f "$DMG_PATH" ]; then

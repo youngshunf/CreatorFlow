@@ -91,6 +91,13 @@ function createComponents(
   hideFirstMermaidExpand: boolean = true
 ): Partial<Components> {
   const baseComponents: Partial<Components> = {
+    // Handle custom XML tags from AI responses (e.g. <example>, <good_example>)
+    // These are commonly used in prompts/documentation but aren't valid HTML
+    example: ({ children }) => <span className="block my-2 pl-3 border-l-2 border-muted-foreground/30 text-muted-foreground">{children}</span>,
+    good_example: ({ children }) => <span className="block my-2 pl-3 border-l-2 border-green-500/50 text-muted-foreground">{children}</span>,
+    bad_example: ({ children }) => <span className="block my-2 pl-3 border-l-2 border-red-500/50 text-muted-foreground">{children}</span>,
+    correct_example: ({ children }) => <span className="block my-2 pl-3 border-l-2 border-green-500/50 text-muted-foreground">{children}</span>,
+    incorrect_example: ({ children }) => <span className="block my-2 pl-3 border-l-2 border-red-500/50 text-muted-foreground">{children}</span>,
     // Section wrapper for collapsible headings
     div: ({ node, children, ...props }) => {
       const sectionId = (props as Record<string, unknown>)['data-section-id'] as string | undefined

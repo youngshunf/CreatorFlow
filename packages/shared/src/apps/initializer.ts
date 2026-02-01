@@ -328,7 +328,7 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
 }
 
 /**
- * Copy app-specific labels and statuses to workspace.
+ * Copy app-specific labels, statuses, and sources to workspace.
  * This is the simplified approach: directly copy directory contents.
  */
 function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
@@ -350,6 +350,80 @@ function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
   
   // Copy statuses (if app has custom statuses)
   copyAppStatusesToWorkspace(appPath, workspaceRoot);
+  
+  // Copy sources (if app has preset sources)
+  copyAppSourcesToWorkspace(appPath, workspaceRoot);
+}
+
+// ============================================================
+// Sources Directory Copy
+// ============================================================
+
+/**
+ * Check if app has sources configuration.
+ * Returns the app path if found, null otherwise.
+ */
+function getAppPathWithSources(appId: string): string | null {
+  // Try bundled app source path first
+  let appPath = getBundledAppSourcePath(appId);
+  if (appPath && existsSync(join(appPath, 'sources'))) {
+    return appPath;
+  }
+  
+  // Fall back to installed app path
+  appPath = getAppPath(appId, false);
+  if (existsSync(appPath) && existsSync(join(appPath, 'sources'))) {
+    return appPath;
+  }
+  
+  return null;
+}
+
+/**
+ * Copy sources directory from app to workspace.
+ * Each source is a subdirectory with config.json and optionally guide.md.
+ * Existing sources in the workspace are NOT overwritten.
+ */
+function copyAppSourcesToWorkspace(appPath: string, workspaceRoot: string): boolean {
+  const appSourcesDir = join(appPath, 'sources');
+  
+  if (!existsSync(appSourcesDir)) {
+    debug(`[copyAppSourcesToWorkspace] No sources directory in app`);
+    return false;
+  }
+  
+  const workspaceSourcesDir = join(workspaceRoot, '.creator-flow', 'sources');
+  
+  // Ensure workspace sources directory exists
+  if (!existsSync(workspaceSourcesDir)) {
+    mkdirSync(workspaceSourcesDir, { recursive: true });
+  }
+  
+  // Iterate over each source subdirectory
+  const sourceEntries = readdirSync(appSourcesDir, { withFileTypes: true });
+  let copiedCount = 0;
+  
+  for (const entry of sourceEntries) {
+    if (!entry.isDirectory()) continue;
+    
+    const sourceSlug = entry.name;
+    const sourceDir = join(appSourcesDir, sourceSlug);
+    const targetDir = join(workspaceSourcesDir, sourceSlug);
+    
+    // Skip if source already exists in workspace
+    if (existsSync(targetDir)) {
+      debug(`[copyAppSourcesToWorkspace] Source ${sourceSlug} already exists, skipping`);
+      continue;
+    }
+    
+    // Copy the entire source directory
+    copyDirectory(sourceDir, targetDir);
+    copiedCount++;
+    debug(`[copyAppSourcesToWorkspace] Copied source ${sourceSlug} to workspace`);
+  }
+  
+  debug(`[copyAppSourcesToWorkspace] Copied ${copiedCount} sources to workspace`);
+  return copiedCount > 0;
 }
 
 // ============================================================

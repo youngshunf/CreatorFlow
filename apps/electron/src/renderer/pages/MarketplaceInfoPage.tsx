@@ -191,6 +191,12 @@ export function MarketplaceInfoPage({
   const latestVersion = versions.find(v => v.is_latest)
   const isInstalled = installedInfo !== null
   const hasUpdate = isInstalled && installedInfo.hasUpdate
+  const [imgError, setImgError] = useState(false)
+
+  // Reset imgError when item changes
+  useEffect(() => {
+    setImgError(false)
+  }, [item?.icon_url])
 
   return (
     <ScrollArea className={cn('flex-1 h-full', className)}>
@@ -199,8 +205,13 @@ export function MarketplaceInfoPage({
         <div className="flex items-start gap-4 mb-6">
           {/* Icon */}
           <div className="shrink-0">
-            {item.icon_url ? (
-              <img src={item.icon_url} alt="" className="w-16 h-16 rounded-xl" />
+            {item.icon_url && !imgError ? (
+              <img 
+                src={item.icon_url} 
+                alt="" 
+                className="w-16 h-16 rounded-xl object-cover" 
+                onError={() => setImgError(true)}
+              />
             ) : (
               <div className={cn(
                 "w-16 h-16 rounded-xl flex items-center justify-center",
@@ -219,6 +230,11 @@ export function MarketplaceInfoPage({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold">{item.name}</h1>
+              {latestVersion && (
+                <Badge variant="secondary" className="bg-foreground/5 text-muted-foreground border-0">
+                  v{latestVersion.version}
+                </Badge>
+              )}
               {item.is_official && (
                 <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-0">
                   {t('官方')}

@@ -1,5 +1,10 @@
 # Build script for Windows NSIS installer
-# Usage: powershell -ExecutionPolicy Bypass -File scripts/build-win.ps1
+# Usage: powershell -ExecutionPolicy Bypass -File scripts/build-win.ps1 [-Mode staging|production]
+
+param(
+    [ValidateSet('development', 'staging', 'production')]
+    [string]$Mode = 'development'
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -10,7 +15,10 @@ $RootDir = Split-Path -Parent (Split-Path -Parent $ElectronDir)
 # Configuration
 $BunVersion = "bun-v1.3.5"  # Pinned version for reproducible builds
 
-Write-Host "=== Building Craft Agents Windows Installer using electron-builder ===" -ForegroundColor Cyan
+# Set environment variable for Vite build mode
+$env:VITE_APP_ENV = $Mode
+
+Write-Host "=== Building CreatorFlow Windows Installer ($Mode) using electron-builder ===" -ForegroundColor Cyan
 
 # Debug: System information
 Write-Host ""
@@ -223,15 +231,15 @@ try {
 }
 
 # Build renderer (frontend)
-Write-Host "  Building renderer (frontend)..."
+Write-Host "  Building renderer (frontend) with mode: $Mode..."
 Push-Location $RootDir
 try {
     # Clean previous renderer build
     $RendererDir = "$ElectronDir\dist\renderer"
     if (Test-Path $RendererDir) { Remove-Item -Recurse -Force $RendererDir }
 
-    # Run vite build
-    npx vite build --config apps/electron/vite.config.ts
+    # Run vite build with appropriate mode
+    npx vite build --config apps/electron/vite.config.ts --mode $Mode
     if ($LASTEXITCODE -ne 0) { throw "Renderer build failed" }
 
     # Verify renderer was built
