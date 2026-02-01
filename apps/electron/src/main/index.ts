@@ -230,19 +230,30 @@ app.whenReady().then(async () => {
   ]
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const url = new URL(details.url)
-    const isCloudApi = cloudApiDomains.some(domain => url.hostname.includes(domain))
+    // Skip if URL is not provided
+    if (!details.url) {
+      callback({ responseHeaders: details.responseHeaders })
+      return
+    }
 
-    if (isCloudApi) {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          'Access-Control-Allow-Origin': ['*'],
-          'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
-          'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
-        },
-      })
-    } else {
+    try {
+      const url = new URL(details.url)
+      const isCloudApi = cloudApiDomains.some(domain => url.hostname.includes(domain))
+
+      if (isCloudApi) {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Access-Control-Allow-Origin': ['*'],
+            'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
+            'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
+          },
+        })
+      } else {
+        callback({ responseHeaders: details.responseHeaders })
+      }
+    } catch {
+      // Invalid URL, pass through without modification
       callback({ responseHeaders: details.responseHeaders })
     }
   })
