@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { routes } from '@/lib/navigate'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
+import { useT } from '@/context/LocaleContext'
 
 import {
   SettingsSection,
@@ -33,6 +34,8 @@ export const meta: DetailsPageMeta = {
 // ============================================
 
 export default function InputSettingsPage() {
+  const t = useT()
+  
   // Auto-capitalisation state
   const [autoCapitalisation, setAutoCapitalisation] = useState(true)
 
@@ -79,23 +82,23 @@ export default function InputSettingsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <PanelHeader title="Input" actions={<HeaderMenu route={routes.view.settings('input')} />} />
+      <PanelHeader title={t('输入')} actions={<HeaderMenu route={routes.view.settings('input')} />} />
       <div className="flex-1 min-h-0 mask-fade-y">
         <ScrollArea className="h-full">
           <div className="px-5 py-7 max-w-3xl mx-auto">
             <div className="space-y-8">
               {/* Typing Behavior */}
-              <SettingsSection title="Typing" description="Control how text is entered in the chat input.">
+              <SettingsSection title={t('输入行为')} description={t('控制聊天输入框中文本的输入方式。')}>
                 <SettingsCard>
                   <SettingsToggle
-                    label="Auto capitalisation"
-                    description="Automatically capitalise the first letter when typing a message."
+                    label={t('自动大写')}
+                    description={t('输入消息时自动将首字母大写。')}
                     checked={autoCapitalisation}
                     onCheckedChange={handleAutoCapitalisationChange}
                   />
                   <SettingsToggle
-                    label="Spell check"
-                    description="Underline misspelled words while typing."
+                    label={t('拼写检查')}
+                    description={t('输入时为拼写错误的单词添加下划线。')}
                     checked={spellCheck}
                     onCheckedChange={handleSpellCheckChange}
                   />
@@ -103,16 +106,16 @@ export default function InputSettingsPage() {
               </SettingsSection>
 
               {/* Send Behavior */}
-              <SettingsSection title="Sending" description="Choose how to send messages.">
+              <SettingsSection title={t('消息发送')} description={t('选择发送消息的方式。')}>
                 <SettingsCard>
                   <SettingsMenuSelectRow
-                    label="Send message with"
-                    description="Keyboard shortcut for sending messages"
+                    label={t('发送消息快捷键')}
+                    description={t('用于发送消息的键盘快捷键')}
                     value={sendMessageKey}
                     onValueChange={handleSendMessageKeyChange}
                     options={[
-                      { value: 'enter', label: 'Enter', description: 'Use Shift+Enter for new lines' },
-                      { value: 'cmd-enter', label: '⌘ Enter', description: 'Use Enter for new lines' },
+                      { value: 'enter', label: 'Enter', description: t('使用 Shift+Enter 换行') },
+                      { value: 'cmd-enter', label: '⌘ Enter', description: t('使用 Enter 换行') },
                     ]}
                   />
                 </SettingsCard>

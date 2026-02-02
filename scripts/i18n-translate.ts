@@ -204,22 +204,26 @@ async function translateWithAnthropic(
 1. 保持 {xxx} 格式的占位符不变
 2. 翻译要准确、自然
 3. 对于 UI 文本，要简洁明了
-4. 返回 JSON 数组格式：[["原文", "译文"], ...]
+4. 返回格式：每行一个翻译对，使用 ||| 分隔原文和译文
 
 待翻译文本：
-${JSON.stringify(texts, null, 2)}
+${texts.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
-请只返回 JSON 数组，不要其他内容。`;
+输出格式示例：
+原文1|||译文1
+原文2|||译文2
+
+请按此格式输出，每行一对，不要其他内容。`;
 
   const response = await fetch('http://claude.api.dcfuture.cn/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': '2025-09-29',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
       messages: [
         { role: 'user', content: prompt }
@@ -237,20 +241,37 @@ ${JSON.stringify(texts, null, 2)}
   };
   
   const text = result.content[0]?.text || '';
+  console.log('AI 响应:', text.substring(0, 200) + '...');
   
-  // 解析 JSON
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error('无法解析翻译结果');
+  // 解析文本格式 - 每行一个翻译对，使用 ||| 分隔
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && line.includes('|||'));
+  
+  if (lines.length === 0) {
+    console.error('原始响应:', text);
+    throw new Error('无法解析翻译结果，未找到有效的翻译对（格式：原文|||译文）');
   }
   
-  const translations: [string, string][] = JSON.parse(jsonMatch[0]);
   const map = new Map<string, string>();
   
-  for (const [source, target] of translations) {
-    map.set(source, target);
+  for (const line of lines) {
+    const parts = line.split('|||');
+    if (parts.length !== 2) {
+      console.warn('跳过无效行:', line);
+      continue;
+    }
+    
+    const source = parts[0].trim().replace(/^\d+\.\s*/, ''); // 移除行号
+    const target = parts[1].trim();
+    
+    if (source && target) {
+      map.set(source, target);
+    }
   }
   
+  console.log(`成功解析 ${map.size} 个翻译对`);
   return map;
 }
 
@@ -275,12 +296,16 @@ async function translateWithOpenAI(
 1. 保持 {xxx} 格式的占位符不变
 2. 翻译要准确、自然
 3. 对于 UI 文本，要简洁明了
-4. 返回 JSON 数组格式：[["原文", "译文"], ...]
+4. 返回格式：每行一个翻译对，使用 ||| 分隔原文和译文
 
 待翻译文本：
-${JSON.stringify(texts, null, 2)}
+${texts.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
-请只返回 JSON 数组，不要其他内容。`;
+输出格式示例：
+原文1|||译文1
+原文2|||译文2
+
+请按此格式输出，每行一对，不要其他内容。`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -307,20 +332,37 @@ ${JSON.stringify(texts, null, 2)}
   };
   
   const text = result.choices[0]?.message?.content || '';
+  console.log('AI 响应:', text.substring(0, 200) + '...');
   
-  // 解析 JSON
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error('无法解析翻译结果');
+  // 解析文本格式 - 每行一个翻译对，使用 ||| 分隔
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && line.includes('|||'));
+  
+  if (lines.length === 0) {
+    console.error('原始响应:', text);
+    throw new Error('无法解析翻译结果，未找到有效的翻译对（格式：原文|||译文）');
   }
   
-  const translations: [string, string][] = JSON.parse(jsonMatch[0]);
   const map = new Map<string, string>();
   
-  for (const [source, target] of translations) {
-    map.set(source, target);
+  for (const line of lines) {
+    const parts = line.split('|||');
+    if (parts.length !== 2) {
+      console.warn('跳过无效行:', line);
+      continue;
+    }
+    
+    const source = parts[0].trim().replace(/^\d+\.\s*/, ''); // 移除行号
+    const target = parts[1].trim();
+    
+    if (source && target) {
+      map.set(source, target);
+    }
   }
   
+  console.log(`成功解析 ${map.size} 个翻译对`);
   return map;
 }
 
