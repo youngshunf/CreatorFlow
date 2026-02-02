@@ -4,8 +4,9 @@
  * Handles checking for updates, downloading, and installing via the standard
  * electron-updater library.
  * 
- * NOTE: External update service has been disabled. Configure your own update
- * server in electron-builder.yml or use the built-in provider options.
+ * Uses self-hosted update server at our cloud API endpoint.
+ * The server provides latest-mac.yml / latest.yml / latest-linux.yml
+ * in the format electron-updater expects.
  *
  * Platform behavior:
  * - macOS: Downloads zip, extracts and swaps app bundle atomically
@@ -16,8 +17,11 @@
  */
 
 import { autoUpdater } from 'electron-updater'
+import { existsSync } from 'fs'
+import { join } from 'path'
 import { mainLog } from './logger'
 import { getAppVersion } from '@creator-flow/shared/version'
+import { getCloudApiUrl } from '@creator-flow/shared/config/environments'
 import {
   getDismissedUpdateVersion,
   clearDismissedUpdateVersion,
@@ -91,7 +95,7 @@ function broadcastDownloadProgress(progress: number): void {
   }
 }
 
-// ─── Configure electron-updater ───────────────────────────────────────────────
+// ─── Configure electron-updater ───────────────────────────────────────────────────────
 
 // Auto-download updates in the background after detection
 autoUpdater.autoDownload = true
@@ -105,6 +109,70 @@ autoUpdater.logger = {
   warn: (msg: unknown) => mainLog.warn('[electron-updater]', msg),
   error: (msg: unknown) => mainLog.error('[electron-updater]', msg),
   debug: (msg: unknown) => mainLog.info('[electron-updater:debug]', msg),
+}
+
+// Flag to track if update server has been configured
+let _isUpdateServerConfigured = false
+
+// Flag to track if auto-update is disabled (e.g., app-update.yml missing)
+let _isAutoUpdateDisabled = false
+
+/**
+ * Check if auto-update is available.
+ * Returns false if app-update.yml doesn't exist (old builds).
+ */
+function isAutoUpdateAvailable(): boolean {
+  if (_isAutoUpdateDisabled) return false
+  
+  // Check if app-update.yml exists in the expected location
+  // In production: process.resourcesPath/app-update.yml
+  // In dev: not applicable (auto-update is skipped)
+  try {
+    const appUpdateYmlPath = join(process.resourcesPath || '', 'app-update.yml')
+    if (!existsSync(appUpdateYmlPath)) {
+      mainLog.warn(`[auto-update] app-update.yml not found at ${appUpdateYmlPath}, disabling auto-update`)
+      _isAutoUpdateDisabled = true
+      return false
+    }
+    return true
+  } catch (error) {
+    mainLog.warn('[auto-update] Failed to check app-update.yml:', error)
+    _isAutoUpdateDisabled = true
+    return false
+  }
+}
+
+/**
+ * Configure the update server URL dynamically.
+ * Must be called before checkForUpdates().
+ * Uses our self-hosted API endpoint based on environment.
+ */
+function configureUpdateServer(): boolean {
+  if (_isUpdateServerConfigured) return true
+  if (_isAutoUpdateDisabled) return false
+  
+  // Check if auto-update is available first
+  if (!isAutoUpdateAvailable()) {
+    return false
+  }
+  
+  try {
+    const cloudApiUrl = getCloudApiUrl()
+    const updateUrl = `${cloudApiUrl}/client/version`
+    
+    mainLog.info(`[auto-update] Configuring update server: ${updateUrl}`)
+    
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: updateUrl,
+    })
+    
+    _isUpdateServerConfigured = true
+    return true
+  } catch (error) {
+    mainLog.error('[auto-update] Failed to configure update server:', error)
+    return false
+  }
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
@@ -191,6 +259,13 @@ interface CheckOptions {
 export async function checkForUpdates(options: CheckOptions = {}): Promise<UpdateInfo> {
   const { autoDownload = true } = options
 
+  // Configure update server on first check
+  // Skip if auto-update is disabled (app-update.yml missing)
+  if (!configureUpdateServer()) {
+    mainLog.info('[auto-update] Auto-update disabled, skipping check')
+    return getUpdateInfo()
+  }
+  
   // Temporarily override autoDownload for this check if needed
   // (e.g., manual check from settings shouldn't auto-download on metered connections)
   const previousAutoDownload = autoUpdater.autoDownload

@@ -1,12 +1,17 @@
 /**
  * Cloud Integration Module
- * 
+ *
  * Provides cloud gateway configuration and subscription management.
- * 
+ *
  * Environment Configuration:
- * - Configuration is loaded from .env files (VITE_* variables)
+ * - Configuration is defined in packages/shared/src/config/environments.ts
+ * - Environment is selected at build time via APP_ENV
  * - Supports: development, staging, production environments
- * - Set VITE_APP_ENV to switch environments
+ *
+ * Usage:
+ *   - Development: bun run electron:dev (default)
+ *   - Staging: APP_ENV=staging bun run electron:build
+ *   - Production: APP_ENV=production bun run electron:build
  */
 
 // Cloud configuration

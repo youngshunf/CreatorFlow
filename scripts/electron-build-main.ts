@@ -34,11 +34,12 @@ function loadEnvFile(): void {
   }
 }
 
-// Get build-time defines for esbuild (OAuth, Sentry DSN, etc.)
+// Get build-time defines for esbuild (OAuth, Sentry DSN, environment)
 // NOTE: Sentry source map upload is intentionally disabled for the main process.
 // To enable in the future, add @sentry/esbuild-plugin. See apps/electron/CLAUDE.md.
 function getBuildDefines(): string[] {
-  const definedVars = [
+  // OAuth and Sentry credentials from .env
+  const credentialVars = [
     "GOOGLE_OAUTH_CLIENT_ID",
     "GOOGLE_OAUTH_CLIENT_SECRET",
     "SLACK_OAUTH_CLIENT_ID",
@@ -46,17 +47,20 @@ function getBuildDefines(): string[] {
     "MICROSOFT_OAUTH_CLIENT_ID",
     "MICROSOFT_OAUTH_CLIENT_SECRET",
     "SENTRY_ELECTRON_INGEST_URL",
-    "VITE_APP_ENV",           // For staging DevTools support
-    "VITE_CLOUD_API_URL",     // Cloud API URL for marketplace etc.
-    "VITE_LLM_GATEWAY_PATH",  // LLM gateway path
-    "VITE_CLOUD_MODE_ENABLED",
-    "VITE_DEBUG_MODE",
   ];
 
-  return definedVars.map((varName) => {
+  const defines = credentialVars.map((varName) => {
     const value = process.env[varName] || "";
     return `--define:process.env.${varName}="${value}"`;
   });
+
+  // Environment selection (APP_ENV=development|staging|production)
+  const appEnv = process.env.APP_ENV || "development";
+  defines.push(`--define:__APP_ENV__="${appEnv}"`);
+
+  console.log(`📦 Building for environment: ${appEnv}`);
+
+  return defines;
 }
 
 // Wait for file to stabilize (no size changes)

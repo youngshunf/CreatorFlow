@@ -1,5 +1,7 @@
 // 使用原生 fetch 替代 axios，避免依赖安装问题
 
+import { getCloudApiUrl, getCurrentEnv, isDebugMode } from '@config/environments'
+
 // 定义后端响应的标准结构
 export interface ApiResponse<T = any> {
   code: number;
@@ -7,16 +9,13 @@ export interface ApiResponse<T = any> {
   data: T;
 }
 
-// 从环境变量获取 API URL
-// 优先级: VITE_CLOUD_API_URL > VITE_GLOB_API_URL > 默认值
-const BASE_URL = import.meta.env.VITE_CLOUD_API_URL 
-  || import.meta.env.VITE_GLOB_API_URL 
-  || 'http://localhost:8020/api/v1';
+// 从 environments.ts 获取 API URL（根据构建环境自动选择）
+const BASE_URL = getCloudApiUrl();
 
 // Debug: Log BASE_URL in staging/development
-if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+if (isDebugMode()) {
   console.log('[Request] BASE_URL:', BASE_URL);
-  console.log('[Request] Environment:', import.meta.env.VITE_APP_ENV);
+  console.log('[Request] Environment:', getCurrentEnv());
 }
 
 interface RequestOptions extends RequestInit {
@@ -53,7 +52,7 @@ class RequestClient {
     }
 
     // Debug logging
-    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+    if (isDebugMode()) {
       console.log('[Request] Fetching:', fullUrl);
       console.log('[Request] Method:', init.method || 'GET');
     }
@@ -65,7 +64,7 @@ class RequestClient {
         headers,
       });
       
-      if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+      if (isDebugMode()) {
         console.log(`[Request] Response: ${response.status} in ${Date.now() - startTime}ms`);
       }
 
