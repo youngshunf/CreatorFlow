@@ -49,8 +49,17 @@ if (isDebugMode) {
   }
   log.transports.console.level = 'debug'
 } else {
-  // Disable file and console transports in production
-  log.transports.file.level = false
+  // Production: still log to file for debugging, but no console
+  log.transports.file.format = ({ message }) => [
+    JSON.stringify({
+      timestamp: formatLocalTimestamp(message.date),
+      level: message.level,
+      scope: message.scope,
+      message: message.data,
+    }),
+  ]
+  log.transports.file.maxSize = 5 * 1024 * 1024 // 5MB
+  log.transports.file.level = 'info' // Log info and above in production
   log.transports.console.level = false
 }
 

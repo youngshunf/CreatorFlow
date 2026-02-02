@@ -382,8 +382,19 @@ app.whenReady().then(async () => {
     }
 
     mainLog.info('App initialized successfully')
-    if (isDebugMode) {
-      mainLog.info('Debug mode enabled - logs at:', getLogFilePath())
+    mainLog.info('Logs at:', getLogFilePath() || 'file logging enabled')
+    
+    // Log environment configuration for debugging
+    try {
+      const { getCurrentEnv, getCloudApiUrl, getLlmGatewayUrl } = await import('@creator-flow/shared/config/environments')
+      mainLog.info('Environment config:', {
+        env: getCurrentEnv(),
+        cloudApiUrl: getCloudApiUrl(),
+        llmGatewayUrl: getLlmGatewayUrl(),
+        isPackaged: app.isPackaged,
+      })
+    } catch (err) {
+      mainLog.warn('Failed to log environment config:', err)
     }
   } catch (error) {
     // Log full error details (error objects may not serialize properly)
