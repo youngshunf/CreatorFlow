@@ -47,9 +47,9 @@ export function ReauthScreen({ onLogin, onReset }: ReauthScreenProps) {
           title="Session Expired"
           description={
             <>
-              Your Craft session has expired or is no longer valid.
+              Your session has expired or is no longer valid.
               <br />
-              Please log in again to continue using CreatorFlow.
+              Please log in again to continue using 智小芽.
               <br />
               <span className="text-muted-foreground/70 text-xs mt-2 block">
                 Your conversations and settings are preserved.

@@ -110,6 +110,7 @@ async function checkCapturedApiError(): Promise<CheckResult> {
  * Used in diagnostics messages so errors reference the correct provider.
  */
 function getProviderLabel(baseUrl: string): string {
+  if (baseUrl.includes('/llm/proxy')) return '云端网关';
   if (baseUrl.includes('openrouter')) return 'OpenRouter';
   if (baseUrl.includes('anthropic')) return 'Anthropic';
   return 'API endpoint';
@@ -130,8 +131,11 @@ async function checkApiAvailability(): Promise<CheckResult> {
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     try {
+      // All providers (Anthropic, OpenRouter, Cloud Gateway) use standard /v1/models endpoint
+      const modelsUrl = `${baseUrl}/v1/models`;
+
       // HEAD request doesn't require auth and checks if service is up
-      const response = await fetch(`${baseUrl}/v1/models`, {
+      const response = await fetch(modelsUrl, {
         method: 'HEAD',
         signal: controller.signal,
       });

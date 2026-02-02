@@ -889,6 +889,29 @@ export class SessionManager {
       }
       sessionLog.info('Setting executable:', bunPath)
       setExecutable(bunPath)
+
+      // On Windows: Set CLAUDE_CODE_GIT_BASH_PATH to bundled bash.exe
+      // The SDK requires git-bash on Windows. We bundle it so users don't need to install Git.
+      // PortableGit has bash.exe in usr/bin/, MinGit would have it in bin/ (but MinGit doesn't include bash)
+      if (process.platform === 'win32') {
+        const possiblePaths = [
+          join(process.resourcesPath, 'vendor', 'git', 'usr', 'bin', 'bash.exe'),
+          join(process.resourcesPath, 'vendor', 'git', 'bin', 'bash.exe'),
+        ]
+        let bashPath: string | null = null
+        for (const path of possiblePaths) {
+          if (existsSync(path)) {
+            bashPath = path
+            break
+          }
+        }
+        if (bashPath) {
+          process.env.CLAUDE_CODE_GIT_BASH_PATH = bashPath
+          sessionLog.info('Setting CLAUDE_CODE_GIT_BASH_PATH:', bashPath)
+        } else {
+          sessionLog.warn(`Bundled Git Bash not found. Tried: ${possiblePaths.join(', ')}. SDK shell commands may fail.`)
+        }
+      }
     }
     // In development: use system 'bun' (works on Windows now, supports --preload for interceptor)
 

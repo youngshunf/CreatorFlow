@@ -34,11 +34,11 @@ export interface ConfigDefaults {
  */
 export const BUNDLED_CONFIG_DEFAULTS: ConfigDefaults = {
   version: '1.0',
-  description: 'Default configuration values for CreatorFlow',
+  description: 'Default configuration values for 智小芽',
   defaults: {
     authType: 'api_key',
     notificationsEnabled: true,
-    colorTheme: 'default',
+    colorTheme: 'zhixiaoya',
     autoCapitalisation: true,
     sendMessageKey: 'enter',
     spellCheck: false,

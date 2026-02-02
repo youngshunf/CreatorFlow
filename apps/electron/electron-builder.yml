@@ -1,6 +1,6 @@
-appId: com.creatorflow.app
-productName: 创流 CreatorFlow
-copyright: Copyright © 2025 CreatorFlow
+appId: com.zhixiaoya.app
+productName: 智小芽
+copyright: Copyright © 2025 智小芽
 
 electronVersion: "39.2.7"
 
@@ -72,15 +72,15 @@ mac:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
   # Use predictable naming for macOS packages (applies to zip; dmg uses its own config below)
-  artifactName: "CreatorFlow-${arch}.${ext}"
+  artifactName: "Zhixiaoya-${arch}.${ext}"
   # Code signing & notarization (disabled by default for local builds)
   # To enable: set CSC_LINK, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
   # notarize:
   #   teamId: ${APPLE_TEAM_ID}
 
 dmg:
-  # Use predictable naming: CreatorFlow-arm64.dmg, CreatorFlow-x64.dmg
-  artifactName: "CreatorFlow-${arch}.dmg"
+  # Use predictable naming: Zhixiaoya-arm64.dmg, Zhixiaoya-x64.dmg
+  artifactName: "Zhixiaoya-${arch}.dmg"
   contents:
     - x: 130
       y: 220
@@ -98,24 +98,29 @@ win:
     - target: nsis
       arch:
         - x64
-  # Use predictable naming: CreatorFlow-x64.exe
-  artifactName: "CreatorFlow-${arch}.${ext}"
+  # Use predictable naming: Zhixiaoya-x64.exe
+  artifactName: "Zhixiaoya-${arch}.${ext}"
   files:
     # Exclude ripgrep binaries for other platforms
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-darwin"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-darwin"
-    # WORKAROUND: Exclude bun from regular files on Windows.
+    # WORKAROUND: Exclude bun and git from regular files on Windows.
     # electron-builder's npm node module collector causes EBUSY errors when copying
-    # bun.exe because it scans/locks files while simultaneously trying to copy them.
-    # Moving bun to extraResources avoids this by copying it before the collector runs.
+    # exe files because it scans/locks files while simultaneously trying to copy them.
+    # Moving them to extraResources avoids this by copying them before the collector runs.
     # See: https://github.com/electron-userland/electron-builder/issues/8250
     - "!vendor/bun/**/*"
-  # Copy bun.exe as extraResource to avoid EBUSY file locking (see comment above)
+    - "!vendor/git/**/*"
+  # Copy vendor binaries as extraResources to avoid EBUSY file locking (see comment above)
   extraResources:
     - from: vendor/bun/bun.exe
       to: vendor/bun/bun.exe
+    # Bundle MinGit for Windows - provides bash.exe required by Claude Agent SDK
+    # This eliminates the need for users to install Git for Windows manually
+    - from: vendor/git
+      to: vendor/git
 
 nsis:
   oneClick: true
@@ -127,12 +132,12 @@ nsis:
 linux:
   icon: resources/icon.png
   category: Utility
-  maintainer: "CreatorFlow <support@creatorflow.app>"
+  maintainer: "智小芽 <support@zhixiaoya.app>"
   target:
     - target: AppImage
       arch:
         - x64
-  artifactName: "CreatorFlow-${arch}.${ext}"
+  artifactName: "Zhixiaoya-${arch}.${ext}"
   # Exclude ripgrep binaries for other platforms
   files:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-darwin"

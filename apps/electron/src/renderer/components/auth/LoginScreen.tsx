@@ -150,7 +150,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       <div className="w-full max-w-md space-y-8 z-10">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            登录 CreatorFlow
+            登录智小芽
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             使用云端服务账号登录

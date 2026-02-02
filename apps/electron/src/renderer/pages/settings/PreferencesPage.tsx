@@ -205,12 +205,12 @@ export default function PreferencesPage() {
           {/* Basic Info */}
           <SettingsSection
             title={t('基本信息')}
-            description={t('帮助 CreatorFlow 为您提供个性化响应')}
+            description={t('帮助智小芽为您提供个性化响应')}
           >
             <SettingsCard divided>
               <SettingsInput
                 label={t('姓名')}
-                description={t('CreatorFlow 应如何称呼您')}
+                description={t('智小芽应如何称呼您')}
                 value={formState.name}
                 onChange={(v) => updateField('name', v)}
                 placeholder={t('您的姓名')}
@@ -226,7 +226,7 @@ export default function PreferencesPage() {
               />
               <SettingsInput
                 label={t('AI 响应语言')}
-                description={t('CreatorFlow 响应的首选语言')}
+                description={t('智小芽响应的首选语言')}
                 value={formState.language}
                 onChange={(v) => updateField('language', v)}
                 placeholder={t('例如：中文')}
@@ -263,7 +263,7 @@ export default function PreferencesPage() {
           {/* Notes */}
           <SettingsSection
             title={t('备注')}
-            description={t('自由格式的上下文，帮助 CreatorFlow 了解您的偏好')}
+            description={t('自由格式的上下文，帮助智小芽了解您的偏好')}
             action={
               // EditPopover for AI-assisted notes editing with "Edit File" as secondary action
               preferencesPath ? (
@@ -282,7 +282,7 @@ export default function PreferencesPage() {
               <SettingsTextarea
                 value={formState.notes}
                 onChange={(v) => updateField('notes', v)}
-                placeholder={t('任何您希望 CreatorFlow 了解的额外信息...')}
+                placeholder={t('任何您希望智小芽了解的额外信息...')}
                 rows={5}
                 inCard
               />

@@ -105,7 +105,7 @@ let pendingDeepLink: string | null = null
 
 // Set app name early (before app.whenReady) to ensure correct macOS menu bar title
 // Supports multi-instance dev: CRAFT_APP_NAME env var (e.g., "CreatorFlow [1]")
-app.setName(process.env.CRAFT_APP_NAME || 'CreatorFlow')
+app.setName(process.env.CRAFT_APP_NAME || '智小芽')
 
 // Register as default protocol client for craftagents:// URLs
 // This must be done before app.whenReady() on some platforms
@@ -264,14 +264,26 @@ app.whenReady().then(async () => {
       const isCloudApi = cloudApiDomains.some(domain => url.hostname.includes(domain))
 
       if (isCloudApi) {
-        callback({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Access-Control-Allow-Origin': ['*'],
-            'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
-            'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
-          },
-        })
+        const headers = details.responseHeaders || {}
+        // 检查是否已经有 CORS 头，避免重复添加导致 "multiple values" 错误
+        const hasAllowOrigin = Object.keys(headers).some(
+          key => key.toLowerCase() === 'access-control-allow-origin'
+        )
+
+        if (hasAllowOrigin) {
+          // 后端已经返回了 CORS 头，不需要再添加
+          callback({ responseHeaders: headers })
+        } else {
+          // 后端没有返回 CORS 头，添加它们
+          callback({
+            responseHeaders: {
+              ...headers,
+              'Access-Control-Allow-Origin': ['*'],
+              'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
+              'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
+            },
+          })
+        }
       } else {
         callback({ responseHeaders: details.responseHeaders })
       }

@@ -1,5 +1,13 @@
 [
   [
+    ".NET 版本",
+    ".NET version"
+  ],
+  [
+    "\"始终允许\"会在本次会话中记住此命令",
+    "\"Always Allow\" will remember this command for this session"
+  ],
+  [
     "{count}分钟前",
     "{count} minutes ago"
   ],
@@ -16,8 +24,28 @@
     "1 file"
   ],
   [
+    "安装",
+    "Install"
+  ],
+  [
+    "安装成功",
+    "Installation Successful"
+  ],
+  [
     "安装更新",
     "Install update"
+  ],
+  [
+    "安装更新失败",
+    "Failed to install update"
+  ],
+  [
+    "安装失败",
+    "Installation Failed"
+  ],
+  [
+    "安装信息",
+    "Installation Information"
   ],
   [
     "按照代码规范审查 PR",
@@ -28,12 +56,44 @@
     "Version"
   ],
   [
-    "帮助 CreatorFlow 为您提供个性化响应",
-    "Help CreatorFlow provide personalized responses for you"
+    "版本 {{version}} 是最新的。",
+    "Version {{version}} is the latest."
+  ],
+  [
+    "版本历史",
+    "Version History"
+  ],
+  [
+    "帮助",
+    "Help"
   ],
   [
     "帮助与文档",
     "Help & Documentation"
+  ],
+  [
+    "帮助智小芽为您提供个性化响应",
+    "Help Zhixiaoya provide personalized responses for you"
+  ],
+  [
+    "包含技能",
+    "Included Skills"
+  ],
+  [
+    "保存失败",
+    "Save Failed"
+  ],
+  [
+    "保存修改",
+    "Save Changes"
+  ],
+  [
+    "报告或过滤重复行",
+    "Report or filter repeated lines"
+  ],
+  [
+    "报告文件系统磁盘空间使用情况",
+    "Report filesystem disk space usage"
   ],
   [
     "备注",
@@ -52,12 +112,24 @@
     "Local MCP servers are disabled in Settings > Advanced. Enable them to use this data source."
   ],
   [
+    "本地路径",
+    "Local Path"
+  ],
+  [
     "本地文件夹",
     "Local Folder"
   ],
   [
+    "本地已修改",
+    "Modified Locally"
+  ],
+  [
     "编辑",
     "Edit"
+  ],
+  [
+    "编辑笔记本",
+    "Edit Notebook"
   ],
   [
     "编辑标签",
@@ -74,6 +146,10 @@
   [
     "编辑文件",
     "Edit File"
+  ],
+  [
+    "编辑资料",
+    "Edit Profile"
   ],
   [
     "标记",
@@ -104,6 +180,10 @@
     "Label Hierarchy"
   ],
   [
+    "标签可以用彩色标签对会话进行组织。可按项目、主题或优先级分类，便于筛选与查找。",
+    "Tags can organize conversations with colored labels. They can be categorized by project, topic, or priority for easy filtering and searching."
+  ],
+  [
     "标签可以由智能体创建或通过编辑工作区中的 labels/config.json 文件创建。",
     "Labels can be created by the agent or by editing the labels/config.json file in your workspace."
   ],
@@ -124,20 +204,68 @@
     "Flag"
   ],
   [
+    "补充限流文档",
+    "Add rate limit documentation"
+  ],
+  [
+    "步骤已完成",
+    "Steps Completed"
+  ],
+  [
+    "裁剪头像",
+    "Crop Avatar"
+  ],
+  [
+    "裁剪图片失败",
+    "Failed to Crop Image"
+  ],
+  [
     "查看 Markdown",
     "View as Markdown"
+  ],
+  [
+    "查看和管理所有工作区",
+    "View and manage all workspaces"
   ],
   [
     "查看支持的模型",
     "View Supported Models"
   ],
   [
+    "查询 DNS 服务器",
+    "Query DNS servers"
+  ],
+  [
+    "查找文件",
+    "Find Files"
+  ],
+  [
+    "超出频率限制",
+    "Rate Limit Exceeded"
+  ],
+  [
     "撤销",
     "Undo"
   ],
   [
+    "沉思中...",
+    "Pondering..."
+  ],
+  [
     "城市",
     "City"
+  ],
+  [
+    "处理中",
+    "Processing"
+  ],
+  [
+    "处理中...",
+    "Processing..."
+  ],
+  [
+    "窗口",
+    "Window"
   ],
   [
     "创建",
@@ -146,6 +274,10 @@
   [
     "创建工作区",
     "Create workspace"
+  ],
+  [
+    "创建会话失败",
+    "Failed to Create Session"
   ],
   [
     "创建中...",
@@ -176,6 +308,10 @@
     "File system path for this data source"
   ],
   [
+    "次下载",
+    "Downloads"
+  ],
+  [
     "从空白工作区开始。",
     "Start with a blank workspace."
   ],
@@ -188,200 +324,12 @@
     "Never"
   ],
   [
-    "API 密钥无效",
-    "Invalid API Key"
+    "从行中删除部分内容",
+    "Remove sections from lines"
   ],
   [
-    "您的 Anthropic API 密钥被拒绝，可能无效或已过期。",
-    "Your Anthropic API key was rejected. It may be invalid or expired."
-  ],
-  [
-    "更新 API 密钥",
-    "Update API key"
-  ],
-  [
-    "凭证无效",
-    "Invalid Credentials"
-  ],
-  [
-    "您的 API 密钥或 OAuth 令牌缺失或无效。",
-    "Your API key or OAuth token is missing or invalid."
-  ],
-  [
-    "更新凭证",
-    "Update credentials"
-  ],
-  [
-    "会话已过期",
-    "Session Expired"
-  ],
-  [
-    "您的 Claude Max 会话已过期。",
-    "Your Claude Max session has expired."
-  ],
-  [
-    "重新认证",
-    "Re-authenticate"
-  ],
-  [
-    "切换 API 设置",
-    "Switch API setup"
-  ],
-  [
-    "工作区会话已过期",
-    "Workspace Session Expired"
-  ],
-  [
-    "您的工作区认证已过期，请重新认证工作区。",
-    "Your workspace authentication has expired. Please re-authenticate the workspace."
-  ],
-  [
-    "打开工作区菜单",
-    "Open workspace menu"
-  ],
-  [
-    "请求频率限制",
-    "Rate Limited"
-  ],
-  [
-    "请求过于频繁，请稍后再试。",
-    "Too many requests. Please wait a moment."
-  ],
-  [
-    "重试",
-    "Retry"
-  ],
-  [
-    "服务错误",
-    "Service Error"
-  ],
-  [
-    "AI 服务暂时不可用。",
-    "The AI service is temporarily unavailable."
-  ],
-  [
-    "服务不可用",
-    "Service Unavailable"
-  ],
-  [
-    "AI 服务出现问题，所有凭证均有效。请稍后再试。",
-    "The AI service is experiencing issues. All credentials appear valid. Try again in a moment."
-  ],
-  [
-    "连接错误",
-    "Connection Error"
-  ],
-  [
-    "无法连接到服务器，请检查网络连接。",
-    "Could not connect to the server. Check your internet connection."
-  ],
-  [
-    "需要工作区认证",
-    "Workspace Authentication Required"
-  ],
-  [
-    "您的工作区连接需要重新认证。",
-    "Your workspace connection needs to be re-authenticated."
-  ],
-  [
-    "MCP 服务器不可达",
-    "MCP Server Unreachable"
-  ],
-  [
-    "无法连接到 Craft MCP 服务器，请检查网络连接。",
-    "Cannot connect to the Craft MCP server. Check your network connection."
-  ],
-  [
-    "需要付款",
-    "Payment Required"
-  ],
-  [
-    "您的账户存在计费问题，请检查 Anthropic 账户状态。",
-    "Your account has a billing issue. Check your Anthropic account status."
-  ],
-  [
-    "模型不支持工具",
-    "Model Does Not Support Tools"
-  ],
-  [
-    "所选模型不支持工具/函数调用，而 CreatorFlow 需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。",
-    "The selected model does not support tool/function calling, which is required for CreatorFlow. Please choose a model with tool support (e.g., Claude, GPT-4, Gemini)."
-  ],
-  [
-    "更改模型",
-    "Change model"
-  ],
-  [
-    "模型无效",
-    "Invalid Model"
-  ],
-  [
-    "未找到所选模型，请在设置中检查模型配置。",
-    "The selected model was not found. Please check your model configuration in settings."
-  ],
-  [
-    "数据策略限制",
-    "Data Policy Restriction"
-  ],
-  [
-    "OpenRouter 因数据策略设置阻止了此请求。请在 openrouter.ai/settings/privacy 配置隐私设置以允许此模型。",
-    "OpenRouter blocked this request due to your data policy settings. Configure your privacy settings at openrouter.ai/settings/privacy to allow this model."
-  ],
-  [
-    "超出频率限制",
-    "Rate Limit Exceeded"
-  ],
-  [
-    "频率限制会在短时间内重置",
-    "Rate limits reset after a short period"
-  ],
-  [
-    "可考虑升级计划以获取更高限额",
-    "Consider upgrading your plan for higher limits"
-  ],
-  [
-    "无效请求",
-    "Invalid Request"
-  ],
-  [
-    "请求无效。",
-    "The request was invalid."
-  ],
-  [
-    "请尝试发送新消息",
-    "Try sending a new message"
-  ],
-  [
-    "如果问题持续请报告此问题",
-    "Report this issue if it persists"
-  ],
-  [
-    "无法连接到 API 服务器，请检查网络连接。",
-    "Unable to connect to the API server. Check your internet connection."
-  ],
-  [
-    "请确认网络连接正常",
-    "Verify your network connection is active"
-  ],
-  [
-    "检查 API 端点是否可访问",
-    "Check if the API endpoint is accessible"
-  ],
-  [
-    "防火墙或 VPN 可能正在阻止连接",
-    "Firewall or VPN may be blocking the connection"
-  ],
-  [
-    "认证失败",
-    "Authentication Failed"
-  ],
-  [
-    "无法通过 Anthropic 认证，您的 API 密钥可能无效或已过期。",
-    "Unable to authenticate with Anthropic. Your API key may be invalid or expired."
-  ],
-  [
-    "您的账户存在计费问题。",
-    "Your account has a billing issue."
+    "错误",
+    "Error"
   ],
   [
     "打开",
@@ -390,6 +338,10 @@
   [
     "打开侧边栏",
     "Open sidebar"
+  ],
+  [
+    "打开工作区菜单",
+    "Open workspace menu"
   ],
   [
     "打开上下文菜单",
@@ -408,24 +360,140 @@
     "Opening..."
   ],
   [
+    "打印当前工作目录",
+    "Print current working directory"
+  ],
+  [
+    "打印当前日期和时间",
+    "Print current date and time"
+  ],
+  [
+    "打印当前用户名",
+    "Print current username"
+  ],
+  [
+    "打印环境变量",
+    "Print environment variables"
+  ],
+  [
+    "打印所有环境变量（仅限单独命令，不是 env <cmd>）",
+    "Print all environment variables (bare command only, not env <cmd>)"
+  ],
+  [
+    "打印系统信息",
+    "Print system information"
+  ],
+  [
+    "打印系统运行时间和负载",
+    "Print system uptime and load"
+  ],
+  [
+    "打印系统主机名",
+    "Print system hostname"
+  ],
+  [
+    "打印用户和组 ID",
+    "Print user and group IDs"
+  ],
+  [
+    "打印组成员资格",
+    "Print group memberships"
+  ],
+  [
+    "大小",
+    "Size"
+  ],
+  [
+    "带语法高亮的 cat 替代品",
+    "Cat clone with syntax highlighting"
+  ],
+  [
+    "待办列表",
+    "Todo List"
+  ],
+  [
     "当 AI 完成聊天任务时发送通知",
     "Send notification when AI completes chat task"
+  ],
+  [
+    "当前订阅",
+    "Current Subscription"
+  ],
+  [
+    "当前工作区",
+    "Current Workspace"
   ],
   [
     "当用户消息匹配正则模式时自动应用标签。",
     "Automatically apply tags when user message matches regex pattern."
   ],
   [
+    "当用户消息匹配正则时自动应用标签，例如粘贴 Linear Issue 链接时自动标注项目与 Issue ID。",
+    "Automatically apply labels when user messages match regex patterns, for example, automatically tag project and Issue ID when pasting Linear Issue links."
+  ],
+  [
     "导航",
     "Navigation"
+  ],
+  [
+    "地区",
+    "Region"
+  ],
+  [
+    "地区信息",
+    "Region Information"
   ],
   [
     "等待当前操作完成",
     "Wait for current operation to complete"
   ],
   [
+    "滴答中...",
+    "Ticking..."
+  ],
+  [
+    "第",
+    "No."
+  ],
+  [
+    "点击上传或更换您的头像",
+    "Click to upload or change your avatar"
+  ],
+  [
     "点击压缩",
     "Click to compress"
+  ],
+  [
+    "点击中...",
+    "Clicking..."
+  ],
+  [
+    "调试",
+    "Debug"
+  ],
+  [
+    "订阅",
+    "Subscribe"
+  ],
+  [
+    "订阅与积分",
+    "Subscription & Credits"
+  ],
+  [
+    "定位命令",
+    "Locate a command"
+  ],
+  [
+    "定位命令的二进制文件、源码和手册",
+    "Locate binary, source, manual for command"
+  ],
+  [
+    "读取",
+    "Read"
+  ],
+  [
+    "读取 GitHub CLI 配置",
+    "Read GitHub CLI configuration"
   ],
   [
     "对话已标记",
@@ -436,12 +504,64 @@
     "Conversation deleted"
   ],
   [
+    "对文本文件行进行排序",
+    "Sort lines of text files"
+  ],
+  [
+    "发生了意外错误。",
+    "An unexpected error occurred."
+  ],
+  [
+    "发送 ICMP echo 请求",
+    "Send ICMP echo requests"
+  ],
+  [
     "发送消息",
     "Send message"
   ],
   [
+    "发送消息快捷键",
+    "Send Message Shortcut"
+  ],
+  [
+    "发送验证码失败",
+    "Failed to Send Verification Code"
+  ],
+  [
+    "翻涡中...",
+    "Churning..."
+  ],
+  [
+    "反思中...",
+    "Reflecting..."
+  ],
+  [
     "返回",
     "Back"
+  ],
+  [
+    "返回市场",
+    "Back to Market"
+  ],
+  [
+    "防火墙或 VPN 可能正在阻止连接",
+    "Firewall or VPN may be blocking the connection"
+  ],
+  [
+    "访问",
+    "Access"
+  ],
+  [
+    "放大",
+    "Zoom In"
+  ],
+  [
+    "飞奔中...",
+    "Zipping..."
+  ],
+  [
+    "飞速运转...",
+    "Whizzing..."
   ],
   [
     "分享",
@@ -456,16 +576,24 @@
     "Share updated"
   ],
   [
+    "分页查看文件内容",
+    "View file contents with paging"
+  ],
+  [
     "分支",
     "Branch"
   ],
   [
-    "访问",
-    "Access"
+    "蜂鸣中...",
+    "Buzzing..."
   ],
   [
-    "补充限流文档",
-    "Add rate limit documentation"
+    "服务不可用",
+    "Service Unavailable"
+  ],
+  [
+    "服务错误",
+    "Service Error"
   ],
   [
     "服务器 URL 和连接状态",
@@ -488,12 +616,32 @@
     "Copy Failed"
   ],
   [
+    "覆盖安装",
+    "Overwrite Installation"
+  ],
+  [
+    "覆盖安装：先备份现有数据，再安装新应用",
+    "Overwrite Installation: Back up existing data first, then install the new app"
+  ],
+  [
+    "该工作区已安装应用",
+    "App already installed in this workspace"
+  ],
+  [
+    "该项目不存在或已被删除",
+    "This project does not exist or has been deleted"
+  ],
+  [
     "刚刚",
     "Just now"
   ],
   [
     "高级",
     "Advanced"
+  ],
+  [
+    "告诉我您想改什么",
+    "Tell me what you want to change"
   ],
   [
     "格式：",
@@ -504,12 +652,28 @@
     "tags"
   ],
   [
+    "个错误",
+    "error(s)"
+  ],
+  [
+    "个人简介",
+    "Bio"
+  ],
+  [
     "个数据源",
     "data sources"
   ],
   [
     "个文件",
     "files"
+  ],
+  [
+    "根据当前工作区的技能快速启动一个新的对话。",
+    "Quickly start a new conversation based on the skills in the current workspace."
+  ],
+  [
+    "根目录",
+    "Root Directory"
   ],
   [
     "跟随系统",
@@ -524,6 +688,26 @@
     "Change..."
   ],
   [
+    "更改模型",
+    "Change model"
+  ],
+  [
+    "更新",
+    "Update"
+  ],
+  [
+    "更新 API 密钥",
+    "Update API key"
+  ],
+  [
+    "更新 v{{version}} 已就绪",
+    "Update v{{version}} ready"
+  ],
+  [
+    "更新待办",
+    "Update Todos"
+  ],
+  [
     "更新到",
     "Update to"
   ],
@@ -536,20 +720,24 @@
     "Failed to update share"
   ],
   [
-    "更新您的 API 连接或更改设置。",
-    "Update your API connection or change settings."
-  ],
-  [
     "更新技能描述",
     "Update the skill description"
   ],
   [
-    "更新显示名称",
-    "Update the display name"
+    "更新您的 API 连接或更改设置。",
+    "Update your API connection or change settings."
+  ],
+  [
+    "更新凭证",
+    "Update credentials"
   ],
   [
     "更新设置",
     "Update settings"
+  ],
+  [
+    "更新显示名称",
+    "Update the display name"
   ],
   [
     "工具",
@@ -564,6 +752,14 @@
     "Workspace"
   ],
   [
+    "工作区根目录",
+    "Workspace Root Directory"
+  ],
+  [
+    "工作区会话已过期",
+    "Workspace Session Expired"
+  ],
+  [
     "工作区名称",
     "Workspace name"
   ],
@@ -576,12 +772,32 @@
     "Workspace info"
   ],
   [
+    "工作区已有应用",
+    "Application Already Exists in Workspace"
+  ],
+  [
     "工作区自定义",
     "Workspace customization"
   ],
   [
+    "工作中...",
+    "Working..."
+  ],
+  [
     "共{count}条记录",
     "{count} records in total"
+  ],
+  [
+    "构思中...",
+    "Musing..."
+  ],
+  [
+    "估算文件/目录磁盘使用量",
+    "Estimate file/directory disk usage"
+  ],
+  [
+    "关闭",
+    "Close"
   ],
   [
     "关闭侧边栏",
@@ -608,36 +824,88 @@
     "About permissions"
   ],
   [
+    "官方",
+    "Official"
+  ],
+  [
+    "管理工作区",
+    "Manage Workspaces"
+  ],
+  [
+    "管理工作区...",
+    "Manage Workspaces..."
+  ],
+  [
+    "管理您的账号安全设置",
+    "Manage your account security settings"
+  ],
+  [
+    "滚动中...",
+    "Rolling..."
+  ],
+  [
     "国家",
     "Country"
+  ],
+  [
+    "过滤中...",
+    "Percolating..."
+  ],
+  [
+    "合并安装",
+    "Merge Install"
+  ],
+  [
+    "合并安装：保留现有文件，只添加/更新新文件",
+    "Merge Install: Keep existing files, only add/update new files"
+  ],
+  [
+    "哼鸣中...",
+    "Humming..."
+  ],
+  [
+    "烘焙中...",
+    "Baking..."
   ],
   [
     "欢迎{name}",
     "Welcome {name}"
   ],
   [
-    "欢迎使用 CreatorFlow",
-    "Welcome to CreatorFlow"
+    "欢迎使用智小芽",
+    "Welcome to Zhixiaoya"
   ],
   [
     "换行",
     "Line break"
   ],
   [
-    "模式",
-    "Pattern"
-  ],
-  [
-    "仅允许只读操作（list、get、search）",
-    "Only allow read operations (list, get, search)"
+    "回味中...",
+    "Ruminating..."
   ],
   [
     "会话列表",
     "Session List"
   ],
   [
+    "会话已过期",
+    "Session Expired"
+  ],
+  [
     "或使用其他账户登录",
     "Or sign in with another account"
+  ],
+  [
+    "获取网页",
+    "Fetch URL"
+  ],
+  [
+    "获取验证码",
+    "Get Verification Code"
+  ],
+  [
+    "积分余额",
+    "Points Balance"
   ],
   [
     "基本信息",
@@ -648,8 +916,20 @@
     "Base URL"
   ],
   [
+    "急速前进...",
+    "Zooming..."
+  ],
+  [
+    "计费错误",
+    "Billing Error"
+  ],
+  [
     "计划",
     "Plan"
+  ],
+  [
+    "计算中...",
+    "Computing..."
   ],
   [
     "技能",
@@ -664,12 +944,48 @@
     "Continue"
   ],
   [
+    "加速中...",
+    "Revving..."
+  ],
+  [
+    "加载失败",
+    "Load Failed"
+  ],
+  [
+    "加载市场应用...",
+    "Loading marketplace apps..."
+  ],
+  [
+    "加载用户信息失败",
+    "Failed to Load User Information"
+  ],
+  [
+    "加载中",
+    "Loading"
+  ],
+  [
     "加载中...",
-    "Loading..."
+    "Chugging..."
+  ],
+  [
+    "剪切",
+    "Cut"
+  ],
+  [
+    "检查 API 端点是否可访问",
+    "Check if the API endpoint is accessible"
+  ],
+  [
+    "检查 GitHub 认证状态",
+    "Check GitHub authentication status"
   ],
   [
     "检查更新",
     "Check for Updates"
+  ],
+  [
+    "检查更新失败",
+    "Failed to check for updates"
   ],
   [
     "检查中...",
@@ -684,6 +1000,14 @@
     "Keyboard shortcuts reference"
   ],
   [
+    "交互式进程查看器",
+    "Interactive process viewer"
+  ],
+  [
+    "搅动中...",
+    "Stirring..."
+  ],
+  [
     "接受",
     "Accept"
   ],
@@ -696,6 +1020,14 @@
     "Accept Plan"
   ],
   [
+    "介绍",
+    "Introduction"
+  ],
+  [
+    "介绍一下您自己",
+    "Introduce Yourself"
+  ],
+  [
     "界面语言",
     "Interface Language"
   ],
@@ -704,28 +1036,20 @@
     "Today"
   ],
   [
-    "计费错误",
-    "Billing Error"
+    "仅批量/列表模式下的进程查看器",
+    "Process viewer in batch/list mode only"
   ],
   [
-    "请检查 Anthropic 账户计费状态",
-    "Check your Anthropic account billing status"
+    "仅允许只读操作（list、get、search）",
+    "Only allow read operations (list, get, search)"
   ],
   [
-    "发生了意外错误。",
-    "An unexpected error occurred."
+    "就快好了...",
+    "Almost..."
   ],
   [
-    "隐藏技术详情",
-    "Hide technical details"
-  ],
-  [
-    "显示技术详情",
-    "Show technical details"
-  ],
-  [
-    "原始错误",
-    "Raw error"
+    "拒绝",
+    "Deny"
   ],
   [
     "聚焦侧边栏",
@@ -740,6 +1064,10 @@
     "Focus Chat Input"
   ],
   [
+    "开始",
+    "Start"
+  ],
+  [
     "开始使用",
     "Get started"
   ],
@@ -748,16 +1076,40 @@
     "Start a chat and get to work."
   ],
   [
+    "考虑中...",
+    "Considering..."
+  ],
+  [
+    "可考虑升级计划以获取更高限额",
+    "Consider upgrading your plan for higher limits"
+  ],
+  [
     "可选",
     "Optional"
+  ],
+  [
+    "可由智能体创建，或编辑工作区中的 labels/config.json。",
+    "Can be created by agent, or edit labels/config.json in workspace."
   ],
   [
     "控制 AI 可以做什么",
     "Control what AI can do"
   ],
   [
+    "控制聊天输入框中文本的输入方式。",
+    "Control the text input method in the chat input box."
+  ],
+  [
+    "快到了...",
+    "Getting there..."
+  ],
+  [
     "快捷键",
     "Shortcuts"
+  ],
+  [
+    "快速且用户友好的 find 替代品",
+    "Fast and user-friendly find alternative"
   ],
   [
     "扩展上述应用默认值的工作区级模式。",
@@ -804,6 +1156,14 @@
     "Execute the plan immediately"
   ],
   [
+    "例如",
+    "e.g."
+  ],
+  [
+    "例如：互联网/科技",
+    "For example: Internet/Technology"
+  ],
+  [
     "例如：上海",
     "e.g., Shanghai"
   ],
@@ -816,16 +1176,16 @@
     "e.g., Chinese"
   ],
   [
-    "例如",
-    "e.g."
-  ],
-  [
     "例如：Asia/Shanghai",
     "e.g., Asia/Shanghai"
   ],
   [
     "连接",
     "Connect"
+  ],
+  [
+    "连接 大模型 时发生意外错误。",
+    "An unexpected error occurred while connecting to Anthropic."
   ],
   [
     "连接 Claude 账户",
@@ -840,6 +1200,18 @@
     "Connect to the OpenAI API"
   ],
   [
+    "连接并显示文件内容",
+    "Concatenate and display file contents"
+  ],
+  [
+    "连接错误",
+    "Connection Error"
+  ],
+  [
+    "连接类型",
+    "Connection Type"
+  ],
+  [
     "连接我的 Craft 空间",
     "Connect to my Craft space"
   ],
@@ -848,8 +1220,8 @@
     "Connect to my Obsidian vault"
   ],
   [
-    "连接类型",
-    "Connection Type"
+    "连接线索...",
+    "Connecting dots..."
   ],
   [
     "连接详情",
@@ -860,8 +1232,16 @@
     "Connecting..."
   ],
   [
+    "联系信息",
+    "Contact Information"
+  ],
+  [
     "链接已复制到剪贴板",
     "Link copied to clipboard"
+  ],
+  [
+    "两次输入的密码不一致",
+    "The two passwords entered do not match"
   ],
   [
     "聊天",
@@ -870,6 +1250,34 @@
   [
     "聊天信息",
     "Chat Info"
+  ],
+  [
+    "列表分列显示",
+    "Columnate lists"
+  ],
+  [
+    "列出 PCI 设备",
+    "List PCI devices"
+  ],
+  [
+    "列出 USB 设备",
+    "List USB devices"
+  ],
+  [
+    "列出块设备",
+    "List block devices"
+  ],
+  [
+    "列出目录内容",
+    "List directory contents"
+  ],
+  [
+    "列出所有文件（包括隐藏文件，ls -la 别名）",
+    "List all including hidden (ls -la alias)"
+  ],
+  [
+    "列出正在运行的进程",
+    "List running processes"
   ],
   [
     "浏览",
@@ -888,28 +1296,76 @@
     "Path copied to clipboard"
   ],
   [
-    "每个标签可以选择性地携带特定类型（文本、数字或枚举）的值。这使标签成为结构化元数据。",
-    "Each label can optionally carry a value of a specific type (text, number, or enum). This makes labels structured metadata."
+    "马上...",
+    "Just a sec..."
   ],
   [
-    "描述",
-    "Description"
+    "马上好...",
+    "On it..."
   ],
   [
-    "描述您想要进行的更改...",
-    "Describe what you'd like to change..."
+    "慢炖中...",
+    "Simmering..."
+  ],
+  [
+    "忙碌中...",
+    "Busy busy..."
   ],
   [
     "枚举",
     "Enum"
   ],
   [
+    "每个标签可选择携带一个具有特定类型（文本、数字或日期）的值，这使标签成为结构化元数据，例如带值3的\"优先级\"或带日期的\"截止\"。",
+    "Each tag can optionally carry a value of a specific type (text, number, or date), making tags structured metadata, such as \"Priority\" with value 3 or \"Deadline\" with a date."
+  ],
+  [
+    "每个标签可以选择性地携带特定类型（文本、数字或枚举）的值。这使标签成为结构化元数据。",
+    "Each label can optionally carry a value of a specific type (text, number, or enum). This makes labels structured metadata."
+  ],
+  [
+    "密码修改成功",
+    "Password Changed Successfully"
+  ],
+  [
+    "密码修改失败",
+    "Password Change Failed"
+  ],
+  [
+    "免费",
+    "Free"
+  ],
+  [
+    "免费安装",
+    "Free Install"
+  ],
+  [
+    "描述",
+    "Description"
+  ],
+  [
+    "描述您的更新",
+    "Describe Your Update"
+  ],
+  [
+    "描述您想要进行的更改...",
+    "Describe what you'd like to change..."
+  ],
+  [
     "名称",
     "Name"
   ],
   [
+    "明天, 下周五...",
+    "Tomorrow, next Friday..."
+  ],
+  [
     "模板",
     "Template"
+  ],
+  [
+    "模式",
+    "Pattern"
   ],
   [
     "模式循环",
@@ -922,6 +1378,14 @@
   [
     "模型、模式切换、高级设置",
     "Model, mode switching, advanced settings"
+  ],
+  [
+    "模型不支持工具",
+    "Model Does Not Support Tools"
+  ],
+  [
+    "模型无效",
+    "Invalid Model"
   ],
   [
     "默认",
@@ -952,12 +1416,20 @@
     "Default Location"
   ],
   [
-    "你想做什么？",
-    "What would you like to do?"
+    "男",
+    "Male"
   ],
   [
-    "你想连接什么？",
-    "What would you like to connect?"
+    "内置应用",
+    "Built-in Apps"
+  ],
+  [
+    "嗯...",
+    "Hmm..."
+  ],
+  [
+    "你想创建什么标签？",
+    "What label would you like to create?"
   ],
   [
     "你想连接哪个 API？",
@@ -972,28 +1444,124 @@
     "What folder would you like to connect?"
   ],
   [
-    "你想创建什么标签？",
-    "What label would you like to create?"
+    "你想连接什么？",
+    "What would you like to connect?"
+  ],
+  [
+    "你想做什么？",
+    "What would you like to do?"
+  ],
+  [
+    "昵称",
+    "Nickname"
+  ],
+  [
+    "您的 Anthropic API 密钥被拒绝，可能无效或已过期。",
+    "Your Anthropic API key was rejected. It may be invalid or expired."
+  ],
+  [
+    "您的 API 密钥或 OAuth 令牌缺失或无效。",
+    "Your API key or OAuth token is missing or invalid."
+  ],
+  [
+    "您的 Claude Max 会话已过期。",
+    "Your Claude Max session has expired."
   ],
   [
     "您的城市，用于本地信息和上下文",
     "Your city, for local information and context"
   ],
   [
+    "您的登录用户名（不可更改）",
+    "Your Login Username (Cannot Be Changed)"
+  ],
+  [
     "您的个人偏好",
     "Your personal preferences"
+  ],
+  [
+    "您的工作和专业背景",
+    "Your Work and Professional Background"
+  ],
+  [
+    "您的工作区连接需要重新认证。",
+    "Your workspace connection needs to be re-authenticated."
+  ],
+  [
+    "您的工作区认证已过期，请重新认证工作区。",
+    "Your workspace authentication has expired. Please re-authenticate the workspace."
   ],
   [
     "您的国家，用于地区格式和上下文",
     "Your country, for regional format and context"
   ],
   [
+    "您的基本个人信息",
+    "Your Basic Personal Information"
+  ],
+  [
+    "您的联系方式",
+    "Your Contact Information"
+  ],
+  [
+    "您的手机号（需验证后修改）",
+    "Your Phone Number (Requires Verification to Modify)"
+  ],
+  [
     "您的姓名",
     "Your name"
   ],
   [
+    "您的性别",
+    "Your Gender"
+  ],
+  [
+    "您的邮箱地址（需验证后修改）",
+    "Your Email Address (Requires Verification to Modify)"
+  ],
+  [
+    "您的账号未绑定手机号",
+    "Your Account Is Not Linked to a Phone Number"
+  ],
+  [
+    "您的账户存在计费问题，请检查 Anthropic 账户状态。",
+    "Your account has a billing issue. Check your Anthropic account status."
+  ],
+  [
+    "您的账户存在计费问题。",
+    "Your account has a billing issue."
+  ],
+  [
+    "您可以选择其他工作区，或选择安装方式：",
+    "You can select another workspace or choose an installation method:"
+  ],
+  [
+    "您所从事的行业",
+    "Your Industry"
+  ],
+  [
+    "您所在的地理位置",
+    "Your Geographic Location"
+  ],
+  [
+    "您想让我修改什么？",
+    "What would you like me to change?"
+  ],
+  [
+    "凝思中...",
+    "Contemplating..."
+  ],
+  [
+    "女",
+    "Female"
+  ],
+  [
     "配置状态",
     "Configuration Status"
+  ],
+  [
+    "烹饪中...",
+    "Cooking..."
   ],
   [
     "匹配模式",
@@ -1004,8 +1572,32 @@
     "Preferences"
   ],
   [
+    "拼写检查",
+    "Spell Check"
+  ],
+  [
+    "频率限制会在短时间内重置",
+    "Rate limits reset after a short period"
+  ],
+  [
+    "凭证无效",
+    "Invalid Credentials"
+  ],
+  [
+    "其他",
+    "Other"
+  ],
+  [
+    "其他人看到的名称",
+    "Name visible to others"
+  ],
+  [
     "启动此 MCP 服务器的本地命令",
     "Local command to start this MCP server"
+  ],
+  [
+    "启动中...",
+    "Spinning up..."
   ],
   [
     "启用 stdio 子进程服务器",
@@ -1020,8 +1612,20 @@
     "Light"
   ],
   [
+    "切换 API 设置",
+    "Switch API setup"
+  ],
+  [
     "切换侧边栏",
     "Toggle sidebar"
+  ],
+  [
+    "切换开发者工具",
+    "Toggle Developer Tools"
+  ],
+  [
+    "切换目录（仅影响 shell 会话）",
+    "Change directory (affects shell session only)"
   ],
   [
     "清除",
@@ -1032,16 +1636,92 @@
     "Clear Search"
   ],
   [
+    "请尝试发送新消息",
+    "Try sending a new message"
+  ],
+  [
+    "请尝试其他关键词",
+    "Please try other keywords"
+  ],
+  [
+    "请根据该技能的说明开始处理当前工作。",
+    "Please start working on the current task according to the skill description."
+  ],
+  [
     "请计算以确认：",
     "Please calculate to confirm:"
+  ],
+  [
+    "请检查 Anthropic 账户计费状态",
+    "Check your Anthropic account billing status"
+  ],
+  [
+    "请检查网络连接",
+    "Check your network connection"
   ],
   [
     "请求编辑",
     "Request Edit"
   ],
   [
+    "请求过于频繁，请稍后再试。",
+    "Too many requests. Please wait a moment."
+  ],
+  [
+    "请求频率限制",
+    "Rate Limited"
+  ],
+  [
+    "请求无效。",
+    "The request was invalid."
+  ],
+  [
+    "请确认网络连接正常",
+    "Verify your network connection is active"
+  ],
+  [
+    "请稍等...",
+    "Bear with me..."
+  ],
+  [
+    "请稍候...",
+    "Hold on..."
+  ],
+  [
+    "请输入昵称",
+    "Please enter nickname"
+  ],
+  [
+    "请输入新密码",
+    "Please enter new password"
+  ],
+  [
+    "请输入新密码（至少 6 位）",
+    "Please enter new password (at least 6 characters)"
+  ],
+  [
+    "请输入验证码",
+    "Please enter verification code"
+  ],
+  [
     "请先备份重要数据！",
     "Please backup important data first!"
+  ],
+  [
+    "请选择地区",
+    "Please select region"
+  ],
+  [
+    "请选择图片文件",
+    "Please select an image file"
+  ],
+  [
+    "请再次输入新密码",
+    "Please enter the new password again"
+  ],
+  [
+    "请在设置中检查 API 密钥",
+    "Check your API key in settings"
   ],
   [
     "请在设置中添加数据源。",
@@ -1056,6 +1736,10 @@
     "Unmark"
   ],
   [
+    "全部",
+    "All"
+  ],
+  [
     "全部文档",
     "All Documents"
   ],
@@ -1066,6 +1750,10 @@
   [
     "全屏查看",
     "Full Screen View"
+  ],
+  [
+    "全选",
+    "Select All"
   ],
   [
     "权限",
@@ -1080,16 +1768,52 @@
     "Permission Mode"
   ],
   [
+    "确保 API 密钥未被撤销",
+    "Ensure your API key has not been revoked"
+  ],
+  [
+    "确定文件类型",
+    "Determine file type"
+  ],
+  [
+    "确认",
+    "Confirm"
+  ],
+  [
+    "确认新密码",
+    "Confirm New Password"
+  ],
+  [
+    "确认修改",
+    "Confirm Changes"
+  ],
+  [
     "让您的想法与实现它们的工具相遇。",
     "Where your ideas meet the tools to make them happen."
   ],
   [
-    "任何您希望 CreatorFlow 了解的额外信息...",
-    "Any additional information you'd like CreatorFlow to know..."
+    "让我看看...",
+    "Let me see..."
+  ],
+  [
+    "认证失败",
+    "Authentication Failed"
+  ],
+  [
+    "任何您希望智小芽了解的额外信息...",
+    "Any additional information you'd like Zhixiaoya to know..."
+  ],
+  [
+    "任务输出",
+    "Task Output"
   ],
   [
     "日常任务的最佳选择",
     "Best for everyday tasks"
+  ],
+  [
+    "如果问题持续请报告此问题",
+    "Report this issue if it persists"
   ],
   [
     "筛选对话",
@@ -1124,6 +1848,14 @@
     "Failed to delete data source"
   ],
   [
+    "上传失败",
+    "Upload Failed"
+  ],
+  [
+    "上传头像",
+    "Upload Avatar"
+  ],
+  [
     "上传中...",
     "Uploading..."
   ],
@@ -1140,16 +1872,20 @@
     "Context used"
   ],
   [
+    "上一级",
+    "Parent Level"
+  ],
+  [
+    "稍等片刻...",
+    "One moment..."
+  ],
+  [
+    "稍候...",
+    "Hang tight..."
+  ],
+  [
     "设置",
     "Settings"
-  ],
-  [
-    "请在设置中检查 API 密钥",
-    "Check your API key in settings"
-  ],
-  [
-    "确保 API 密钥未被撤销",
-    "Ensure your API key has not been revoked"
   ],
   [
     "设置 API 连接",
@@ -1164,12 +1900,24 @@
     "Deep Thinking"
   ],
   [
+    "深入思考...",
+    "Deep in thought..."
+  ],
+  [
     "深色",
     "Dark"
   ],
   [
+    "生日",
+    "Birthday"
+  ],
+  [
     "时区",
     "Time zone"
+  ],
+  [
+    "使用",
+    "Use"
   ],
   [
     "使用 @ 来引用技能和文件",
@@ -1180,8 +1928,32 @@
     "Sign in with Claude"
   ],
   [
+    "使用 Enter 换行",
+    "Use Enter for new line"
+  ],
+  [
+    "使用 Shift+Enter 换行",
+    "Use Shift+Enter for new line"
+  ],
+  [
+    "使用该技能新建一个对话",
+    "Start a new conversation with this skill"
+  ],
+  [
+    "使用模式搜索文件内容",
+    "Search file contents with patterns"
+  ],
+  [
+    "使用默认应用打开",
+    "Open with default application"
+  ],
+  [
     "使用您的 Claude 订阅来支持多智能体工作流。",
     "Use your Claude subscription to power multi-agent workflows."
+  ],
+  [
+    "使用数据库按名称查找文件",
+    "Find files by name using database"
   ],
   [
     "使用通过",
@@ -1192,6 +1964,22 @@
     "Use existing token"
   ],
   [
+    "始终允许",
+    "Always Allow"
+  ],
+  [
+    "市场",
+    "Marketplace"
+  ],
+  [
+    "市场应用",
+    "Marketplace Apps"
+  ],
+  [
+    "市场暂无内容",
+    "No Content Available in Marketplace"
+  ],
+  [
     "视图",
     "View"
   ],
@@ -1200,8 +1988,28 @@
     "Works best for complex, longer plans"
   ],
   [
+    "手机号",
+    "Phone Number"
+  ],
+  [
     "授权码",
     "Authorization code"
+  ],
+  [
+    "输出环境变量值",
+    "Echo environment variable values"
+  ],
+  [
+    "输出文件结尾部分",
+    "Output last part of files"
+  ],
+  [
+    "输出文件开头部分",
+    "Output first part of files"
+  ],
+  [
+    "输入",
+    "Input"
   ],
   [
     "输入答案",
@@ -1228,8 +2036,32 @@
     "Enter your API key. Optionally configure OpenRouter, Ollama, or custom endpoints compatible with the API."
   ],
   [
+    "输入时为拼写错误的单词添加下划线。",
+    "Underline misspelled words while typing."
+  ],
+  [
     "输入授权码",
     "Enter Authorization Code"
+  ],
+  [
+    "输入数字...",
+    "Enter number..."
+  ],
+  [
+    "输入消息时自动将首字母大写。",
+    "Automatically capitalize the first letter when typing messages."
+  ],
+  [
+    "输入行为",
+    "Input Behavior"
+  ],
+  [
+    "输入值...",
+    "Enter value..."
+  ],
+  [
+    "数据策略限制",
+    "Data Policy Restriction"
   ],
   [
     "数据源",
@@ -1248,12 +2080,24 @@
     "Number"
   ],
   [
+    "刷新",
+    "Refresh"
+  ],
+  [
     "刷新标题失败",
     "Failed to refresh title"
   ],
   [
     "思考级别",
     "Thinking level"
+  ],
+  [
+    "思考中",
+    "Thinking"
+  ],
+  [
+    "思考中...",
+    "Thinking..."
   ],
   [
     "搜索",
@@ -1272,16 +2116,32 @@
     "Search rules..."
   ],
   [
+    "搜索技能和应用...",
+    "Search Skills and Apps..."
+  ],
+  [
     "搜索命令...",
     "Search commands..."
+  ],
+  [
+    "搜索模式...",
+    "Search patterns..."
   ],
   [
     "搜索数据源...",
     "Search data sources..."
   ],
   [
-    "搜索模式...",
-    "Search patterns..."
+    "缩小",
+    "Zoom Out"
+  ],
+  [
+    "所选模型不支持工具/函数调用，而智小芽需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。",
+    "The selected model does not support tool/function calling, which is required for Zhixiaoya. Please choose a model with tool support (e.g., Claude, GPT-4, Gemini)."
+  ],
+  [
+    "所选目录不在当前工作区根目录下",
+    "Selected Directory Is Not Under Current Workspace Root Directory"
   ],
   [
     "所有对话",
@@ -1304,8 +2164,20 @@
     "All credentials and API keys"
   ],
   [
+    "所在地区",
+    "Region"
+  ],
+  [
     "探索",
     "Explore"
+  ],
+  [
+    "探索并安装技能和应用以增强您的智能体能力。",
+    "Explore and install skills and apps to enhance your agent's capabilities."
+  ],
+  [
+    "探索模式",
+    "Explore Mode"
   ],
   [
     "探索模式的访问规则",
@@ -1324,16 +2196,40 @@
     "Allowed app-level patterns in explore mode. Commands not in this list will be blocked."
   ],
   [
-    "探索模式中允许的命令",
-    "Commands allowed in Explore mode"
-  ],
-  [
     "探索模式允许 list 操作",
     "Allow list operations in Explore mode"
   ],
   [
+    "探索模式中允许的命令",
+    "Commands allowed in Explore mode"
+  ],
+  [
+    "套接字统计",
+    "Socket statistics"
+  ],
+  [
+    "添加“过期”视图（7 天未活跃）",
+    "Add a 'Stale' view for sessions inactive > 7 days"
+  ],
+  [
+    "添加“缺陷”标签（红色）",
+    "Add a 'Bug' label with red color"
+  ],
+  [
+    "添加“阻塞”状态",
+    "Add a 'Blocked' status"
+  ],
+  [
     "添加备注...",
     "Add notes..."
+  ],
+  [
+    "添加编码风格偏好",
+    "Add coding style preferences"
+  ],
+  [
+    "添加错误处理指南",
+    "Add error handling guidelines"
   ],
   [
     "添加附件",
@@ -1352,36 +2248,16 @@
     "Add Skill"
   ],
   [
+    "添加检测 GitHub Issue 链接的规则",
+    "Add a rule to detect GitHub issue URLs"
+  ],
+  [
     "添加数据源",
     "Add Data Source"
   ],
   [
     "添加新标签",
     "Add New Label"
-  ],
-  [
-    "添加错误处理指南",
-    "Add error handling guidelines"
-  ],
-  [
-    "添加“阻塞”状态",
-    "Add a 'Blocked' status"
-  ],
-  [
-    "添加“缺陷”标签（红色）",
-    "Add a 'Bug' label with red color"
-  ],
-  [
-    "添加检测 GitHub Issue 链接的规则",
-    "Add a rule to detect GitHub issue URLs"
-  ],
-  [
-    "添加“过期”视图（7 天未活跃）",
-    "Add a 'Stale' view for sessions inactive > 7 days"
-  ],
-  [
-    "添加编码风格偏好",
-    "Add coding style preferences"
   ],
   [
     "条规则",
@@ -1408,8 +2284,40 @@
     "Connect via API Settings"
   ],
   [
+    "通过手机验证码修改登录密码",
+    "Change login password via mobile verification code"
+  ],
+  [
+    "通用 AI 助手工作区，适合各种任务场景",
+    "General AI Assistant Workspace, suitable for various task scenarios"
+  ],
+  [
+    "通用读取操作",
+    "Generic read operations"
+  ],
+  [
+    "通用工作区",
+    "General Workspace"
+  ],
+  [
+    "通用获取/读取操作",
+    "Generic get/read operations"
+  ],
+  [
+    "通用列表操作",
+    "Generic list operations"
+  ],
+  [
     "通知",
     "Notifications"
+  ],
+  [
+    "统计文件的行数、单词数、字节数",
+    "Count lines, words, bytes in files"
+  ],
+  [
+    "头像",
+    "Avatar"
   ],
   [
     "图标",
@@ -1424,6 +2332,22 @@
     "Recommended workflow: Let the agent investigate in exploration mode first, review the proposed plan, then execute with confidence."
   ],
   [
+    "推理中...",
+    "Reasoning..."
+  ],
+  [
+    "退出当前账号",
+    "Sign Out of Current Account"
+  ],
+  [
+    "退出登录",
+    "Log Out"
+  ],
+  [
+    "退出智小芽",
+    "Exit Zhixiaoya"
+  ],
+  [
     "外观",
     "Appearance"
   ],
@@ -1436,12 +2360,32 @@
     "Fully autonomous execution"
   ],
   [
+    "网络接口配置（只读）",
+    "Network interface configuration (read)"
+  ],
+  [
+    "网络搜索",
+    "Web Search"
+  ],
+  [
+    "网络统计",
+    "Network statistics"
+  ],
+  [
+    "网络诊断工具",
+    "Network diagnostic tool"
+  ],
+  [
     "为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需,尽在此处!",
     "Give your agents the UX they deserve. Connect any service. Organize your sessions. Everything you need, right here!"
   ],
   [
     "为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需，尽在此处！",
     "Provide the user experience your agents deserve. Connect any service. Organize your conversations. Everything you need, right here!"
+  ],
+  [
+    "未绑定",
+    "Not Bound"
   ],
   [
     "未测试",
@@ -1464,6 +2408,10 @@
     "No Skills Configured"
   ],
   [
+    "未配置权限",
+    "No permissions configured"
+  ],
+  [
     "未配置数据源",
     "No Data Sources Configured"
   ],
@@ -1476,12 +2424,12 @@
     "No custom permissions configured"
   ],
   [
-    "未配置权限",
-    "No permissions configured"
-  ],
-  [
     "未配置自动应用规则",
     "No auto-apply rules configured"
+  ],
+  [
+    "未设置",
+    "Not Set"
   ],
   [
     "未设置（使用会话文件夹）",
@@ -1504,6 +2452,10 @@
     "No folder selected"
   ],
   [
+    "未找到",
+    "Not Found"
+  ],
+  [
     "未找到对话",
     "Conversation not found"
   ],
@@ -1524,6 +2476,10 @@
     "Data source not found"
   ],
   [
+    "未找到所选模型，请在设置中检查模型配置。",
+    "The selected model was not found. Please check your model configuration in settings."
+  ],
+  [
     "未找到文件夹",
     "No folders found"
   ],
@@ -1532,40 +2488,92 @@
     "Unknown error"
   ],
   [
-    "连接 大模型 时发生意外错误。",
-    "An unexpected error occurred while connecting to Anthropic."
-  ],
-  [
-    "这可能是临时问题",
-    "This may be a temporary issue"
-  ],
-  [
-    "请检查网络连接",
-    "Check your network connection"
+    "未知类型",
+    "Unknown Type"
   ],
   [
     "位置",
     "Location"
   ],
   [
-    "文档",
-    "Documents"
-  ],
-  [
     "文本",
     "Text"
+  ],
+  [
+    "文档",
+    "Documents"
   ],
   [
     "文件",
     "Files"
   ],
   [
+    "文件大小不能超过 5MB",
+    "File Size Cannot Exceed 5MB"
+  ],
+  [
+    "文件过大，仅显示部分内容",
+    "File Too Large, Showing Partial Content Only"
+  ],
+  [
+    "文件和命令的模糊查找器",
+    "Fuzzy finder for files and commands"
+  ],
+  [
     "文件夹",
     "Folder"
   ],
   [
+    "文件夹为空",
+    "Folder Is Empty"
+  ],
+  [
     "我的工作区",
     "My workspace"
+  ],
+  [
+    "无法连接到 API 服务器，请检查网络连接。",
+    "Unable to connect to the API server. Check your internet connection."
+  ],
+  [
+    "无法连接到 Craft MCP 服务器，请检查网络连接。",
+    "Cannot connect to the Craft MCP server. Check your network connection."
+  ],
+  [
+    "无法连接到服务器，请检查网络连接。",
+    "Could not connect to the server. Check your internet connection."
+  ],
+  [
+    "无法通过 Anthropic 认证，您的 API 密钥可能无效或已过期。",
+    "Unable to authenticate with Anthropic. Your API key may be invalid or expired."
+  ],
+  [
+    "无法预览此视频",
+    "Unable to preview this video"
+  ],
+  [
+    "无法预览此图片",
+    "Unable to preview this image"
+  ],
+  [
+    "无法预览此文件",
+    "Unable to preview this file"
+  ],
+  [
+    "无法预览此文件类型",
+    "Unable to preview this file type"
+  ],
+  [
+    "无法预览此音频",
+    "Unable to preview this audio"
+  ],
+  [
+    "无搜索结果",
+    "No search results"
+  ],
+  [
+    "无效请求",
+    "Invalid Request"
   ],
   [
     "无影响 — 所有工具已自动批准",
@@ -1576,8 +2584,76 @@
     "System Font"
   ],
   [
+    "下一步",
+    "Next"
+  ],
+  [
+    "显示 CPU 架构信息",
+    "Display CPU architecture information"
+  ],
+  [
     "显示此对话框",
     "Show this dialog"
+  ],
+  [
+    "显示当前工作区的所有标签，可通过嵌套形成分组。",
+    "Display all tags in the current workspace, which can be grouped through nesting."
+  ],
+  [
+    "显示技术详情",
+    "Show technical details"
+  ],
+  [
+    "显示命令帮助",
+    "Display command help"
+  ],
+  [
+    "显示命令帮助（短选项）",
+    "Display command help (short flag)"
+  ],
+  [
+    "显示命令类型信息",
+    "Display information about command type"
+  ],
+  [
+    "显示目录树结构",
+    "Display directory tree structure"
+  ],
+  [
+    "显示内存使用情况",
+    "Display memory usage"
+  ],
+  [
+    "显示内存信息",
+    "Display memory information"
+  ],
+  [
+    "显示手册页",
+    "Display manual pages"
+  ],
+  [
+    "显示文件状态和元数据",
+    "Display file status and metadata"
+  ],
+  [
+    "项",
+    "Item"
+  ],
+  [
+    "消息发送",
+    "Send Message"
+  ],
+  [
+    "写入",
+    "Write"
+  ],
+  [
+    "新",
+    "New"
+  ],
+  [
+    "新对话",
+    "New Conversation"
   ],
   [
     "新建",
@@ -1596,6 +2672,10 @@
     "New chat"
   ],
   [
+    "新建文件夹",
+    "Create Folder"
+  ],
+  [
     "新聊天的 AI 模型",
     "AI model for new chats"
   ],
@@ -1604,12 +2684,76 @@
     "Reasoning depth for new chats"
   ],
   [
+    "新密码",
+    "New Password"
+  ],
+  [
+    "新密码长度不能少于 6 位",
+    "New password must be at least 6 characters"
+  ],
+  [
+    "新文件夹",
+    "New Folder"
+  ],
+  [
+    "行业",
+    "Industry"
+  ],
+  [
     "姓名",
     "Name"
   ],
   [
+    "性别",
+    "Gender"
+  ],
+  [
+    "修改密码",
+    "Change Password"
+  ],
+  [
+    "修改时间",
+    "Modified Time"
+  ],
+  [
+    "虚拟内存统计",
+    "Virtual memory statistics"
+  ],
+  [
+    "需要 Windows 设置",
+    "Windows Setup Required"
+  ],
+  [
+    "需要付款",
+    "Payment Required"
+  ],
+  [
+    "需要工作区认证",
+    "Workspace Authentication Required"
+  ],
+  [
+    "需要权限",
+    "Permission Required"
+  ],
+  [
     "需要认证",
     "Authentication Required"
+  ],
+  [
+    "需要设置",
+    "Setup Required"
+  ],
+  [
+    "旋转",
+    "Rotate"
+  ],
+  [
+    "旋转 90°",
+    "Rotate 90°"
+  ],
+  [
+    "选择发送消息的方式。",
+    "Select the way to send messages."
   ],
   [
     "选择工作目录",
@@ -1620,16 +2764,36 @@
     "Select Workspace"
   ],
   [
+    "选择您的出生日期",
+    "Select your date of birth"
+  ],
+  [
     "选择您希望如何为 AI 智能体提供支持。",
     "Choose how you want to power your AI agent."
+  ],
+  [
+    "选择其他工作区",
+    "Select Another Workspace"
   ],
   [
     "选择任意文件夹作为工作区。",
     "Select any folder as a workspace."
   ],
   [
+    "选择日期",
+    "Select Date"
+  ],
+  [
+    "选择省市区",
+    "Select Province/City/District"
+  ],
+  [
     "选择使用 Shift+Tab 循环的模式",
     "Select mode to cycle through with Shift+Tab"
+  ],
+  [
+    "选择适合你的工作流的应用模板。",
+    "Select an application template that suits your workflow."
   ],
   [
     "选择数据源",
@@ -1644,6 +2808,10 @@
     "Select folder..."
   ],
   [
+    "选择文件以预览",
+    "Select a file to preview"
+  ],
+  [
     "选择现有文件夹",
     "Select Existing Folder"
   ],
@@ -1656,6 +2824,22 @@
     "Select a storage location for the new workspace."
   ],
   [
+    "选择一个对话开始",
+    "Select a conversation to start"
+  ],
+  [
+    "选择一个技能开始对话",
+    "Select a skill to start conversation"
+  ],
+  [
+    "询问",
+    "Ask"
+  ],
+  [
+    "询问模式",
+    "Ask Mode"
+  ],
+  [
     "颜色",
     "Color"
   ],
@@ -1664,16 +2848,32 @@
     "Color Theme"
   ],
   [
+    "验证码",
+    "Verification Code"
+  ],
+  [
     "验证中...",
     "Verifying..."
+  ],
+  [
+    "要让我学会做什么？",
+    "What should I learn to do?"
+  ],
+  [
+    "页",
+    "Page"
+  ],
+  [
+    "一个红色的“缺陷”标签",
+    "A red 'Bug' label"
   ],
   [
     "一切就绪！",
     "All set!"
   ],
   [
-    "一个红色的“缺陷”标签",
-    "A red 'Bug' label"
+    "依赖技能",
+    "Dependent Skills"
   ],
   [
     "移除",
@@ -1686,6 +2886,18 @@
   [
     "移动到下一个区域",
     "Move to Next Section"
+  ],
+  [
+    "已安装",
+    "Installed"
+  ],
+  [
+    "已安装版本",
+    "Installed Version"
+  ],
+  [
+    "已安装到工作区",
+    "Installed to Workspace"
   ],
   [
     "已标记",
@@ -1716,6 +2928,10 @@
     "Copied to Clipboard"
   ],
   [
+    "已剪切",
+    "Cut"
+  ],
+  [
     "已禁用",
     "Disabled"
   ],
@@ -1726,6 +2942,14 @@
   [
     "已删除数据源",
     "Data source deleted"
+  ],
+  [
+    "已是最新版本",
+    "You're up to date"
+  ],
+  [
+    "已搜索标题和消息内容",
+    "Searched Titles and Message Content"
   ],
   [
     "已添加到标记列表",
@@ -1744,8 +2968,16 @@
     "The following:"
   ],
   [
+    "隐藏技术详情",
+    "Hide technical details"
+  ],
+  [
     "应用",
     "App"
+  ],
+  [
+    "应用将自动重启。",
+    "The app will restart automatically."
   ],
   [
     "应用设置",
@@ -1756,8 +2988,24 @@
     "Delete Permanently"
   ],
   [
+    "用户名",
+    "Username"
+  ],
+  [
+    "用户资料",
+    "User Profile"
+  ],
+  [
+    "用于发送消息的键盘快捷键",
+    "Keyboard shortcut for sending messages"
+  ],
+  [
     "用于复杂问题的扩展推理",
     "Extended reasoning for complex problems"
+  ],
+  [
+    "邮箱",
+    "Email"
   ],
   [
     "右键点击",
@@ -1768,16 +3016,40 @@
     "Conversations with agents will appear here. Start a new conversation."
   ],
   [
+    "与助手的对话会显示在这里。开始新对话吧。",
+    "Conversations with the assistant will appear here. Start a new conversation."
+  ],
+  [
+    "预热中...",
+    "Warming up..."
+  ],
+  [
     "元数据",
     "Metadata"
+  ],
+  [
+    "原始错误",
+    "Raw error"
+  ],
+  [
+    "允许",
+    "Allow"
   ],
   [
     "允许 git fetch 命令",
     "Allow git fetch command"
   ],
   [
-    "要让我学会做什么？",
-    "What should I learn to do?"
+    "运算中...",
+    "Crunching..."
+  ],
+  [
+    "运转中...",
+    "Whirring..."
+  ],
+  [
+    "酝造中...",
+    "Brewing..."
   ],
   [
     "在 .creator-flow 文件夹下",
@@ -1790,10 +3062,6 @@
   [
     "在访达中查看",
     "Show in Finder"
-  ],
-  [
-    "在探索模式中允许运行 make build",
-    "Allow running 'make build' in Explore mode"
   ],
   [
     "在工作区中创建 permissions.json 文件以添加自定义规则。",
@@ -1812,8 +3080,16 @@
     "Open in browser"
   ],
   [
+    "在目录层次结构中搜索文件",
+    "Search for files in directory hierarchy"
+  ],
+  [
     "在区域之间移动（在列表中）",
     "Move between sections (in list)"
+  ],
+  [
+    "在探索模式中允许运行 make build",
+    "Allow running 'make build' in Explore mode"
   ],
   [
     "在线分享",
@@ -1824,12 +3100,60 @@
     "Open in new window"
   ],
   [
+    "在新窗口中打开",
+    "Open in New Window"
+  ],
+  [
+    "在这里写下您的个人简介...",
+    "Write your bio here..."
+  ],
+  [
+    "暂无标记的对话",
+    "No tagged conversations"
+  ],
+  [
     "暂无对话",
     "No conversations yet"
   ],
   [
+    "暂无工作区",
+    "No workspaces"
+  ],
+  [
+    "暂无描述",
+    "No description"
+  ],
+  [
+    "暂无配置的技能",
+    "No skills configured"
+  ],
+  [
+    "暂无配置的数据源",
+    "No data sources configured"
+  ],
+  [
+    "暂无已配置的标签。",
+    "No tags configured yet."
+  ],
+  [
+    "粘贴",
+    "Paste"
+  ],
+  [
     "展开文件夹",
     "Expand folder"
+  ],
+  [
+    "长格式列表（ls -l 别名）",
+    "Long listing (ls -l alias)"
+  ],
+  [
+    "账号安全",
+    "Account Security"
+  ],
+  [
+    "账号操作",
+    "Account Operations"
   ],
   [
     "找到现有的 Claude 令牌。使用它或使用其他账户登录。",
@@ -1844,12 +3168,36 @@
     "This will"
   ],
   [
+    "这可能会导致文件管理混乱，建议选择工作区内的目录。",
+    "This may cause file management confusion. It is recommended to select a directory within the workspace."
+  ],
+  [
+    "这可能是临时问题",
+    "This may be a temporary issue"
+  ],
+  [
+    "斟酌中...",
+    "Deliberating..."
+  ],
+  [
+    "正在安装更新...",
+    "Installing update..."
+  ],
+  [
     "正在保存您的配置...",
     "Saving your configuration..."
   ],
   [
+    "正在处理...",
+    "Working on it..."
+  ],
+  [
     "正在加载会话...",
     "Loading session..."
+  ],
+  [
+    "正在启动...",
+    "Starting..."
   ],
   [
     "正在设置...",
@@ -1860,6 +3208,26 @@
     "Streaming..."
   ],
   [
+    "正在响应...",
+    "Responding..."
+  ],
+  [
+    "正在准备响应...",
+    "Preparing response..."
+  ],
+  [
+    "执行",
+    "Execute"
+  ],
+  [
+    "执行模式",
+    "Execution Mode"
+  ],
+  [
+    "职业信息",
+    "Professional Information"
+  ],
+  [
     "只读，不允许更改",
     "Read-only, changes not allowed"
   ],
@@ -1868,16 +3236,32 @@
     "Instructions"
   ],
   [
-    "注释",
-    "Comment"
-  ],
-  [
     "智能体的上下文和指南",
     "Agent context and guidelines"
   ],
   [
     "智能体树",
     "Agent tree"
+  ],
+  [
+    "智小芽响应的首选语言",
+    "Preferred language for Zhixiaoya responses"
+  ],
+  [
+    "智小芽应如何称呼您",
+    "How should Zhixiaoya address you"
+  ],
+  [
+    "终端",
+    "Terminal"
+  ],
+  [
+    "终端（使用 sudo 运行）：",
+    "Terminal (run with sudo):"
+  ],
+  [
+    "终止 Shell",
+    "Kill Shell"
   ],
   [
     "重命名",
@@ -1900,8 +3284,28 @@
     "Rename Chat"
   ],
   [
+    "重启",
+    "Restart"
+  ],
+  [
     "重启并更新",
     "Restart and Update"
+  ],
+  [
+    "重启以应用更新。",
+    "Restart to apply the update."
+  ],
+  [
+    "重试",
+    "Retry"
+  ],
+  [
+    "重新安装",
+    "Reinstall"
+  ],
+  [
+    "重新认证",
+    "Re-authenticate"
   ],
   [
     "重新生成标题",
@@ -1912,6 +3316,10 @@
     "Reset"
   ],
   [
+    "重置缩放",
+    "Reset Zoom"
+  ],
+  [
     "重置应用",
     "Reset App"
   ],
@@ -1920,16 +3328,52 @@
     "Reset App..."
   ],
   [
+    "重做",
+    "Redo"
+  ],
+  [
     "主题模式",
     "Theme Mode"
+  ],
+  [
+    "注释",
+    "Comment"
+  ],
+  [
+    "转动中...",
+    "Trucking..."
+  ],
+  [
+    "转换或删除字符",
+    "Translate or delete characters"
   ],
   [
     "状态",
     "Status"
   ],
   [
+    "追踪到主机的路径",
+    "Trace path to host"
+  ],
+  [
+    "追踪到主机的数据包路由",
+    "Trace packet route to host"
+  ],
+  [
+    "准备中...",
+    "Preparing..."
+  ],
+  [
     "桌面通知",
     "Desktop Notifications"
+  ],
+  [
+    "子智能体",
+    "Agent"
+  ],
+  [
+    "仔细考量...",
+    "Mulling it over..."
   ],
   [
     "字体",
@@ -1944,6 +3388,10 @@
     "Auto"
   ],
   [
+    "自动大写",
+    "Auto-Capitalize"
+  ],
+  [
     "自动批准 — 允许的工具无需确认",
     "Auto-approve — Allowed tools without confirmation"
   ],
@@ -1952,12 +3400,20 @@
     "Auto-apply Rules"
   ],
   [
+    "自动应用规则会在消息匹配正则时自动打标签，例如粘贴 Linear Issue 链接可自动标注项目名与 Issue ID，无需手动。",
+    "Auto-apply rules will automatically tag messages when they match regex patterns. For example, pasting a Linear Issue link can automatically tag the project name and Issue ID without manual input."
+  ],
+  [
     "自动应用规则在消息匹配正则模式时自动分配标签。",
     "Auto-apply rules automatically assign tags when messages match regex patterns."
   ],
   [
-    "自由格式的上下文，帮助 CreatorFlow 了解您的偏好",
-    "Free-form context to help CreatorFlow understand your preferences"
+    "自由格式的上下文，帮助智小芽了解您的偏好",
+    "Free-form context to help Zhixiaoya understand your preferences"
+  ],
+  [
+    "最大化",
+    "Maximize"
   ],
   [
     "最快的快速回答",
@@ -1980,12 +3436,36 @@
     "Best for everyday tasks"
   ],
   [
+    "最小化",
+    "Minimize"
+  ],
+  [
+    "最新版本",
+    "Latest Version"
+  ],
+  [
     "昨天",
     "Yesterday"
   ],
   [
+    "琢磨中...",
+    "Cogitating..."
+  ],
+  [
+    "Ack - 程序员专用的类 grep 工具",
+    "Ack - grep-like tool for programmers"
+  ],
+  [
     "AI 代理连接语言模型的方式",
     "How AI agents connect to language models"
+  ],
+  [
+    "AI 服务出现问题，所有凭证均有效。请稍后再试。",
+    "The AI service is experiencing issues. All credentials appear valid. Try again in a moment."
+  ],
+  [
+    "AI 服务暂时不可用。",
+    "The AI service is temporarily unavailable."
   ],
   [
     "AI 响应语言",
@@ -2004,6 +3484,10 @@
     "API Key"
   ],
   [
+    "API 密钥无效",
+    "Invalid API Key"
+  ],
+  [
     "API 配置",
     "API Configuration"
   ],
@@ -2016,6 +3500,26 @@
     "API Key — Anthropic, OpenRouter, or Compatible API"
   ],
   [
+    "Bun 版本",
+    "Bun version"
+  ],
+  [
+    "Bun 包管理器列表",
+    "Bun package manager list"
+  ],
+  [
+    "Bundler 读取操作：列出 gem、检查过时包",
+    "Bundler read operations: list gems, check outdated"
+  ],
+  [
+    "Cargo 版本",
+    "Cargo version"
+  ],
+  [
+    "Cargo 读取操作：依赖树、元数据",
+    "Cargo read operations: dependency tree, metadata"
+  ],
+  [
     "Claude 模型请留空。仅在使用非 Claude 模型时设置。",
     "Leave empty for Claude models. Only set when using non-Claude models."
   ],
@@ -2024,124 +3528,28 @@
     "Claude Pro/Max — Use your Claude subscription"
   ],
   [
-    "CreatorFlow 响应的首选语言",
-    "Preferred language for CreatorFlow responses"
+    "Composer 读取操作：显示包、许可证",
+    "Composer read operations: show packages, licenses"
   ],
   [
-    "CreatorFlow 应如何称呼您",
-    "How should CreatorFlow address you"
+    "DNS 查询工具",
+    "DNS lookup utility"
   ],
   [
-    "MCP 服务",
-    "MCP Service"
+    "Docker 读取操作：列出容器、镜像、日志、检查",
+    "Docker read operations: list containers, images, logs, inspect"
   ],
   [
-    "列出目录内容",
-    "List directory contents"
+    "Docker Compose (v2) 读取操作",
+    "Docker Compose (v2) read operations"
   ],
   [
-    "长格式列表（ls -l 别名）",
-    "Long listing (ls -l alias)"
-  ],
-  [
-    "列出所有文件（包括隐藏文件，ls -la 别名）",
-    "List all including hidden (ls -la alias)"
-  ],
-  [
-    "显示目录树结构",
-    "Display directory tree structure"
-  ],
-  [
-    "确定文件类型",
-    "Determine file type"
-  ],
-  [
-    "显示文件状态和元数据",
-    "Display file status and metadata"
-  ],
-  [
-    "估算文件/目录磁盘使用量",
-    "Estimate file/directory disk usage"
-  ],
-  [
-    "报告文件系统磁盘空间使用情况",
-    "Report filesystem disk space usage"
-  ],
-  [
-    "统计文件的行数、单词数、字节数",
-    "Count lines, words, bytes in files"
-  ],
-  [
-    "输出文件开头部分",
-    "Output first part of files"
-  ],
-  [
-    "输出文件结尾部分",
-    "Output last part of files"
-  ],
-  [
-    "连接并显示文件内容",
-    "Concatenate and display file contents"
-  ],
-  [
-    "分页查看文件内容",
-    "View file contents with paging"
-  ],
-  [
-    "带语法高亮的 cat 替代品",
-    "Cat clone with syntax highlighting"
-  ],
-  [
-    "在目录层次结构中搜索文件",
-    "Search for files in directory hierarchy"
-  ],
-  [
-    "使用数据库按名称查找文件",
-    "Find files by name using database"
-  ],
-  [
-    "定位命令",
-    "Locate a command"
-  ],
-  [
-    "定位命令的二进制文件、源码和手册",
-    "Locate binary, source, manual for command"
-  ],
-  [
-    "显示命令类型信息",
-    "Display information about command type"
-  ],
-  [
-    "使用模式搜索文件内容",
-    "Search file contents with patterns"
-  ],
-  [
-    "Ripgrep - 快速递归搜索",
-    "Ripgrep - fast recursive search"
-  ],
-  [
-    "Silver Searcher - 快速代码搜索",
-    "The Silver Searcher - fast code search"
-  ],
-  [
-    "Ack - 程序员专用的类 grep 工具",
-    "Ack - grep-like tool for programmers"
-  ],
-  [
-    "快速且用户友好的 find 替代品",
-    "Fast and user-friendly find alternative"
-  ],
-  [
-    "文件和命令的模糊查找器",
-    "Fuzzy finder for files and commands"
+    "Docker Compose 读取操作：列出服务、查看日志",
+    "Docker Compose read operations: list services, view logs"
   ],
   [
     "Git 只读操作（支持 -C、--no-pager 等子命令前的选项）",
     "Git read-only operations (supports flags like -C, --no-pager before subcommand)"
-  ],
-  [
-    "GitHub CLI 读取操作：查看 PR、Issue、Release",
-    "GitHub CLI read operations: view PRs, issues, releases"
   ],
   [
     "GitHub API 使用明确的 GET 方法",
@@ -2152,252 +3560,52 @@
     "GitHub API without method (defaults to GET)"
   ],
   [
-    "检查 GitHub 认证状态",
-    "Check GitHub authentication status"
+    "GitHub CLI 读取操作：查看 PR、Issue、Release",
+    "GitHub CLI read operations: view PRs, issues, releases"
   ],
   [
-    "读取 GitHub CLI 配置",
-    "Read GitHub CLI configuration"
-  ],
-  [
-    "npm 读取操作：列出包、查看信息、检查过时包",
-    "npm read operations: list packages, view info, check outdated"
-  ],
-  [
-    "Yarn 读取操作：列出包、检查过时包",
-    "Yarn read operations: list packages, check outdated"
-  ],
-  [
-    "pnpm 读取操作：列出包、检查过时包",
-    "pnpm read operations: list packages, check outdated"
-  ],
-  [
-    "Bun 包管理器列表",
-    "Bun package manager list"
-  ],
-  [
-    "pip 读取操作：列出包、显示信息",
-    "pip read operations: list packages, show info"
-  ],
-  [
-    "pip3 读取操作：列出包、显示信息",
-    "pip3 read operations: list packages, show info"
-  ],
-  [
-    "Cargo 读取操作：依赖树、元数据",
-    "Cargo read operations: dependency tree, metadata"
+    "Go 版本",
+    "Go version"
   ],
   [
     "Go 读取操作：列出模块、依赖图",
     "Go read operations: list modules, dependency graph"
   ],
   [
-    "Composer 读取操作：显示包、许可证",
-    "Composer read operations: show packages, licenses"
-  ],
-  [
-    "RubyGems 读取操作：列出 gem、显示信息",
-    "RubyGems read operations: list gems, show info"
-  ],
-  [
-    "Bundler 读取操作：列出 gem、检查过时包",
-    "Bundler read operations: list gems, check outdated"
-  ],
-  [
-    "切换目录（仅影响 shell 会话）",
-    "Change directory (affects shell session only)"
-  ],
-  [
-    "打印当前工作目录",
-    "Print current working directory"
-  ],
-  [
-    "打印当前用户名",
-    "Print current username"
-  ],
-  [
-    "打印用户和组 ID",
-    "Print user and group IDs"
-  ],
-  [
-    "打印组成员资格",
-    "Print group memberships"
-  ],
-  [
-    "打印系统信息",
-    "Print system information"
-  ],
-  [
-    "打印系统主机名",
-    "Print system hostname"
-  ],
-  [
-    "打印当前日期和时间",
-    "Print current date and time"
-  ],
-  [
-    "打印系统运行时间和负载",
-    "Print system uptime and load"
-  ],
-  [
-    "打印所有环境变量（仅限单独命令，不是 env <cmd>）",
-    "Print all environment variables (bare command only, not env <cmd>)"
-  ],
-  [
-    "打印环境变量",
-    "Print environment variables"
-  ],
-  [
-    "输出环境变量值",
-    "Echo environment variable values"
-  ],
-  [
-    "列出正在运行的进程",
-    "List running processes"
-  ],
-  [
-    "仅批量/列表模式下的进程查看器",
-    "Process viewer in batch/list mode only"
-  ],
-  [
-    "交互式进程查看器",
-    "Interactive process viewer"
-  ],
-  [
-    "显示内存使用情况",
-    "Display memory usage"
-  ],
-  [
-    "虚拟内存统计",
-    "Virtual memory statistics"
-  ],
-  [
     "I/O 统计",
     "I/O statistics"
-  ],
-  [
-    "显示 CPU 架构信息",
-    "Display CPU architecture information"
-  ],
-  [
-    "显示内存信息",
-    "Display memory information"
-  ],
-  [
-    "列出块设备",
-    "List block devices"
-  ],
-  [
-    "列出 USB 设备",
-    "List USB devices"
-  ],
-  [
-    "列出 PCI 设备",
-    "List PCI devices"
-  ],
-  [
-    "Docker 读取操作：列出容器、镜像、日志、检查",
-    "Docker read operations: list containers, images, logs, inspect"
-  ],
-  [
-    "Docker Compose 读取操作：列出服务、查看日志",
-    "Docker Compose read operations: list services, view logs"
-  ],
-  [
-    "Docker Compose (v2) 读取操作",
-    "Docker Compose (v2) read operations"
-  ],
-  [
-    "Kubernetes 读取操作：获取资源、描述、查看日志",
-    "Kubernetes read operations: get resources, describe, view logs"
-  ],
-  [
-    "sed 仅打印模式（不编辑）",
-    "sed in print-only mode (no editing)"
-  ],
-  [
-    "对文本文件行进行排序",
-    "Sort lines of text files"
-  ],
-  [
-    "报告或过滤重复行",
-    "Report or filter repeated lines"
-  ],
-  [
-    "从行中删除部分内容",
-    "Remove sections from lines"
-  ],
-  [
-    "转换或删除字符",
-    "Translate or delete characters"
-  ],
-  [
-    "列表分列显示",
-    "Columnate lists"
-  ],
-  [
-    "JSON 处理器",
-    "JSON processor"
-  ],
-  [
-    "YAML 处理器",
-    "YAML processor"
-  ],
-  [
-    "XML 处理器（通过 yq）",
-    "XML processor (via yq)"
-  ],
-  [
-    "XML 检查器和格式化器",
-    "XML linter and formatter"
-  ],
-  [
-    "JSON 美化打印",
-    "JSON pretty printer"
-  ],
-  [
-    "Python JSON 格式化器",
-    "Python JSON formatter"
-  ],
-  [
-    "发送 ICMP echo 请求",
-    "Send ICMP echo requests"
-  ],
-  [
-    "追踪到主机的数据包路由",
-    "Trace packet route to host"
-  ],
-  [
-    "追踪到主机的路径",
-    "Trace path to host"
-  ],
-  [
-    "网络诊断工具",
-    "Network diagnostic tool"
-  ],
-  [
-    "DNS 查询工具",
-    "DNS lookup utility"
-  ],
-  [
-    "查询 DNS 服务器",
-    "Query DNS servers"
-  ],
-  [
-    "网络统计",
-    "Network statistics"
-  ],
-  [
-    "套接字统计",
-    "Socket statistics"
   ],
   [
     "IP 地址/链路/路由信息",
     "IP address/link/route information"
   ],
   [
-    "网络接口配置（只读）",
-    "Network interface configuration (read)"
+    "Java 版本",
+    "Java version"
+  ],
+  [
+    "JSON 处理器",
+    "JSON processor"
+  ],
+  [
+    "JSON 美化打印",
+    "JSON pretty printer"
+  ],
+  [
+    "Kubernetes 读取操作：获取资源、描述、查看日志",
+    "Kubernetes read operations: get resources, describe, view logs"
+  ],
+  [
+    "MCP 服务",
+    "MCP Service"
+  ],
+  [
+    "MCP 服务器不可达",
+    "MCP Server Unreachable"
+  ],
+  [
+    "MCP 源的搜索操作",
+    "Search operations across MCP sources"
   ],
   [
     "Node.js 版本",
@@ -2408,475 +3616,103 @@
     "npm version"
   ],
   [
-    "Yarn 版本",
-    "Yarn version"
+    "npm 读取操作：列出包、查看信息、检查过时包",
+    "npm read operations: list packages, view info, check outdated"
   ],
   [
-    "pnpm 版本",
-    "pnpm version"
+    "OpenRouter 因数据策略设置阻止了此请求。请在 openrouter.ai/settings/privacy 配置隐私设置以允许此模型。",
+    "OpenRouter blocked this request due to your data policy settings. Configure your privacy settings at openrouter.ai/settings/privacy to allow this model."
   ],
   [
-    "Bun 版本",
-    "Bun version"
-  ],
-  [
-    "Python 版本",
-    "Python version"
-  ],
-  [
-    "Python 3 版本",
-    "Python 3 version"
-  ],
-  [
-    "Ruby 版本",
-    "Ruby version"
-  ],
-  [
-    "Go 版本",
-    "Go version"
-  ],
-  [
-    "Rust 编译器版本",
-    "Rust compiler version"
-  ],
-  [
-    "Cargo 版本",
-    "Cargo version"
-  ],
-  [
-    "Java 版本",
-    "Java version"
-  ],
-  [
-    ".NET 版本",
-    ".NET version"
-  ],
-  [
-    "PHP 版本",
-    "PHP version"
+    "PDF 文档",
+    "PDF Document"
   ],
   [
     "Perl 版本",
     "Perl version"
   ],
   [
-    "显示手册页",
-    "Display manual pages"
+    "PHP 版本",
+    "PHP version"
   ],
   [
-    "显示命令帮助",
-    "Display command help"
+    "pip 读取操作：列出包、显示信息",
+    "pip read operations: list packages, show info"
   ],
   [
-    "显示命令帮助（短选项）",
-    "Display command help (short flag)"
+    "pip3 读取操作：列出包、显示信息",
+    "pip3 read operations: list packages, show info"
   ],
   [
-    "MCP 源的搜索操作",
-    "Search operations across MCP sources"
+    "pnpm 版本",
+    "pnpm version"
   ],
   [
-    "通用列表操作",
-    "Generic list operations"
-  ],
-  [
-    "通用获取/读取操作",
-    "Generic get/read operations"
-  ],
-  [
-    "通用读取操作",
-    "Generic read operations"
-  ],
-  [
-    "需要设置",
-    "Setup Required"
-  ],
-  [
-    "需要 Windows 设置",
-    "Windows Setup Required"
-  ],
-  [
-    "终端（使用 sudo 运行）：",
-    "Terminal (run with sudo):"
+    "pnpm 读取操作：列出包、检查过时包",
+    "pnpm read operations: list packages, check outdated"
   ],
   [
     "PowerShell（以管理员身份运行）：",
     "PowerShell (run as Administrator):"
   ],
   [
+    "Python 3 版本",
+    "Python 3 version"
+  ],
+  [
+    "Python 版本",
+    "Python version"
+  ],
+  [
+    "Python JSON 格式化器",
+    "Python JSON formatter"
+  ],
+  [
+    "Ripgrep - 快速递归搜索",
+    "Ripgrep - fast recursive search"
+  ],
+  [
+    "Ruby 版本",
+    "Ruby version"
+  ],
+  [
+    "RubyGems 读取操作：列出 gem、显示信息",
+    "RubyGems read operations: list gems, show info"
+  ],
+  [
+    "Rust 编译器版本",
+    "Rust compiler version"
+  ],
+  [
     "SDK 需要一个不存在的目录：{path} — 请创建此文件夹，然后重启应用。",
     "The SDK requires a directory that doesn't exist: {path} — Create this folder, then restart the app."
   ],
   [
-    "需要权限",
-    "Permission Required"
+    "sed 仅打印模式（不编辑）",
+    "sed in print-only mode (no editing)"
   ],
   [
-    "允许",
-    "Allow"
+    "Silver Searcher - 快速代码搜索",
+    "The Silver Searcher - fast code search"
   ],
   [
-    "始终允许",
-    "Always Allow"
+    "XML 处理器（通过 yq）",
+    "XML processor (via yq)"
   ],
   [
-    "拒绝",
-    "Deny"
+    "XML 检查器和格式化器",
+    "XML linter and formatter"
   ],
   [
-    "\"始终允许\"会在本次会话中记住此命令",
-    "\"Always Allow\" remembers this command for the session"
+    "YAML 处理器",
+    "YAML processor"
   ],
   [
-    "正在响应...",
-    "Responding..."
+    "Yarn 版本",
+    "Yarn version"
   ],
   [
-    "个错误",
-    "error(s)"
-  ],
-  [
-    "步骤已完成",
-    "Steps Completed"
-  ],
-  [
-    "正在启动...",
-    "Starting..."
-  ],
-  [
-    "思考中...",
-    "Thinking..."
-  ],
-  [
-    "待办列表",
-    "Todo List"
-  ],
-  [
-    "正在准备响应...",
-    "Preparing response..."
-  ],
-  [
-    "读取",
-    "Read"
-  ],
-  [
-    "写入",
-    "Write"
-  ],
-  [
-    "终端",
-    "Terminal"
-  ],
-  [
-    "查找文件",
-    "Find Files"
-  ],
-  [
-    "子智能体",
-    "Agent"
-  ],
-  [
-    "获取网页",
-    "Fetch URL"
-  ],
-  [
-    "网络搜索",
-    "Web Search"
-  ],
-  [
-    "更新待办",
-    "Update Todos"
-  ],
-  [
-    "编辑笔记本",
-    "Edit Notebook"
-  ],
-  [
-    "终止 Shell",
-    "Kill Shell"
-  ],
-  [
-    "任务输出",
-    "Task Output"
-  ],
-  [
-    "处理中",
-    "Processing"
-  ],
-  [
-    "思考中",
-    "Thinking"
-  ],
-  [
-    "沉思中...",
-    "Pondering..."
-  ],
-  [
-    "凝思中...",
-    "Contemplating..."
-  ],
-  [
-    "推理中...",
-    "Reasoning..."
-  ],
-  [
-    "处理中...",
-    "Processing..."
-  ],
-  [
-    "计算中...",
-    "Computing..."
-  ],
-  [
-    "考虑中...",
-    "Considering..."
-  ],
-  [
-    "反思中...",
-    "Reflecting..."
-  ],
-  [
-    "斟酌中...",
-    "Deliberating..."
-  ],
-  [
-    "琢磨中...",
-    "Cogitating..."
-  ],
-  [
-    "回味中...",
-    "Ruminating..."
-  ],
-  [
-    "构思中...",
-    "Musing..."
-  ],
-  [
-    "正在处理...",
-    "Working on it..."
-  ],
-  [
-    "马上好...",
-    "On it..."
-  ],
-  [
-    "运算中...",
-    "Crunching..."
-  ],
-  [
-    "酝造中...",
-    "Brewing..."
-  ],
-  [
-    "连接线索...",
-    "Connecting dots..."
-  ],
-  [
-    "仔细考量...",
-    "Mulling it over..."
-  ],
-  [
-    "深入思考...",
-    "Deep in thought..."
-  ],
-  [
-    "嗯...",
-    "Hmm..."
-  ],
-  [
-    "让我看看...",
-    "Let me see..."
-  ],
-  [
-    "稍等片刻...",
-    "One moment..."
-  ],
-  [
-    "请稍候...",
-    "Hold on..."
-  ],
-  [
-    "请稍等...",
-    "Bear with me..."
-  ],
-  [
-    "马上...",
-    "Just a sec..."
-  ],
-  [
-    "稍候...",
-    "Hang tight..."
-  ],
-  [
-    "快到了...",
-    "Getting there..."
-  ],
-  [
-    "就快好了...",
-    "Almost..."
-  ],
-  [
-    "工作中...",
-    "Working..."
-  ],
-  [
-    "忙碌中...",
-    "Busy busy..."
-  ],
-  [
-    "运转中...",
-    "Whirring..."
-  ],
-  [
-    "翻涡中...",
-    "Churning..."
-  ],
-  [
-    "过滤中...",
-    "Percolating..."
-  ],
-  [
-    "慢炖中...",
-    "Simmering..."
-  ],
-  [
-    "烹饪中...",
-    "Cooking..."
-  ],
-  [
-    "烘焙中...",
-    "Baking..."
-  ],
-  [
-    "搅动中...",
-    "Stirring..."
-  ],
-  [
-    "启动中...",
-    "Spinning up..."
-  ],
-  [
-    "预热中...",
-    "Warming up..."
-  ],
-  [
-    "加速中...",
-    "Revving..."
-  ],
-  [
-    "蜂鸣中...",
-    "Buzzing..."
-  ],
-  [
-    "哼鸣中...",
-    "Humming..."
-  ],
-  [
-    "滴答中...",
-    "Ticking..."
-  ],
-  [
-    "点击中...",
-    "Clicking..."
-  ],
-  [
-    "飞速运转...",
-    "Whizzing..."
-  ],
-  [
-    "急速前进...",
-    "Zooming..."
-  ],
-  [
-    "飞奔中...",
-    "Zipping..."
-  ],
-  [
-    "加载中...",
-    "Chugging..."
-  ],
-  [
-    "转动中...",
-    "Trucking..."
-  ],
-  [
-    "滚动中...",
-    "Rolling..."
-  ],
-  [
-    "管理工作区...",
-    "Manage Workspaces..."
-  ],
-  [
-    "管理工作区",
-    "Manage Workspaces"
-  ],
-  [
-    "查看和管理所有工作区",
-    "View and manage all workspaces"
-  ],
-  [
-    "当前工作区",
-    "Current Workspace"
-  ],
-  [
-    "暂无工作区",
-    "No workspaces"
-  ],
-  [
-    "打开",
-    "Open"
-  ],
-  [
-    "内置应用",
-    "Built-in Apps"
-  ],
-  [
-    "市场应用",
-    "Marketplace Apps"
-  ],
-  [
-    "加载市场应用...",
-    "Loading marketplace apps..."
-  ],
-  [
-    "使用",
-    "Use"
-  ],
-  [
-    "更新 v{{version}} 已就绪",
-    "Update v{{version}} ready"
-  ],
-  [
-    "重启以应用更新。",
-    "Restart to apply the update."
-  ],
-  [
-    "重启",
-    "Restart"
-  ],
-  [
-    "正在安装更新...",
-    "Installing update..."
-  ],
-  [
-    "应用将自动重启。",
-    "The app will restart automatically."
-  ],
-  [
-    "安装更新失败",
-    "Failed to install update"
-  ],
-  [
-    "已是最新版本",
-    "You're up to date"
-  ],
-  [
-    "版本 {{version}} 是最新的。",
-    "Version {{version}} is the latest."
-  ],
-  [
-    "检查更新失败",
-    "Failed to check for updates"
+    "Yarn 读取操作：列出包、检查过时包",
+    "Yarn read operations: list packages, check outdated"
   ]
 ]

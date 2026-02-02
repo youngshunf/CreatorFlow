@@ -230,8 +230,8 @@ export function themeToCSS(theme: ThemeOverrides, isDark: boolean = false): stri
  * that visually match the DEFAULT_THEME oklch colors.
  */
 export const BACKGROUND_HEX = {
-  light: '#faf9fb', // matches oklch(0.98 0.003 265)
-  dark: '#302f33', // matches oklch(0.2 0.005 270)
+  light: '#F8FAFC', // 云雾白 - 智小芽主题
+  dark: '#0F172A',   // 暗夜黑 - 智小芽主题
 } as const;
 
 /**

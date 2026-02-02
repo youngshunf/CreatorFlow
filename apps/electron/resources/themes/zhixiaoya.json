@@ -1,0 +1,25 @@
+{
+  "name": "智小芽",
+  "description": "智小芽官方主题 - 科技青蓝紫渐变配色",
+  "author": "智小芽团队",
+  "license": "MIT",
+  "supportedModes": ["light", "dark"],
+  "shikiTheme": {
+    "light": "github-light",
+    "dark": "github-dark"
+  },
+  "background": "#F8FAFC",
+  "foreground": "#0F172A",
+  "accent": "#3B82F6",
+  "info": "#F59E0B",
+  "success": "#22C55E",
+  "destructive": "#EF4444",
+  "dark": {
+    "background": "#0F172A",
+    "foreground": "#F8FAFC",
+    "accent": "#06B6D4",
+    "info": "#FBBF24",
+    "success": "#22C55E",
+    "destructive": "#EF4444"
+  }
+}

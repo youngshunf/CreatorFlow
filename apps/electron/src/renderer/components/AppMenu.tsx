@@ -274,7 +274,7 @@ export function AppMenu({
           {/* Quit */}
           <StyledDropdownMenuItem onClick={() => window.electronAPI.menuQuit()}>
             <LogOut className="h-3.5 w-3.5" />
-            {t('退出 CreatorFlow')}
+            {t('退出智小芽')}
             <DropdownMenuShortcut className="pl-6">{modKey}Q</DropdownMenuShortcut>
           </StyledDropdownMenuItem>
         </StyledDropdownMenuContent>

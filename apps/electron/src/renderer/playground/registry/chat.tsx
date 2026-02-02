@@ -491,7 +491,7 @@ function ActiveTasksBarContext({ tasks = sampleBackgroundTasks }: ActiveTasksBar
 
         {/* Real InputContainer */}
         <InputContainer
-          placeholder="Message CreatorFlow..."
+          placeholder="Message 智小芽..."
           disabled={false}
           isProcessing={false}
           currentModel="claude-sonnet-4-5-20250929"
@@ -599,7 +599,7 @@ function PermissionInputToggle({ autoToggle = false, autoToggleInterval = 3000, 
 
       {/* Real InputContainer - handles animation automatically */}
       <InputContainer
-        placeholder="Message CreatorFlow..."
+        placeholder="Message 智小芽..."
         disabled={false}
         isProcessing={false}
         currentModel="claude-sonnet-4-5-20250929"
@@ -941,7 +941,7 @@ export const chatComponents: ComponentEntry[] = [
         name: 'placeholder',
         description: 'Textarea placeholder text',
         control: { type: 'string', placeholder: 'Message...' },
-        defaultValue: 'Message CreatorFlow...',
+        defaultValue: 'Message 智小芽...',
       },
       {
         name: 'currentModel',

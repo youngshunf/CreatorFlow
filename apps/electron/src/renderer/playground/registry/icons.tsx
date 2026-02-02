@@ -9,7 +9,7 @@ export const iconComponents: ComponentEntry[] = [
     id: 'creator-flows-logo',
     name: 'CreatorFlowLogo',
     category: 'Icons',
-    description: 'Full CreatorFlow branding logo with text',
+    description: 'Full 智小芽 branding logo with text',
     component: CreatorFlowLogo,
     props: [
       {
@@ -29,7 +29,7 @@ export const iconComponents: ComponentEntry[] = [
     id: 'creator-flows-symbol',
     name: 'CreatorFlowSymbol',
     category: 'Icons',
-    description: 'CreatorFlow "E" pixel art symbol icon (brand color: #9570BE)',
+    description: '智小芽 seed sprout symbol icon (brand gradient: #06B6D4 → #8B5CF6)',
     component: CreatorFlowSymbol,
     props: [
       {

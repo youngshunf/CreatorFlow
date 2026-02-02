@@ -30,7 +30,7 @@ export function WelcomeStep({
           <CreatorFlowSymbol className="size-10 text-accent" />
         </div>
       }
-      title={isExistingUser ? t('更新设置') : t('欢迎使用 CreatorFlow')}
+      title={isExistingUser ? t('更新设置') : t('欢迎使用智小芽')}
       description={
         isExistingUser
           ? t('更新您的 API 连接或更改设置。')

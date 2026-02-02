@@ -1,0 +1,212 @@
+#!/bin/bash
+# Build script for Windows NSIS installer (cross-compile from macOS/Linux)
+# Usage: bash scripts/build-win.sh [development|staging|production]
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ELECTRON_DIR="$(dirname "$SCRIPT_DIR")"
+ROOT_DIR="$(dirname "$(dirname "$ELECTRON_DIR")")"
+
+# Helper function to check required file/directory exists
+require_path() {
+    local path="$1"
+    local description="$2"
+    local hint="$3"
+
+    if [ ! -e "$path" ]; then
+        echo "ERROR: $description not found at $path"
+        [ -n "$hint" ] && echo "$hint"
+        exit 1
+    fi
+}
+
+# Parse arguments
+MODE="${1:-development}"
+case "$MODE" in
+    development|staging|production)
+        ;;
+    *)
+        echo "Invalid mode: $MODE"
+        echo "Usage: build-win.sh [development|staging|production]"
+        exit 1
+        ;;
+esac
+
+# Set environment variable for Vite build mode
+export VITE_APP_ENV="$MODE"
+export APP_ENV="$MODE"
+
+# Configuration
+BUN_VERSION="bun-v1.3.5"  # Pinned version for reproducible builds
+
+# Disable SSL verification if behind corporate proxy/VPN (common in China)
+# Remove this if you don't need it
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+
+echo "=== Building CreatorFlow Windows Installer ($MODE) using electron-builder ==="
+
+# 1. Clean previous build artifacts
+echo "Cleaning previous builds..."
+rm -rf "$ELECTRON_DIR/vendor"
+rm -rf "$ELECTRON_DIR/node_modules/@anthropic-ai"
+rm -rf "$ELECTRON_DIR/packages"
+rm -rf "$ELECTRON_DIR/release"
+
+# 2. Install dependencies
+echo "Installing dependencies..."
+cd "$ROOT_DIR"
+bun install
+
+# 3. Download Bun binary for Windows
+# Use baseline build - works on all x64 CPUs (no AVX2 requirement)
+echo "Downloading Bun ${BUN_VERSION} for Windows x64 (baseline)..."
+mkdir -p "$ELECTRON_DIR/vendor/bun"
+BUN_DOWNLOAD="bun-windows-x64-baseline"
+TEMP_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_DIR" EXIT
+
+DOWNLOAD_SUCCESS=false
+ZIP_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip"
+CHECKSUM_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt"
+
+echo "Downloading from $ZIP_URL..."
+if curl -fSL --connect-timeout 30 --max-time 180 "$ZIP_URL" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" && \
+   curl -fSL --connect-timeout 30 --max-time 60 "$CHECKSUM_URL" -o "$TEMP_DIR/SHASUMS256.txt"; then
+    # Verify checksum
+    echo "Verifying checksum..."
+    cd "$TEMP_DIR"
+    if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c -; then
+        cd - > /dev/null
+        # Extract and install
+        echo "Extracting Bun..."
+        unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
+        cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun.exe" "$ELECTRON_DIR/vendor/bun/"
+        DOWNLOAD_SUCCESS=true
+        echo "Downloaded Bun ${BUN_VERSION} for Windows successfully"
+    else
+        cd - > /dev/null
+        echo "Checksum verification failed!"
+    fi
+else
+    echo "Download failed!"
+fi
+
+if [ "$DOWNLOAD_SUCCESS" = false ]; then
+    echo "ERROR: Could not download Windows Bun binary"
+    echo "Please check your network connection and try again."
+    exit 1
+fi
+
+# Verify bun.exe exists
+BUN_EXE="$ELECTRON_DIR/vendor/bun/bun.exe"
+if [ ! -f "$BUN_EXE" ]; then
+    echo "ERROR: bun.exe not found at $BUN_EXE"
+    exit 1
+fi
+echo "Bun extracted to: $BUN_EXE"
+ls -la "$BUN_EXE"
+
+# 4. Download Git for Windows (contains bash.exe required by SDK)
+# PortableGit is a complete Git distribution (~57MB) that includes bash.exe
+# MinGit doesn't include bash.exe, only sh.exe which SDK doesn't accept
+echo "Downloading Git for Windows (PortableGit) x64..."
+GIT_VERSION="2.47.1"
+PORTABLEGIT_DOWNLOAD="PortableGit-${GIT_VERSION}-64-bit"
+PORTABLEGIT_URL="https://github.com/git-for-windows/git/releases/download/v${GIT_VERSION}.windows.1/${PORTABLEGIT_DOWNLOAD}.7z.exe"
+
+mkdir -p "$ELECTRON_DIR/vendor/git"
+TEMP_GIT_DIR=$(mktemp -d)
+
+echo "Downloading from $PORTABLEGIT_URL..."
+if curl -fSL --connect-timeout 30 --max-time 600 "$PORTABLEGIT_URL" -o "$TEMP_GIT_DIR/${PORTABLEGIT_DOWNLOAD}.7z.exe"; then
+    echo "Extracting PortableGit (this may take a minute)..."
+    # PortableGit is a self-extracting 7z archive
+    # Use 7z to extract if available, otherwise try to run the exe with -y for silent extraction
+    if command -v 7z &> /dev/null; then
+        7z x -o"$ELECTRON_DIR/vendor/git" "$TEMP_GIT_DIR/${PORTABLEGIT_DOWNLOAD}.7z.exe" -y
+    elif command -v 7za &> /dev/null; then
+        7za x -o"$ELECTRON_DIR/vendor/git" "$TEMP_GIT_DIR/${PORTABLEGIT_DOWNLOAD}.7z.exe" -y
+    else
+        # Try using p7zip on macOS (installed via brew install p7zip)
+        echo "7z not found, trying to install p7zip..."
+        if command -v brew &> /dev/null; then
+            brew install p7zip 2>/dev/null || true
+            if command -v 7z &> /dev/null; then
+                7z x -o"$ELECTRON_DIR/vendor/git" "$TEMP_GIT_DIR/${PORTABLEGIT_DOWNLOAD}.7z.exe" -y
+            else
+                echo "ERROR: Could not install 7z. Please install p7zip: brew install p7zip"
+                exit 1
+            fi
+        else
+            echo "ERROR: 7z is required to extract PortableGit. Please install p7zip."
+            exit 1
+        fi
+    fi
+    echo "PortableGit extracted successfully"
+    
+    # Verify bash.exe exists (PortableGit has it in usr/bin/ or bin/)
+    BASH_EXE="$ELECTRON_DIR/vendor/git/usr/bin/bash.exe"
+    if [ ! -f "$BASH_EXE" ]; then
+        BASH_EXE="$ELECTRON_DIR/vendor/git/bin/bash.exe"
+    fi
+    if [ -f "$BASH_EXE" ]; then
+        echo "bash.exe found at: $BASH_EXE"
+        ls -la "$BASH_EXE"
+    else
+        echo "WARNING: bash.exe not found at expected location"
+        echo "Contents of vendor/git:"
+        ls -la "$ELECTRON_DIR/vendor/git/"
+        echo "Contents of vendor/git/usr/bin (if exists):"
+        ls -la "$ELECTRON_DIR/vendor/git/usr/bin/" 2>/dev/null || true
+    fi
+else
+    echo "WARNING: Could not download PortableGit. Git Bash will not be bundled."
+    echo "Users may need to install Git for Windows manually."
+fi
+rm -rf "$TEMP_GIT_DIR"
+
+# 5. Copy SDK from root node_modules (monorepo hoisting)
+SDK_SOURCE="$ROOT_DIR/node_modules/@anthropic-ai/claude-agent-sdk"
+require_path "$SDK_SOURCE" "SDK" "Run 'bun install' from the repository root first."
+echo "Copying SDK..."
+mkdir -p "$ELECTRON_DIR/node_modules/@anthropic-ai"
+cp -r "$SDK_SOURCE" "$ELECTRON_DIR/node_modules/@anthropic-ai/"
+
+# 6. Copy interceptor
+INTERCEPTOR_SOURCE="$ROOT_DIR/packages/shared/src/network-interceptor.ts"
+require_path "$INTERCEPTOR_SOURCE" "Interceptor" "Ensure packages/shared/src/network-interceptor.ts exists."
+echo "Copying interceptor..."
+mkdir -p "$ELECTRON_DIR/packages/shared/src"
+cp "$INTERCEPTOR_SOURCE" "$ELECTRON_DIR/packages/shared/src/"
+
+# 7. Build Electron app
+echo "Building Electron app..."
+cd "$ROOT_DIR"
+bun run electron:build
+
+# 8. Package with electron-builder
+echo "Packaging app with electron-builder..."
+cd "$ELECTRON_DIR"
+
+# Verify bun.exe still exists before packaging (sanity check)
+if [ ! -f "$BUN_EXE" ]; then
+    echo "ERROR: bun.exe disappeared before packaging!"
+    exit 1
+fi
+
+npx electron-builder --win --x64
+
+# 9. Verify the installer was built
+INSTALLER_PATH=$(find "$ELECTRON_DIR/release" -name "*.exe" -type f | head -1)
+
+if [ -z "$INSTALLER_PATH" ]; then
+    echo "ERROR: Installer not found in $ELECTRON_DIR/release"
+    echo "Contents of release directory:"
+    ls -la "$ELECTRON_DIR/release/"
+    exit 1
+fi
+
+echo ""
+echo "=== Build Complete ==="
+echo "Installer: $INSTALLER_PATH"
+echo "Size: $(du -h "$INSTALLER_PATH" | cut -f1)"
