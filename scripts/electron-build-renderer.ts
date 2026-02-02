@@ -9,6 +9,10 @@ import { join } from "path";
 const ROOT_DIR = join(import.meta.dir, "..");
 const ELECTRON_DIR = join(ROOT_DIR, "apps/electron");
 
+// Get environment from parent process
+const appEnv = process.env.APP_ENV || "development";
+console.log(`📦 Building renderer for environment: ${appEnv}`);
+
 // Clean renderer dist first
 const rendererDir = join(ELECTRON_DIR, "dist/renderer");
 if (existsSync(rendererDir)) {
@@ -20,6 +24,10 @@ const proc = spawn({
   cwd: ROOT_DIR,
   stdout: "inherit",
   stderr: "inherit",
+  env: {
+    ...process.env,
+    APP_ENV: appEnv,
+  },
 });
 
 const exitCode = await proc.exited;

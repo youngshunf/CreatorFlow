@@ -8,13 +8,27 @@ import { app } from 'electron'
  */
 export const isDebugMode = !app.isPackaged || process.argv.includes('--debug')
 
+// Helper: format timestamp in local time (no 8h UTC offset)
+function formatLocalTimestamp(date: Date): string {
+  const pad = (n: number, width = 2) => n.toString().padStart(width, '0')
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  const seconds = pad(date.getSeconds())
+  const millis = pad(date.getMilliseconds(), 3)
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${millis}`
+}
+
 // Configure transports based on debug mode
 if (isDebugMode) {
   // JSON format for file (agent-parseable)
   // Note: format expects (params: FormatParams) => any[], where params.message has the LogMessage fields
   log.transports.file.format = ({ message }) => [
     JSON.stringify({
-      timestamp: message.date.toISOString(),
+      // Use local time instead of UTC to avoid 8-hour offset when inspecting logs
+      timestamp: formatLocalTimestamp(message.date),
       level: message.level,
       scope: message.scope,
       message: message.data,
@@ -31,7 +45,7 @@ if (isDebugMode) {
     const data = message.data
       .map((d: unknown) => (typeof d === 'object' ? JSON.stringify(d) : String(d)))
       .join(' ')
-    return [`${message.date.toISOString()} ${level} ${scope} ${data}`]
+    return [`${formatLocalTimestamp(message.date)} ${level} ${scope} ${data}`]
   }
   log.transports.console.level = 'debug'
 } else {

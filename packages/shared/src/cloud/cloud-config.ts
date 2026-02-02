@@ -1,24 +1,29 @@
 /**
  * Cloud LLM Configuration (Browser-safe)
- * 
+ *
  * Manages cloud gateway configuration for LLM calls.
  * This module is designed to work in browser/renderer context.
- * 
+ *
  * Authentication:
  * - The cloud gateway uses x-api-key header for authentication
  * - LLM Token (sk-cf-xxx) serves as both authentication and rate limiting key
  * - No JWT required - simplifies desktop integration
- * 
+ *
  * Environment Configuration:
- * - Configuration is loaded from environment variables (VITE_*)
+ * - Configuration is defined in packages/shared/src/config/environments.ts
+ * - Environment is selected at build time via APP_ENV
  * - Supports development, staging, and production environments
- * - See env-config.ts for environment management
- * 
+ *
  * Note: This module does NOT import Node.js-specific modules (crypto, fs, etc.)
  * to ensure browser compatibility. Credential storage is handled via IPC in Electron.
  */
 
-import { getEnvConfig, getLlmGatewayUrl, getCloudApiUrl, isCloudModeEnabled as envCloudModeEnabled } from './env-config.ts';
+import {
+  getEnvironmentConfig,
+  getLlmGatewayUrl,
+  getCloudApiUrl,
+  getCurrentEnv,
+} from '../config/environments';
 
 // Cloud configuration interface
 export interface CloudConfig {
@@ -79,10 +84,10 @@ export function getCloudGatewayUrl(): string {
   // First try to get from saved cloud config
   const config = getCloudConfig();
   if (config?.apiBaseUrl) {
-    const envConfig = getEnvConfig();
+    const envConfig = getEnvironmentConfig();
     return `${config.apiBaseUrl.replace(/\/$/, '')}${envConfig.llmGatewayPath}`;
   }
-  
+
   // Fall back to environment configuration
   return getLlmGatewayUrl();
 }
@@ -96,23 +101,23 @@ export function getCloudGatewayUrl(): string {
  * @param config Cloud configuration from login
  */
 export function enableCloudMode(config: CloudConfig): void {
-  const envConfig = getEnvConfig();
-  console.log(`[CloudConfig] Enabling cloud mode (env: ${envConfig.env})`);
-  
+  const envConfig = getEnvironmentConfig();
+  console.log(`[CloudConfig] Enabling cloud mode (env: ${envConfig.name})`);
+
   // Use API URL from env config if not provided
   if (!config.apiBaseUrl) {
     config.apiBaseUrl = envConfig.cloudApiUrl;
   }
-  
+
   // Save cloud config to localStorage
   // Main process will read this and configure SDK
   saveCloudConfig(config);
-  
+
   // Also save gateway URL for easy access
   const gatewayUrl = `${config.apiBaseUrl.replace(/\/$/, '')}${envConfig.llmGatewayPath}`;
   localStorage.setItem('cloud_gateway_url', gatewayUrl);
   localStorage.setItem('cloud_llm_token', config.llmToken);
-  
+
   console.log(`[CloudConfig] Cloud mode enabled, gateway: ${gatewayUrl}`);
 }
 

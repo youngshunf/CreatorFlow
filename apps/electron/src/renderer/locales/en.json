@@ -2842,5 +2842,41 @@
   [
     "使用",
     "Use"
+  ],
+  [
+    "更新 v{{version}} 已就绪",
+    "Update v{{version}} ready"
+  ],
+  [
+    "重启以应用更新。",
+    "Restart to apply the update."
+  ],
+  [
+    "重启",
+    "Restart"
+  ],
+  [
+    "正在安装更新...",
+    "Installing update..."
+  ],
+  [
+    "应用将自动重启。",
+    "The app will restart automatically."
+  ],
+  [
+    "安装更新失败",
+    "Failed to install update"
+  ],
+  [
+    "已是最新版本",
+    "You're up to date"
+  ],
+  [
+    "版本 {{version}} 是最新的。",
+    "Version {{version}} is the latest."
+  ],
+  [
+    "检查更新失败",
+    "Failed to check for updates"
   ]
 ]

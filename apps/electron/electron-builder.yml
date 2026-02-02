@@ -36,10 +36,12 @@ files:
 extraMetadata:
   main: dist/main.cjs
 
-# Auto-update: disabled for now
-# publish:
-#   provider: generic
-#   url: https://example.com/electron/latest
+# Auto-update configuration
+# Uses generic provider - URL is set dynamically in auto-update.ts based on environment
+# This config generates app-update.yml with the production URL as default
+publish:
+  provider: generic
+  url: https://api.ai.dcfuture.cn/api/v1/client/version
 
 # Disable ASAR to avoid decompression overhead and click delays
 asar: false

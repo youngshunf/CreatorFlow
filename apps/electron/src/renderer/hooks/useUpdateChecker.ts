@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import type { UpdateInfo } from '../../shared/types'
+import { useT } from '@/context/LocaleContext'
 
 interface UseUpdateCheckerResult {
   /** Current update info */
@@ -34,6 +35,7 @@ interface UseUpdateCheckerResult {
 const UPDATE_TOAST_ID = 'update-available'
 
 export function useUpdateChecker(): UseUpdateCheckerResult {
+  const t = useT()
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
   // Track if we've shown the toast for this version to avoid duplicates
   const shownToastVersionRef = useRef<string | null>(null)
@@ -46,12 +48,12 @@ export function useUpdateChecker(): UseUpdateCheckerResult {
     }
     shownToastVersionRef.current = version
 
-    toast.info(`Update v${version} ready`, {
+    toast.info(t('更新 v{{version}} 已就绪').replace('{{version}}', version), {
       id: UPDATE_TOAST_ID,
-      description: 'Restart to apply the update.',
+      description: t('重启以应用更新。'),
       duration: 10000, // 10 seconds, then auto-dismiss
       action: {
-        label: 'Restart',
+        label: t('重启'),
         onClick: onInstall,
       },
       onDismiss: () => {
@@ -59,25 +61,25 @@ export function useUpdateChecker(): UseUpdateCheckerResult {
         window.electronAPI.dismissUpdate(version)
       },
     })
-  }, [])
+  }, [t])
 
   // Install the update
   const installUpdate = useCallback(async () => {
     try {
       // Dismiss the update toast first
       toast.dismiss(UPDATE_TOAST_ID)
-      toast.info('Installing update...', {
-        description: 'The app will restart automatically.',
+      toast.info(t('正在安装更新...'), {
+        description: t('应用将自动重启。'),
         duration: 5000,
       })
       await window.electronAPI.installUpdate()
     } catch (error) {
       console.error('[useUpdateChecker] Install failed:', error)
-      toast.error('Failed to install update', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error(t('安装更新失败'), {
+        description: error instanceof Error ? error.message : t('未知错误'),
       })
     }
-  }, [])
+  }, [t])
 
   // Load initial state and check if update ready
   useEffect(() => {
@@ -126,8 +128,8 @@ export function useUpdateChecker(): UseUpdateCheckerResult {
       setUpdateInfo(info)
 
       if (!info.available) {
-        toast.success('You\'re up to date', {
-          description: `Version ${info.currentVersion} is the latest.`,
+        toast.success(t('已是最新版本'), {
+          description: t('版本 {{version}} 是最新的。').replace('{{version}}', info.currentVersion),
           duration: 3000,
         })
       } else if (info.downloadState === 'ready' && info.latestVersion) {
@@ -137,11 +139,11 @@ export function useUpdateChecker(): UseUpdateCheckerResult {
       }
     } catch (error) {
       console.error('[useUpdateChecker] Check failed:', error)
-      toast.error('Failed to check for updates', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error(t('检查更新失败'), {
+        description: error instanceof Error ? error.message : t('未知错误'),
       })
     }
-  }, [showUpdateToast, installUpdate])
+  }, [t, showUpdateToast, installUpdate])
 
   return {
     updateInfo,

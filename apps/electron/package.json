@@ -42,6 +42,7 @@
     "lint:fix": "eslint src/ --fix"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.2.26",
     "@creator-flow/core": "workspace:*",
     "@creator-flow/shared": "workspace:*",
     "@creator-flow/ui": "workspace:*",
