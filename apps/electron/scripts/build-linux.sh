@@ -27,19 +27,21 @@ fi
 
 # Parse arguments
 ARCH="x64"
+MODE="development"
 UPLOAD=false
 UPLOAD_LATEST=false
 UPLOAD_SCRIPT=false
 
 show_help() {
     cat << EOF
-Usage: build-linux.sh [x64|arm64] [--upload] [--latest] [--script]
+Usage: build-linux.sh [x64|arm64] [development|staging|production] [--upload] [--latest] [--script]
 
 Arguments:
-  x64|arm64    Target architecture (default: x64)
-  --upload     Upload AppImage to S3 after building
-  --latest     Also update electron/latest (requires --upload)
-  --script     Also upload install-app.sh (requires --upload)
+  x64|arm64                    Target architecture (default: x64)
+  development|staging|production  Build environment (default: development)
+  --upload                     Upload AppImage to S3 after building
+  --latest                     Also update electron/latest (requires --upload)
+  --script                     Also upload install-app.sh (requires --upload)
 
 Environment variables (from .env or environment):
   S3_VERSIONS_BUCKET_*      - S3 credentials (for --upload)
@@ -50,6 +52,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case $1 in
         x64|arm64)     ARCH="$1"; shift ;;
+        development|staging|production) MODE="$1"; shift ;;
         --upload)      UPLOAD=true; shift ;;
         --latest)      UPLOAD_LATEST=true; shift ;;
         --script)      UPLOAD_SCRIPT=true; shift ;;
@@ -62,10 +65,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Set environment variables for build
+export VITE_APP_ENV="$MODE"
+export APP_ENV="$MODE"
+
 # Configuration
 BUN_VERSION="bun-v1.3.5"  # Pinned version for reproducible builds
 
-echo "=== Building Craft Agents AppImage (${ARCH}) using electron-builder ==="
+echo "=== Building Zhixiaoya AppImage (${ARCH}, ${MODE}) using electron-builder ==="
 if [ "$UPLOAD" = true ]; then
     echo "Will upload to S3 after build"
 fi
@@ -130,9 +137,20 @@ mkdir -p "$ELECTRON_DIR/packages/shared/src"
 cp "$INTERCEPTOR_SOURCE" "$ELECTRON_DIR/packages/shared/src/"
 
 # 6. Build Electron app
-echo "Building Electron app..."
+echo "Building Electron app for $MODE environment..."
 cd "$ROOT_DIR"
-bun run electron:build
+
+# Use appropriate build command based on MODE
+if [ "$MODE" = "staging" ]; then
+    echo "Building for STAGING environment..."
+    bun run electron:build:staging
+elif [ "$MODE" = "production" ]; then
+    echo "Building for PRODUCTION environment..."
+    bun run electron:build:production
+else
+    echo "Building for DEVELOPMENT environment..."
+    bun run electron:build
+fi
 
 # 7. Package with electron-builder
 echo "Packaging app with electron-builder..."
@@ -143,29 +161,19 @@ cd "$ELECTRON_DIR"
 npx electron-builder --linux --${ARCH}
 
 # 8. Verify the AppImage was built
-# electron-builder uses Linux-style arch names: x86_64 for x64, aarch64 for arm64
-if [ "$ARCH" = "x64" ]; then
-    LINUX_ARCH="x86_64"
-else
-    LINUX_ARCH="aarch64"
-fi
+# Read version from package.json
+ELECTRON_VERSION=$(cat "$ELECTRON_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
 
-# electron-builder outputs: Craft-Agent-x86_64.AppImage or Craft-Agent-aarch64.AppImage
-BUILT_APPIMAGE_NAME="Craft-Agent-${LINUX_ARCH}.AppImage"
-BUILT_APPIMAGE_PATH="$ELECTRON_DIR/release/$BUILT_APPIMAGE_NAME"
+# electron-builder.yml uses artifactName: 智小芽_v${version}-${arch}.AppImage
+APPIMAGE_NAME="智小芽_v${ELECTRON_VERSION}-${ARCH}.AppImage"
+APPIMAGE_PATH="$ELECTRON_DIR/release/$APPIMAGE_NAME"
 
-if [ ! -f "$BUILT_APPIMAGE_PATH" ]; then
-    echo "ERROR: Expected AppImage not found at $BUILT_APPIMAGE_PATH"
+if [ ! -f "$APPIMAGE_PATH" ]; then
+    echo "ERROR: Expected AppImage not found at $APPIMAGE_PATH"
     echo "Contents of release directory:"
     ls -la "$ELECTRON_DIR/release/"
     exit 1
 fi
-
-# Rename to our standard naming convention: Craft-Agent-x64.AppImage, Craft-Agent-arm64.AppImage
-APPIMAGE_NAME="Craft-Agent-${ARCH}.AppImage"
-APPIMAGE_PATH="$ELECTRON_DIR/release/$APPIMAGE_NAME"
-mv "$BUILT_APPIMAGE_PATH" "$APPIMAGE_PATH"
-echo "Renamed $BUILT_APPIMAGE_NAME -> $APPIMAGE_NAME"
 
 echo ""
 echo "=== Build Complete ==="

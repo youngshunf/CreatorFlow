@@ -180,9 +180,20 @@ mkdir -p "$ELECTRON_DIR/packages/shared/src"
 cp "$INTERCEPTOR_SOURCE" "$ELECTRON_DIR/packages/shared/src/"
 
 # 7. Build Electron app
-echo "Building Electron app..."
+echo "Building Electron app for $MODE environment..."
 cd "$ROOT_DIR"
-bun run electron:build
+
+# Use appropriate build command based on MODE
+if [ "$MODE" = "staging" ]; then
+    echo "Building for STAGING environment..."
+    bun run electron:build:staging
+elif [ "$MODE" = "production" ]; then
+    echo "Building for PRODUCTION environment..."
+    bun run electron:build:production
+else
+    echo "Building for DEVELOPMENT environment..."
+    bun run electron:build
+fi
 
 # 8. Package with electron-builder
 echo "Packaging app with electron-builder..."
@@ -197,10 +208,14 @@ fi
 npx electron-builder --win --x64
 
 # 9. Verify the installer was built
-INSTALLER_PATH=$(find "$ELECTRON_DIR/release" -name "*.exe" -type f | head -1)
+# Read version from package.json
+ELECTRON_VERSION=$(cat "$ELECTRON_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+# electron-builder.yml uses artifactName: 智小芽_v${version}-x64.exe
+INSTALLER_NAME="智小芽_v${ELECTRON_VERSION}-x64.exe"
+INSTALLER_PATH="$ELECTRON_DIR/release/$INSTALLER_NAME"
 
-if [ -z "$INSTALLER_PATH" ]; then
-    echo "ERROR: Installer not found in $ELECTRON_DIR/release"
+if [ ! -f "$INSTALLER_PATH" ]; then
+    echo "ERROR: Expected installer not found at $INSTALLER_PATH"
     echo "Contents of release directory:"
     ls -la "$ELECTRON_DIR/release/"
     exit 1

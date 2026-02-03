@@ -1,5 +1,7 @@
 import log from 'electron-log/main'
 import { app } from 'electron'
+import path from 'path'
+import os from 'os'
 
 /**
  * Debug mode is enabled when running from source (not packaged) or with --debug flag.
@@ -7,6 +9,25 @@ import { app } from 'electron'
  * - false: bundled .app/.exe release without --debug flag
  */
 export const isDebugMode = !app.isPackaged || process.argv.includes('--debug')
+
+// Configure custom log path to use "智小芽" as the log directory name
+// This overrides the default behavior which uses package.json name (@creator-flow/electron)
+log.transports.file.resolvePathFn = () => {
+  let logsDir: string
+  
+  if (process.platform === 'darwin') {
+    // macOS: ~/Library/Logs/智小芽
+    logsDir = path.join(os.homedir(), 'Library', 'Logs', '智小芽')
+  } else if (process.platform === 'win32') {
+    // Windows: %APPDATA%/智小芽/logs
+    logsDir = path.join(app.getPath('appData'), '智小芽', 'logs')
+  } else {
+    // Linux: ~/.config/智小芽/logs
+    logsDir = path.join(app.getPath('appData'), '智小芽', 'logs')
+  }
+  
+  return path.join(logsDir, 'main.log')
+}
 
 // Helper: format timestamp in local time (no 8h UTC offset)
 function formatLocalTimestamp(date: Date): string {

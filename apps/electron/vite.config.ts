@@ -34,8 +34,10 @@ export default defineConfig({
     // }),
   ],
   // Build-time environment injection
+  // VITE_APP_ENV is set by build scripts (dist:mac:staging, dist:mac:production)
+  // Fallback to APP_ENV for legacy compatibility, then to development
   define: {
-    __APP_ENV__: JSON.stringify(process.env.APP_ENV || 'development'),
+    __APP_ENV__: JSON.stringify(process.env.VITE_APP_ENV || process.env.APP_ENV || 'development'),
   },
   root: resolve(__dirname, 'src/renderer'),
   base: './',
@@ -43,11 +45,21 @@ export default defineConfig({
     outDir: resolve(__dirname, 'dist/renderer'),
     emptyDirBeforeWrite: true,
     sourcemap: true,  // Source maps generated for debugging. Not uploaded to Sentry (see CLAUDE.md).
+    // Suppress CSS minification warnings for Tailwind arbitrary values like [file:path]
+    cssMinify: 'esbuild',
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/renderer/index.html'),
         playground: resolve(__dirname, 'src/renderer/playground.html'),
       }
+    }
+  },
+  css: {
+    devSourcemap: true,
+  },
+  esbuild: {
+    logOverride: {
+      'unsupported-css-property': 'silent'
     }
   },
   resolve: {

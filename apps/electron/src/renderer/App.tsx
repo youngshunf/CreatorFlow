@@ -167,13 +167,22 @@ export default function App() {
       
       try {
         const cloudConfig = JSON.parse(cloudConfigStr)
-        if (cloudConfig.apiBaseUrl && cloudConfig.llmToken) {
-          const gatewayUrl = `${cloudConfig.apiBaseUrl.replace(/\/$/, '')}/llm/proxy`
+        if (cloudConfig.llmToken) {
+          // IMPORTANT: Always use current environment's API URL, ignore saved URL
+          // This ensures production builds use production API, not leftover dev/staging URLs
+          const { getCloudApiUrl } = await import('@creator-flow/shared/cloud')
+          const currentApiUrl = getCloudApiUrl()
+          const gatewayUrl = `${currentApiUrl.replace(/\/$/, '')}/llm/proxy`
+          
           await window.electronAPI.setCloudConfig({
             gatewayUrl,
             llmToken: cloudConfig.llmToken,
           })
-          console.log('[App] Restored cloud config to main process:', gatewayUrl)
+          console.log('[App] Restored cloud config to main process (env override):', gatewayUrl)
+          
+          // Update localStorage to reflect current environment
+          cloudConfig.apiBaseUrl = currentApiUrl
+          localStorage.setItem('cloud_config', JSON.stringify(cloudConfig))
         }
       } catch (err) {
         console.error('[App] Failed to restore cloud config:', err)

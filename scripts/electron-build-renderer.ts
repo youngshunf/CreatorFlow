@@ -9,8 +9,8 @@ import { join } from "path";
 const ROOT_DIR = join(import.meta.dir, "..");
 const ELECTRON_DIR = join(ROOT_DIR, "apps/electron");
 
-// Get environment from parent process
-const appEnv = process.env.APP_ENV || "development";
+// Get environment from parent process (prioritize VITE_APP_ENV for consistency with build scripts)
+const appEnv = process.env.VITE_APP_ENV || process.env.APP_ENV || "development";
 console.log(`📦 Building renderer for environment: ${appEnv}`);
 
 // Clean renderer dist first
@@ -26,6 +26,8 @@ const proc = spawn({
   stderr: "inherit",
   env: {
     ...process.env,
+    // Pass both for compatibility
+    VITE_APP_ENV: appEnv,
     APP_ENV: appEnv,
   },
 });

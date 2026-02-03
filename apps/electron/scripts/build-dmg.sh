@@ -80,62 +80,91 @@ done
 # Configuration
 BUN_VERSION="bun-v1.3.5"  # Pinned version for reproducible builds
 
-echo "=== Building Craft Agents DMG (${ARCH}) using electron-builder ==="
+echo "=== Building Zhixiaoya DMG (${ARCH}) using electron-builder ==="
 if [ "$UPLOAD" = true ]; then
     echo "Will upload to S3 after build"
 fi
 
 # 1. Clean previous build artifacts
 echo "Cleaning previous builds..."
+# Force remove with sudo if needed for protected files
+if [ -d "$ELECTRON_DIR/release" ]; then
+    chmod -R u+w "$ELECTRON_DIR/release" 2>/dev/null || true
+    rm -rf "$ELECTRON_DIR/release" 2>/dev/null || sudo rm -rf "$ELECTRON_DIR/release"
+fi
 rm -rf "$ELECTRON_DIR/vendor"
 rm -rf "$ELECTRON_DIR/node_modules/@anthropic-ai"
 rm -rf "$ELECTRON_DIR/packages"
-rm -rf "$ELECTRON_DIR/release"
 
-# 2. Install dependencies
-echo "Installing dependencies..."
-cd "$ROOT_DIR"
-bun install
-
-# 3. Get Bun binary (download or use local)
-mkdir -p "$ELECTRON_DIR/vendor/bun"
-BUN_DOWNLOAD="bun-darwin-$([ "$ARCH" = "arm64" ] && echo "aarch64" || echo "x64")"
-
-# Try to download Bun, fall back to local installation if it fails
-echo "Downloading Bun ${BUN_VERSION} for darwin-${ARCH}..."
-TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
-
-DOWNLOAD_SUCCESS=false
-if curl -fSL --connect-timeout 30 --max-time 120 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" 2>/dev/null && \
-   curl -fSL --connect-timeout 30 --max-time 60 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt" -o "$TEMP_DIR/SHASUMS256.txt" 2>/dev/null; then
-    # Verify checksum
-    echo "Verifying checksum..."
-    cd "$TEMP_DIR"
-    if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c - 2>/dev/null; then
-        cd - > /dev/null
-        # Extract and install
-        unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
-        cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun" "$ELECTRON_DIR/vendor/bun/"
-        chmod +x "$ELECTRON_DIR/vendor/bun/bun"
-        DOWNLOAD_SUCCESS=true
-        echo "Downloaded Bun ${BUN_VERSION} successfully"
-    else
-        cd - > /dev/null
-    fi
+# 2. Install dependencies (skip if node_modules exists and is recent)
+NEED_INSTALL=false
+if [ ! -d "$ROOT_DIR/node_modules" ]; then
+    NEED_INSTALL=true
+elif [ "$ROOT_DIR/package.json" -nt "$ROOT_DIR/node_modules" ]; then
+    NEED_INSTALL=true
 fi
 
-# Fall back to local bun if download failed
-if [ "$DOWNLOAD_SUCCESS" = false ]; then
-    echo "Download failed, using local Bun installation as fallback..."
-    LOCAL_BUN=$(which bun)
-    if [ -z "$LOCAL_BUN" ]; then
-        echo "ERROR: Could not download Bun and no local installation found"
-        exit 1
-    fi
-    cp "$LOCAL_BUN" "$ELECTRON_DIR/vendor/bun/"
+if [ "$NEED_INSTALL" = true ]; then
+    echo "Installing dependencies..."
+    cd "$ROOT_DIR"
+    bun install
+else
+    echo "Dependencies are up to date, skipping install..."
+fi
+
+# 3. Get Bun binary (use cache if available)
+mkdir -p "$ELECTRON_DIR/vendor/bun"
+BUN_DOWNLOAD="bun-darwin-$([ "$ARCH" = "arm64" ] && echo "aarch64" || echo "x64")"
+CACHE_DIR="$HOME/.cache/creator-flow/bun"
+CACHED_BUN="$CACHE_DIR/${BUN_VERSION}/${BUN_DOWNLOAD}/bun"
+
+# Check if we have a cached version
+if [ -f "$CACHED_BUN" ]; then
+    echo "Using cached Bun ${BUN_VERSION} from $CACHED_BUN"
+    cp "$CACHED_BUN" "$ELECTRON_DIR/vendor/bun/"
     chmod +x "$ELECTRON_DIR/vendor/bun/bun"
-    echo "Using local Bun: $LOCAL_BUN (version: $(bun --version))"
+else
+    # Try to download Bun
+    echo "Downloading Bun ${BUN_VERSION} for darwin-${ARCH}..."
+    TEMP_DIR=$(mktemp -d)
+    trap "rm -rf $TEMP_DIR" EXIT
+
+    DOWNLOAD_SUCCESS=false
+    if curl -fSL --connect-timeout 30 --max-time 120 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" 2>/dev/null && \
+       curl -fSL --connect-timeout 30 --max-time 60 "https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt" -o "$TEMP_DIR/SHASUMS256.txt" 2>/dev/null; then
+        # Verify checksum
+        echo "Verifying checksum..."
+        cd "$TEMP_DIR"
+        if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c - 2>/dev/null; then
+            cd - > /dev/null
+            # Extract and install
+            unzip -q "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
+            cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun" "$ELECTRON_DIR/vendor/bun/"
+            chmod +x "$ELECTRON_DIR/vendor/bun/bun"
+            
+            # Cache for future builds
+            mkdir -p "$CACHE_DIR/${BUN_VERSION}/${BUN_DOWNLOAD}"
+            cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun" "$CACHED_BUN"
+            
+            DOWNLOAD_SUCCESS=true
+            echo "Downloaded Bun ${BUN_VERSION} successfully and cached"
+        else
+            cd - > /dev/null
+        fi
+    fi
+
+    # Fall back to local bun if download failed
+    if [ "$DOWNLOAD_SUCCESS" = false ]; then
+        echo "Download failed, using local Bun installation as fallback..."
+        LOCAL_BUN=$(which bun)
+        if [ -z "$LOCAL_BUN" ]; then
+            echo "ERROR: Could not download Bun and no local installation found"
+            exit 1
+        fi
+        cp "$LOCAL_BUN" "$ELECTRON_DIR/vendor/bun/"
+        chmod +x "$ELECTRON_DIR/vendor/bun/bun"
+        echo "Using local Bun: $LOCAL_BUN (version: $(bun --version))"
+    fi
 fi
 
 # 4. Copy SDK from root node_modules (monorepo hoisting)
@@ -157,7 +186,21 @@ cp "$INTERCEPTOR_SOURCE" "$ELECTRON_DIR/packages/shared/src/"
 # 6. Build Electron app
 echo "Building Electron app..."
 cd "$ROOT_DIR"
-bun run electron:build
+
+# Use appropriate build command based on VITE_APP_ENV
+if [ "$VITE_APP_ENV" = "staging" ]; then
+    echo "Building for STAGING environment..."
+    export APP_ENV=staging
+    bun run electron:build:staging
+elif [ "$VITE_APP_ENV" = "production" ]; then
+    echo "Building for PRODUCTION environment..."
+    export APP_ENV=production
+    bun run electron:build:production
+else
+    echo "Building for DEVELOPMENT environment..."
+    export APP_ENV=development
+    bun run electron:build
+fi
 
 # 7. Package with electron-builder
 echo "Packaging app with electron-builder..."
@@ -191,11 +234,13 @@ if [ -n "$APPLE_ID" ] && [ -n "$APPLE_TEAM_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PA
 fi
 
 # Run electron-builder
-npx electron-builder $BUILDER_ARGS
+npx electron-builder ${BUILDER_ARGS}
 
 # 8. Verify the DMG was built
-# electron-builder.yml uses artifactName to output: CreatorFlow-${arch}.dmg
-DMG_NAME="CreatorFlow-${ARCH}.dmg"
+# Read version from package.json
+ELECTRON_VERSION=$(cat "$ELECTRON_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+# electron-builder.yml uses artifactName: 智小芽_v${version}-${arch}.dmg
+DMG_NAME="智小芽_v${ELECTRON_VERSION}-${ARCH}.dmg"
 DMG_PATH="$ELECTRON_DIR/release/$DMG_NAME"
 
 if [ ! -f "$DMG_PATH" ]; then

@@ -49,9 +49,9 @@ const environments: Record<AppEnvironment, EnvironmentConfig> = {
   },
   production: {
     name: 'production',
-    cloudApiUrl: 'https://api.ai.dcfuture.cn/api/v1',
+    cloudApiUrl: 'http://api.ai.dcfuture.cn/api/v1',
     llmGatewayPath: '/llm/proxy',
-    llmGatewayUrl: 'https://api.ai.dcfuture.cn/api/v1/llm/proxy',
+    llmGatewayUrl: 'http://api.ai.dcfuture.cn/api/v1/llm/proxy',
     debugMode: false,
     showDevTools: false,
   },

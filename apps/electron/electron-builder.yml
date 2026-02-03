@@ -72,15 +72,15 @@ mac:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
   # Use predictable naming for macOS packages (applies to zip; dmg uses its own config below)
-  artifactName: "Zhixiaoya-${arch}.${ext}"
+  artifactName: "智小芽_v${version}-${arch}.${ext}"
   # Code signing & notarization (disabled by default for local builds)
   # To enable: set CSC_LINK, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
   # notarize:
   #   teamId: ${APPLE_TEAM_ID}
 
 dmg:
-  # Use predictable naming: Zhixiaoya-arm64.dmg, Zhixiaoya-x64.dmg
-  artifactName: "Zhixiaoya-${arch}.dmg"
+  # Use predictable naming: 智小芽_v0.3.1-arm64.dmg, 智小芽_v0.3.1-x64.dmg
+  artifactName: "智小芽_v${version}-${arch}.dmg"
   contents:
     - x: 130
       y: 220
@@ -98,8 +98,8 @@ win:
     - target: nsis
       arch:
         - x64
-  # Use predictable naming: Zhixiaoya-x64.exe
-  artifactName: "Zhixiaoya-${arch}.${ext}"
+  # Use predictable naming: 智小芽_v0.3.1-x64.exe
+  artifactName: "智小芽_v${version}-${arch}.${ext}"
   files:
     # Exclude ripgrep binaries for other platforms
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-linux"
@@ -137,7 +137,7 @@ linux:
     - target: AppImage
       arch:
         - x64
-  artifactName: "Zhixiaoya-${arch}.${ext}"
+  artifactName: "智小芽_v${version}-${arch}.${ext}"
   # Exclude ripgrep binaries for other platforms
   files:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-darwin"

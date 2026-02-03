@@ -219,7 +219,8 @@ async function createInitialWindows(): Promise<void> {
 // ============================================================
 app.on('certificate-error', (event, _webContents, url, _error, _certificate, callback) => {
   // Allow self-signed certs for internal staging/dev servers
-  const allowedHosts = ['192.168.1.92', 'localhost', '127.0.0.1']
+  // TEMPORARY: Also allow api.ai.dcfuture.cn until SSL cert is fixed (CN mismatch)
+  const allowedHosts = ['192.168.1.92', 'localhost', '127.0.0.1', 'api.ai.dcfuture.cn']
   try {
     const parsedUrl = new URL(url)
     if (allowedHosts.some(host => parsedUrl.hostname === host)) {
@@ -247,9 +248,10 @@ app.whenReady().then(async () => {
   // 3. contextIsolation is enabled, preventing renderer from accessing Node
   // ============================================================
   const cloudApiDomains = [
-    '192.168.1.92',           // Staging (internal network)
-    'api.ai.dcfuture.cn',      // Production
     'localhost',               // Development
+    '127.0.0.1',               // Development (IP)
+    '192.168.1.92',            // Staging (internal network)
+    'api.ai.dcfuture.cn',      // Production
   ]
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
