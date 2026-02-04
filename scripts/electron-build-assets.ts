@@ -1,13 +1,11 @@
 /**
  * Cross-platform assets copy script
  *
- * Copies shared documentation files (packages/shared/assets/docs/)
- * into the Electron dist directory so they are bundled with the app.
- * At runtime, packages/shared/src/docs/index.ts reads these files
- * and installs them to ~/.craft-agent/docs/.
+ * Copies shared assets into the Electron dist directory:
+ * 1. Documentation files (packages/shared/assets/docs/)
+ * 2. Theme files (apps/electron/resources/themes/)
  *
- * Without this step, the packaged app falls back to placeholder content.
- * See: https://github.com/lukilabs/craft-agents-oss/issues/71
+ * At runtime, these files are installed to ~/.creator-flow/
  */
 
 import { existsSync, cpSync, mkdirSync } from "fs";
@@ -16,13 +14,26 @@ import { join } from "path";
 const ROOT_DIR = join(import.meta.dir, "..");
 const ELECTRON_DIR = join(ROOT_DIR, "apps/electron");
 
-const srcDir = join(ROOT_DIR, "packages/shared/assets/docs");
-const destDir = join(ELECTRON_DIR, "dist/assets/docs");
+// Copy documentation assets
+const docsSourceDir = join(ROOT_DIR, "packages/shared/assets/docs");
+const docsDestDir = join(ELECTRON_DIR, "dist/assets/docs");
 
-if (existsSync(srcDir)) {
+if (existsSync(docsSourceDir)) {
   mkdirSync(join(ELECTRON_DIR, "dist/assets"), { recursive: true });
-  cpSync(srcDir, destDir, { recursive: true, force: true });
+  cpSync(docsSourceDir, docsDestDir, { recursive: true, force: true });
   console.log("📦 Copied doc assets to dist");
 } else {
   console.log("⚠️ No shared assets/docs directory found");
+}
+
+// Copy theme files
+const themesSourceDir = join(ELECTRON_DIR, "resources/themes");
+const themesDestDir = join(ELECTRON_DIR, "dist/assets/themes");
+
+if (existsSync(themesSourceDir)) {
+  mkdirSync(join(ELECTRON_DIR, "dist/assets"), { recursive: true });
+  cpSync(themesSourceDir, themesDestDir, { recursive: true, force: true });
+  console.log("🎨 Copied theme assets to dist");
+} else {
+  console.log("⚠️ No resources/themes directory found");
 }
