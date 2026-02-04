@@ -68,6 +68,29 @@ export {
   GetTemplateInputSchema,
 } from './template';
 
+// 导出素材发现工具
+export {
+  registerAssetDiscoveryTools,
+  handleListAvailableAssets,
+  ListAvailableAssetsInputSchema,
+} from './asset-discovery';
+
+// 导出代码验证工具
+export {
+  registerCodeValidationTools,
+  handleValidateComposition,
+  ValidateCompositionInputSchema,
+} from './code-validation';
+
+// 导出渲染状态工具
+export {
+  registerRenderStatusTools,
+  handleGetRenderStatus,
+  GetRenderStatusInputSchema,
+  updateRenderStatus,
+  clearRenderStatus,
+} from './render-status';
+
 // 导入注册函数
 import { registerProjectTools } from './project';
 import { registerAssetTools } from './asset';
@@ -75,6 +98,9 @@ import { registerCompositionTools } from './composition';
 import { registerRenderTools } from './render';
 import { registerPreviewTools } from './preview';
 import { registerTemplateTools } from './template';
+import { registerAssetDiscoveryTools } from './asset-discovery';
+import { registerCodeValidationTools } from './code-validation';
+import { registerRenderStatusTools } from './render-status';
 
 /**
  * 注册所有 MCP 工具到 FastMCP 服务器
@@ -107,6 +133,18 @@ export function registerAllTools(mcp: FastMCP): void {
   // 注册模板工具
   registerTemplateTools(mcp);
   console.log('[MCP Video Server] - Template tools registered');
+
+  // 注册素材发现工具
+  registerAssetDiscoveryTools(mcp);
+  console.log('[MCP Video Server] - Asset discovery tools registered');
+
+  // 注册代码验证工具
+  registerCodeValidationTools(mcp);
+  console.log('[MCP Video Server] - Code validation tools registered');
+
+  // 注册渲染状态工具
+  registerRenderStatusTools(mcp);
+  console.log('[MCP Video Server] - Render status tools registered');
 
   console.log('[MCP Video Server] All tools registered successfully');
 }
@@ -142,6 +180,15 @@ export const TOOL_LIST = [
   // 模板
   { name: 'video_list_templates', category: 'template', description: '列出所有可用的视频模板' },
   { name: 'video_get_template', category: 'template', description: '获取视频模板详情' },
+
+  // 素材发现（新增）
+  { name: 'video_list_available_assets', category: 'asset-discovery', description: '列出工作区中可用的素材文件' },
+
+  // 代码验证（新增）
+  { name: 'video_validate_composition', category: 'code-validation', description: '验证 Remotion 组合代码的语法和正确性' },
+
+  // 渲染状态（新增）
+  { name: 'video_get_render_status', category: 'render-status', description: '获取视频渲染的当前状态和进度' },
 ] as const;
 
 /**
