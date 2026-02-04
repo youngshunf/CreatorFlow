@@ -471,7 +471,7 @@ function MultiChoiceField({
                   checked ? 'border-accent bg-accent' : 'border-muted-foreground/40 bg-transparent'
                 )}
               >
-                {checked && <Check className="w-3 h-3 text-accent-foreground" strokeWidth={3} />}
+                {checked && <Check className="w-3 h-3 text-background" strokeWidth={3} />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

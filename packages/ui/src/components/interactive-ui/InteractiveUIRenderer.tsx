@@ -195,7 +195,7 @@ export function InteractiveFormRenderer({
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
               hasRequiredValues
-                ? 'bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-md active:scale-[0.98]'
+                ? 'bg-accent text-background hover:bg-accent/90 hover:shadow-md active:scale-[0.98]'
                 : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
             )}
           >
@@ -469,7 +469,7 @@ function MultiChoiceField({
                   checked ? 'border-accent bg-accent' : 'border-muted-foreground/40 bg-transparent'
                 )}
               >
-                {checked && <Check className="w-3 h-3 text-accent-foreground" strokeWidth={3} />}
+                {checked && <Check className="w-3 h-3 text-background" strokeWidth={3} />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ function ConfirmField({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             value === true
-              ? 'bg-accent text-accent-foreground'
+              ? 'bg-accent text-background'
               : 'border border-border hover:bg-muted',
             disabled && 'opacity-60 cursor-not-allowed'
           )}
@@ -535,7 +535,7 @@ function ConfirmField({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             value === false
-              ? 'bg-accent text-accent-foreground'
+              ? 'bg-accent text-background'
               : 'border border-border hover:bg-muted',
             disabled && 'opacity-60 cursor-not-allowed'
           )}
