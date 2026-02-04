@@ -53,6 +53,7 @@ import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared
 import { evaluateAutoLabels } from '@creator-flow/shared/labels/auto'
 import { listLabels } from '@creator-flow/shared/labels/storage'
 import { extractLabelId } from '@creator-flow/shared/labels'
+import { getDefaultBunPathResolver, type BunPathResolver } from './bun-path'
 
 /**
  * Sanitize message content for use as session title.
@@ -876,17 +877,10 @@ export class SessionManager {
     // In packaged app: use bundled Bun binary
     // In development: use system 'bun' command
     if (app.isPackaged) {
-      // Use platform-specific binary name (bun.exe on Windows, bun on macOS/Linux)
-      const bunBinary = process.platform === 'win32' ? 'bun.exe' : 'bun'
-      // On Windows, bun.exe is in extraResources (process.resourcesPath) to avoid EBUSY errors.
-      // On macOS/Linux, bun is in the app files (basePath). See electron-builder.yml for details.
-      const bunBasePath = process.platform === 'win32' ? process.resourcesPath : basePath
-      const bunPath = join(bunBasePath, 'vendor', 'bun', bunBinary)
-      if (!existsSync(bunPath)) {
-        const error = `Bundled Bun runtime not found at ${bunPath}. The app package may be corrupted.`
-        sessionLog.error(error)
-        throw new Error(error)
-      }
+      // Use BunPathResolver to get the Bun executable path
+      // This handles platform-specific paths and validation
+      const bunResolver = getDefaultBunPathResolver()
+      const bunPath = bunResolver.getBunPath()
       sessionLog.info('Setting executable:', bunPath)
       setExecutable(bunPath)
 

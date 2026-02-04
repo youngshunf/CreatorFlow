@@ -25,10 +25,34 @@ files:
   - dist/assets/bundled-apps/**/*
   # Include SDK for subprocess execution
   - node_modules/@anthropic-ai/claude-agent-sdk/**/*
+  # Include zod (peer dependency of claude-agent-sdk)
+  - node_modules/zod/**/*
+  # Include ajv and ajv-formats (runtime dependencies of claude-agent-sdk cli.js)
+  - node_modules/ajv/**/*
+  - node_modules/ajv-formats/**/*
+  # Include ajv's dependencies
+  - node_modules/fast-deep-equal/**/*
+  - node_modules/fast-json-stable-stringify/**/*
+  - node_modules/json-schema-traverse/**/*
+  - node_modules/uri-js/**/*
+  - node_modules/punycode/**/*
   # Include network interceptor for API error capture and MCP schema injection
   - packages/shared/src/network-interceptor.ts
   # Include bundled Bun runtime (platform-specific, set by build script)
   - vendor/bun/**/*
+  # Include MCP Video Server for video rendering (Bun can run TypeScript directly)
+  - apps/mcp-video/src/**/*
+  - apps/mcp-video/package.json
+  # Include video package for Remotion compositions
+  - packages/video/src/**/*
+  - packages/video/package.json
+  # Include Remotion dependencies for video rendering
+  - node_modules/@remotion/**/*
+  - node_modules/remotion/**/*
+  # Include fastmcp for MCP Video Server
+  - node_modules/fastmcp/**/*
+  # Include nanoid for MCP Video Server
+  - node_modules/nanoid/**/*
   # Exclude everything else from node_modules
   - "!node_modules/**/*"
   - node_modules/@anthropic-ai/**/*

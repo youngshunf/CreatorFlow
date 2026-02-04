@@ -1,0 +1,40 @@
+{
+  "name": "@creator-flow/mcp-video",
+  "version": "0.1.0",
+  "description": "MCP Server for video creation with Remotion",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "start:http": "bun run src/index.ts --transport http",
+    "build": "bun build src/index.ts --outdir=dist --target=bun",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@creator-flow/video": "workspace:*",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "fastmcp": "^1.0.0",
+    "nanoid": "^5.1.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.0.8",
+    "fast-check": "^3.23.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "video",
+    "remotion",
+    "ai-agent",
+    "creator-flow"
+  ],
+  "author": "CreatorFlow Team",
+  "license": "MIT"
+}

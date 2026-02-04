@@ -18,6 +18,7 @@ import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@cre
 import { isValidThinkingLevel } from '@creator-flow/shared/agent/thinking-levels'
 import { getCredentialManager } from '@creator-flow/shared/credentials'
 import { MarkItDown } from 'markitdown-js'
+import { registerVideoIpcHandlers } from './video'
 
 /**
  * Sanitizes a filename to prevent path traversal and filesystem issues.
@@ -2770,4 +2771,6 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return getSkillsWithUpdateStatus(workspace.rootPath)
   })
 
+  // Register video IPC handlers (Remotion video creation)
+  registerVideoIpcHandlers()
 }

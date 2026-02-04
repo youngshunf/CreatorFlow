@@ -78,6 +78,7 @@ import { setBundledAssetsRoot } from '@creator-flow/shared/utils'
 import { handleDeepLink } from './deep-link'
 import { registerThumbnailScheme, registerThumbnailHandler } from './thumbnail-protocol'
 import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
+import { cleanupVideoServices } from './video'
 import { setPerfEnabled, enableDebug } from '@creator-flow/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
 import { checkForUpdatesOnLaunch, setWindowManager as setAutoUpdateWindowManager, isUpdating } from './auto-update'
@@ -483,6 +484,15 @@ app.on('before-quit', async (event) => {
     }
     // Clean up SessionManager resources (file watchers, timers, etc.)
     sessionManager.cleanup()
+
+    // Clean up video services (MCP Video Server, preview servers, render workers)
+    // @requirements 2.3, 2.4 - 应用关闭时优雅地停止所有视频服务子进程
+    try {
+      await cleanupVideoServices()
+      mainLog.info('Cleaned up video services')
+    } catch (error) {
+      mainLog.error('Failed to cleanup video services:', error)
+    }
 
     // If update is in progress, let electron-updater handle the quit flow
     // Force exit breaks the NSIS installer on Windows
