@@ -1,5 +1,9 @@
 [
   [
+    "，但本次操作需要",
+    ", but this operation requires "
+  ],
+  [
     ".NET 版本",
     ".NET version"
   ],
@@ -920,6 +924,10 @@
     "Insufficient Credits"
   ],
   [
+    "积分。请升级订阅或购买积分包以继续使用。",
+    " credits. Please upgrade your subscription or purchase credits to continue."
+  ],
+  [
     "基本信息",
     "Basic information"
   ],
@@ -1510,6 +1518,10 @@
   [
     "您的基本个人信息",
     "Your Basic Personal Information"
+  ],
+  [
+    "您的当前积分为",
+    "Your current credit balance is "
   ],
   [
     "您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。",

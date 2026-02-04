@@ -20,6 +20,7 @@ import { Markdown, CollapsibleMarkdownProvider, StreamingMarkdown, type RenderMo
 import { InteractiveUIParser, hasInteractiveUI } from "../interactive-ui/InteractiveUIParser"
 import type { InteractiveResponse } from "@creator-flow/shared/interactive-ui"
 import { AnimatedCollapsibleContent } from "@/components/ui/collapsible"
+import { navigate, routes } from "@/lib/navigate"
 import {
   Spinner,
   parseReadResult,
@@ -1771,7 +1772,6 @@ function ErrorMessage({ message }: { message: Message }) {
   const requiredCredits = creditsMatch?.[2]
 
   const handleNavigateToSubscription = () => {
-    const { navigate, routes } = require('@/lib/navigate')
     navigate(routes.view.settings('subscription'))
   }
 
@@ -1793,10 +1793,7 @@ function ErrorMessage({ message }: { message: Message }) {
           <>
             <p className="text-sm text-destructive mb-2">
               {currentCredits && requiredCredits
-                ? t('您的当前积分为 {current}，但本次操作需要 {required} 积分。请升级订阅或购买积分包以继续使用。', {
-                    current: currentCredits,
-                    required: requiredCredits
-                  })
+                ? `${t('您的当前积分为')} ${currentCredits}${t('，但本次操作需要')} ${requiredCredits} ${t('积分。请升级订阅或购买积分包以继续使用。')}`
                 : t('您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。')
               }
             </p>
