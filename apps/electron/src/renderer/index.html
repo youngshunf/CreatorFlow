@@ -22,14 +22,145 @@
     <!-- Initial loading state: visible until React mounts and replaces #root contents.
          Prevents blank screen on cold start / post-update launch when code cache is stale. -->
     <style>
-      #_loader { display:flex; align-items:center; justify-content:center; height:100vh; opacity:0; animation:_fade 0.4s 0.3s forwards; }
-      #_loader svg { width:24px; height:24px; animation:_spin 1s linear infinite; }
-      @keyframes _fade { to { opacity:1 } }
-      @keyframes _spin { to { transform:rotate(360deg) } }
-      @media (prefers-color-scheme:dark) { #_loader svg { color:rgba(255,255,255,0.4) } }
-      @media (prefers-color-scheme:light) { #_loader svg { color:rgba(0,0,0,0.3) } }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+      #_loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        opacity: 0;
+        animation: _fade 0.5s forwards;
+        overflow: hidden;
+      }
+      #_loader_icon {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 32px;
+        opacity: 0;
+        animation: _fadeIn 0.6s 0.2s forwards, _scaleIn 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #_loader_title {
+        font-size: 30px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        opacity: 0;
+        animation: _fadeIn 0.6s 0.4s forwards, _slideUp 0.6s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #_loader_slogan {
+        font-size: 14px;
+        margin-bottom: 8px;
+        opacity: 0;
+        animation: _fadeIn 0.6s 0.5s forwards, _slideUp 0.6s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #_loader_subtitle {
+        font-size: 12px;
+        margin-bottom: 64px;
+        opacity: 0.8;
+        max-width: 400px;
+        text-align: center;
+        line-height: 1.6;
+        opacity: 0;
+        animation: _fadeIn 0.6s 0.6s forwards, _slideUp 0.6s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #_loader_progress {
+        position: absolute;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 256px;
+        opacity: 0;
+        animation: _fadeIn 0.4s 0.6s forwards;
+      }
+      #_loader_progress_bg {
+        height: 4px;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      #_loader_progress_bar {
+        height: 100%;
+        border-radius: 2px;
+        animation: _progress 2s ease-in-out infinite;
+      }
+      @keyframes _fade { to { opacity: 1 } }
+      @keyframes _fadeIn { to { opacity: 1 } }
+      @keyframes _scaleIn { from { transform: scale(0.8) } to { transform: scale(1) } }
+      @keyframes _slideUp { from { transform: translateY(20px) } to { transform: translateY(0) } }
+      @keyframes _progress {
+        0% { width: 0% }
+        50% { width: 60% }
+        100% { width: 60% }
+      }
+
+      /* Light mode (default) */
+      body { background: #ffffff; }
+      #_loader { color: #09090b; }
+      #_loader_icon { color: #3b82f6; }
+      #_loader_slogan { color: #71717a; }
+      #_loader_subtitle { color: #a1a1aa; }
+      #_loader_progress_bg { background: rgba(9, 9, 11, 0.1); }
+      #_loader_progress_bar { background: #3b82f6; }
+
+      /* Dark mode */
+      @media (prefers-color-scheme: dark) {
+        body { background: #09090b; }
+        #_loader { color: #fafafa; }
+        #_loader_icon { color: #3b82f6; }
+        #_loader_slogan { color: #a1a1aa; }
+        #_loader_subtitle { color: #71717a; }
+        #_loader_progress_bg { background: rgba(250, 250, 250, 0.1); }
+        #_loader_progress_bar { background: #3b82f6; }
+      }
     </style>
-    <div id="_loader"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/></svg></div>
+    <div id="_loader">
+      <!-- Brand Icon (智小芽 Logo) -->
+      <svg id="_loader_icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#06B6D4"/>
+            <stop offset="100%" stop-color="#8B5CF6"/>
+          </linearGradient>
+          <linearGradient id="grad2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#06B6D4"/>
+            <stop offset="100%" stop-color="#8B5CF6"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <g transform="translate(256, 280)">
+          <!-- Base circle -->
+          <circle cx="0" cy="0" r="140" fill="#1E293B"/>
+          <!-- Left leaf -->
+          <path d="M-18 -5 Q-90 -45 -100 -158 Q-68 -85 -35 -28 Q-24 -5 -18 -5" fill="url(#grad)" filter="url(#glow)"/>
+          <!-- Right leaf -->
+          <path d="M18 -5 Q90 -45 100 -158 Q68 -85 35 -28 Q24 -5 18 -5" fill="url(#grad2)" filter="url(#glow)"/>
+          <!-- Bottom glow dot -->
+          <circle cx="0" cy="55" r="22" fill="url(#grad)" filter="url(#glow)"/>
+        </g>
+      </svg>
+
+      <!-- Brand Name -->
+      <div id="_loader_title">智小芽</div>
+
+      <!-- Slogan -->
+      <div id="_loader_slogan">超级桌面AGENT，越用越懂你</div>
+
+      <!-- Subtitle -->
+      <div id="_loader_subtitle">帮你完成具体工作的 AI 超级助手，每个场景都长出一颗懂你的智小芽</div>
+
+      <!-- Progress Bar -->
+      <div id="_loader_progress">
+        <div id="_loader_progress_bg">
+          <div id="_loader_progress_bar"></div>
+        </div>
+      </div>
+    </div>
   </div>
   <script type="module" src="./main.tsx"></script>
 </body>
