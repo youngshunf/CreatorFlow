@@ -32,6 +32,8 @@ files:
   # Exclude everything else from node_modules
   - "!node_modules/**/*"
   - node_modules/@anthropic-ai/**/*
+  # Include SDK peer dependencies
+  - node_modules/zod/**/*
 
 extraMetadata:
   main: dist/main.cjs
@@ -117,10 +119,6 @@ win:
   extraResources:
     - from: vendor/bun/bun.exe
       to: vendor/bun/bun.exe
-    # Bundle MinGit for Windows - provides bash.exe required by Claude Agent SDK
-    # This eliminates the need for users to install Git for Windows manually
-    - from: vendor/git
-      to: vendor/git
 
 nsis:
   oneClick: true
