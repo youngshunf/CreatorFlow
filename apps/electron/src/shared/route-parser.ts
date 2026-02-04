@@ -17,6 +17,7 @@ import type {
   RightSidebarPanel,
   FilesNavigationState,
   MarketplaceFilter,
+  VideoNavigationState,
 } from './types'
 
 // =============================================================================
@@ -36,7 +37,7 @@ export interface ParsedRoute {
 // Compound Route Types (new format)
 // =============================================================================
 
-export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files' | 'marketplace'
+export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files' | 'marketplace' | 'video'
 
 export interface ParsedCompoundRoute {
   /** The navigator type */
@@ -62,7 +63,7 @@ export interface ParsedCompoundRoute {
  * Known prefixes that indicate a compound route
  */
 const COMPOUND_ROUTE_PREFIXES = [
-  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files', 'marketplace'
+  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files', 'marketplace', 'video'
 ]
 
 /**
@@ -246,6 +247,23 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
     return null
   }
 
+  // Video navigator
+  if (first === 'video') {
+    if (segments.length === 1) {
+      return { navigator: 'video', details: null }
+    }
+
+    // video/project/{projectId}
+    if (segments[1] === 'project' && segments[2]) {
+      return {
+        navigator: 'video',
+        details: { type: 'project', id: segments[2] },
+      }
+    }
+
+    return null
+  }
+
   // Chats navigator (allChats, flagged, state)
   let chatFilter: ChatFilter
   let detailsStartIndex: number
@@ -336,6 +354,12 @@ export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
     }
     if (!parsed.details) return base
     return `${base}/${parsed.details.type}/${parsed.details.id}`
+  }
+
+  // Video navigator
+  if (parsed.navigator === 'video') {
+    if (!parsed.details) return 'video'
+    return `video/project/${parsed.details.id}`
   }
 
   // Chats navigator
@@ -458,6 +482,14 @@ function convertCompoundToViewRoute(compound: ParsedCompoundRoute): ParsedRoute 
     // marketplace-skill-info or marketplace-app-info based on details type
     const name = compound.details.type === 'skill' ? 'marketplace-skill-info' : 'marketplace-app-info'
     return { type: 'view', name, id: compound.details.id, params: {} }
+  }
+
+  // Video
+  if (compound.navigator === 'video') {
+    if (!compound.details) {
+      return { type: 'view', name: 'video', params: {} }
+    }
+    return { type: 'view', name: 'video-project', id: compound.details.id, params: {} }
   }
 
   // Chats
@@ -602,6 +634,17 @@ function convertCompoundToNavigationState(compound: ParsedCompoundRoute): Naviga
       }
     }
     return { navigator: 'marketplace', filter, details: null }
+  }
+
+  // Video
+  if (compound.navigator === 'video') {
+    if (compound.details) {
+      return {
+        navigator: 'video',
+        projectId: compound.details.id,
+      }
+    }
+    return { navigator: 'video' }
   }
 
   // Chats
@@ -758,6 +801,13 @@ function convertParsedRouteToNavigationState(parsed: ParsedRoute): NavigationSta
         }
       }
       return { navigator: 'marketplace', filter: { kind: 'all' }, details: null }
+    case 'video':
+      return { navigator: 'video' }
+    case 'video-project':
+      if (parsed.id) {
+        return { navigator: 'video', projectId: parsed.id }
+      }
+      return { navigator: 'video' }
     default:
       return null
   }
@@ -810,6 +860,14 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
       return `${base}/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
     }
     return base
+  }
+
+  // Video
+  if (state.navigator === 'video') {
+    if (state.projectId) {
+      return `video/project/${state.projectId}`
+    }
+    return 'video'
   }
 
   // Chats

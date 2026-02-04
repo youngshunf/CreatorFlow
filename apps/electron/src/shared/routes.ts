@@ -190,6 +190,12 @@ export const routes = {
       subpage && subpage !== 'user-profile'
         ? `settings/${subpage}` as const
         : 'settings' as const,
+
+    /** Video editor view */
+    video: (projectId?: string) =>
+      projectId
+        ? `video/project/${projectId}` as const
+        : 'video' as const,
   },
 } as const
 

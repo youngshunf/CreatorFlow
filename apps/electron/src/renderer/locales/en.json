@@ -3714,5 +3714,269 @@
   [
     "Yarn 读取操作：列出包、检查过时包",
     "Yarn read operations: list packages, check outdated"
+  ],
+  [
+    "项目",
+    "Projects"
+  ],
+  [
+    "新建项目",
+    "New Project"
+  ],
+  [
+    "新视频项目",
+    "New Video Project"
+  ],
+  [
+    "选择一个项目开始预览",
+    "Select a project to start preview"
+  ],
+  [
+    "请先选择或创建一个项目",
+    "Please select or create a project first"
+  ],
+  [
+    "属性",
+    "Properties"
+  ],
+  [
+    "导出",
+    "Export"
+  ],
+  [
+    "暂无视频项目",
+    "No video projects"
+  ],
+  [
+    "点击 + 创建新项目",
+    "Click + to create new project"
+  ],
+  [
+    "项目信息",
+    "Project Info"
+  ],
+  [
+    "添加项目描述...",
+    "Add project description..."
+  ],
+  [
+    "视频配置",
+    "Video Config"
+  ],
+  [
+    "预设",
+    "Preset"
+  ],
+  [
+    "选择预设",
+    "Select preset"
+  ],
+  [
+    "竖屏",
+    "Vertical"
+  ],
+  [
+    "方形",
+    "Square"
+  ],
+  [
+    "肖像",
+    "Portrait"
+  ],
+  [
+    "宽度",
+    "Width"
+  ],
+  [
+    "高度",
+    "Height"
+  ],
+  [
+    "帧率",
+    "Frame Rate"
+  ],
+  [
+    "时长(帧)",
+    "Duration (frames)"
+  ],
+  [
+    "时长(秒)",
+    "Duration (sec)"
+  ],
+  [
+    "素材",
+    "Assets"
+  ],
+  [
+    "暂无素材",
+    "No assets"
+  ],
+  [
+    "{{count}} 个素材",
+    "{{count}} assets"
+  ],
+  [
+    "更多",
+    "more"
+  ],
+  [
+    "导出视频",
+    "Export Video"
+  ],
+  [
+    "选择一个项目查看属性",
+    "Select a project to view properties"
+  ],
+  [
+    "无项目",
+    "No project"
+  ],
+  [
+    "跳到开头",
+    "Jump to start"
+  ],
+  [
+    "后退1秒",
+    "Back 1 second"
+  ],
+  [
+    "上一帧",
+    "Previous frame"
+  ],
+  [
+    "暂停",
+    "Pause"
+  ],
+  [
+    "播放",
+    "Play"
+  ],
+  [
+    "下一帧",
+    "Next frame"
+  ],
+  [
+    "前进1秒",
+    "Forward 1 second"
+  ],
+  [
+    "跳到结尾",
+    "Jump to end"
+  ],
+  [
+    "帧",
+    "Frame"
+  ],
+  [
+    "社交媒体",
+    "Social Media"
+  ],
+  [
+    "营销推广",
+    "Marketing"
+  ],
+  [
+    "教程",
+    "Tutorial"
+  ],
+  [
+    "社交",
+    "Social"
+  ],
+  [
+    "营销",
+    "Marketing"
+  ],
+  [
+    "暂无模板",
+    "No templates"
+  ],
+  [
+    "使用模板",
+    "Use Template"
+  ],
+  [
+    "选择组件",
+    "Select Composition"
+  ],
+  [
+    "输出格式",
+    "Output Format"
+  ],
+  [
+    "通用格式，兼容性最好",
+    "Universal format, best compatibility"
+  ],
+  [
+    "网页优化，文件较小",
+    "Web optimized, smaller file"
+  ],
+  [
+    "动图格式，无声音",
+    "Animated image, no audio"
+  ],
+  [
+    "质量预设",
+    "Quality Preset"
+  ],
+  [
+    "草稿",
+    "Draft"
+  ],
+  [
+    "快速预览，低质量",
+    "Quick preview, low quality"
+  ],
+  [
+    "标准",
+    "Standard"
+  ],
+  [
+    "平衡质量和大小",
+    "Balance quality and size"
+  ],
+  [
+    "高质量",
+    "High Quality"
+  ],
+  [
+    "最佳质量，文件较大",
+    "Best quality, larger file"
+  ],
+  [
+    "分辨率",
+    "Resolution"
+  ],
+  [
+    "时长",
+    "Duration"
+  ],
+  [
+    "打包中...",
+    "Bundling..."
+  ],
+  [
+    "准备中...",
+    "Preparing..."
+  ],
+  [
+    "渲染中...",
+    "Rendering..."
+  ],
+  [
+    "完成",
+    "Completed"
+  ],
+  [
+    "失败",
+    "Failed"
+  ],
+  [
+    "停止渲染",
+    "Stop Render"
+  ],
+  [
+    "开始导出",
+    "Start Export"
   ]
 ]

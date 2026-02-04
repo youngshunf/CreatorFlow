@@ -15,20 +15,20 @@
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node", "bun"],
+    "types": ["bun"],
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/renderer/*"],
-      "@config/*": ["../../packages/shared/src/config/*"],
-      "@creator-flow/shared": ["../../packages/shared/src/index.ts"],
-      "@creator-flow/shared/*": ["../../packages/shared/src/*"],
-      "@creator-flow/video": ["../../packages/video/src/index.ts"],
-      "@creator-flow/video/*": ["../../packages/video/src/*"]
+      "@creator-flow/core": ["../core/src/index.ts"],
+      "@creator-flow/core/*": ["../core/src/*"],
+      "@creator-flow/video": ["./src/index.ts"],
+      "@creator-flow/video/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "../../packages/shared/src/**/*.d.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
