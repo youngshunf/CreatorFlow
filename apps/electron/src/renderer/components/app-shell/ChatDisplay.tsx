@@ -1758,6 +1758,23 @@ function ErrorMessage({ message }: { message: Message }) {
   const hasDetails = (message.errorDetails && message.errorDetails.length > 0) || message.errorOriginal
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
+  // 检测是否为积分不足错误
+  const isInsufficientCredits =
+    message.content?.toLowerCase().includes('insufficient credits') ||
+    message.content?.includes('积分不足') ||
+    message.errorTitle?.toLowerCase().includes('insufficient credits') ||
+    message.errorTitle?.includes('积分不足')
+
+  // 提取当前积分和所需积分（如果有）
+  const creditsMatch = message.content?.match(/current[=\s]*([0-9.]+).*required[=\s]*([0-9.]+)/i)
+  const currentCredits = creditsMatch?.[1]
+  const requiredCredits = creditsMatch?.[2]
+
+  const handleNavigateToSubscription = () => {
+    const { navigate, routes } = require('@/lib/navigate')
+    navigate(routes.view.settings('subscription'))
+  }
+
   return (
     <div className="flex justify-start mt-4">
       {/* Subtle bg (3% opacity) + tinted shadow for softer error appearance */}
@@ -1769,9 +1786,38 @@ function ErrorMessage({ message }: { message: Message }) {
         } as React.CSSProperties}
       >
         <div className="text-xs text-destructive/50 mb-0.5 font-semibold">
-          {message.errorTitle || t('错误')}
+          {isInsufficientCredits ? t('积分不足') : (message.errorTitle || t('错误'))}
         </div>
-        <p className="text-sm text-destructive">{message.content}</p>
+
+        {isInsufficientCredits ? (
+          <>
+            <p className="text-sm text-destructive mb-2">
+              {currentCredits && requiredCredits
+                ? t('您的当前积分为 {current}，但本次操作需要 {required} 积分。请升级订阅或购买积分包以继续使用。', {
+                    current: currentCredits,
+                    required: requiredCredits
+                  })
+                : t('您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。')
+              }
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleNavigateToSubscription}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-destructive hover:bg-destructive/90 rounded transition-colors"
+              >
+                {t('升级订阅')}
+              </button>
+              <button
+                onClick={handleNavigateToSubscription}
+                className="px-3 py-1.5 text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/5 rounded transition-colors"
+              >
+                {t('购买积分包')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-destructive">{message.content}</p>
+        )}
 
         {/* Collapsible Details Toggle */}
         {hasDetails && (

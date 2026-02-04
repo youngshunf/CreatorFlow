@@ -480,6 +480,14 @@
     "Subscription & Credits"
   ],
   [
+    "升级订阅",
+    "Upgrade Subscription"
+  ],
+  [
+    "购买积分包",
+    "Purchase Credits"
+  ],
+  [
     "定位命令",
     "Locate a command"
   ],
@@ -906,6 +914,10 @@
   [
     "积分余额",
     "Points Balance"
+  ],
+  [
+    "积分不足",
+    "Insufficient Credits"
   ],
   [
     "基本信息",
@@ -1498,6 +1510,10 @@
   [
     "您的基本个人信息",
     "Your Basic Personal Information"
+  ],
+  [
+    "您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。",
+    "Your credit balance is insufficient to complete this operation. Please upgrade your subscription or purchase credits to continue."
   ],
   [
     "您的联系方式",
