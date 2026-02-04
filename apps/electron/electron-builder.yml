@@ -40,12 +40,10 @@ files:
   - packages/shared/src/network-interceptor.ts
   # Include bundled Bun runtime (platform-specific, set by build script)
   - vendor/bun/**/*
-  # Include MCP Video Server for video rendering (Bun can run TypeScript directly)
-  - apps/mcp-video/src/**/*
-  - apps/mcp-video/package.json
-  # Include video package for Remotion compositions
+  # Include video package with MCP Server for video rendering (Bun can run TypeScript directly)
   - packages/video/src/**/*
   - packages/video/package.json
+  - packages/video/remotion.config.ts
   # Include Remotion dependencies for video rendering
   - node_modules/@remotion/**/*
   - node_modules/remotion/**/*

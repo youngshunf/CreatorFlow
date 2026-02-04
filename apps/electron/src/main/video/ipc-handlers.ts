@@ -149,8 +149,8 @@ function getVideoServiceManager(): VideoServiceManager {
   if (!videoServiceManager) {
     const bunResolver = createBunPathResolver();
     const mcpServerEntry = app.isPackaged
-      ? join(process.resourcesPath, 'app', 'apps', 'mcp-video', 'src', 'index.ts')
-      : join(__dirname, '..', '..', '..', '..', 'mcp-video', 'src', 'index.ts');
+      ? join(process.resourcesPath, 'app', 'packages', 'video', 'src', 'mcp-server', 'index.ts')
+      : join(__dirname, '..', '..', '..', '..', 'packages', 'video', 'src', 'mcp-server', 'index.ts');
 
     videoServiceManager = createVideoServiceManager(bunResolver, {
       mcpServerEntry,

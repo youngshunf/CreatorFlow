@@ -5,18 +5,19 @@
  * and project persistence.
  *
  * Project Storage Structure:
- * ~/.creator-flow/workspaces/{workspaceId}/
- * └── .creator-flow/
- *     └── video-projects/
- *         └── {projectId}/
- *             ├── project.json          # Project metadata
- *             ├── compositions/         # Composition code files
- *             │   └── {compositionId}.tsx
- *             └── assets/               # Asset files
- *                 ├── images/
- *                 ├── videos/
- *                 ├── audio/
- *                 └── fonts/
+ * {workspaceRoot}/
+ * └── 视频创作/
+ *     └── {项目名称}/
+ *         ├── project.json          # 项目配置
+ *         ├── 素材/                  # 素材文件
+ *         │   ├── images/
+ *         │   ├── videos/
+ *         │   ├── audio/
+ *         │   └── fonts/
+ *         ├── 组合/                  # 组合代码
+ *         │   └── {compositionId}.tsx
+ *         └── 输出/                  # 渲染输出
+ *             └── {renderName}.mp4
  *
  * @requirements 12.1, 12.2, 12.3, 12.4
  */
@@ -46,6 +47,23 @@ import {
   VideoProjectSchema,
   SUPPORTED_ASSET_EXTENSIONS,
 } from '@creator-flow/video';
+// Import MCP Server path utilities
+import {
+  getVideoProjectsDir,
+  getProjectPath,
+  getProjectConfigPath,
+  getAssetsPath,
+  getAssetTypePath,
+  getCompositionsPath,
+  getCompositionFilePath,
+  getOutputPath,
+  VIDEO_PROJECTS_DIR_NAME,
+  ASSETS_DIR_NAME,
+  COMPOSITIONS_DIR_NAME,
+  OUTPUT_DIR_NAME,
+  extractProjectName,
+  getAssetRelativePath,
+} from '@creator-flow/video/mcp-server/utils/paths';
 import log from '../logger';
 
 const videoLog = log.scope('video');
@@ -94,7 +112,7 @@ const DEFAULT_CONFIG: VideoConfig = {
  * Get the base path for video projects in a workspace
  */
 function getVideoProjectsBasePath(workspaceRootPath: string): string {
-  return join(workspaceRootPath, '.creator-flow', 'video-projects');
+  return getVideoProjectsDir(workspaceRootPath);
 }
 
 /**
@@ -111,6 +129,9 @@ function getWorkspaceRootPath(workspaceId: string): string {
 export class ProjectManager implements IProjectManager {
   /** Map of project ID to workspace ID for quick lookup */
   private projectWorkspaceMap: Map<string, string> = new Map();
+
+  /** Map of project ID to project name for quick lookup */
+  private projectIdToNameCache: Map<string, string> = new Map();
 
   constructor() {
     videoLog.info('ProjectManager initialized');
@@ -132,17 +153,20 @@ export class ProjectManager implements IProjectManager {
       throw new Error(`Workspace not found: ${workspaceId}`);
     }
 
-    // Create project directory structure
-    const projectPath = join(getVideoProjectsBasePath(workspaceRootPath), projectId);
-    const compositionsPath = join(projectPath, 'compositions');
-    const assetsPath = join(projectPath, 'assets');
+    // Create project directory structure using MCP Server path utilities
+    const projectPath = getProjectPath(workspaceRootPath, name);
+    const compositionsPath = getCompositionsPath(workspaceRootPath, name);
+    const assetsPath = getAssetsPath(workspaceRootPath, name);
+    const outputPath = getOutputPath(workspaceRootPath, name);
 
+    // Create all directories
     mkdirSync(projectPath, { recursive: true });
     mkdirSync(compositionsPath, { recursive: true });
-    mkdirSync(join(assetsPath, 'images'), { recursive: true });
-    mkdirSync(join(assetsPath, 'videos'), { recursive: true });
-    mkdirSync(join(assetsPath, 'audio'), { recursive: true });
-    mkdirSync(join(assetsPath, 'fonts'), { recursive: true });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'image'), { recursive: true });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'video'), { recursive: true });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'audio'), { recursive: true });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'font'), { recursive: true });
+    mkdirSync(outputPath, { recursive: true });
 
     // Initialize project configuration
     let projectConfig: VideoConfig = { ...DEFAULT_CONFIG };
@@ -157,11 +181,11 @@ export class ProjectManager implements IProjectManager {
           projectConfig = { ...templateData.defaultConfig };
           // Create initial composition from template
           const compositionId = `comp_${randomUUID().replace(/-/g, '').slice(0, 8)}`;
-          const compositionFileName = `${compositionId}.tsx`;
+          const compositionFilePath = getCompositionFilePath(workspaceRootPath, name, compositionId);
 
           // Write composition code to file
           writeFileSync(
-            join(compositionsPath, compositionFileName),
+            compositionFilePath,
             templateData.compositionCode,
             'utf-8'
           );
@@ -169,7 +193,7 @@ export class ProjectManager implements IProjectManager {
           compositions.push({
             id: compositionId,
             name: templateData.name,
-            code: `compositions/${compositionFileName}`,
+            code: `${COMPOSITIONS_DIR_NAME}/${compositionId}.tsx`,
             props: templateData.defaultProps,
           });
 
@@ -206,8 +230,9 @@ export class ProjectManager implements IProjectManager {
     // Save project to disk
     this.saveProjectToDisk(projectPath, validated);
 
-    // Update project-workspace mapping
+    // Update project-workspace mapping and ID-to-name cache
     this.projectWorkspaceMap.set(projectId, workspaceId);
+    this.projectIdToNameCache.set(projectId, name);
 
     videoLog.info(`Created video project "${name}" (${projectId}) in workspace ${workspaceId}`);
 
@@ -246,8 +271,9 @@ export class ProjectManager implements IProjectManager {
         const validated = VideoProjectSchema.parse(parsed);
         projects.push(validated);
 
-        // Update project-workspace mapping
+        // Update project-workspace mapping and ID-to-name cache
         this.projectWorkspaceMap.set(validated.id, workspaceId);
+        this.projectIdToNameCache.set(validated.id, validated.name);
       } catch (error) {
         // Log error and skip corrupted project (Requirement 12.5)
         videoLog.error(`Failed to load project ${entry.name}:`, error);
@@ -367,17 +393,17 @@ export class ProjectManager implements IProjectManager {
       throw new Error(`Project not found: ${projectId}`);
     }
 
-    // Get project path
-    const projectPath = this.findProjectPath(projectId);
-    if (!projectPath) {
-      throw new Error(`Project path not found: ${projectId}`);
+    // Get workspace root path
+    const workspaceId = this.projectWorkspaceMap.get(projectId);
+    if (!workspaceId) {
+      throw new Error(`Workspace not found for project: ${projectId}`);
     }
+    const workspaceRootPath = getWorkspaceRootPath(workspaceId);
 
     // Generate asset ID and determine destination path
     const assetId = `asset_${randomUUID().replace(/-/g, '').slice(0, 8)}`;
     const fileName = basename(assetPath);
-    const assetSubDir = this.getAssetSubDir(assetType);
-    const destDir = join(projectPath, 'assets', assetSubDir);
+    const destDir = getAssetTypePath(workspaceRootPath, project.name, assetType);
     const destPath = join(destDir, `${assetId}_${fileName}`);
 
     // Ensure destination directory exists
@@ -386,12 +412,12 @@ export class ProjectManager implements IProjectManager {
     // Copy asset file to project
     copyFileSync(assetPath, destPath);
 
-    // Create asset record
+    // Create asset record with relative path
     const asset: Asset = {
       id: assetId,
       type: assetType,
       name: fileName,
-      path: `assets/${assetSubDir}/${assetId}_${fileName}`,
+      path: getAssetRelativePath(assetType, `${assetId}_${fileName}`),
     };
 
     // Update project with new asset
@@ -461,9 +487,11 @@ export class ProjectManager implements IProjectManager {
   private findProjectPath(projectId: string): string | null {
     // Check cache first
     const workspaceId = this.projectWorkspaceMap.get(projectId);
-    if (workspaceId) {
+    const projectName = this.projectIdToNameCache.get(projectId);
+
+    if (workspaceId && projectName) {
       const workspaceRootPath = getWorkspaceRootPath(workspaceId);
-      const projectPath = join(getVideoProjectsBasePath(workspaceRootPath), projectId);
+      const projectPath = getProjectPath(workspaceRootPath, projectName);
       if (existsSync(projectPath)) {
         return projectPath;
       }
@@ -480,12 +508,34 @@ export class ProjectManager implements IProjectManager {
       if (!ws.isDirectory()) continue;
 
       const workspaceRootPath = join(workspacesDir, ws.name);
-      const projectPath = join(getVideoProjectsBasePath(workspaceRootPath), projectId);
+      const videoProjectsDir = getVideoProjectsDir(workspaceRootPath);
 
-      if (existsSync(projectPath)) {
-        // Update cache
-        this.projectWorkspaceMap.set(projectId, ws.name);
-        return projectPath;
+      if (!existsSync(videoProjectsDir)) continue;
+
+      // Scan all project directories
+      const projectDirs = readdirSync(videoProjectsDir, { withFileTypes: true });
+      for (const projectDir of projectDirs) {
+        if (!projectDir.isDirectory()) continue;
+
+        const projectPath = join(videoProjectsDir, projectDir.name);
+        const projectJsonPath = join(projectPath, 'project.json');
+
+        if (!existsSync(projectJsonPath)) continue;
+
+        try {
+          const data = readFileSync(projectJsonPath, 'utf-8');
+          const parsed = JSON.parse(data);
+
+          if (parsed.id === projectId) {
+            // Update cache
+            this.projectWorkspaceMap.set(projectId, ws.name);
+            this.projectIdToNameCache.set(projectId, projectDir.name);
+            return projectPath;
+          }
+        } catch (error) {
+          // Skip invalid project files
+          continue;
+        }
       }
     }
 
@@ -499,23 +549,5 @@ export class ProjectManager implements IProjectManager {
   private saveProjectToDisk(projectPath: string, project: VideoProject): void {
     const projectJsonPath = join(projectPath, 'project.json');
     writeFileSync(projectJsonPath, JSON.stringify(project, null, 2), 'utf-8');
-  }
-
-  /**
-   * Get the subdirectory name for an asset type
-   */
-  private getAssetSubDir(assetType: AssetType): string {
-    switch (assetType) {
-      case 'image':
-        return 'images';
-      case 'video':
-        return 'videos';
-      case 'audio':
-        return 'audio';
-      case 'font':
-        return 'fonts';
-      default:
-        return 'other';
-    }
   }
 }
