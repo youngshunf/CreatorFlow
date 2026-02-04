@@ -15,6 +15,7 @@ import type {
   SingleChoiceProps,
   MultiChoiceProps,
   ConfirmProps,
+  FormProps,
   InteractiveResponse,
 } from '@creator-flow/shared/interactive-ui'
 import { cn } from '../../lib/utils'
@@ -187,15 +188,15 @@ export function InteractiveFormRenderer({
 
       {/* Submit button - only for form elements, not display elements */}
       {!completed && hasFormElements && (
-        <div className="flex justify-end pt-3 border-t border-border">
+        <div className="flex justify-end pt-4 mt-2 border-t border-border">
           <button
             onClick={handleSubmit}
             disabled={!hasRequiredValues}
             className={cn(
-              'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+              'px-6 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
               hasRequiredValues
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md active:scale-[0.98]'
+                : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
             )}
           >
             {t.submit}
@@ -256,6 +257,22 @@ function FormFieldWrapper({ element, value, onChange, error, disabled, translati
             onChange={onChange}
             disabled={disabled}
           />
+        )
+
+      case 'form':
+        // Nested form - render as a placeholder for now
+        // Full form implementation would require recursive rendering
+        return (
+          <div className="p-4 rounded-lg border border-border bg-muted/30">
+            <p className="text-sm font-medium text-foreground mb-2">
+              {(element.props as FormProps).title || 'Form'}
+            </p>
+            {(element.props as FormProps).description && (
+              <p className="text-xs text-muted-foreground">
+                {(element.props as FormProps).description}
+              </p>
+            )}
+          </div>
         )
 
       // Display components - render as-is, no interaction needed
@@ -327,7 +344,7 @@ function SingleChoiceField({
               'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
               !disabled && 'hover:bg-muted/50',
               value === option.id
-                ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
                 : 'border-border bg-background',
               !disabled && value !== option.id && 'hover:border-foreground/20',
               (disabled || option.disabled) && 'opacity-60 cursor-not-allowed',
@@ -336,11 +353,13 @@ function SingleChoiceField({
           >
             <div
               className={cn(
-                'w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
-                value === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                'w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                value === option.id
+                  ? 'border-primary bg-primary/20'
+                  : 'border-muted-foreground/40 bg-transparent'
               )}
             >
-              {value === option.id && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+              {value === option.id && <div className="w-2 h-2 rounded-full bg-primary" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -422,10 +441,10 @@ function MultiChoiceField({
               disabled={isDisabled}
               onClick={() => handleToggle(option.id)}
               className={cn(
-                'flex items-start gap-3 p-3 rounded-lg border transition-all text-left',
+                'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
                 !isDisabled && 'hover:bg-muted/50',
                 checked
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
                   : 'border-border',
                 !isDisabled && !checked && 'hover:border-foreground/20',
                 isDisabled && 'opacity-60 cursor-not-allowed',
@@ -434,8 +453,8 @@ function MultiChoiceField({
             >
               <div
                 className={cn(
-                  'w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors',
-                  checked ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                  'w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+                  checked ? 'border-primary bg-primary' : 'border-muted-foreground/40 bg-transparent'
                 )}
               >
                 {checked && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
