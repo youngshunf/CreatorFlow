@@ -195,7 +195,7 @@ export function InteractiveFormRenderer({
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm',
               hasRequiredValues
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md active:scale-[0.98]'
+                ? 'bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-md active:scale-[0.98]'
                 : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
             )}
           >
@@ -260,18 +260,30 @@ function FormFieldWrapper({ element, value, onChange, error, disabled, translati
         )
 
       case 'form':
-        // Nested form - render as a placeholder for now
-        // Full form implementation would require recursive rendering
+        // Nested form - render form fields
+        const formProps = element.props as FormProps
         return (
-          <div className="p-4 rounded-lg border border-border bg-muted/30">
-            <p className="text-sm font-medium text-foreground mb-2">
-              {(element.props as FormProps).title || 'Form'}
-            </p>
-            {(element.props as FormProps).description && (
-              <p className="text-xs text-muted-foreground">
-                {(element.props as FormProps).description}
-              </p>
+          <div className="space-y-4">
+            {formProps.title && (
+              <p className="text-sm font-medium text-foreground">{formProps.title}</p>
             )}
+            {formProps.description && (
+              <p className="text-xs text-muted-foreground mb-3">{formProps.description}</p>
+            )}
+            <div className="space-y-3">
+              {formProps.fields?.map((field) => (
+                <FormField
+                  key={field.id}
+                  field={field}
+                  value={(value as Record<string, unknown>)?.[field.id]}
+                  onChange={(fieldValue) => {
+                    const currentValue = (value as Record<string, unknown>) || {}
+                    onChange({ ...currentValue, [field.id]: fieldValue })
+                  }}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
           </div>
         )
 
@@ -344,7 +356,7 @@ function SingleChoiceField({
               'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
               !disabled && 'hover:bg-muted/50',
               value === option.id
-                ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                ? 'border-accent bg-accent/10 ring-2 ring-accent/40 shadow-sm'
                 : 'border-border bg-background',
               !disabled && value !== option.id && 'hover:border-foreground/20',
               (disabled || option.disabled) && 'opacity-60 cursor-not-allowed',
@@ -355,11 +367,11 @@ function SingleChoiceField({
               className={cn(
                 'w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
                 value === option.id
-                  ? 'border-primary bg-primary/20'
+                  ? 'border-accent bg-accent/20'
                   : 'border-muted-foreground/40 bg-transparent'
               )}
             >
-              {value === option.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+              {value === option.id && <div className="w-2 h-2 rounded-full bg-accent" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -444,7 +456,7 @@ function MultiChoiceField({
                 'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
                 !isDisabled && 'hover:bg-muted/50',
                 checked
-                  ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                  ? 'border-accent bg-accent/10 ring-2 ring-accent/40 shadow-sm'
                   : 'border-border',
                 !isDisabled && !checked && 'hover:border-foreground/20',
                 isDisabled && 'opacity-60 cursor-not-allowed',
@@ -454,10 +466,10 @@ function MultiChoiceField({
               <div
                 className={cn(
                   'w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all',
-                  checked ? 'border-primary bg-primary' : 'border-muted-foreground/40 bg-transparent'
+                  checked ? 'border-accent bg-accent' : 'border-muted-foreground/40 bg-transparent'
                 )}
               >
-                {checked && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
+                {checked && <Check className="w-3 h-3 text-accent-foreground" strokeWidth={3} />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -509,7 +521,7 @@ function ConfirmField({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             value === true
-              ? 'bg-primary text-primary-foreground'
+              ? 'bg-accent text-accent-foreground'
               : 'border border-border hover:bg-muted',
             disabled && 'opacity-60 cursor-not-allowed'
           )}
@@ -523,7 +535,7 @@ function ConfirmField({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             value === false
-              ? 'bg-primary text-primary-foreground'
+              ? 'bg-accent text-accent-foreground'
               : 'border border-border hover:bg-muted',
             disabled && 'opacity-60 cursor-not-allowed'
           )}
@@ -531,6 +543,167 @@ function ConfirmField({
           {cancelLabel}
         </button>
       </div>
+    </div>
+  )
+}
+
+// ============================================
+// Form Field Component
+// ============================================
+
+import type { FormField as FormFieldType } from '@creator-flow/shared/interactive-ui'
+
+function FormField({
+  field,
+  value,
+  onChange,
+  disabled,
+}: {
+  field: FormFieldType
+  value: unknown
+  onChange: (value: unknown) => void
+  disabled?: boolean
+}) {
+  const renderInput = () => {
+    switch (field.type) {
+      case 'text':
+      case 'email':
+      case 'password':
+        return (
+          <input
+            type={field.type}
+            id={field.id}
+            value={(value as string) || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-md border border-border bg-background',
+              'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+              'transition-all'
+            )}
+          />
+        )
+
+      case 'number':
+        return (
+          <input
+            type="number"
+            id={field.id}
+            value={(value as number) || ''}
+            onChange={(e) => onChange(Number(e.target.value))}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            min={field.validation?.min}
+            max={field.validation?.max}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-md border border-border bg-background',
+              'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+              'transition-all'
+            )}
+          />
+        )
+
+      case 'textarea':
+        return (
+          <textarea
+            id={field.id}
+            value={(value as string) || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            rows={3}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-md border border-border bg-background',
+              'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+              'transition-all resize-y'
+            )}
+          />
+        )
+
+      case 'select':
+        return (
+          <select
+            id={field.id}
+            value={(value as string) || ''}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-md border border-border bg-background',
+              'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+              'transition-all'
+            )}
+          >
+            <option value="">请选择...</option>
+            {field.options?.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )
+
+      case 'checkbox':
+        return (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id={field.id}
+              checked={(value as boolean) || false}
+              onChange={(e) => onChange(e.target.checked)}
+              disabled={disabled}
+              className={cn(
+                'w-4 h-4 rounded border-2 border-border',
+                'focus:outline-none focus:ring-2 focus:ring-accent/40',
+                'disabled:opacity-60 disabled:cursor-not-allowed',
+                'transition-all'
+              )}
+            />
+            <span className="text-sm text-foreground">{field.label}</span>
+          </label>
+        )
+
+      case 'date':
+        return (
+          <input
+            type="date"
+            id={field.id}
+            value={(value as string) || ''}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-md border border-border bg-background',
+              'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+              'transition-all'
+            )}
+          />
+        )
+
+      default:
+        return null
+    }
+  }
+
+  // Checkbox has its own label
+  if (field.type === 'checkbox') {
+    return <div className="space-y-1">{renderInput()}</div>
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={field.id} className="flex items-baseline gap-1">
+        <span className="text-sm font-medium text-foreground">{field.label}</span>
+        {field.required && <span className="text-destructive">*</span>}
+      </label>
+      {renderInput()}
+      {field.helpText && (
+        <p className="text-xs text-muted-foreground">{field.helpText}</p>
+      )}
     </div>
   )
 }

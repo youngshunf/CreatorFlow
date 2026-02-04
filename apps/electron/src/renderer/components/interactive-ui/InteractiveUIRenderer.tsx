@@ -357,7 +357,7 @@ function SingleChoiceField({
               'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
               !disabled && 'hover:bg-muted/50',
               value === option.id
-                ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                ? 'border-accent bg-accent/10 ring-2 ring-accent/40 shadow-sm'
                 : 'border-border',
               !disabled && value !== option.id && 'hover:border-foreground/20',
               (disabled || option.disabled) && 'opacity-60 cursor-not-allowed',
@@ -368,11 +368,11 @@ function SingleChoiceField({
               className={cn(
                 'w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
                 value === option.id
-                  ? 'border-primary bg-primary/20'
+                  ? 'border-accent bg-accent/20'
                   : 'border-muted-foreground/40 bg-transparent'
               )}
             >
-              {value === option.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+              {value === option.id && <div className="w-2 h-2 rounded-full bg-accent" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -458,7 +458,7 @@ function MultiChoiceField({
                 'flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left',
                 !isDisabled && 'hover:bg-muted/50',
                 checked
-                  ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                  ? 'border-accent bg-accent/10 ring-2 ring-accent/40 shadow-sm'
                   : 'border-border',
                 !isDisabled && !checked && 'hover:border-foreground/20',
                 isDisabled && 'opacity-60 cursor-not-allowed',
@@ -468,10 +468,10 @@ function MultiChoiceField({
               <div
                 className={cn(
                   'w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all',
-                  checked ? 'border-primary bg-primary' : 'border-muted-foreground/40 bg-transparent'
+                  checked ? 'border-accent bg-accent' : 'border-muted-foreground/40 bg-transparent'
                 )}
               >
-                {checked && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
+                {checked && <Check className="w-3 h-3 text-accent-foreground" strokeWidth={3} />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
