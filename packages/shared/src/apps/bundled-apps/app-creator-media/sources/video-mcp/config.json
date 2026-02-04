@@ -1,0 +1,22 @@
+{
+  "id": "video-mcp_preset",
+  "name": "视频创作服务",
+  "slug": "video-mcp",
+  "enabled": true,
+  "provider": "creator-flow-video",
+  "type": "mcp",
+  "mcp": {
+    "transport": "stdio",
+    "command": "{{BUN_PATH}}",
+    "args": [
+      "run",
+      "{{VIDEO_MCP_SERVER_PATH}}"
+    ],
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "icon": "🎬",
+  "tagline": "视频项目管理、素材处理、Remotion 组合编辑和视频渲染",
+  "connectionStatus": "untested"
+}

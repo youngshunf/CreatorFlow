@@ -127,25 +127,6 @@
         "vaul": "^1.1.2",
       },
     },
-    "apps/mcp-video": {
-      "name": "@creator-flow/mcp-video",
-      "version": "0.1.0",
-      "dependencies": {
-        "@creator-flow/video": "workspace:*",
-        "@remotion/bundler": "^4.0.0",
-        "@remotion/cli": "^4.0.0",
-        "@remotion/renderer": "^4.0.0",
-        "fastmcp": "^1.0.0",
-        "nanoid": "^5.1.5",
-        "zod": "^4.0.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "@types/node": "^25.0.8",
-        "fast-check": "^3.23.0",
-        "typescript": "^5.0.0",
-      },
-    },
     "apps/server": {
       "name": "@creator-flow/server",
       "version": "0.1.0",
@@ -280,22 +261,28 @@
     "packages/video": {
       "name": "@creator-flow/video",
       "version": "0.3.1",
+      "bin": {
+        "creator-flow-video-mcp": "./src/mcp-server/index.ts",
+      },
       "dependencies": {
         "@creator-flow/core": "workspace:*",
         "@remotion/bundler": "^4.0.0",
         "@remotion/cli": "^4.0.0",
         "@remotion/player": "^4.0.0",
         "@remotion/renderer": "^4.0.0",
+        "fastmcp": "^1.0.0",
+        "nanoid": "^5.1.5",
         "remotion": "^4.0.0",
+        "zod": "^4.0.0",
       },
       "devDependencies": {
         "@types/react": "^18.3.0",
         "@types/react-dom": "^18.3.0",
+        "fast-check": "^3.23.0",
       },
       "peerDependencies": {
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
-        "zod": ">=3.0.0",
       },
     },
   },
@@ -467,8 +454,6 @@
     "@creator-flow/core": ["@creator-flow/core@workspace:packages/core"],
 
     "@creator-flow/electron": ["@creator-flow/electron@workspace:apps/electron"],
-
-    "@creator-flow/mcp-video": ["@creator-flow/mcp-video@workspace:apps/mcp-video"],
 
     "@creator-flow/mermaid": ["@creator-flow/mermaid@workspace:packages/mermaid"],
 
@@ -3184,8 +3169,6 @@
 
     "@babel/highlight/chalk": ["chalk@2.4.2", "https://registry.npm.taobao.org/chalk/-/chalk-2.4.2.tgz", { "dependencies": { "ansi-styles": "^3.2.1", "escape-string-regexp": "^1.0.5", "supports-color": "^5.3.0" } }, "sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ=="],
 
-    "@creator-flow/mcp-video/@types/bun": ["@types/bun@1.3.8", "https://registry.npm.taobao.org/@types/bun/-/bun-1.3.8.tgz", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
-
     "@creator-flow/server/@types/bun": ["@types/bun@1.3.8", "https://registry.npm.taobao.org/@types/bun/-/bun-1.3.8.tgz", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
 
     "@creator-flow/viewer/@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "https://registry.npm.taobao.org/@vitejs/plugin-react/-/plugin-react-4.7.0.tgz", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
@@ -3573,8 +3556,6 @@
     "@babel/highlight/chalk/escape-string-regexp": ["escape-string-regexp@1.0.5", "https://registry.npm.taobao.org/escape-string-regexp/-/escape-string-regexp-1.0.5.tgz", {}, "sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg=="],
 
     "@babel/highlight/chalk/supports-color": ["supports-color@5.5.0", "https://registry.npm.taobao.org/supports-color/-/supports-color-5.5.0.tgz", { "dependencies": { "has-flag": "^3.0.0" } }, "sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow=="],
-
-    "@creator-flow/mcp-video/@types/bun/bun-types": ["bun-types@1.3.8", "https://registry.npm.taobao.org/bun-types/-/bun-types-1.3.8.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-fL99nxdOWvV4LqjmC+8Q9kW3M4QTtTR1eePs94v5ctGqU8OeceWrSUaRw3JYb7tU3FkMIAjkueehrHPPPGKi5Q=="],
 
     "@creator-flow/server/@types/bun/bun-types": ["bun-types@1.3.8", "https://registry.npm.taobao.org/bun-types/-/bun-types-1.3.8.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-fL99nxdOWvV4LqjmC+8Q9kW3M4QTtTR1eePs94v5ctGqU8OeceWrSUaRw3JYb7tU3FkMIAjkueehrHPPPGKi5Q=="],
 
