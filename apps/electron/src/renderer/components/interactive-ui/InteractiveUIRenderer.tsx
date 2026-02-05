@@ -167,6 +167,16 @@ export function InteractiveFormRenderer({
     return true
   }, [elements, responses])
 
+  // Get submit label from form element if available
+  const submitLabel = React.useMemo(() => {
+    const formElement = elements.find(el => el.type === 'form')
+    if (formElement) {
+      const props = formElement.props as FormProps
+      return props.submitLabel || '提交'
+    }
+    return '提交'
+  }, [elements])
+
   return (
     <div className="interactive-form-container space-y-4">
       {/* Optional prompt/title */}
@@ -199,7 +209,7 @@ export function InteractiveFormRenderer({
               hasRequiredValues && 'hover:shadow-md active:scale-[0.98]'
             )}
           >
-            提交
+            {submitLabel}
           </Button>
         </div>
       )}

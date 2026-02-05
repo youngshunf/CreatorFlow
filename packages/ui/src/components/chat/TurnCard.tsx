@@ -1388,18 +1388,30 @@ export function ResponseCard({
                       const elementInfo = elementMap.get(key)
                       const fieldLabel = elementInfo?.label || key
                       const options = elementInfo?.options
-                      
+
                       // Convert IDs to labels
                       const getLabel = (id: string) => {
                         const opt = options?.find(o => o.id === id)
                         return opt?.label || id
                       }
-                      
+
                       if (Array.isArray(value)) {
                         const labels = value.map(v => getLabel(String(v)))
                         parts.push(`${fieldLabel}: ${labels.join(', ')}`)
                       } else if (typeof value === 'boolean') {
                         parts.push(`${fieldLabel}: ${value ? '是' : '否'}`)
+                      } else if (typeof value === 'object' && value !== null) {
+                        // 处理嵌套对象（如 form 数据）
+                        const objData = value as Record<string, unknown>
+                        const objParts: string[] = []
+                        for (const [subKey, subValue] of Object.entries(objData)) {
+                          if (subValue !== null && subValue !== undefined && subValue !== '') {
+                            objParts.push(`  ${subKey}: ${String(subValue)}`)
+                          }
+                        }
+                        if (objParts.length > 0) {
+                          parts.push(`${fieldLabel}:\n${objParts.join('\n')}`)
+                        }
                       } else {
                         parts.push(`${fieldLabel}: ${getLabel(String(value))}`)
                       }
