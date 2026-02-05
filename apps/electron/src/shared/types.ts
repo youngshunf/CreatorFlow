@@ -1254,7 +1254,7 @@ export type ChatFilter =
 /**
  * Settings subpage options
  */
-export type SettingsSubpage = 'app' | 'appearance' | 'input' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription'
+export type SettingsSubpage = 'app' | 'appearance' | 'input' | 'workspace' | 'sources' | 'skills' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription'
 
 /**
  * Chats navigation state - shows SessionList in navigator

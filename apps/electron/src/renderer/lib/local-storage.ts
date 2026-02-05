@@ -41,6 +41,9 @@ export const KEYS = {
 
   // TurnCard expansion state (persisted across session switches)
   turnCardExpansion: 'turncard-expansion',
+
+  // Settings navigator expanded folders
+  settingsExpandedFolders: 'settings-expanded-folders',
 } as const
 
 export type StorageKey = typeof KEYS[keyof typeof KEYS]

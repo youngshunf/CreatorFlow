@@ -8,15 +8,9 @@
  */
 
 import * as React from 'react'
-import { useState } from 'react'
-import { MoreHorizontal, AppWindow } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  StyledDropdownMenuContent,
-  StyledDropdownMenuItem,
-} from '@/components/ui/styled-dropdown'
-import { DropdownMenuProvider } from '@/components/ui/menu-context'
+import { DatabaseZap, Zap } from 'lucide-react'
+import { LeftSidebar, type LinkItem } from '@/components/app-shell/LeftSidebar'
+import * as storage from '@/lib/local-storage'
 /** Custom app settings icon */
 const AppSettingsIcon = ({ className }: { className?: string }) => (
   <svg
@@ -146,8 +140,6 @@ const InputIcon = ({ className }: { className?: string }) => (
     />
   </svg>
 )
-import { cn } from '@/lib/utils'
-import { Separator } from '@/components/ui/separator'
 import { useT } from '@/context/LocaleContext'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 import type { SettingsSubpage } from '../../../shared/types'
@@ -155,20 +147,6 @@ import type { SettingsSubpage } from '../../../shared/types'
 export const meta: DetailsPageMeta = {
   navigator: 'settings',
   slug: 'navigator',
-}
-
-interface SettingsNavigatorProps {
-  /** Currently selected settings subpage */
-  selectedSubpage: SettingsSubpage
-  /** Called when a subpage is selected */
-  onSelectSubpage: (subpage: SettingsSubpage) => void
-}
-
-interface SettingsItem {
-  id: SettingsSubpage
-  labelKey: string
-  icon: React.ComponentType<{ className?: string }>
-  descriptionKey: string
 }
 
 /** Custom user profile icon */
@@ -188,161 +166,11 @@ const UserProfileIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const settingsItems: SettingsItem[] = [
-  {
-    id: 'user-profile',
-    labelKey: '用户资料',
-    icon: UserProfileIcon,
-    descriptionKey: '头像、昵称、个人信息',
-  },
-  {
-    id: 'subscription',
-    labelKey: '订阅与积分',
-    icon: CrownIcon,
-    descriptionKey: '查看用量、升级订阅、购买积分',
-  },
-  {
-    id: 'app',
-    labelKey: '应用',
-    icon: AppSettingsIcon,
-    descriptionKey: '外观、通知、API 连接',
-  },
-  {
-    id: 'input',
-    labelKey: '输入',
-    icon: InputIcon,
-    descriptionKey: '输入行为和消息发送',
-  },
-  {
-    id: 'workspace',
-    labelKey: '工作区',
-    icon: WorkspaceIcon,
-    descriptionKey: '模型、模式切换、高级设置',
-  },
-  {
-    id: 'permissions',
-    labelKey: '权限',
-    icon: ShieldIcon,
-    descriptionKey: '探索模式中允许的命令',
-  },
-  {
-    id: 'labels',
-    labelKey: '标签',
-    icon: LabelsIcon,
-    descriptionKey: '标签层次和自动应用规则',
-  },
-  {
-    id: 'shortcuts',
-    labelKey: '快捷键',
-    icon: KeyboardIcon,
-    descriptionKey: '键盘快捷键参考',
-  },
-  {
-    id: 'preferences',
-    labelKey: '偏好设置',
-    icon: PreferencesIcon,
-    descriptionKey: '您的个人偏好',
-  },
-]
-
-interface SettingsItemRowProps {
-  item: SettingsItem
-  isSelected: boolean
-  isFirst: boolean
-  onSelect: () => void
-  t: (text: string) => string
-}
-
-/**
- * SettingsItemRow - Individual settings item with dropdown menu
- * Tracks menu open state to keep "..." button visible when menu is open
- */
-function SettingsItemRow({ item, isSelected, isFirst, onSelect, t }: SettingsItemRowProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const Icon = item.icon
-
-  // Open settings page in a new window via deep link
-  const handleOpenInNewWindow = () => {
-    window.electronAPI.openUrl(`craftagents://settings/${item.id}?window=focused`)
-  }
-
-  return (
-    <div className="settings-item" data-selected={isSelected || undefined}>
-      {/* Separator - only show if not first */}
-      {!isFirst && (
-        <div className="settings-separator pl-12 pr-4">
-          <Separator />
-        </div>
-      )}
-      {/* Wrapper for button with proper margins */}
-      <div className="settings-content relative group select-none pl-2 mr-2">
-        {/* Icon - positioned absolutely for consistent alignment */}
-        <div className="absolute left-[20px] top-[14px] z-10">
-          <Icon
-            className={cn(
-              'w-4 h-4 shrink-0',
-              isSelected ? 'text-foreground' : 'text-muted-foreground'
-            )}
-          />
-        </div>
-        {/* Main content button */}
-        <button
-          type="button"
-          onClick={onSelect}
-          className={cn(
-            'flex w-full items-start gap-2 pl-2 pr-4 py-3 text-left text-sm outline-none rounded-[8px]',
-            // Fast hover transition (75ms vs default 150ms)
-            'transition-[background-color] duration-75',
-            isSelected
-              ? 'bg-foreground/5 hover:bg-foreground/7'
-              : 'hover:bg-foreground/2'
-          )}
-        >
-          {/* Spacer for icon */}
-          <div className="w-6 h-5 shrink-0" />
-          {/* Content column */}
-          <div className="flex flex-col min-w-0 flex-1">
-            <span
-              className={cn(
-                'font-medium',
-                isSelected ? 'text-foreground' : 'text-foreground/80'
-              )}
-            >
-              {t(item.labelKey)}
-            </span>
-            <span className="text-xs text-foreground/60 line-clamp-1">
-              {t(item.descriptionKey)}
-            </span>
-          </div>
-        </button>
-        {/* Action buttons - visible on hover or when menu is open */}
-        <div
-          className={cn(
-            'absolute right-2 top-2 transition-opacity z-10',
-            menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          )}
-        >
-          <div className="flex items-center rounded-[8px] overflow-hidden border border-transparent hover:border-border/50">
-            <DropdownMenu modal={true} onOpenChange={setMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <div className="p-1.5 hover:bg-foreground/10 data-[state=open]:bg-foreground/10 cursor-pointer">
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </DropdownMenuTrigger>
-              <StyledDropdownMenuContent align="end">
-                <DropdownMenuProvider>
-                  <StyledDropdownMenuItem onClick={handleOpenInNewWindow}>
-                    <AppWindow className="h-3.5 w-3.5" />
-                    <span className="flex-1">{t('在新窗口打开')}</span>
-                  </StyledDropdownMenuItem>
-                </DropdownMenuProvider>
-              </StyledDropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+interface SettingsNavigatorProps {
+  /** Currently selected settings subpage */
+  selectedSubpage: SettingsSubpage
+  /** Called when a subpage is selected */
+  onSelectSubpage: (subpage: SettingsSubpage) => void
 }
 
 export default function SettingsNavigator({
@@ -350,23 +178,120 @@ export default function SettingsNavigator({
   onSelectSubpage,
 }: SettingsNavigatorProps) {
   const t = useT()
-  
+
+  // 管理展开状态
+  const [expandedFolders, setExpandedFolders] = React.useState<Set<string>>(() => {
+    const stored = storage.get(storage.KEYS.settingsExpandedFolders, null)
+    return stored ? new Set(stored) : new Set(['settings:workspace']) // 默认展开工作区
+  })
+
+  const isExpanded = (id: string) => expandedFolders.has(id)
+
+  const toggleExpanded = (id: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      storage.set(storage.KEYS.settingsExpandedFolders, Array.from(next))
+      return next
+    })
+  }
+
+  // 构建设置链接数据
+  const settingsLinks: LinkItem[] = React.useMemo(() => [
+    {
+      id: 'settings:user-profile',
+      title: t('用户资料'),
+      icon: <UserProfileIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'user-profile' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('user-profile'),
+    },
+    {
+      id: 'settings:subscription',
+      title: t('订阅与积分'),
+      icon: <CrownIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'subscription' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('subscription'),
+    },
+    {
+      id: 'settings:app',
+      title: t('应用'),
+      icon: <AppSettingsIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'app' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('app'),
+    },
+    {
+      id: 'settings:input',
+      title: t('输入'),
+      icon: <InputIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'input' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('input'),
+    },
+    {
+      id: 'settings:workspace',
+      title: t('工作区'),
+      icon: <WorkspaceIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'workspace' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('workspace'),
+      expandable: true,
+      expanded: isExpanded('settings:workspace'),
+      onToggle: () => toggleExpanded('settings:workspace'),
+      items: [
+        {
+          id: 'settings:sources',
+          title: t('数据源'),
+          icon: DatabaseZap,
+          variant: selectedSubpage === 'sources' ? 'default' : 'ghost',
+          onClick: () => onSelectSubpage('sources'),
+        },
+        {
+          id: 'settings:skills',
+          title: t('技能'),
+          icon: Zap,
+          variant: selectedSubpage === 'skills' ? 'default' : 'ghost',
+          onClick: () => onSelectSubpage('skills'),
+        },
+      ],
+    },
+    {
+      id: 'settings:permissions',
+      title: t('权限'),
+      icon: <ShieldIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'permissions' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('permissions'),
+    },
+    {
+      id: 'settings:labels',
+      title: t('标签'),
+      icon: <LabelsIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'labels' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('labels'),
+    },
+    {
+      id: 'settings:shortcuts',
+      title: t('快捷键'),
+      icon: <KeyboardIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'shortcuts' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('shortcuts'),
+    },
+    {
+      id: 'settings:preferences',
+      title: t('偏好设置'),
+      icon: <PreferencesIcon className="h-3.5 w-3.5" />,
+      variant: selectedSubpage === 'preferences' ? 'default' : 'ghost',
+      onClick: () => onSelectSubpage('preferences'),
+    },
+  ], [selectedSubpage, t, isExpanded, onSelectSubpage])
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
-        <div className="pt-2">
-          {settingsItems.map((item, index) => (
-            <SettingsItemRow
-              key={item.id}
-              item={item}
-              isSelected={selectedSubpage === item.id}
-              isFirst={index === 0}
-              onSelect={() => onSelectSubpage(item.id)}
-              t={t}
-            />
-          ))}
-        </div>
-      </div>
+      <LeftSidebar
+        isCollapsed={false}
+        links={settingsLinks}
+      />
     </div>
   )
 }

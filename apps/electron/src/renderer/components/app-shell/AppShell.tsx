@@ -1206,7 +1206,14 @@ function AppShellContent({
 
   // Handler for settings view
   const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
-    navigate(routes.view.settings(subpage))
+    // 特殊处理：点击数据源或技能时，导航到原有的导航器
+    if (subpage === 'sources') {
+      navigate(routes.view.sources())
+    } else if (subpage === 'skills') {
+      navigate(routes.view.skills())
+    } else {
+      navigate(routes.view.settings(subpage))
+    }
   }, [])
 
   // ============================================================================
@@ -1402,9 +1409,7 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Sources, Skills, Files, Marketplace, Settings
-    result.push({ id: 'nav:sources', type: 'nav', action: handleSourcesClick })
-    result.push({ id: 'nav:skills', type: 'nav', action: handleSkillsClick })
+    // 3. Files, Marketplace, Settings
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
@@ -1814,79 +1819,7 @@ function AppShellContent({
                       onClick: handleMarketplaceClick,
                     },
                     // --- Separator ---
-                    { id: "separator:chats-sources", type: "separator" },
-                    // --- Sources & Skills Section ---
-                    {
-                      id: "nav:sources",
-                      title: t('数据源'),
-                      label: String(sources.length),
-                      icon: DatabaseZap,
-                      variant: (isSourcesNavigation(navState) && !sourceFilter) ? "default" : "ghost",
-                      onClick: handleSourcesClick,
-                      dataTutorial: "sources-nav",
-                      expandable: true,
-                      expanded: isExpanded('nav:sources'),
-                      onToggle: () => toggleExpanded('nav:sources'),
-                      contextMenu: {
-                        type: 'sources',
-                        onAddSource: () => openAddSource(),
-                      },
-                      items: [
-                        {
-                          id: "nav:sources:api",
-                          title: t('API 服务'),
-                          label: String(sourceTypeCounts.api),
-                          icon: Globe,
-                          variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'api') ? "default" : "ghost",
-                          onClick: handleSourcesApiClick,
-                          contextMenu: {
-                            type: 'sources' as const,
-                            onAddSource: () => openAddSource('api'),
-                            sourceType: 'api',
-                          },
-                        },
-                        {
-                          id: "nav:sources:mcp",
-                          title: t('MCP 服务'),
-                          label: String(sourceTypeCounts.mcp),
-                          icon: <McpIcon className="h-3.5 w-3.5" />,
-                          variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'mcp') ? "default" : "ghost",
-                          onClick: handleSourcesMcpClick,
-                          contextMenu: {
-                            type: 'sources' as const,
-                            onAddSource: () => openAddSource('mcp'),
-                            sourceType: 'mcp',
-                          },
-                        },
-                        {
-                          id: "nav:sources:local",
-                          title: t('本地文件夹'),
-                          label: String(sourceTypeCounts.local),
-                          icon: FolderOpen,
-                          variant: (sourceFilter?.kind === 'type' && sourceFilter.sourceType === 'local') ? "default" : "ghost",
-                          onClick: handleSourcesLocalClick,
-                          contextMenu: {
-                            type: 'sources' as const,
-                            onAddSource: () => openAddSource('local'),
-                            sourceType: 'local',
-                          },
-                        },
-                      ],
-                    },
-                    {
-                      id: "nav:skills",
-                      title: t('技能'),
-                      label: String(skills.length),
-                      icon: Zap,
-                      variant: isSkillsNavigation(navState) ? "default" : "ghost",
-                      onClick: handleSkillsClick,
-                      contextMenu: {
-                        type: 'skills',
-                        onAddSkill: openAddSkill,
-                      },
-                    },
-                    // --- Separator ---
-                    { id: "separator:skills-settings", type: "separator" },
+                    { id: "separator:marketplace-settings", type: "separator" },
                     // --- Settings ---
                     {
                       id: "nav:settings",
