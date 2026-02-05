@@ -9,12 +9,13 @@
 
 import { Notification, app, BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { mainLog } from './logger'
 import type { WindowManager } from './window-manager'
 
 let windowManager: WindowManager | null = null
 let baseIconPath: string | null = null
+let notificationIcon: Electron.NativeImage | null = null
 let baseIconDataUrl: string | null = null
 let currentBadgeCount: number = 0
 let instanceNumber: number | null = null  // Multi-instance dev: instance number for dock badge
@@ -45,14 +46,20 @@ export function showNotification(
     return
   }
 
-  const notification = new Notification({
+  // 通知配置：根据平台设置不同的图标策略
+  const notificationOptions: Electron.NotificationConstructorOptions = {
     title,
     body,
-    // macOS-specific options
     silent: false,
-    // Use the app icon
-    icon: undefined,  // Will use app icon by default on macOS
-  })
+  }
+
+  // macOS: 不设置自定义 icon，使用应用的 dock 图标（避免双图标）
+  // Windows/Linux: 设置自定义图标以确保通知显示图标
+  if (process.platform !== 'darwin' && notificationIcon) {
+    notificationOptions.icon = notificationIcon
+  }
+
+  const notification = new Notification(notificationOptions)
 
   notification.on('click', () => {
     mainLog.info('Notification clicked:', { workspaceId, sessionId })
@@ -60,7 +67,7 @@ export function showNotification(
   })
 
   notification.show()
-  mainLog.info('Notification shown:', { title, sessionId })
+  mainLog.info('Notification shown:', { title, sessionId, platform: process.platform })
 }
 
 /**
@@ -99,14 +106,32 @@ function handleNotificationClick(workspaceId: string, sessionId: string): void {
 /**
  * Initialize the base icon for badge overlay
  * Call this during app startup
+ *
+ * @param iconPath - Path to PNG icon (for macOS/Linux and badge overlay)
+ * @param icoPath - Optional path to ICO icon (for Windows notifications)
  */
-export function initBadgeIcon(iconPath: string): void {
+export function initBadgeIcon(iconPath: string, icoPath?: string): void {
   try {
     baseIconPath = iconPath
     // Read and cache the icon as base64 data URL
     const iconBuffer = readFileSync(iconPath)
     baseIconDataUrl = `data:image/png;base64,${iconBuffer.toString('base64')}`
-    mainLog.info('Badge icon initialized:', iconPath)
+
+    // Create native image for notifications
+    // Windows: 优先使用 .ico 格式以获得更好的通知图标显示效果
+    // macOS/Linux: 使用 .png 格式
+    if (process.platform === 'win32' && icoPath && existsSync(icoPath)) {
+      notificationIcon = nativeImage.createFromPath(icoPath)
+      mainLog.info('Badge icon initialized (Windows .ico):', icoPath)
+    } else {
+      notificationIcon = nativeImage.createFromPath(iconPath)
+      mainLog.info('Badge icon initialized:', iconPath)
+    }
+
+    // 确保图标已正确加载
+    if (notificationIcon.isEmpty()) {
+      mainLog.warn('Notification icon is empty, notifications may not show icon')
+    }
   } catch (error) {
     mainLog.error('Failed to initialize badge icon:', error)
   }

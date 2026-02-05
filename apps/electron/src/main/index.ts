@@ -320,13 +320,18 @@ app.whenReady().then(async () => {
 
   // Application menu is created after windowManager initialization (see below)
 
+  // Initialize notification icon for all platforms
+  const notificationIconPath = join(__dirname, '../resources/icon.png')
+  const notificationIcoPath = join(__dirname, '../resources/icon.ico')
+  if (existsSync(notificationIconPath)) {
+    initBadgeIcon(notificationIconPath, notificationIcoPath)
+  }
+
   // Set dock icon on macOS (required for dev mode, bundled apps use Info.plist)
   if (process.platform === 'darwin' && app.dock) {
     const dockIconPath = join(__dirname, '../resources/icon.png')
     if (existsSync(dockIconPath)) {
       app.dock.setIcon(dockIconPath)
-      // Initialize badge icon for canvas-based badge overlay
-      initBadgeIcon(dockIconPath)
     }
 
     // Multi-instance dev: show instance number badge on dock icon

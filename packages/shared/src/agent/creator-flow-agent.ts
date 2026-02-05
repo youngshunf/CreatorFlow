@@ -899,9 +899,21 @@ export class CreatorFlowAgent {
         // Capture stderr from SDK subprocess for error diagnostics
         // This helps identify why sessions fail with "process exited with code 1"
         stderr: (data: string) => {
-          // Log to both debug file AND console for visibility
-          debug('[SDK stderr]', data);
-          console.error('[SDK stderr]', data);
+          // 过滤 SDK 内部遥测错误（不影响核心功能）
+          // "1P event logging" 是 SDK 向 Anthropic 分析服务发送使用数据时的错误
+          // 403 错误通常由网络限制、防火墙或区域限制导致
+          const isTelemetryError = data.includes('1P event logging') ||
+                                   data.includes('events failed to export');
+
+          if (!isTelemetryError) {
+            // 只记录非遥测错误到控制台
+            debug('[SDK stderr]', data);
+            console.error('[SDK stderr]', data);
+          } else {
+            // 遥测错误只记录到调试文件，不显示在控制台
+            debug('[SDK telemetry]', data);
+          }
+
           // Keep last 20 lines to avoid unbounded memory growth
           this.lastStderrOutput.push(data);
           if (this.lastStderrOutput.length > 20) {
