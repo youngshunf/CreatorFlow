@@ -57,43 +57,72 @@ echo "Installing dependencies..."
 cd "$ROOT_DIR"
 bun install
 
-# 3. Download Bun binary for Windows
+# 3. Download Bun binary for Windows (with cache support)
 # Use baseline build - works on all x64 CPUs (no AVX2 requirement)
-echo "Downloading Bun ${BUN_VERSION} for Windows x64 (baseline)..."
+echo "Preparing Bun ${BUN_VERSION} for Windows x64 (baseline)..."
 mkdir -p "$ELECTRON_DIR/vendor/bun"
 BUN_DOWNLOAD="bun-windows-x64-baseline"
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-DOWNLOAD_SUCCESS=false
-ZIP_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip"
-CHECKSUM_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt"
+# Cache directory
+CACHE_DIR="$HOME/.cache/creator-flow/bun"
+CACHED_ZIP="$CACHE_DIR/${BUN_VERSION}-${BUN_DOWNLOAD}.zip"
+mkdir -p "$CACHE_DIR"
 
-echo "Downloading from $ZIP_URL..."
-if curl -fSL --connect-timeout 30 --max-time 180 "$ZIP_URL" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" && \
-   curl -fSL --connect-timeout 30 --max-time 60 "$CHECKSUM_URL" -o "$TEMP_DIR/SHASUMS256.txt"; then
-    # Verify checksum
-    echo "Verifying checksum..."
-    cd "$TEMP_DIR"
-    if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c -; then
-        cd - > /dev/null
-        # Extract and install
-        echo "Extracting Bun..."
-        unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
+DOWNLOAD_SUCCESS=false
+
+# Check if cached version exists
+if [ -f "$CACHED_ZIP" ]; then
+    echo "Found cached Bun binary at $CACHED_ZIP"
+    echo "Extracting from cache..."
+    unzip -o "$CACHED_ZIP" -d "$TEMP_DIR"
+    if [ -f "$TEMP_DIR/${BUN_DOWNLOAD}/bun.exe" ]; then
         cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun.exe" "$ELECTRON_DIR/vendor/bun/"
         DOWNLOAD_SUCCESS=true
-        echo "Downloaded Bun ${BUN_VERSION} for Windows successfully"
+        echo "Using cached Bun ${BUN_VERSION} for Windows"
     else
-        cd - > /dev/null
-        echo "Checksum verification failed!"
+        echo "Cached file is corrupted, will re-download..."
+        rm -f "$CACHED_ZIP"
     fi
-else
-    echo "Download failed!"
+fi
+
+# Download if not cached or cache is corrupted
+if [ "$DOWNLOAD_SUCCESS" = false ]; then
+    ZIP_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip"
+    CHECKSUM_URL="https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/SHASUMS256.txt"
+
+    echo "Downloading from $ZIP_URL..."
+    if curl -fSL --connect-timeout 30 --max-time 180 "$ZIP_URL" -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" && \
+       curl -fSL --connect-timeout 30 --max-time 60 "$CHECKSUM_URL" -o "$TEMP_DIR/SHASUMS256.txt"; then
+        # Verify checksum
+        echo "Verifying checksum..."
+        cd "$TEMP_DIR"
+        if grep "${BUN_DOWNLOAD}.zip" SHASUMS256.txt | shasum -a 256 -c -; then
+            cd - > /dev/null
+            # Extract and install
+            echo "Extracting Bun..."
+            unzip -o "$TEMP_DIR/${BUN_DOWNLOAD}.zip" -d "$TEMP_DIR"
+            cp "$TEMP_DIR/${BUN_DOWNLOAD}/bun.exe" "$ELECTRON_DIR/vendor/bun/"
+            # Save to cache
+            echo "Saving to cache..."
+            cp "$TEMP_DIR/${BUN_DOWNLOAD}.zip" "$CACHED_ZIP"
+            DOWNLOAD_SUCCESS=true
+            echo "Downloaded and cached Bun ${BUN_VERSION} for Windows successfully"
+        else
+            cd - > /dev/null
+            echo "Checksum verification failed!"
+        fi
+    else
+        echo "Download failed!"
+    fi
 fi
 
 if [ "$DOWNLOAD_SUCCESS" = false ]; then
     echo "ERROR: Could not download Windows Bun binary"
     echo "Please check your network connection and try again."
+    echo "Or manually download from: https://github.com/oven-sh/bun/releases/download/${BUN_VERSION}/${BUN_DOWNLOAD}.zip"
+    echo "And place it at: $CACHED_ZIP"
     exit 1
 fi
 
