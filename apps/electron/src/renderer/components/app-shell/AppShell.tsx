@@ -1206,14 +1206,7 @@ function AppShellContent({
 
   // Handler for settings view
   const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
-    // 特殊处理：点击数据源或技能时，导航到原有的导航器
-    if (subpage === 'sources') {
-      navigate(routes.view.sources())
-    } else if (subpage === 'skills') {
-      navigate(routes.view.skills())
-    } else {
-      navigate(routes.view.settings(subpage))
-    }
+    navigate(routes.view.settings(subpage))
   }, [])
 
   // ============================================================================

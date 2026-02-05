@@ -21,3 +21,5 @@ export {
   PreferencesPage,
   SubscriptionSettingsPage,
 } from './settings'
+export { SourcesSettingsPage } from './SourcesSettingsPage'
+export { SkillsSettingsPage } from './SkillsSettingsPage'
