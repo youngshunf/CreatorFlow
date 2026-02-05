@@ -23,17 +23,15 @@ files:
   - dist/assets/permissions/**/*
   - dist/assets/config-defaults.json
   - dist/assets/bundled-apps/**/*
-  # Include SDK for subprocess execution
-  - node_modules/@anthropic-ai/claude-agent-sdk/**/*
   # Include network interceptor for API error capture and MCP schema injection
   - packages/shared/src/network-interceptor.ts
-  # Include bundled Bun runtime (platform-specific, set by build script)
-  - vendor/bun/**/*
   # Exclude everything else from node_modules
   - "!node_modules/**/*"
+  # Include specific packages we need (these override the exclusion above)
   - node_modules/@anthropic-ai/**/*
-  # Include SDK peer dependencies
+  # Include SDK dependencies
   - node_modules/zod/**/*
+  - node_modules/json-schema-to-ts/**/*
 
 extraMetadata:
   main: dist/main.cjs
@@ -73,6 +71,8 @@ mac:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
+    # Include bundled Bun runtime for macOS
+    - vendor/bun/**/*
   # Use predictable naming for macOS packages (applies to zip; dmg uses its own config below)
   artifactName: "智小芽_v${version}-${arch}.${ext}"
   # Code signing & notarization (disabled by default for local builds)
