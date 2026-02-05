@@ -1369,57 +1369,13 @@ export function ResponseCard({
                 )}
                 onInteractiveResponse={(response, elements) => {
                   // Send response as user message to agent
-                  // Format with labels instead of IDs for better readability
-                  if (response.data && elements) {
-                    const data = response.data as Record<string, unknown>
-                    const parts: string[] = []
-                    
-                    // Build a map of element key -> options for label lookup
-                    const elementMap = new Map<string, { label: string; options?: Array<{ id: string; label: string }> }>()
-                    for (const el of elements) {
-                      const props = el.props as Record<string, unknown>
-                      elementMap.set(el.key, {
-                        label: (props.label as string) || el.key,
-                        options: props.options as Array<{ id: string; label: string }> | undefined,
-                      })
-                    }
-                    
-                    for (const [key, value] of Object.entries(data)) {
-                      const elementInfo = elementMap.get(key)
-                      const fieldLabel = elementInfo?.label || key
-                      const options = elementInfo?.options
-
-                      // Convert IDs to labels
-                      const getLabel = (id: string) => {
-                        const opt = options?.find(o => o.id === id)
-                        return opt?.label || id
-                      }
-
-                      if (Array.isArray(value)) {
-                        const labels = value.map(v => getLabel(String(v)))
-                        parts.push(`${fieldLabel}: ${labels.join(', ')}`)
-                      } else if (typeof value === 'boolean') {
-                        parts.push(`${fieldLabel}: ${value ? '是' : '否'}`)
-                      } else if (typeof value === 'object' && value !== null) {
-                        // 处理嵌套对象（如 form 数据）
-                        const objData = value as Record<string, unknown>
-                        const objParts: string[] = []
-                        for (const [subKey, subValue] of Object.entries(objData)) {
-                          if (subValue !== null && subValue !== undefined && subValue !== '') {
-                            objParts.push(`  ${subKey}: ${String(subValue)}`)
-                          }
-                        }
-                        if (objParts.length > 0) {
-                          parts.push(`${fieldLabel}:\n${objParts.join('\n')}`)
-                        }
-                      } else {
-                        parts.push(`${fieldLabel}: ${getLabel(String(value))}`)
-                      }
-                    }
-                    const formattedResponse = parts.join('\n')
+                  // Send structured JSON data for agent to parse
+                  if (response.data) {
+                    // Send JSON data to agent
+                    const jsonResponse = JSON.stringify(response.data, null, 2)
                     window.dispatchEvent(
                       new CustomEvent('craft:interactive-response', {
-                        detail: { text: formattedResponse },
+                        detail: { text: jsonResponse },
                       })
                     )
                   }
