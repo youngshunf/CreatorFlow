@@ -52,7 +52,7 @@
         "shiki": "^3.19.0",
         "tailwind-merge": "^3.4.0",
         "unzipper": "^0.12.3",
-        "zod": "^4.0.0",
+        "zod": "4.3.6",
       },
       "devDependencies": {
         "@aws-sdk/client-s3": "^3.947.0",
@@ -113,6 +113,7 @@
         "electron-log": "^5.4.3",
         "electron-updater": "^6.7.3",
         "jotai-family": "^1.0.1",
+        "json-schema-to-ts": "3.1.1",
         "motion": "^12.23.26",
         "next-themes": "^0.4.6",
         "react": "^18.3.1",
@@ -125,6 +126,7 @@
         "strip-markdown": "^6.0.0",
         "unist-util-visit": "^5.0.0",
         "vaul": "^1.1.2",
+        "zod": "4.3.6",
       },
     },
     "apps/server": {
@@ -2890,7 +2892,7 @@
 
     "yocto-queue": ["yocto-queue@0.1.0", "https://registry.npm.taobao.org/yocto-queue/-/yocto-queue-0.1.0.tgz", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 
-    "zod": ["zod@4.3.5", "https://registry.npm.taobao.org/zod/-/zod-4.3.5.tgz", {}, "sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g=="],
+    "zod": ["zod@4.3.6", "https://registry.npmmirror.com/zod/-/zod-4.3.6.tgz", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "zod-to-json-schema": ["zod-to-json-schema@3.25.1", "https://registry.npm.taobao.org/zod-to-json-schema/-/zod-to-json-schema-3.25.1.tgz", { "peerDependencies": { "zod": "^3.25 || ^4" } }, "sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA=="],
 
@@ -2929,6 +2931,8 @@
     "@babel/highlight/chalk": ["chalk@2.4.2", "https://registry.npm.taobao.org/chalk/-/chalk-2.4.2.tgz", { "dependencies": { "ansi-styles": "^3.2.1", "escape-string-regexp": "^1.0.5", "supports-color": "^5.3.0" } }, "sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ=="],
 
     "@creator-flow/server/@types/bun": ["@types/bun@1.3.8", "https://registry.npm.taobao.org/@types/bun/-/bun-1.3.8.tgz", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
+
+    "@creator-flow/server/zod": ["zod@4.3.5", "https://registry.npm.taobao.org/zod/-/zod-4.3.5.tgz", {}, "sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g=="],
 
     "@creator-flow/viewer/@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "https://registry.npm.taobao.org/@vitejs/plugin-react/-/plugin-react-4.7.0.tgz", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
 

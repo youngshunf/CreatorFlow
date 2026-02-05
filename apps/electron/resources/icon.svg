@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="gradApp" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#06B6D4"/>
       <stop offset="100%" stop-color="#8B5CF6"/>
     </linearGradient>
-    <linearGradient id="grad2" x1="100%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="gradApp2" x1="100%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#06B6D4"/>
       <stop offset="100%" stop-color="#8B5CF6"/>
     </linearGradient>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+    <filter id="glowApp" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="8" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
@@ -18,18 +18,18 @@
   </defs>
   
   <!-- Background -->
-  <rect width="512" height="512" rx="100" fill="#0F172A"/>
+  <rect x="32" y="32" width="448" height="448" rx="90" fill="#0F172A"/>
   
-  <g transform="translate(256, 280)">
+  <g transform="translate(256, 276) scale(0.85)">
     <!-- Base circle -->
     <circle cx="0" cy="0" r="140" fill="#1E293B"/>
     
-    <!-- Left leaf -->
-    <path d="M-18 -5 Q-90 -45 -100 -158 Q-68 -85 -35 -28 Q-24 -5 -18 -5" fill="url(#grad)" filter="url(#glow)"/>
-    <!-- Right leaf -->
-    <path d="M18 -5 Q90 -45 100 -158 Q68 -85 35 -28 Q24 -5 18 -5" fill="url(#grad2)" filter="url(#glow)"/>
+    <!-- Left leaf - 90 degree angle, wider middle, rounded tip -->
+    <path d="M-22 -3 Q-105 -30 -118 -125 Q-115 -118 -110 -112 Q-85 -70 -50 -28 Q-32 -3 -22 -3" fill="url(#gradApp)" filter="url(#glowApp)"/>
+    <!-- Right leaf - 90 degree angle, wider middle, rounded tip -->
+    <path d="M22 -3 Q105 -30 118 -125 Q115 -118 110 -112 Q85 -70 50 -28 Q32 -3 22 -3" fill="url(#gradApp2)" filter="url(#glowApp)"/>
     
     <!-- Bottom glow dot -->
-    <circle cx="0" cy="55" r="22" fill="url(#grad)" filter="url(#glow)"/>
+    <circle cx="0" cy="55" r="22" fill="url(#gradApp)" filter="url(#glowApp)"/>
   </g>
 </svg>

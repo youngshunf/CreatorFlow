@@ -50,6 +50,8 @@ export interface StoredConfig {
   autoCapitalisation?: boolean;  // Auto-capitalize first letter when typing (default: true)
   sendMessageKey?: 'enter' | 'cmd-enter';  // Key to send messages (default: 'enter')
   spellCheck?: boolean;  // Enable spell check in input (default: false)
+  // Git Bash path (Windows only)
+  gitBashPath?: string;  // Custom path to bash.exe for Git Bash on Windows
 }
 
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');

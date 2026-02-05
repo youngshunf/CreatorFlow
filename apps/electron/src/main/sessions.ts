@@ -880,8 +880,19 @@ export class SessionManager {
       const bunBinary = process.platform === 'win32' ? 'bun.exe' : 'bun'
       // On Windows, bun.exe is in extraResources (process.resourcesPath) to avoid EBUSY errors.
       // On macOS/Linux, bun is in the app files (basePath). See electron-builder.yml for details.
-      const bunBasePath = process.platform === 'win32' ? process.resourcesPath : basePath
+
+      // Debug logging for path resolution
+      sessionLog.info('[Bun Path Debug] process.platform:', process.platform)
+      sessionLog.info('[Bun Path Debug] process.resourcesPath:', process.resourcesPath)
+      sessionLog.info('[Bun Path Debug] basePath:', basePath)
+      sessionLog.info('[Bun Path Debug] app.getAppPath():', app.getAppPath())
+
+      const bunBasePath = process.platform === 'win32' ? (process.resourcesPath || basePath) : basePath
+      sessionLog.info('[Bun Path Debug] bunBasePath:', bunBasePath)
+
       const bunPath = join(bunBasePath, 'vendor', 'bun', bunBinary)
+      sessionLog.info('[Bun Path Debug] bunPath:', bunPath)
+
       if (!existsSync(bunPath)) {
         const error = `Bundled Bun runtime not found at ${bunPath}. The app package may be corrupted.`
         sessionLog.error(error)
@@ -890,26 +901,40 @@ export class SessionManager {
       sessionLog.info('Setting executable:', bunPath)
       setExecutable(bunPath)
 
-      // On Windows: Set CLAUDE_CODE_GIT_BASH_PATH to bundled bash.exe
-      // The SDK requires git-bash on Windows. We bundle it so users don't need to install Git.
-      // PortableGit has bash.exe in usr/bin/, MinGit would have it in bin/ (but MinGit doesn't include bash)
+      // On Windows: Set CLAUDE_CODE_GIT_BASH_PATH for the SDK
+      // The SDK requires git-bash on Windows. Users should install Git for Windows.
+      // We check for: 1) User-configured path, 2) System-installed Git
       if (process.platform === 'win32') {
-        const possiblePaths = [
-          join(process.resourcesPath, 'vendor', 'git', 'usr', 'bin', 'bash.exe'),
-          join(process.resourcesPath, 'vendor', 'git', 'bin', 'bash.exe'),
-        ]
         let bashPath: string | null = null
-        for (const path of possiblePaths) {
-          if (existsSync(path)) {
-            bashPath = path
-            break
+
+        // First, check if user has configured a custom path
+        const config = loadStoredConfig()
+        if (config?.gitBashPath && existsSync(config.gitBashPath)) {
+          bashPath = config.gitBashPath
+          sessionLog.info('[GitBash] Using user-configured path:', bashPath)
+        } else {
+          // Try common Git for Windows installation paths
+          const commonPaths = [
+            'C:\\Program Files\\Git\\bin\\bash.exe',
+            'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+            join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'bin', 'bash.exe'),
+            join(process.env.PROGRAMFILES || '', 'Git', 'bin', 'bash.exe'),
+          ]
+
+          for (const path of commonPaths) {
+            if (existsSync(path)) {
+              bashPath = path
+              sessionLog.info('[GitBash] Found system Git Bash:', bashPath)
+              break
+            }
           }
         }
+
         if (bashPath) {
           process.env.CLAUDE_CODE_GIT_BASH_PATH = bashPath
-          sessionLog.info('Setting CLAUDE_CODE_GIT_BASH_PATH:', bashPath)
+          sessionLog.info('[GitBash] Set CLAUDE_CODE_GIT_BASH_PATH:', bashPath)
         } else {
-          sessionLog.warn(`Bundled Git Bash not found. Tried: ${possiblePaths.join(', ')}. SDK shell commands may fail.`)
+          sessionLog.warn('[GitBash] Git Bash not found. SDK shell commands may fail. Please install Git for Windows.')
         }
       }
     }
