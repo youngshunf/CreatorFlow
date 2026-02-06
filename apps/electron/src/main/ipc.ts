@@ -2349,28 +2349,28 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       throw new Error(`Invalid file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`)
     }
 
-    // First, try to resolve path relative to workspace root
-    let absolutePath = normalize(join(workspace.rootPath, relativePath))
+    let absolutePath: string
 
-    // Security check for workspace path
-    if (absolutePath.startsWith(workspace.rootPath) && existsSync(absolutePath)) {
-      // File found in workspace, use it
-    } else if (relativePath.startsWith('.creator-flow/skills/')) {
-      // File not found in workspace, try global skills directory
-      // Global skills are stored in ~/.creator-flow/skills/
-      const globalPath = normalize(join(homedir(), relativePath))
-      const globalSkillsDir = normalize(join(homedir(), '.creator-flow', 'skills'))
+    // Check if path is already absolute (starts with /)
+    if (relativePath.startsWith('/')) {
+      absolutePath = normalize(relativePath)
 
-      // Security: ensure path is within ~/.creator-flow/skills/
-      if (globalPath.startsWith(globalSkillsDir) && existsSync(globalPath)) {
-        absolutePath = globalPath
-      } else {
-        return null  // Not found in either location
+      // Security: only allow paths within workspace or ~/.creator-flow/
+      const globalCreatorFlowDir = normalize(join(homedir(), '.creator-flow'))
+      const isInWorkspace = absolutePath.startsWith(workspace.rootPath)
+      const isInGlobalCreatorFlow = absolutePath.startsWith(globalCreatorFlowDir)
+
+      if (!isInWorkspace && !isInGlobalCreatorFlow) {
+        throw new Error('Invalid path: outside allowed directories')
       }
-    } else if (!absolutePath.startsWith(workspace.rootPath)) {
-      throw new Error('Invalid path: outside workspace directory')
     } else {
-      return null  // File not found
+      // Resolve path relative to workspace root
+      absolutePath = normalize(join(workspace.rootPath, relativePath))
+
+      // Double-check the resolved path is still within workspace
+      if (!absolutePath.startsWith(workspace.rootPath)) {
+        throw new Error('Invalid path: outside workspace directory')
+      }
     }
 
     if (!existsSync(absolutePath)) {
