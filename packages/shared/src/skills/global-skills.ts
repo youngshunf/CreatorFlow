@@ -284,7 +284,7 @@ function loadSkillFromDir(skillDir: string, slug: string): LoadedSkill | null {
 
     // 解析 frontmatter
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-    if (!frontmatterMatch) {
+    if (!frontmatterMatch?.[1] || !frontmatterMatch?.[2]) {
       return null;
     }
 
@@ -295,7 +295,7 @@ function loadSkillFromDir(skillDir: string, slug: string): LoadedSkill | null {
     const nameMatch = frontmatter.match(/name:\s*(.+)/);
     const descMatch = frontmatter.match(/description:\s*(.+)/);
 
-    if (!nameMatch || !descMatch) {
+    if (!nameMatch?.[1] || !descMatch?.[1]) {
       return null;
     }
 
@@ -309,18 +309,18 @@ function loadSkillFromDir(skillDir: string, slug: string): LoadedSkill | null {
       description: descMatch[1].trim(),
     };
 
-    if (iconMatch) {
+    if (iconMatch?.[1]) {
       metadata.icon = iconMatch[1].trim();
     }
 
-    if (globsMatch) {
+    if (globsMatch?.[1]) {
       metadata.globs = globsMatch[1]
         .split(',')
         .map(s => s.trim().replace(/['"]/g, ''))
         .filter(s => s);
     }
 
-    if (alwaysAllowMatch) {
+    if (alwaysAllowMatch?.[1]) {
       metadata.alwaysAllow = alwaysAllowMatch[1]
         .split(',')
         .map(s => s.trim().replace(/['"]/g, ''))

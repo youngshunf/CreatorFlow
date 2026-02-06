@@ -126,7 +126,9 @@ export async function syncMarketplaceMetadata(): Promise<void> {
       const skillsResponse = await listSkills({ page: skillPage, size: PAGE_SIZE });
       allSkills.push(...skillsResponse.items);
 
-      hasMoreSkills = skillPage < skillsResponse.pages;
+      // 计算总页数
+      const totalPages = Math.ceil(skillsResponse.total / PAGE_SIZE);
+      hasMoreSkills = skillPage < totalPages;
       skillPage++;
 
       debug(`[syncMarketplaceMetadata] 已获取技能: ${allSkills.length}/${skillsResponse.total}`);
@@ -141,7 +143,9 @@ export async function syncMarketplaceMetadata(): Promise<void> {
       const appsResponse = await listApps({ page: appPage, size: PAGE_SIZE });
       allApps.push(...appsResponse.items);
 
-      hasMoreApps = appPage < appsResponse.pages;
+      // 计算总页数
+      const totalPages = Math.ceil(appsResponse.total / PAGE_SIZE);
+      hasMoreApps = appPage < totalPages;
       appPage++;
 
       debug(`[syncMarketplaceMetadata] 已获取应用: ${allApps.length}/${appsResponse.total}`);
@@ -195,7 +199,9 @@ export async function forceSyncMarketplaceMetadata(): Promise<void> {
       const skillsResponse = await listSkills({ page: skillPage, size: PAGE_SIZE });
       allSkills.push(...skillsResponse.items);
 
-      hasMoreSkills = skillPage < skillsResponse.pages;
+      // 计算总页数
+      const totalPages = Math.ceil(skillsResponse.total / PAGE_SIZE);
+      hasMoreSkills = skillPage < totalPages;
       skillPage++;
     }
 
@@ -208,7 +214,9 @@ export async function forceSyncMarketplaceMetadata(): Promise<void> {
       const appsResponse = await listApps({ page: appPage, size: PAGE_SIZE });
       allApps.push(...appsResponse.items);
 
-      hasMoreApps = appPage < appsResponse.pages;
+      // 计算总页数
+      const totalPages = Math.ceil(appsResponse.total / PAGE_SIZE);
+      hasMoreApps = appPage < totalPages;
       appPage++;
     }
 

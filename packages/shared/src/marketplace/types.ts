@@ -248,6 +248,11 @@ export interface InstalledSkillInfo {
 export type InstallProgressCallback = (progress: InstallProgress) => void;
 
 /**
+ * App install progress callback
+ */
+export type AppInstallProgressCallback = (progress: AppInstallProgress) => void;
+
+/**
  * Install stage types
  */
 export type InstallStage =

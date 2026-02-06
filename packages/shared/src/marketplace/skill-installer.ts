@@ -351,7 +351,7 @@ export async function installSkill(
 
     // Install to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-skills',
       percent: 85,
       message: '正在安装到工作区...',
       skillId,
@@ -467,5 +467,5 @@ export async function updateSkill(
  */
 function extractVersionFromUrl(url: string): string | null {
   const match = url.match(/\/(\d+\.\d+\.\d+)\.zip/);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }

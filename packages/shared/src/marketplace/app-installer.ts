@@ -26,7 +26,9 @@ import { createHash } from 'crypto';
 import { Extract } from 'unzipper';
 import type {
   InstallProgress,
+  AppInstallProgress,
   InstallProgressCallback,
+  AppInstallProgressCallback,
   AppDownloadResponse,
   SkillDependencyDownload,
 } from './types.ts';
@@ -41,15 +43,6 @@ import { installSkill } from './skill-installer.ts';
 // ============================================================
 // Types
 // ============================================================
-
-export interface AppInstallProgress extends InstallProgress {
-  appId?: string;
-  currentSkill?: string;
-  totalSkills?: number;
-  installedSkills?: number;
-}
-
-export type AppInstallProgressCallback = (progress: AppInstallProgress) => void;
 
 export interface AppInstallResult {
   success: boolean;
@@ -555,6 +548,7 @@ async function installSkillDependencies(
 
   for (let i = 0; i < dependencies.length; i++) {
     const dep = dependencies[i];
+    if (!dep) continue;
 
     onProgress?.({
       stage: 'installing-skills',
@@ -841,7 +835,7 @@ export async function installAppFromLocal(
     }
 
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 10,
       message: '正在解析应用配置...',
       appId,
@@ -894,7 +888,7 @@ export async function installAppFromLocal(
 
     // Copy app package to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 85,
       message: '正在复制应用到工作区...',
       appId,
