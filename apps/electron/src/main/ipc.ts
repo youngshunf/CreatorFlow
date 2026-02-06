@@ -2146,9 +2146,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       ipcLog.error(`SKILLS_GET: Workspace not found: ${workspaceId}`)
       return []
     }
-    const { loadWorkspaceSkills } = await import('@creator-flow/shared/skills')
-    const skills = loadWorkspaceSkills(workspace.rootPath)
-    ipcLog.info(`SKILLS_GET: Loaded ${skills.length} skills from ${workspace.rootPath}`)
+    const { loadAllSkills } = await import('@creator-flow/shared/skills')
+    const skills = loadAllSkills(workspace.rootPath)
+    ipcLog.info(`SKILLS_GET: Loaded ${skills.length} skills (global + workspace) from ${workspace.rootPath}`)
     return skills
   })
 

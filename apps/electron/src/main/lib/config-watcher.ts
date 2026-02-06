@@ -38,7 +38,7 @@ import {
 import { permissionsConfigCache, getAppPermissionsDir } from '@creator-flow/shared/agent';
 import { getWorkspacePath, getWorkspaceSourcesPath, getWorkspaceSkillsPath } from '@creator-flow/shared/workspaces';
 import type { LoadedSkill } from '@creator-flow/shared/skills';
-import { loadSkill, loadWorkspaceSkills, skillNeedsIconDownload, downloadSkillIcon } from '@creator-flow/shared/skills';
+import { loadSkill, loadAllSkills, skillNeedsIconDownload, downloadSkillIcon } from '@creator-flow/shared/skills';
 import {
   loadStatusConfig,
   statusNeedsIconDownload,
@@ -701,7 +701,7 @@ export class ConfigWatcher {
       }
 
       // Notify list change
-      const allSkills = loadWorkspaceSkills(this.workspaceDir);
+      const allSkills = loadAllSkills(this.workspaceDir);
       this.callbacks.onSkillsListChange?.(allSkills);
     } catch (error) {
       debug('[ConfigWatcher] Error handling skills dir change:', error);

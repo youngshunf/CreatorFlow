@@ -495,12 +495,51 @@ export function MarketplaceDetailDialog({
               </div>
               <div className="flex items-center gap-3">
                 {isInstalling ? (
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-muted-foreground">
-                      {installProgress?.message || t('准备中...')}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">
+                        {installProgress?.stage === 'downloading' && t('正在下载...')}
+                        {installProgress?.stage === 'extracting' && t('正在解压...')}
+                        {installProgress?.stage === 'installing-skills' && t('正在安装技能...')}
+                        {installProgress?.stage === 'installing-app' && t('正在安装应用...')}
+                        {installProgress?.stage === 'finalizing' && t('正在完成...')}
+                        {!installProgress?.stage && t('准备中...')}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {Math.round(installProgress?.percent || 0)}%
+                      </div>
                     </div>
-                    <div className="w-32">
+
+                    {/* Skill installation details */}
+                    {installProgress?.stage === 'installing-skills' && (installProgress as any).currentSkill && (
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {t('技能')} {(installProgress as any).installedSkills + 1}/{(installProgress as any).totalSkills}
+                          </span>
+                          <span className="font-mono">{(installProgress as any).currentSkill}</span>
+                        </div>
+                        {(installProgress as any).skillProgress !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 bg-foreground/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-accent/50 transition-all duration-300"
+                                style={{ width: `${(installProgress as any).skillProgress}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] w-8 text-right">{Math.round((installProgress as any).skillProgress)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
                       <Progress value={installProgress?.percent || 0} className="h-2" />
+                      {installProgress?.message && (
+                        <div className="text-xs text-muted-foreground">
+                          {installProgress.message}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

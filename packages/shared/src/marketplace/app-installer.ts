@@ -545,30 +545,77 @@ async function installSkillDependencies(
   const results: Array<{ skillId: string; success: boolean; error?: string }> = [];
   const total = dependencies.length;
 
-  for (const dep of dependencies) {
+  onProgress?.({
+    stage: 'installing-skills',
+    percent: 35,
+    message: `正在安装 ${total} 个技能依赖...`,
+    totalSkills: total,
+    installedSkills: 0,
+  });
+
+  for (let i = 0; i < dependencies.length; i++) {
+    const dep = dependencies[i];
+
     onProgress?.({
-      stage: 'installing',
-      percent: 35 + Math.round(((results.length + 0.5) / total) * 50), // 35-85%
-      message: `正在安装技能: ${dep.id} (${results.length + 1}/${total})`,
+      stage: 'installing-skills',
+      percent: 35 + Math.round((i / total) * 50), // 35-85%
+      message: `正在安装技能 ${i + 1}/${total}`,
       currentSkill: dep.id,
       totalSkills: total,
-      installedSkills: results.length,
+      installedSkills: i,
     });
 
     try {
-      const result = await installSkill(workspaceRoot, dep.id, dep.version);
+      // Install skill with progress callback
+      await installSkill(
+        workspaceRoot,
+        dep.id,
+        dep.version,
+        (skillProgress) => {
+          onProgress?.({
+            stage: 'installing-skills',
+            percent: 35 + Math.round((i / total) * 50) + Math.round((skillProgress.percent / 100) * (50 / total)),
+            message: `正在安装技能 ${i + 1}/${total}: ${skillProgress.message}`,
+            currentSkill: dep.id,
+            totalSkills: total,
+            installedSkills: i,
+            skillProgress: skillProgress.percent,
+          });
+        }
+      );
+
       results.push({
         skillId: dep.id,
-        success: result.success,
-        error: result.error,
+        success: true,
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
       results.push({
         skillId: dep.id,
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: errorMessage,
       });
     }
+  }
+
+  // Check for failures and report
+  const failedSkills = results.filter((r) => !r.success);
+  if (failedSkills.length > 0) {
+    onProgress?.({
+      stage: 'installing-skills',
+      percent: 85,
+      message: `警告：${failedSkills.length} 个技能安装失败，应用可能无法正常工作`,
+      totalSkills: total,
+      installedSkills: results.filter(r => r.success).length,
+    });
+  } else {
+    onProgress?.({
+      stage: 'installing-skills',
+      percent: 85,
+      message: `所有技能安装完成 (${total}/${total})`,
+      totalSkills: total,
+      installedSkills: total,
+    });
   }
 
   return results;
@@ -608,7 +655,7 @@ export async function installApp(
       }
 
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 2,
         message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
         appId,
@@ -619,7 +666,7 @@ export async function installApp(
     let backupPath: string | undefined;
     if (existingApp && force && !merge && !skipBackup) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 5,
         message: '正在备份现有数据...',
         appId,
@@ -646,15 +693,33 @@ export async function installApp(
       // Check if any skills failed
       const failedSkills = skillResults.filter((r) => !r.success);
       if (failedSkills.length > 0) {
-        console.warn(
-          `部分技能安装失败: ${failedSkills.map((s) => s.skillId).join(', ')}`
-        );
+        const errorMsg = `部分技能安装失败: ${failedSkills.map((s) => s.skillId).join(', ')}`;
+        console.warn(errorMsg);
+
+        // 如果所有技能都失败，返回失败状态
+        if (failedSkills.length === skillDependencies.length) {
+          return {
+            success: false,
+            appId,
+            version: actualVersion,
+            error: `所有技能依赖安装失败，应用无法正常使用`,
+            skillResults,
+          };
+        }
+
+        // 部分失败，继续安装但标记警告
+        onProgress?.({
+          stage: 'installing-app',
+          percent: 85,
+          message: `警告：${failedSkills.length}/${skillDependencies.length} 个技能安装失败`,
+          appId,
+        });
       }
     }
 
     // Copy app package to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 90,
       message: '正在复制应用到工作区...',
       appId,
@@ -756,7 +821,7 @@ export async function installAppFromLocal(
       }
 
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 2,
         message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
         appId,
@@ -767,7 +832,7 @@ export async function installAppFromLocal(
     let backupPath: string | undefined;
     if (existingApp && force && !merge && !skipBackup) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 5,
         message: '正在备份现有数据...',
         appId,
@@ -788,7 +853,7 @@ export async function installAppFromLocal(
 
     if (skillDependencies.length > 0) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 20,
         message: `正在安装 ${skillDependencies.length} 个技能...`,
         appId,
@@ -801,7 +866,7 @@ export async function installAppFromLocal(
         const skillId = skillDependencies[i];
 
         onProgress?.({
-          stage: 'installing',
+          stage: 'installing-app',
           percent: 20 + Math.round(((i + 0.5) / total) * 60), // 20-80%
           message: `正在安装技能: ${skillId} (${i + 1}/${total})`,
           appId,
