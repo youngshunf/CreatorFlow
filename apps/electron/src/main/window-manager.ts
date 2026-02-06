@@ -81,8 +81,9 @@ export class WindowManager {
     }
 
     // Use smaller window size for focused mode (single session view)
-    const windowWidth = focused ? 900 : 1400
-    const windowHeight = focused ? 700 : 900
+    // Increased from 900x700 to 1200x800 to provide more space for content and floating UI elements
+    const windowWidth = focused ? 1200 : 1400
+    const windowHeight = focused ? 800 : 900
 
     // Platform-specific window options
     const isMac = process.platform === 'darwin'
@@ -243,7 +244,8 @@ export class WindowManager {
         import('./deep-link').then(({ parseDeepLink }) => {
           const target = parseDeepLink(initialDeepLink)
           if (target && (target.view || target.action)) {
-            // Wait a bit for React to mount and register IPC listeners
+            // Wait for React to mount and register IPC listeners
+            // Increased delay to 300ms to ensure reliable navigation on first load
             setTimeout(() => {
               if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
                 window.webContents.send(IPC_CHANNELS.DEEP_LINK_NAVIGATE, {
@@ -252,7 +254,7 @@ export class WindowManager {
                   actionParams: target.actionParams,
                 })
               }
-            }, 100)
+            }, 300)
           }
         })
       })

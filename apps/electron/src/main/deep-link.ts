@@ -1,20 +1,20 @@
 /**
  * Deep Link Handler
  *
- * Parses creatorflow:// URLs and routes to appropriate actions.
+ * Parses craftagents:// URLs and routes to appropriate actions.
  *
  * URL Formats (workspace is optional - uses active window if omitted):
  *
  * Compound format (hierarchical navigation):
- *   creatorflow://allChats[/chat/{sessionId}]            - Chat list (all chats)
- *   creatorflow://flagged[/chat/{sessionId}]             - Chat list (flagged filter)
- *   creatorflow://state/{stateId}[/chat/{sessionId}]     - Chat list (state filter)
- *   creatorflow://sources[/source/{sourceSlug}]          - Sources list
- *   creatorflow://settings[/{subpage}]                   - Settings (general, shortcuts, preferences)
+ *   craftagents://allChats[/chat/{sessionId}]            - Chat list (all chats)
+ *   craftagents://flagged[/chat/{sessionId}]             - Chat list (flagged filter)
+ *   craftagents://state/{stateId}[/chat/{sessionId}]     - Chat list (state filter)
+ *   craftagents://sources[/source/{sourceSlug}]          - Sources list
+ *   craftagents://settings[/{subpage}]                   - Settings (general, shortcuts, preferences)
  *
  * Action format:
- *   creatorflow://action/{actionName}[/{id}][?params]
- *   creatorflow://workspace/{workspaceId}/action/{actionName}[?params]
+ *   craftagents://action/{actionName}[/{id}][?params]
+ *   craftagents://workspace/{workspaceId}/action/{actionName}[?params]
  *
  * Actions:
  *   new-chat                  - Create new chat, optional ?input=text&name=name&send=true
@@ -25,13 +25,13 @@
  *   unflag-session/{id}       - Unflag session
  *
  * Examples:
- *   creatorflow://allChats                               (all chats view)
- *   creatorflow://allChats/chat/abc123                   (specific chat)
- *   creatorflow://settings/shortcuts                     (shortcuts page)
- *   creatorflow://sources/source/github                  (github source info)
- *   creatorflow://action/new-chat                        (uses active window)
- *   creatorflow://action/resume-sdk-session/{sdkId}      (resume Claude Code session)
- *   creatorflow://workspace/ws123/allChats/chat/abc123   (targets specific workspace)
+ *   craftagents://allChats                               (all chats view)
+ *   craftagents://allChats/chat/abc123                   (specific chat)
+ *   craftagents://settings/shortcuts                     (shortcuts page)
+ *   craftagents://sources/source/github                  (github source info)
+ *   craftagents://action/new-chat                        (uses active window)
+ *   craftagents://action/resume-sdk-session/{sdkId}      (resume Claude Code session)
+ *   craftagents://workspace/ws123/allChats/chat/abc123   (targets specific workspace)
  */
 
 import type { BrowserWindow } from 'electron'
@@ -95,13 +95,13 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
   try {
     const parsed = new URL(url)
 
-    if (parsed.protocol !== 'creatorflow:') {
+    if (parsed.protocol !== 'craftagents:') {
       return null
     }
 
     // For custom protocols, the hostname contains the first path segment
-    // e.g., creatorflow://workspace/ws123 → hostname='workspace', pathname='/ws123'
-    // e.g., creatorflow://allChats/chat/abc → hostname='allChats', pathname='/chat/abc'
+    // e.g., craftagents://workspace/ws123 → hostname='workspace', pathname='/ws123'
+    // e.g., craftagents://allChats/chat/abc → hostname='allChats', pathname='/chat/abc'
     const host = parsed.hostname
     const pathParts = parsed.pathname.split('/').filter(Boolean)
     const windowMode = parseWindowMode(parsed)
