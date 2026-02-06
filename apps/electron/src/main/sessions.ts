@@ -46,7 +46,7 @@ import { CraftMcpClient } from '@creator-flow/shared/mcp'
 import { type Session, type Message, type SessionEvent, type FileAttachment, type StoredAttachment, type SendMessageOptions, IPC_CHANNELS, generateMessageId } from '../shared/types'
 import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient, resolveToolIcon } from '@creator-flow/shared/utils'
 import { t } from '@creator-flow/shared/locale'
-import { loadWorkspaceSkills, type LoadedSkill } from '@creator-flow/shared/skills'
+import { loadAllSkills, type LoadedSkill } from '@creator-flow/shared/skills'
 import type { ToolDisplayMeta } from '@creator-flow/core/types'
 import { DEFAULT_MODEL, getToolIconsDir } from '@creator-flow/shared/config'
 import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels'
@@ -202,7 +202,7 @@ function resolveToolDisplayMeta(
       if (skillSlug) {
         // Load skills and find the one being invoked
         try {
-          const skills = loadWorkspaceSkills(workspaceRootPath)
+          const skills = loadAllSkills(workspaceRootPath)
           const skill = skills.find(s => s.slug === skillSlug)
           if (skill) {
             // Try file-based icon first, fall back to emoji icon from metadata
@@ -619,8 +619,8 @@ export class SessionManager {
       onSkillChange: async (slug, skill) => {
         sessionLog.info(`Skill '${slug}' changed:`, skill ? 'updated' : 'deleted')
         // Broadcast updated list to UI
-        const { loadWorkspaceSkills } = await import('@creator-flow/shared/skills')
-        const skills = loadWorkspaceSkills(workspaceRootPath)
+        const { loadAllSkills } = await import('@creator-flow/shared/skills')
+        const skills = loadAllSkills(workspaceRootPath)
         this.broadcastSkillsChanged(skills)
       },
 

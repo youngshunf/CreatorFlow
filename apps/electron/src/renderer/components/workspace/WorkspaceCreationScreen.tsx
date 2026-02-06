@@ -52,6 +52,7 @@ export function WorkspaceCreationScreen({
     initialMarketplaceApp ? 'marketplace' : 'bundled'
   )
   const [isCreating, setIsCreating] = useState(false)
+  const [creatingStage, setCreatingStage] = useState<string>('')
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
   
   // State for existing app confirmation dialog
@@ -86,23 +87,32 @@ export function WorkspaceCreationScreen({
 
   const handleCreateWorkspace = useCallback(async (folderPath: string, name: string, installMode?: 'force' | 'merge') => {
     setIsCreating(true)
+    setCreatingStage(t('正在创建工作区...'))
     try {
       // For marketplace apps, extract the actual app ID
-      const appId = selectedAppSource === 'marketplace' 
+      const appId = selectedAppSource === 'marketplace'
         ? selectedAppId.replace('marketplace:', '')
         : selectedAppId
-      
+
+      // Show different stages for marketplace apps
+      if (selectedAppSource === 'marketplace') {
+        setCreatingStage(t('正在下载应用...'))
+        // Simulate stage updates (since we don't have real progress events yet)
+        setTimeout(() => setCreatingStage(t('正在安装技能...')), 2000)
+        setTimeout(() => setCreatingStage(t('正在初始化工作区...')), 4000)
+      }
+
       // Pass the selected app ID and source to workspace creation
       const result = await window.electronAPI.createWorkspace(
-        folderPath, 
-        name, 
+        folderPath,
+        name,
         appId,
         selectedAppSource === 'marketplace' ? 'marketplace' : undefined,
         installMode
       )
-      
+
       console.log('[WorkspaceCreation] createWorkspace result:', result)
-      
+
       // Check if there's an existing app conflict (workspace will be null)
       if (result.existingApp && !result.workspace) {
         console.log('[WorkspaceCreation] Showing existing app dialog:', result.existingApp)
@@ -112,14 +122,16 @@ export function WorkspaceCreationScreen({
         setShowExistingAppDialog(true)
         return
       }
-      
+
       if (result.workspace) {
+        setCreatingStage(t('完成！'))
         onWorkspaceCreated(result.workspace)
       }
     } finally {
       setIsCreating(false)
+      setCreatingStage('')
     }
-  }, [onWorkspaceCreated, selectedAppId, selectedAppSource])
+  }, [onWorkspaceCreated, selectedAppId, selectedAppSource, t])
 
   // Handle force install (overwrite with backup) after user confirms
   const handleForceInstall = useCallback(async () => {
@@ -305,6 +317,27 @@ export function WorkspaceCreationScreen({
                 >
                   {t('选择其他工作区')}
                 </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Creating Progress Overlay */}
+        {isCreating && creatingStage && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-md rounded-xl border bg-background p-8 shadow-lg"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">{creatingStage}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('请稍候，这可能需要几分钟...')}
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>

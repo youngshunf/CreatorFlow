@@ -90,7 +90,7 @@ function expandPath(path: string): string {
 // ============================================================
 
 const CACHE_FILE = 'meta.json';
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /**
  * Get cached marketplace data

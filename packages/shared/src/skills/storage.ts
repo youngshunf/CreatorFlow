@@ -23,6 +23,7 @@ import {
   needsIconDownload,
   isIconUrl,
 } from '../utils/icon.ts';
+import { loadGlobalSkills } from './global-skills.ts';
 
 // ============================================================
 // Parsing
@@ -133,6 +134,34 @@ export function loadWorkspaceSkills(workspaceRoot: string): LoadedSkill[] {
   }
 
   return skills;
+}
+
+/**
+ * Load all skills (global + workspace)
+ * 合并全局技能和工作区技能，工作区技能优先级更高
+ * @param workspaceRoot - Absolute path to workspace root
+ */
+export function loadAllSkills(workspaceRoot: string): LoadedSkill[] {
+  // 加载全局技能
+  const globalSkills = loadGlobalSkills();
+
+  // 加载工作区技能
+  const workspaceSkills = loadWorkspaceSkills(workspaceRoot);
+
+  // 使用 Map 合并，工作区技能优先
+  const skillMap = new Map<string, LoadedSkill>();
+
+  // 先添加全局技能
+  for (const skill of globalSkills) {
+    skillMap.set(skill.slug, skill);
+  }
+
+  // 工作区技能覆盖同名全局技能
+  for (const skill of workspaceSkills) {
+    skillMap.set(skill.slug, skill);
+  }
+
+  return Array.from(skillMap.values());
 }
 
 /**

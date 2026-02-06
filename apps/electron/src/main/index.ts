@@ -307,11 +307,40 @@ app.whenReady().then(async () => {
   // Register bundled apps (must happen early so apps are available for workspace creation)
   registerBundledApps()
 
+  // Initialize global skills (first run: copy bundled skills to ~/.creator-flow/global-skills/)
+  try {
+    const { initializeGlobalSkills } = await import('@creator-flow/shared/skills/global-skills')
+    await initializeGlobalSkills()
+    mainLog.info('Global skills initialized successfully')
+  } catch (error) {
+    mainLog.error('Failed to initialize global skills:', error)
+    // 通知用户初始化失败（非阻塞）
+    setTimeout(() => {
+      if (windowManager) {
+        windowManager.sendToAll('system:notification', {
+          type: 'error',
+          title: '全局技能初始化失败',
+          message: '部分功能可能不可用，请检查日志或重新安装应用',
+        })
+      }
+    }, 3000) // 延迟3秒，等待窗口创建
+  }
+
   // Ensure default permissions file exists (copies bundled default.json on first run)
   ensureDefaultPermissions()
 
   // Seed tool icons to ~/.craft-agent/tool-icons/ (copies bundled SVGs on first run)
   ensureToolIcons()
+
+  // Sync marketplace metadata in background (non-blocking, 4-hour interval)
+  try {
+    const { syncMarketplaceMetadata } = await import('@creator-flow/shared/marketplace/sync')
+    syncMarketplaceMetadata().catch(err => {
+      mainLog.warn('Failed to sync marketplace metadata:', err)
+    })
+  } catch (error) {
+    mainLog.warn('Failed to import marketplace sync module:', error)
+  }
 
   // Register thumbnail:// protocol handler (scheme was registered earlier, before app.whenReady)
   registerThumbnailHandler()
