@@ -22,7 +22,6 @@ files:
   - dist/assets/themes/**/*
   - dist/assets/permissions/**/*
   - dist/assets/config-defaults.json
-  - dist/assets/bundled-apps/**/*
   # Include network interceptor for API error capture and MCP schema injection
   - packages/shared/src/network-interceptor.ts
   # Exclude everything else from node_modules

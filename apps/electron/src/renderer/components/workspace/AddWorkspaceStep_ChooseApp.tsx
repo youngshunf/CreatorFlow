@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { ArrowLeft, Check, Cloud, Package, RefreshCw } from "lucide-react"
+import { Check, Cloud, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddWorkspacePrimaryButton } from "./primitives"
 import { useT } from "@/context/LocaleContext"
@@ -13,12 +13,12 @@ interface AppOption {
   description: string
   icon: string
   iconUrl?: string
-  source: 'bundled' | 'marketplace'
+  source: 'marketplace'
 }
 
 interface AddWorkspaceStep_ChooseAppProps {
   onBack?: () => void
-  onNext: (appId: string, appName: string, source: 'bundled' | 'marketplace') => void
+  onNext: (appId: string, appName: string, source: 'marketplace') => void
   isLoading?: boolean
   /** Whether this is the first step (hides back button) */
   isFirstStep?: boolean
@@ -77,13 +77,6 @@ function AppCard({ app, selected, onClick, disabled }: AppCardProps) {
         </div>
       </div>
 
-      {/* Source badge */}
-      {app.source === 'marketplace' && (
-        <div className="shrink-0">
-          <Cloud className="h-3.5 w-3.5 text-muted-foreground" />
-        </div>
-      )}
-
       {/* Selected indicator */}
       {selected && (
         <div className="absolute top-2 right-2">
@@ -99,8 +92,8 @@ function AppCard({ app, selected, onClick, disabled }: AppCardProps) {
 /**
  * AddWorkspaceStep_ChooseApp - Choose an application template for the workspace
  *
- * Displays available applications (bundled and marketplace) and lets user choose one.
- * Uses a compact 4-column grid layout.
+ * Displays available applications from marketplace and lets user choose one.
+ * Uses a compact 3-column grid layout.
  */
 export function AddWorkspaceStep_ChooseApp({
   onBack,
@@ -109,40 +102,9 @@ export function AddWorkspaceStep_ChooseApp({
   isFirstStep = true
 }: AddWorkspaceStep_ChooseAppProps) {
   const t = useT()
-  const [selectedAppId, setSelectedAppId] = useState<string>('app.general')
-  const [bundledApps, setBundledApps] = useState<AppOption[]>([])
+  const [selectedAppId, setSelectedAppId] = useState<string>('')
   const [marketplaceApps, setMarketplaceApps] = useState<AppOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadingMarketplace, setLoadingMarketplace] = useState(true)
-
-  // Load bundled apps from main process
-  useEffect(() => {
-    const loadBundledApps = async () => {
-      try {
-        const apps = await window.electronAPI.listBundledApps()
-        const appOptions: AppOption[] = apps.map(app => ({
-          id: app.id,
-          name: app.name,
-          description: app.description,
-          icon: getAppIcon(app.id),
-          source: 'bundled' as const
-        }))
-        setBundledApps(appOptions)
-      } catch (error) {
-        console.error('Failed to load bundled apps:', error)
-        setBundledApps([{
-          id: 'app.general',
-          name: t('通用工作区'),
-          description: t('通用 AI 助手工作区，适合各种任务场景'),
-          icon: '🤖',
-          source: 'bundled'
-        }])
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadBundledApps()
-  }, [t])
 
   // Load marketplace apps
   useEffect(() => {
@@ -158,37 +120,23 @@ export function AddWorkspaceStep_ChooseApp({
           source: 'marketplace' as const
         }))
         setMarketplaceApps(appOptions)
+        // 默认选中第一个广场应用
+        if (appOptions.length > 0 && !selectedAppId) {
+          setSelectedAppId(appOptions[0].id)
+        }
       } catch (error) {
         console.error('Failed to load marketplace apps:', error)
       } finally {
-        setLoadingMarketplace(false)
+        setLoading(false)
       }
     }
     loadMarketplaceApps()
   }, [])
 
-  // Get default icon for bundled app based on ID
-  function getAppIcon(appId: string): string {
-    const iconMap: Record<string, string> = {
-      'app.general': '🤖',
-      'app.creator-media': '✨',
-      'app.software-dev': '💻',
-      'app.personal-assistant': '🗓️',
-      'app.smart-office': '📊',
-      'app.writing-assistant': '✍️',
-    }
-    return iconMap[appId] || '📦'
-  }
-
-  // Combine all apps
-  const allApps = useMemo(() => {
-    return [...bundledApps, ...marketplaceApps]
-  }, [bundledApps, marketplaceApps])
-
   // Find selected app
   const selectedApp = useMemo(() => {
-    return allApps.find(app => app.id === selectedAppId)
-  }, [allApps, selectedAppId])
+    return marketplaceApps.find(app => app.id === selectedAppId)
+  }, [marketplaceApps, selectedAppId])
 
   const handleNext = () => {
     if (selectedApp) {
@@ -217,55 +165,28 @@ export function AddWorkspaceStep_ChooseApp({
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
+          ) : marketplaceApps.length > 0 ? (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Cloud className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">{t('广场应用')}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {marketplaceApps.map((app) => (
+                  <AppCard
+                    key={app.id}
+                    app={app}
+                    selected={selectedAppId === app.id}
+                    onClick={() => setSelectedAppId(app.id)}
+                    disabled={isLoading}
+                  />
+                ))}
+              </div>
+            </div>
           ) : (
-            <>
-              {/* Bundled Apps Section */}
-              {bundledApps.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-muted-foreground">{t('内置应用')}</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {bundledApps.map((app) => (
-                      <AppCard
-                        key={app.id}
-                        app={app}
-                        selected={selectedAppId === app.id}
-                        onClick={() => setSelectedAppId(app.id)}
-                        disabled={isLoading}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Marketplace Apps Section */}
-              {loadingMarketplace ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">{t('加载广场应用...')}</span>
-                </div>
-              ) : marketplaceApps.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Cloud className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-muted-foreground">{t('广场应用')}</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {marketplaceApps.map((app) => (
-                      <AppCard
-                        key={app.id}
-                        app={app}
-                        selected={selectedAppId === app.id}
-                        onClick={() => setSelectedAppId(app.id)}
-                        disabled={isLoading}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            <div className="flex items-center justify-center py-12">
+              <span className="text-sm text-muted-foreground">{t('暂无可用应用')}</span>
+            </div>
           )}
         </div>
       </ScrollArea>

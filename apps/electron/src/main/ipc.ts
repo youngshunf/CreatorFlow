@@ -200,9 +200,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
           }
         }
       } else {
-        // Bundled app: initialize from local app manifest
+        // Non-marketplace app: initialize from local app manifest
         // Skip bundled skills and download from cloud instead
-        const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById, getBundledAppSourcePath } = await import('@creator-flow/shared/apps')
+        const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById } = await import('@creator-flow/shared/apps')
         try {
           const result = initializeWorkspaceFromApp({
             name,
@@ -215,16 +215,15 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
           } else {
             ipcLog.warn(`Workspace initialized with errors: ${result.errors.join(', ')}`)
           }
-          
-          // Download skills from cloud (with bundled fallback)
+
+          // Download skills from cloud
           const app = loadAppById(appId)
           if (app?.manifest.capabilities?.skills && app.manifest.capabilities.skills.length > 0) {
             ipcLog.info(`Downloading skills from cloud for app "${appId}"...`)
-            const bundledPath = getBundledAppSourcePath(appId) || app.path
             const skillResult = await installSkillsFromCloud(
               rootPath,
               app.manifest.capabilities.skills,
-              bundledPath
+              app.path
             )
             if (skillResult.installed.length > 0) {
               ipcLog.info(`Installed skills from cloud: ${skillResult.installed.join(', ')}`)
@@ -2648,21 +2647,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // and managed via WORKSPACE_SETTINGS_GET/UPDATE channels
 
   // ============================================================
-  // Apps (local bundled apps)
+  // Apps (deprecated - bundled apps removed)
   // ============================================================
 
-  // List bundled apps (main apps, not plugins) for workspace creation
+  // List bundled apps - returns empty array (bundled apps have been removed)
   ipcMain.handle(IPC_CHANNELS.APPS_LIST_BUNDLED, async () => {
-    const { listMainApps } = await import('@creator-flow/shared/apps')
-    const apps = listMainApps()
-    // Return simplified app info for UI
-    return apps.map(app => ({
-      id: app.manifest.id,
-      name: app.manifest.name,
-      description: app.manifest.description || '',
-      version: app.manifest.version,
-      iconPath: app.iconPath,
-    }))
+    return []
   })
 
   // ============================================================

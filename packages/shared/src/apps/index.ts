@@ -28,7 +28,6 @@ export type {
 // Storage
 export {
   getAppsDir,
-  getBundledAppsDir,
   ensureAppsDir,
   getAppPath,
   loadApp,
@@ -41,9 +40,7 @@ export {
   createAppDirectory,
   deleteApp,
   appExists,
-  isAppBundled,
   getCompatiblePlugins,
-  registerBundledApp,
 } from './storage.ts';
 
 // Initializer
@@ -59,13 +56,3 @@ export {
   migrateWorkspaceToApp,
   installSkillsFromCloud,
 } from './initializer.ts';
-
-// Bundled Apps
-export {
-  GENERAL_APP,
-  CREATOR_MEDIA_APP,
-  registerBundledApps,
-  getBundledAppManifests,
-  getBundledAppSourcePath,
-  getAppAgentsFilePath,
-} from './bundled-apps.ts';
