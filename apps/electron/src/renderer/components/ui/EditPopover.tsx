@@ -759,13 +759,79 @@ export function EditPopover({
   const [isResizing, setIsResizing] = useState(false)
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 })
 
+  // Dynamic max dimensions based on viewport space
+  const [maxDimensions, setMaxDimensions] = useState({
+    maxWidth: width || 400,
+    maxHeight: 480
+  })
+
+  // Calculate available space dynamically when popover opens
+  useEffect(() => {
+    if (!open) return
+
+    const calculateMaxDimensions = () => {
+      // Find the trigger element - use more specific selector
+      // Radix adds data-state to the trigger when popover is open
+      const triggerElement = document.querySelector('[data-slot="popover-trigger"][data-state="open"]')
+      if (!triggerElement) {
+        // Fallback: if we can't find the trigger, use generous defaults
+        setMaxDimensions({ maxWidth: 600, maxHeight: 600 })
+        return
+      }
+
+      const rect = triggerElement.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+
+      // Calculate available space in each direction (留 10px padding)
+      const availableRight = viewportWidth - rect.right - 10
+      const availableLeft = rect.left - 10
+      const availableBottom = viewportHeight - rect.bottom - 10
+      const availableTop = rect.top - 10
+
+      // Calculate max width based on align prop
+      let maxWidth: number
+      if (align === 'end') {
+        // 右对齐：从按钮右边缘向左延伸
+        maxWidth = Math.min(rect.right - 10, 600)
+      } else if (align === 'start') {
+        // 左对齐：从按钮左边缘向右延伸
+        maxWidth = Math.min(viewportWidth - rect.left - 10, 600)
+      } else {
+        // 居中：取两侧较大值
+        maxWidth = Math.min(Math.max(availableRight, availableLeft) * 2, 600)
+      }
+
+      // 确保最小宽度
+      maxWidth = Math.max(maxWidth, 320)
+
+      // Calculate max height based on side prop
+      const maxHeight = side === 'bottom'
+        ? Math.min(availableBottom, 600)
+        : Math.min(availableTop, 600)
+
+      setMaxDimensions({
+        maxWidth,
+        maxHeight: Math.max(maxHeight, 400)
+      })
+    }
+
+    // 延迟计算，确保 DOM 已渲染
+    const timer = setTimeout(calculateMaxDimensions, 0)
+    return () => clearTimeout(timer)
+  }, [open, side, align])
+
   // Reset drag position and size when popover opens
   useEffect(() => {
     if (open) {
       setDragOffset({ x: 0, y: 0 })
-      setContainerSize({ width: width || 400, height: 480 })
+      // 使用动态计算的最大尺寸
+      setContainerSize({
+        width: Math.min(width || 400, maxDimensions.maxWidth),
+        height: Math.min(480, maxDimensions.maxHeight)
+      })
     }
-  }, [open, width])
+  }, [open, width, maxDimensions])
 
   // Handle drag events
   const handleDragStart = useCallback((e: React.MouseEvent) => {
@@ -913,8 +979,14 @@ export function EditPopover({
         <PopoverContent
             side={side}
             align={align}
-            className="p-0 overflow-visible"
-            style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+            className="p-0"
+            style={{
+              width: Math.min(containerSize.width, maxDimensions.maxWidth),
+              height: Math.min(containerSize.height, maxDimensions.maxHeight),
+              background: 'transparent',
+              border: 'none',
+              boxShadow: 'none'
+            }}
             onInteractOutside={handleInteractOutside}
             onEscapeKeyDown={handleEscapeKeyDown}
           >
@@ -923,8 +995,8 @@ export function EditPopover({
               ref={popoverRef}
               className="relative bg-foreground-2 overflow-hidden"
               style={{
-                width: containerSize.width,
-                height: containerSize.height,
+                width: '100%',
+                height: '100%',
                 transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
                 borderRadius: 16,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
