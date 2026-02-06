@@ -2333,6 +2333,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     const { readFileSync, existsSync } = await import('fs')
     const { join, normalize } = await import('path')
+    const { homedir } = await import('os')
 
     // Security: validate path
     // - Must not contain .. (path traversal)
@@ -2348,12 +2349,27 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       throw new Error(`Invalid file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`)
     }
 
-    // Resolve path relative to workspace root
-    const absolutePath = normalize(join(workspace.rootPath, relativePath))
+    let absolutePath: string
 
-    // Double-check the resolved path is still within workspace
-    if (!absolutePath.startsWith(workspace.rootPath)) {
-      throw new Error('Invalid path: outside workspace directory')
+    // Check if this is a global skill path (starts with .creator-flow/skills/)
+    // Global skills are stored in ~/.creator-flow/skills/, not in workspace
+    if (relativePath.startsWith('.creator-flow/skills/')) {
+      // Resolve path relative to user home directory
+      absolutePath = normalize(join(homedir(), relativePath))
+
+      // Security: ensure path is within ~/.creator-flow/skills/
+      const globalSkillsDir = normalize(join(homedir(), '.creator-flow', 'skills'))
+      if (!absolutePath.startsWith(globalSkillsDir)) {
+        throw new Error('Invalid path: outside global skills directory')
+      }
+    } else {
+      // Resolve path relative to workspace root
+      absolutePath = normalize(join(workspace.rootPath, relativePath))
+
+      // Double-check the resolved path is still within workspace
+      if (!absolutePath.startsWith(workspace.rootPath)) {
+        throw new Error('Invalid path: outside workspace directory')
+      }
     }
 
     if (!existsSync(absolutePath)) {
