@@ -124,6 +124,23 @@ import { clearSourceIconCaches } from "@/lib/icon-cache"
 import { useT } from "@/context/LocaleContext"
 import { FileTreePanel, FilePreviewPanel } from "@/components/file-manager"
 
+/** Crown icon for subscription */
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2 8L6 12L12 4L18 12L22 8V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V8Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
 /**
  * Label name translation mapping for existing workspaces with English labels.
  * This ensures existing workspaces with English labels display in Chinese.
@@ -1204,6 +1221,11 @@ function AppShellContent({
     navigate(routes.view.marketplace())
   }, [])
 
+  // Handler for subscription view
+  const handleSubscriptionClick = useCallback(() => {
+    navigate(routes.view.settings('subscription'))
+  }, [])
+
   // Handler for settings view
   const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
     navigate(routes.view.settings(subpage))
@@ -1402,13 +1424,14 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Files, Marketplace, Settings
+    // 3. Files, Marketplace, Subscription, Settings
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
+    result.push({ id: 'nav:subscription', type: 'nav', action: handleSubscriptionClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
 
     return result
-  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSettingsClick])
+  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSubscriptionClick, handleSettingsClick])
 
   // Toggle folder expanded state
   const handleToggleFolder = React.useCallback((path: string) => {
@@ -1546,7 +1569,7 @@ function AppShellContent({
 
     // Marketplace navigator
     if (isMarketplaceNavigation(navState)) {
-      return t('市场')
+      return t('广场')
     }
 
     // Settings navigator
@@ -1806,19 +1829,27 @@ function AppShellContent({
                     // --- Marketplace ---
                     {
                       id: "nav:marketplace",
-                      title: t('市场'),
+                      title: t('广场'),
                       icon: Store,
                       variant: isMarketplaceNavigation(navState) ? "default" : "ghost",
                       onClick: handleMarketplaceClick,
                     },
                     // --- Separator ---
                     { id: "separator:marketplace-settings", type: "separator" },
+                    // --- Subscription ---
+                    {
+                      id: "nav:subscription",
+                      title: t('订阅与积分'),
+                      icon: <CrownIcon className="h-3.5 w-3.5" />,
+                      variant: isSettingsNavigation(navState) && navState.subpage === 'subscription' ? "default" : "ghost",
+                      onClick: handleSubscriptionClick,
+                    },
                     // --- Settings ---
                     {
                       id: "nav:settings",
                       title: t('设置'),
                       icon: Settings,
-                      variant: isSettingsNavigation(navState) ? "default" : "ghost",
+                      variant: isSettingsNavigation(navState) && navState.subpage !== 'subscription' ? "default" : "ghost",
                       onClick: () => handleSettingsClick('app'),
                     },
                   ]}
@@ -1962,8 +1993,8 @@ function AppShellContent({
             </>
           )}
 
-          {/* === SESSION LIST PANEL === (hidden in focused mode, home view, files navigation, and marketplace navigation) */}
-          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && (
+          {/* === SESSION LIST PANEL === (hidden in focused mode, home view, files navigation, marketplace navigation, and subscription page) */}
+          {!isFocusedMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !(isSettingsNavigation(navState) && navState.subpage === 'subscription') && (
           <div
             className="h-full flex flex-col min-w-0 bg-background shrink-0 shadow-middle overflow-hidden rounded-l-[14px] rounded-r-[10px]"
             style={{ width: sessionListWidth }}
@@ -2217,7 +2248,7 @@ function AppShellContent({
                 selectedSkillSlug={isSkillsNavigation(navState) && navState.details ? navState.details.skillSlug : null}
               />
             )}
-            {isSettingsNavigation(navState) && (
+            {isSettingsNavigation(navState) && navState.subpage !== 'subscription' && (
               /* Settings Navigator */
               <SettingsNavigator
                 selectedSubpage={navState.subpage}

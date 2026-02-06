@@ -552,8 +552,8 @@
     "Back"
   ],
   [
-    "返回市场",
-    "Back to Market"
+    "返回广场",
+    "Back to Plaza"
   ],
   [
     "防火墙或 VPN 可能正在阻止连接",
@@ -972,8 +972,8 @@
     "Load Failed"
   ],
   [
-    "加载市场应用...",
-    "Loading marketplace apps..."
+    "加载广场应用...",
+    "Loading plaza apps..."
   ],
   [
     "加载用户信息失败",
@@ -1996,16 +1996,16 @@
     "Always Allow"
   ],
   [
-    "市场",
-    "Marketplace"
+    "广场",
+    "Plaza"
   ],
   [
-    "市场应用",
-    "Marketplace Apps"
+    "广场应用",
+    "Plaza Apps"
   ],
   [
-    "市场暂无内容",
-    "No Content Available in Marketplace"
+    "广场暂无内容",
+    "No Content Available in Plaza"
   ],
   [
     "视图",

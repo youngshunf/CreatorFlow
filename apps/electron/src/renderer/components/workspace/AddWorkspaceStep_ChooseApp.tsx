@@ -244,13 +244,13 @@ export function AddWorkspaceStep_ChooseApp({
               {loadingMarketplace ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">{t('加载市场应用...')}</span>
+                  <span className="text-sm text-muted-foreground">{t('加载广场应用...')}</span>
                 </div>
               ) : marketplaceApps.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Cloud className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-muted-foreground">{t('市场应用')}</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('广场应用')}</span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {marketplaceApps.map((app) => (

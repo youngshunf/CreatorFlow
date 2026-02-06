@@ -169,7 +169,7 @@ export function MarketplaceListPanel({
           <EmptyMedia variant="icon">
             <Package />
           </EmptyMedia>
-          <EmptyTitle>{t('市场暂无内容')}</EmptyTitle>
+          <EmptyTitle>{t('广场暂无内容')}</EmptyTitle>
           <EmptyDescription>
             {t('探索并安装技能和应用以增强您的智能体能力。')}
           </EmptyDescription>

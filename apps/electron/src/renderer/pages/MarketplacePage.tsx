@@ -235,7 +235,7 @@ export function MarketplacePage({
           <EmptyMedia variant="icon">
             <Package />
           </EmptyMedia>
-          <EmptyTitle>{t('市场暂无内容')}</EmptyTitle>
+          <EmptyTitle>{t('广场暂无内容')}</EmptyTitle>
           <EmptyDescription>
             {t('探索并安装技能和应用以增强您的智能体能力。')}
           </EmptyDescription>
@@ -249,7 +249,7 @@ export function MarketplacePage({
       {/* Header with search and filters */}
       <div className="px-6 pt-6 pb-4 border-b border-border/40">
         {/* Title - centered */}
-        <h1 className="text-base font-semibold text-foreground mb-4 text-center">{t('市场')}</h1>
+        <h1 className="text-base font-semibold text-foreground mb-4 text-center">{t('广场')}</h1>
         
         {/* Search bar - centered */}
         <div className="flex justify-center mb-4">

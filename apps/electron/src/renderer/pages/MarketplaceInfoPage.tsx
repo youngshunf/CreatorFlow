@@ -169,7 +169,7 @@ export function MarketplaceInfoPage({
         </div>
         <Button variant="outline" onClick={() => navigate(routes.view.marketplace())}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('返回市场')}
+          {t('返回广场')}
         </Button>
       </div>
     )
@@ -186,7 +186,7 @@ export function MarketplaceInfoPage({
         </div>
         <Button variant="outline" onClick={() => navigate(routes.view.marketplace())}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('返回市场')}
+          {t('返回广场')}
         </Button>
       </div>
     )
