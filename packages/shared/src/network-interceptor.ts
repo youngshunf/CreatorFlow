@@ -276,6 +276,10 @@ function toCurl(url: string, init?: RequestInit): string {
 async function logResponse(response: Response, url: string, startTime: number): Promise<Response> {
   const duration = Date.now() - startTime;
 
+  // Always log LLM API response status (regardless of DEBUG mode)
+  if (isApiMessagesUrl(url)) {
+    console.error(`[LLM Response] ${response.status} ${response.statusText} ${url} (${duration}ms)`);
+  }
 
   // Capture API errors (runs regardless of DEBUG mode)
   if (shouldCaptureApiErrors(url) && response.status >= 400) {
@@ -369,6 +373,10 @@ async function interceptedFetch(
 
   const startTime = Date.now();
 
+  // Always log LLM API request URL (regardless of DEBUG mode) for troubleshooting
+  if (isApiMessagesUrl(url)) {
+    console.error(`[LLM Request] ${init?.method?.toUpperCase() || 'GET'} ${url}`);
+  }
 
   // Log all requests as cURL commands
   if (DEBUG) {

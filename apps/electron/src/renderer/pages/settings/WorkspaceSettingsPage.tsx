@@ -35,7 +35,7 @@ import {
   SettingsMenuSelectRow,
 } from '@/components/settings'
 import { useCloudModels } from '@/hooks/useCloudModels'
-import { MODELS as FALLBACK_MODELS, type ModelDefinition } from '@creator-flow/shared/config/models'
+import { MODELS as FALLBACK_MODELS, type ModelDefinition } from '@config/models'
 
 export const meta: DetailsPageMeta = {
   navigator: 'settings',
