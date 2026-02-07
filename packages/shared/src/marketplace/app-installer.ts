@@ -39,6 +39,7 @@ import {
   getMarketplaceAppsDir,
 } from './storage.ts';
 import { installSkill } from './skill-installer.ts';
+import { getGlobalSkillsDir } from '../skills/global-skills.ts';
 
 // ============================================================
 // Types
@@ -534,9 +535,12 @@ async function installSkillDependencies(
   workspaceRoot: string,
   dependencies: SkillDependencyDownload[],
   onProgress?: AppInstallProgressCallback
-): Promise<Array<{ skillId: string; success: boolean; error?: string }>> {
-  const results: Array<{ skillId: string; success: boolean; error?: string }> = [];
+): Promise<Array<{ skillId: string; success: boolean; error?: string; skipped?: boolean }>> {
+  const results: Array<{ skillId: string; success: boolean; error?: string; skipped?: boolean }> = [];
   const total = dependencies.length;
+
+  // 获取全局技能目录，用于检查是否已存在相同技能
+  const globalSkillsDir = getGlobalSkillsDir();
 
   onProgress?.({
     stage: 'installing-skills',
@@ -549,6 +553,28 @@ async function installSkillDependencies(
   for (let i = 0; i < dependencies.length; i++) {
     const dep = dependencies[i];
     if (!dep) continue;
+
+    // 检查全局技能目录中是否已存在相同ID的技能
+    const globalSkillPath = join(globalSkillsDir, dep.id);
+    const globalSkillFile = join(globalSkillPath, 'SKILL.md');
+    if (existsSync(globalSkillFile)) {
+      // 全局技能已存在，跳过安装
+      onProgress?.({
+        stage: 'installing-skills',
+        percent: 35 + Math.round(((i + 1) / total) * 50),
+        message: `技能 ${dep.id} 已存在于全局技能中，跳过安装`,
+        currentSkill: dep.id,
+        totalSkills: total,
+        installedSkills: i + 1,
+      });
+
+      results.push({
+        skillId: dep.id,
+        success: true,
+        skipped: true,
+      });
+      continue;
+    }
 
     onProgress?.({
       stage: 'installing-skills',

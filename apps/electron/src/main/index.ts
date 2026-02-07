@@ -81,7 +81,6 @@ import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
 import { setPerfEnabled, enableDebug } from '@creator-flow/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
 import { checkForUpdatesOnLaunch, setWindowManager as setAutoUpdateWindowManager, isUpdating } from './auto-update'
-import { registerBundledApps } from '@creator-flow/shared/apps'
 
 // Initialize electron-log for renderer process support
 log.initialize()
@@ -303,9 +302,6 @@ app.whenReady().then(async () => {
 
   // Initialize bundled docs
   initializeDocs()
-
-  // Register bundled apps (must happen early so apps are available for workspace creation)
-  registerBundledApps()
 
   // Initialize global skills (first run: copy bundled skills to ~/.creator-flow/global-skills/)
   try {

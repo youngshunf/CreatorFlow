@@ -57,6 +57,7 @@ export interface MarketplaceApp {
   author_id: number | null;
   author_name: string | null;
   category: string | null;
+  tags: string | null;
   pricing_type: 'free' | 'paid' | 'subscription';
   price: number;
   is_private: boolean;

@@ -23,7 +23,6 @@ import {
   loadWorkspaceConfig,
 } from '../workspaces/storage.ts';
 import { loadAppById, getAppPath } from './storage.ts';
-import { getBundledAppSourcePath } from './bundled-apps.ts';
 import { debug } from '../utils/debug.ts';
 
 // ============================================================
@@ -228,18 +227,11 @@ export async function installSkillsFromCloud(
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithCustomLabels(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'labels', 'config.json'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'labels', 'config.json'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -248,18 +240,11 @@ function getAppPathWithCustomLabels(appId: string): string | null {
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithCustomStatuses(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'statuses', 'config.json'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'statuses', 'config.json'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -332,25 +317,19 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
  * This is the simplified approach: directly copy directory contents.
  */
 function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  
-  if (!appPath) {
-    // Fall back to installed app path
-    appPath = getAppPath(appId, false);
-  }
-  
+  const appPath = getAppPath(appId);
+
   if (!existsSync(appPath)) {
     debug(`[copyAppDataToWorkspace] App path not found: ${appPath}`);
     return;
   }
-  
+
   // Copy labels (if app has custom labels)
   copyAppLabelsToWorkspace(appPath, workspaceRoot);
-  
+
   // Copy statuses (if app has custom statuses)
   copyAppStatusesToWorkspace(appPath, workspaceRoot);
-  
+
   // Copy sources (if app has preset sources)
   copyAppSourcesToWorkspace(appPath, workspaceRoot);
 }
@@ -364,18 +343,11 @@ function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithSources(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'sources'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'sources'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -435,33 +407,27 @@ function copyAppSourcesToWorkspace(appPath: string, workspaceRoot: string): bool
  * The manifest is copied to .creator-flow/app-manifest.json.
  */
 function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  
-  if (!appPath) {
-    // Fall back to installed app path
-    appPath = getAppPath(appId, false);
-  }
-  
+  const appPath = getAppPath(appId);
+
   if (!existsSync(appPath)) {
     debug(`[copyAppManifestToWorkspace] App path not found: ${appPath}`);
     return;
   }
-  
+
   const manifestSource = join(appPath, 'manifest.json');
   if (!existsSync(manifestSource)) {
     debug(`[copyAppManifestToWorkspace] No manifest.json found at ${manifestSource}`);
     return;
   }
-  
+
   const workspaceDataPath = getWorkspaceDataPath(workspaceRoot);
   const manifestTarget = join(workspaceDataPath, 'app-manifest.json');
-  
+
   // Ensure workspace data directory exists
   if (!existsSync(workspaceDataPath)) {
     mkdirSync(workspaceDataPath, { recursive: true });
   }
-  
+
   copyFileSync(manifestSource, manifestTarget);
   debug(`[copyAppManifestToWorkspace] Copied manifest to ${manifestTarget}`);
 }
@@ -473,41 +439,18 @@ function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void 
 /**
  * Copy AGENTS.md from app source directory to workspace data directory.
  * This provides workspace-specific AI agent guidance based on the app type.
- * 
+ *
  * The file is copied to .creator-flow/AGENTS.md in the workspace,
  * where it will be discovered by the agent's project context file mechanism.
  */
 function copyAppAgentsToWorkspace(appId: string, workspaceRoot: string): void {
-  // Try to find the source path for the bundled app
-  const sourcePath = getBundledAppSourcePath(appId);
-  
-  if (!sourcePath) {
-    // For non-bundled apps, check the installed app directory
-    const appPath = getAppPath(appId, false);
-    const agentsPath = join(appPath, 'AGENTS.md');
-    
-    if (existsSync(agentsPath)) {
-      copyAgentsFileToWorkspace(agentsPath, workspaceRoot);
-    } else {
-      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for app ${appId}`);
-    }
-    return;
-  }
-  
-  // Copy from bundled app source directory
-  const agentsSourcePath = join(sourcePath, 'AGENTS.md');
-  if (existsSync(agentsSourcePath)) {
-    copyAgentsFileToWorkspace(agentsSourcePath, workspaceRoot);
+  const appPath = getAppPath(appId);
+  const agentsPath = join(appPath, 'AGENTS.md');
+
+  if (existsSync(agentsPath)) {
+    copyAgentsFileToWorkspace(agentsPath, workspaceRoot);
   } else {
-    // Try the installed bundled app directory as fallback
-    const bundledAppPath = getAppPath(appId, true);
-    const bundledAgentsPath = join(bundledAppPath, 'AGENTS.md');
-    
-    if (existsSync(bundledAgentsPath)) {
-      copyAgentsFileToWorkspace(bundledAgentsPath, workspaceRoot);
-    } else {
-      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for bundled app ${appId}`);
-    }
+    debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for app ${appId}`);
   }
 }
 

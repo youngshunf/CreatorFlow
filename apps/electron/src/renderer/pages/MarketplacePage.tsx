@@ -79,14 +79,19 @@ export function MarketplacePage({
   const [selectedItem, setSelectedItem] = useState<{ type: 'skill' | 'app'; id: string } | null>(null)
 
   // Load marketplace data
-  const loadMarketplaceData = useCallback(async (skillPage = 1, appPage = 1) => {
+  const loadMarketplaceData = useCallback(async (skillPage = 1, appPage = 1, category?: string) => {
     if (!workspaceId) return
     setIsLoading(true)
     setError(null)
     try {
+      const skillParams: { page: number; size: number; category?: string } = { page: skillPage, size: PAGE_SIZE }
+      if (category) skillParams.category = category
+      const appParams: { page: number; size: number; category?: string } = { page: appPage, size: PAGE_SIZE }
+      if (category) appParams.category = category
+
       const [skillsResult, appsResult, categoriesResult, installedResult] = await Promise.all([
-        window.electronAPI.marketplaceListSkills({ page: skillPage, size: PAGE_SIZE }),
-        window.electronAPI.marketplaceListApps({ page: appPage, size: PAGE_SIZE }),
+        window.electronAPI.marketplaceListSkills(skillParams),
+        window.electronAPI.marketplaceListApps(appParams),
         window.electronAPI.marketplaceListCategories(),
         window.electronAPI.marketplaceGetInstalled(workspaceId),
       ])
@@ -94,11 +99,13 @@ export function MarketplacePage({
       setApps(appsResult.items)
       setSkillsTotal(skillsResult.total)
       setAppsTotal(appsResult.total)
-      setOriginalSkills(skillsResult.items)
-      setOriginalApps(appsResult.items)
-      setOriginalSkillsTotal(skillsResult.total)
-      setOriginalAppsTotal(appsResult.total)
-      setCategories(Array.isArray(categoriesResult) ? categoriesResult : [])
+      if (!category) {
+        setOriginalSkills(skillsResult.items)
+        setOriginalApps(appsResult.items)
+        setOriginalSkillsTotal(skillsResult.total)
+        setOriginalAppsTotal(appsResult.total)
+      }
+      setCategories(Array.isArray(categoriesResult) ? categoriesResult : (categoriesResult as any).items || [])
       setInstalledSkills(installedResult)
     } catch (err) {
       console.error('Failed to load marketplace data:', err)
@@ -108,9 +115,13 @@ export function MarketplacePage({
     }
   }, [workspaceId])
 
+  const currentCategory = filter.kind === 'category' ? filter.categoryId : undefined
+
   useEffect(() => {
-    loadMarketplaceData(skillsPage, appsPage)
-  }, [loadMarketplaceData, skillsPage, appsPage])
+    if (!searchQuery.trim()) {
+      loadMarketplaceData(skillsPage, appsPage, currentCategory)
+    }
+  }, [loadMarketplaceData, skillsPage, appsPage, currentCategory])
 
   // Search handler with debounce
   const handleSearchInput = useCallback((query: string) => {
@@ -164,17 +175,16 @@ export function MarketplacePage({
 
   // Filter items based on current filter
   const filteredSkills = useMemo(() => {
+    if (searchQuery.trim().length >= 2) return skills
     if (filter.kind === 'apps') return []
-    if (filter.kind === 'category' && filter.categoryId) {
-      return skills.filter(s => s.category === filter.categoryId)
-    }
     return skills
-  }, [skills, filter])
+  }, [skills, filter, searchQuery])
 
   const filteredApps = useMemo(() => {
+    if (searchQuery.trim().length >= 2) return apps
     if (filter.kind === 'skills') return []
     return apps
-  }, [apps, filter])
+  }, [apps, filter, searchQuery])
 
   // Check if a skill is installed
   const isSkillInstalled = useCallback((skillId: string) => {
@@ -293,7 +303,7 @@ export function MarketplacePage({
         </div>
 
         {/* Category chips - left aligned */}
-        {categories.length > 0 && filter.kind !== 'apps' && (
+        {categories.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             <button
               className={cn(
@@ -347,11 +357,13 @@ export function MarketplacePage({
           {/* Skills section */}
           {!isSearching && filteredSkills.length > 0 && (
             <div className="mb-8">
-              {filter.kind === 'all' && (
+              {(filter.kind === 'all' || filter.kind === 'category' || searchQuery.trim().length >= 2) && (
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="h-4 w-4 text-accent" />
                   <h2 className="text-sm font-medium">{t('技能')}</h2>
-                  <span className="text-xs text-muted-foreground">({skillsTotal})</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({searchQuery.trim().length >= 2 ? filteredSkills.length : skillsTotal})
+                  </span>
                 </div>
               )}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -394,11 +406,13 @@ export function MarketplacePage({
           {/* Apps section */}
           {!isSearching && filteredApps.length > 0 && (
             <div>
-              {filter.kind === 'all' && (
+              {(filter.kind === 'all' || filter.kind === 'category' || searchQuery.trim().length >= 2) && (
                 <div className="flex items-center gap-2 mb-4">
                   <Package className="h-4 w-4 text-purple-500" />
                   <h2 className="text-sm font-medium">{t('应用')}</h2>
-                  <span className="text-xs text-muted-foreground">({appsTotal})</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({searchQuery.trim().length >= 2 ? filteredApps.length : appsTotal})
+                  </span>
                 </div>
               )}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

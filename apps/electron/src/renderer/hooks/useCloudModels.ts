@@ -7,12 +7,13 @@ import type { ModelDefinition } from '@config/models'
  */
 function rawModelToCloudModel(raw: RawCloudModel): CloudModel {
   return {
-    id: raw.model_name,
+    id: raw.model_id || raw.model_name,
     name: raw.display_name,
     description: raw.description,
     context_window: raw.max_context_length,
-    provider: raw.provider_name,
+    provider: raw.provider || raw.provider_name,
     enabled: raw.enabled,
+    visible: raw.visible,
   }
 }
 
@@ -79,8 +80,8 @@ export function useCloudModels() {
         const cloudModels = extractModelsArray(response)
         
         if (mounted) {
-          // 只显示启用的模型
-          const enabledModels = cloudModels.filter(m => m.enabled !== false)
+          // 只显示启用且可见的模型
+          const enabledModels = cloudModels.filter(m => m.enabled !== false && m.visible !== false)
           
           if (enabledModels.length > 0) {
             setModels(enabledModels.map(cloudModelToDefinition))

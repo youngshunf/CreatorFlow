@@ -200,9 +200,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
           }
         }
       } else {
-        // Bundled app: initialize from local app manifest
+        // Non-marketplace app: initialize from local app manifest
         // Skip bundled skills and download from cloud instead
-        const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById, getBundledAppSourcePath } = await import('@creator-flow/shared/apps')
+        const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById } = await import('@creator-flow/shared/apps')
         try {
           const result = initializeWorkspaceFromApp({
             name,
@@ -215,16 +215,15 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
           } else {
             ipcLog.warn(`Workspace initialized with errors: ${result.errors.join(', ')}`)
           }
-          
-          // Download skills from cloud (with bundled fallback)
+
+          // Download skills from cloud
           const app = loadAppById(appId)
           if (app?.manifest.capabilities?.skills && app.manifest.capabilities.skills.length > 0) {
             ipcLog.info(`Downloading skills from cloud for app "${appId}"...`)
-            const bundledPath = getBundledAppSourcePath(appId) || app.path
             const skillResult = await installSkillsFromCloud(
               rootPath,
               app.manifest.capabilities.skills,
-              bundledPath
+              app.path
             )
             if (skillResult.installed.length > 0) {
               ipcLog.info(`Installed skills from cloud: ${skillResult.installed.join(', ')}`)
@@ -2337,6 +2336,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
     const { readFileSync, existsSync } = await import('fs')
     const { join, normalize } = await import('path')
+    const { homedir } = await import('os')
 
     // Security: validate path
     // - Must not contain .. (path traversal)
@@ -2352,12 +2352,28 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       throw new Error(`Invalid file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`)
     }
 
-    // Resolve path relative to workspace root
-    const absolutePath = normalize(join(workspace.rootPath, relativePath))
+    let absolutePath: string
 
-    // Double-check the resolved path is still within workspace
-    if (!absolutePath.startsWith(workspace.rootPath)) {
-      throw new Error('Invalid path: outside workspace directory')
+    // Check if path is already absolute (starts with /)
+    if (relativePath.startsWith('/')) {
+      absolutePath = normalize(relativePath)
+
+      // Security: only allow paths within workspace or ~/.creator-flow/
+      const globalCreatorFlowDir = normalize(join(homedir(), '.creator-flow'))
+      const isInWorkspace = absolutePath.startsWith(workspace.rootPath)
+      const isInGlobalCreatorFlow = absolutePath.startsWith(globalCreatorFlowDir)
+
+      if (!isInWorkspace && !isInGlobalCreatorFlow) {
+        throw new Error('Invalid path: outside allowed directories')
+      }
+    } else {
+      // Resolve path relative to workspace root
+      absolutePath = normalize(join(workspace.rootPath, relativePath))
+
+      // Double-check the resolved path is still within workspace
+      if (!absolutePath.startsWith(workspace.rootPath)) {
+        throw new Error('Invalid path: outside workspace directory')
+      }
     }
 
     if (!existsSync(absolutePath)) {
@@ -2679,21 +2695,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // and managed via WORKSPACE_SETTINGS_GET/UPDATE channels
 
   // ============================================================
-  // Apps (local bundled apps)
+  // Apps (deprecated - bundled apps removed)
   // ============================================================
 
-  // List bundled apps (main apps, not plugins) for workspace creation
+  // List bundled apps - returns empty array (bundled apps have been removed)
   ipcMain.handle(IPC_CHANNELS.APPS_LIST_BUNDLED, async () => {
-    const { listMainApps } = await import('@creator-flow/shared/apps')
-    const apps = listMainApps()
-    // Return simplified app info for UI
-    return apps.map(app => ({
-      id: app.manifest.id,
-      name: app.manifest.name,
-      description: app.manifest.description || '',
-      version: app.manifest.version,
-      iconPath: app.iconPath,
-    }))
+    return []
   })
 
   // ============================================================

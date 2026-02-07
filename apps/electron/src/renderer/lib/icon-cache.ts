@@ -574,13 +574,10 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
       let result: { dataUrl: string; colorable: boolean; rawSvg?: string } | null = null
 
       if (iconPath) {
-        // Known path - extract relative portion and load directly
-        // iconPath may be absolute; extract the workspace-relative part
-        const relativeMatch = iconPath.match(ICON_PATH_PATTERN)
-        const relativePath = relativeMatch ? relativeMatch[0] : iconPath
-
-        result = await loadIconFile(workspaceId, relativePath)
-      } else if (iconDir && !iconValue) {
+        // iconPath is the full absolute path to the icon file
+        // Pass it directly to loadIconFile - IPC now supports absolute paths
+        result = await loadIconFile(workspaceId, iconPath)
+      } else if (iconDir) {
         // Auto-discover icon files in directory
         // Only do auto-discovery when iconValue is undefined (config takes precedence)
         // iconFileName overrides the default 'icon' prefix (e.g. statuses use statusId)
