@@ -9,4 +9,4 @@ export * from './slack-oauth.ts';
 export * from './microsoft-oauth.ts';
 export * from './oauth.ts';
 export * from './pkce.ts';
-export { getAuthState, getSetupNeeds, type MigrationInfo, type TokenResult, _resetRefreshMutex } from './state.ts';
+export { getAuthState, getSetupNeeds, type TokenResult, _resetRefreshMutex } from './state.ts';

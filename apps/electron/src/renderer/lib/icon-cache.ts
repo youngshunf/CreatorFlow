@@ -577,7 +577,7 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
         // iconPath is the full absolute path to the icon file
         // Pass it directly to loadIconFile - IPC now supports absolute paths
         result = await loadIconFile(workspaceId, iconPath)
-      } else if (iconDir) {
+      } else if (iconDir && !iconValue) {
         // Auto-discover icon files in directory
         // Only do auto-discovery when iconValue is undefined (config takes precedence)
         // iconFileName overrides the default 'icon' prefix (e.g. statuses use statusId)

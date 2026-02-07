@@ -1,6 +1,6 @@
 {
   "name": "creator-flow",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "AI创作操作系统 - 面向自媒体创作者的智能创作平台",
   "type": "module",
   "private": true,
@@ -72,7 +72,8 @@
     "server:db:migrate": "cd apps/server && bun run db:migrate",
     "server:db:push": "cd apps/server && bun run db:push",
     "server:db:studio": "cd apps/server && bun run db:studio",
-    "server:typecheck": "cd apps/server && bun run typecheck"
+    "server:typecheck": "cd apps/server && bun run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.947.0",
@@ -101,6 +102,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
     "postcss": "^8.5.6",
     "react-devtools-core": "^6.1.1",
     "tailwindcss": "^4.1.18",
@@ -109,7 +111,7 @@
     "vite": "^6.2.4"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.2.26",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.34",
     "@anthropic-ai/sdk": "^0.71.1",
     "@isaacs/ttlcache": "^2.1.4",
     "@modelcontextprotocol/sdk": "^1.24.3",
@@ -132,7 +134,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "filtrex": "^3.1.0",
-    "glob": "^13.0.0",
+    "glob": "^11.0.0",
     "gray-matter": "^4.0.3",
     "incr-regex-package": "^1.0.4",
     "jotai": "^2.16.0",

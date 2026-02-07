@@ -1,6 +1,6 @@
 {
   "name": "@creator-flow/electron",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Electron desktop app for CreatorFlow",
   "main": "dist/main.cjs",
   "private": true,
@@ -42,7 +42,7 @@
     "lint:fix": "eslint src/ --fix"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.2.26",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.34",
     "@creator-flow/core": "workspace:*",
     "@creator-flow/shared": "workspace:*",
     "@creator-flow/ui": "workspace:*",
@@ -60,7 +60,7 @@
     "@tanstack/react-table": "^8.21.3",
     "cmdk": "^1.1.1",
     "electron-log": "^5.4.3",
-    "electron-updater": "^6.7.3",
+    "electron-updater": "^6.8.0",
     "jotai-family": "^1.0.1",
     "json-schema-to-ts": "3.1.1",
     "motion": "^12.23.26",

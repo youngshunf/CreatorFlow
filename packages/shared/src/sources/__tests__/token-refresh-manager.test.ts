@@ -11,8 +11,8 @@ function createMockSource(overrides: Partial<LoadedSource['config']> = {}): Load
       name: 'Test Source',
       slug: 'test-source',
       enabled: true,
+      provider: 'test',
       type: 'mcp',
-      provider: 'custom',
       mcp: {
         url: 'https://test.example.com/mcp',
         authType: 'oauth',
@@ -22,8 +22,8 @@ function createMockSource(overrides: Partial<LoadedSource['config']> = {}): Load
     },
     guide: null,
     folderPath: '/test/path',
-    workspaceRootPath: '/test',
-    workspaceId: 'test-workspace',
+    workspaceRootPath: '/test/workspace',
+    workspaceId: 'test-workspace-id',
   };
 }
 

@@ -15,7 +15,8 @@
  * - Windows: Downloads NSIS installer, runs silently on quit (progress events work)
  * - Linux: Downloads AppImage, replaces current file (progress events work)
  *
- * All platforms: quitAndInstall() handles restart natively — no external scripts.
+ * All platforms support download-progress events (electron-updater v6.8.0+).
+ * quitAndInstall() handles restart natively — no external scripts.
  */
 
 import { autoUpdater } from 'electron-updater'

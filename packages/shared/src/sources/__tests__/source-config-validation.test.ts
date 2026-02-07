@@ -55,7 +55,7 @@ describe('Multi-header source config validation', () => {
       name: 'Datadog',
       type: 'api',
       enabled: true,
-      provider: 'custom',
+      provider: 'datadog',
       api: {
         baseUrl: 'https://api.datadoghq.com/',
         authType: 'none', // BUG: should be 'header'
@@ -78,7 +78,7 @@ describe('Multi-header source config validation', () => {
       name: 'Datadog',
       type: 'api',
       enabled: true,
-      provider: 'custom',
+      provider: 'datadog',
       api: {
         baseUrl: 'https://api.datadoghq.com/',
         authType: 'header',
@@ -209,7 +209,7 @@ describe('Real-world API config examples', () => {
       name: 'Algolia',
       type: 'api',
       enabled: true,
-      provider: 'custom',
+      provider: 'algolia',
       api: {
         baseUrl: 'https://api.algolia.com/',
         authType: 'header',
@@ -228,7 +228,7 @@ describe('Real-world API config examples', () => {
       name: 'Cloudflare',
       type: 'api',
       enabled: true,
-      provider: 'custom',
+      provider: 'cloudflare',
       api: {
         baseUrl: 'https://api.cloudflare.com/client/v4/',
         authType: 'header',

@@ -1522,12 +1522,6 @@ function AppShellContent({
     storage.set(storage.KEYS.rightSidebarVisible, isRightSidebarVisible)
   }, [isRightSidebarVisible])
 
-  // Persist per-view filter map to localStorage (workspace-scoped)
-  React.useEffect(() => {
-    if (!activeWorkspaceId) return
-    storage.set(storage.KEYS.viewFilters, viewFiltersMap, activeWorkspaceId)
-  }, [viewFiltersMap, activeWorkspaceId])
-
   // Persist focus mode state to localStorage
   React.useEffect(() => {
     storage.set(storage.KEYS.focusModeEnabled, isFocusModeActive)
@@ -1548,6 +1542,13 @@ function AppShellContent({
     })
     return cleanup
   }, [])
+
+  // Persist per-view filter map to localStorage (workspace-scoped)
+  React.useEffect(() => {
+    if (!activeWorkspaceId) return
+    storage.set(storage.KEYS.viewFilters, viewFiltersMap, activeWorkspaceId)
+  }, [viewFiltersMap, activeWorkspaceId])
+
 
   // Persist sidebar section collapsed states (workspace-scoped)
   React.useEffect(() => {

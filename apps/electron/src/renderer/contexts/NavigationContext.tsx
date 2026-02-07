@@ -753,7 +753,6 @@ export function NavigationProvider({
 
       // Reset initial route restoration flag so new workspace can restore its route
       initialRouteRestoredRef.current = false
-
       // If currently in chats navigator, re-validate the selection
       // Always re-apply navigation state to trigger proper session selection
       // for the new workspace. This will either:

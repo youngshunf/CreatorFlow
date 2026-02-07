@@ -21,7 +21,8 @@ export type ErrorCode =
   | 'invalid_model'          // Model ID not found
   | 'data_policy_error'      // OpenRouter data policy restriction
   | 'invalid_request'        // API rejected the request (e.g., bad image, invalid content)
-  | 'provider_error'         // AI provider-side error (api_error, overloaded, etc.)
+  | 'image_too_large'        // Image exceeds API dimension/size limits
+  | 'provider_error'         // AI provider experiencing issues (overloaded, unavailable)
   | 'unknown_error';
 
 export interface RecoveryAction {
@@ -184,6 +185,12 @@ const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalEr
     ],
     canRetry: true,
   },
+  image_too_large: {
+    title: '图片过大',
+    message: '图片超出 API 限制（最大 8000px 或 5MB）。请缩小图片或使用更小的图片。',
+    actions: [],
+    canRetry: false,
+  },
   provider_error: {
     title: 'AI 服务提供商错误',
     message: 'AI 服务提供商出现问题，这不是您的配置问题。',
@@ -199,8 +206,10 @@ const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalEr
     message: '发生了意外错误。',
     actions: [
       { key: 'r', label: '重试', action: 'retry' },
+      { key: 's', label: '设置', action: 'settings' },
     ],
     canRetry: true,
+    retryDelayMs: 5000,
   },
 };
 
@@ -280,6 +289,12 @@ export function parseError(error: unknown): AgentError {
     code = 'network_error';
   } else if (lowerMessage.includes('mcp') && (lowerMessage.includes('auth') || lowerMessage.includes('401'))) {
     code = 'mcp_auth_required';
+  } else if (
+    lowerMessage.includes('image') &&
+    (lowerMessage.includes('dimension') || lowerMessage.includes('8000') || lowerMessage.includes('5mb')) &&
+    (lowerMessage.includes('exceed') || lowerMessage.includes('too large'))
+  ) {
+    code = 'image_too_large';
   } else if (lowerMessage.includes('exited with code') || lowerMessage.includes('process exited')) {
     // SDK subprocess crashed - likely auth/setup issue
     // Check if the error contains more specific info

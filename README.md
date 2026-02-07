@@ -1,25 +1,26 @@
-# CreatorFlow
+# Creator Flow
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-## 工作原理（视频）
-要了解 CreatorFlow 的功能和工作原理，请观看这个视频。
+## How it Works (Video)
+To understand what Creator Flow does and how it works watch this video.
 
 [![Demo Video](https://img.youtube.com/vi/xQouiAIilvU/hqdefault.jpg)](https://www.youtube.com/watch?v=xQouiAIilvU)
 
-[点击此处（或上图）在 YouTube 上观看视频 →](https://www.youtube.com/watch?v=xQouiAIilvU)
+[Click Here (or on the image above) to watch the video on YouTube →](https://www.youtube.com/watch?v=xQouiAIilvU)
 
-## 为什么构建 CreatorFlow
-CreatorFlow 是我们（craft.do 团队）为了更高效地与 AI 智能体协作而构建的工具。它支持直观的多任务处理、无缝连接任何 API 或服务、共享会话，以及更注重文档（而非代码）的工作流程——所有这些都在一个精美流畅的界面中呈现。
 
-它基于 Claude Agent SDK 构建，延续了 Claude Code 的优秀特性，同时改进了我们认为需要提升的领域。
+## Why Creator Flow was built
+Creator Flow is a tool we built so that we (at craft.do) can work effectively with agents. It enables intuitive multitasking, no-fluff connection to any API or Service, sharing sessions, and a more document (vs code) centric workflow - in a beautiful and fluid UI.
 
-它以 Agent Native 软件原则为核心设计，开箱即用且高度可定制。这是同类产品中的先驱之一。
+It leans on Claude Code through the Claude Agent SDK - follows what we found great, and improves areas where we've desired improvements.
 
-CreatorFlow 采用 Apache 2.0 许可证开源——您可以自由修改、重组任何内容。我们自己就完全使用 CreatorFlow 来构建 CreatorFlow，不使用任何代码编辑器——因此，任何定制都只需一个提示词即可实现。
+It's built with Agent Native software principles in mind, and is highly customisable out of the box. One of the first of its kind.
 
-我们构建 CreatorFlow 是因为我们希望有一种更好、更有主见的方式（最好是非命令行的方式）来与世界上最强大的智能体协作。我们将基于自身的经验和直觉持续改进它。
+Creator Flow is open source under the Apache 2.0 license - so you are free to remix, change anything. And that's actually possible. We ourselves are building Creator Flow with Creator Flow only - no code editors - so really, any customisation is just a prompt away.
+
+We built Creator Flow because we wanted a better, more opinionated (and preferably non-CLI way) of working with the most powerful agents in the world. We'll continue to improve it, based on our experiences and intuition.
 
 <img width="1578" height="894" alt="image" src="https://github.com/user-attachments/assets/3f1f2fe8-7cf6-4487-99ff-76f6c8c0a3fb" />
 
@@ -57,9 +58,9 @@ No. Everything is instant. Mention new skills or sources with `@`, even mid-conv
 Yes. That's the core idea behind agent-native software. You describe what you want, and it figures out how. That's a good use of tokens.
 
 
-## 安装
+## Installation
 
-### 一键安装（推荐）
+### One-Line Install (Recommended)
 
 **macOS / Linux:**
 ```bash
@@ -71,232 +72,328 @@ curl -fsSL https://agents.craft.do/install-app.sh | bash
 irm https://agents.craft.do/install-app.ps1 | iex
 ```
 
-### 从源码构建
+### Build from Source
 
 ```bash
-git clone https://github.com/lukilabs/creator-flow-oss.git
-cd creator-flow-oss
+git clone https://github.com/lukilabs/craft-agents-oss.git
+cd craft-agents-oss
 bun install
 bun run electron:start
 ```
 
-## 功能特性
+## Features
 
-- **多会话收件箱**：桌面应用，支持会话管理、状态工作流和标记功能
-- **Claude Code 体验**：流式响应、工具可视化、实时更新
-- **Craft MCP 集成**：访问 32+ Craft 文档工具（区块、集合、搜索、任务）
-- **数据源**：连接 MCP 服务器、REST API（Google、Slack、Microsoft）和本地文件系统
-- **权限模式**：三级权限系统（探索、请求编辑、自动），支持自定义规则
-- **后台任务**：运行长时间操作并跟踪进度
-- **动态状态系统**：可自定义的会话工作流状态（待办、进行中、已完成等）
-- **主题系统**：支持应用级和工作区级的级联主题
-- **多文件差异对比**：VS Code 风格的窗口，查看一次对话中的所有文件更改
-- **技能**：按工作区存储的专用智能体指令
-- **文件附件**：拖放图片、PDF、Office 文档并自动转换
-- **多语言支持**：内置中英双语，可在设置中切换语言
+- **Multi-Session Inbox**: Desktop app with session management, status workflow, and flagging
+- **Claude Code Experience**: Streaming responses, tool visualization, real-time updates
+- **Craft MCP Integration**: Access to 32+ Craft document tools (blocks, collections, search, tasks)
+- **Sources**: Connect to MCP servers, REST APIs (Google, Slack, Microsoft), and local filesystems
+- **Permission Modes**: Three-level system (Explore, Ask to Edit, Auto) with customizable rules
+- **Background Tasks**: Run long-running operations with progress tracking
+- **Dynamic Status System**: Customizable session workflow states (Todo, In Progress, Done, etc.)
+- **Theme System**: Cascading themes at app and workspace levels
+- **Multi-File Diff**: VS Code-style window for viewing all file changes in a turn
+- **Skills**: Specialized agent instructions stored per-workspace
+- **File Attachments**: Drag-drop images, PDFs, Office documents with auto-conversion
 
-## 快速开始
+## Quick Start
 
-1. **启动应用**：安装完成后启动
-2. **选择 API 连接**：使用您自己的 Anthropic API 密钥或 Claude Max 订阅
-3. **创建工作区**：设置工作区来组织您的会话
-4. **连接数据源**（可选）：添加 MCP 服务器、REST API 或本地文件系统
-5. **开始对话**：创建会话并与 Claude 交互
+1. **Launch the app** after installation
+2. **Choose API Connection**: Use your own Anthropic API key or Claude Max subscription
+3. **Create a workspace**: Set up a workspace to organize your sessions
+4. **Connect sources** (optional): Add MCP servers, REST APIs, or local filesystems
+5. **Start chatting**: Create sessions and interact with Claude
 
-## 桌面应用功能
+## Desktop App Features
 
-### 会话管理
+### Session Management
 
-- **收件箱/归档**：按工作流状态组织会话
-- **标记**：标记重要会话以便快速访问
-- **状态工作流**：待办 → 进行中 → 待审核 → 已完成
-- **会话命名**：AI 生成标题或手动命名
-- **会话持久化**：完整对话历史保存到磁盘
+- **Inbox/Archive**: Sessions organized by workflow status
+- **Flagging**: Mark important sessions for quick access
+- **Status Workflow**: Todo → In Progress → Needs Review → Done
+- **Session Naming**: AI-generated titles or manual naming
+- **Session Persistence**: Full conversation history saved to disk
 
-### 数据源
+### Sources
 
-连接外部数据源到您的工作区：
+Connect external data sources to your workspace:
 
-| 类型 | 示例 |
-|------|------|
-| **MCP 服务器** | Craft、Linear、GitHub、Notion、自定义服务器 |
-| **REST API** | Google（Gmail、日历、云盘）、Slack、Microsoft |
-| **本地文件** | 文件系统、Obsidian 仓库、Git 仓库 |
+| Type | Examples |
+|------|----------|
+| **MCP Servers** | Craft, Linear, GitHub, Notion, custom servers |
+| **REST APIs** | Google (Gmail, Calendar, Drive), Slack, Microsoft |
+| **Local Files** | Filesystem, Obsidian vaults, Git repos |
 
-### 权限模式
+### Permission Modes
 
-| 模式 | 显示名称 | 行为 |
-|------|----------|------|
-| `safe` | 探索 | 只读，阻止所有写入操作 |
-| `ask` | 请求编辑 | 需要批准（默认） |
-| `allow-all` | 自动 | 自动批准所有命令 |
+| Mode | Display | Behavior |
+|------|---------|----------|
+| `safe` | Explore | Read-only, blocks all write operations |
+| `ask` | Ask to Edit | Prompts for approval (default) |
+| `allow-all` | Auto | Auto-approves all commands |
 
-使用 **SHIFT+TAB** 在聊天界面中切换模式。
+Use **SHIFT+TAB** to cycle through modes in the chat interface.
 
-### 键盘快捷键
+### Keyboard Shortcuts
 
-| 快捷键 | 操作 |
-|--------|------|
-| `Cmd+N` | 新建聊天 |
-| `Cmd+1/2/3` | 聚焦侧边栏/列表/聊天 |
-| `Cmd+/` | 快捷键对话框 |
-| `SHIFT+TAB` | 切换权限模式 |
-| `Enter` | 发送消息 |
-| `Shift+Enter` | 换行 |
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+N` | New chat |
+| `Cmd+1/2/3` | Focus sidebar/list/chat |
+| `Cmd+/` | Keyboard shortcuts dialog |
+| `SHIFT+TAB` | Cycle permission modes |
+| `Enter` | Send message |
+| `Shift+Enter` | New line |
 
-## 架构
+## Architecture
 
 ```
 creator-flow/
 ├── apps/
-│   └── electron/              # 桌面 GUI（主要）
+│   └── electron/              # Desktop GUI (primary)
 │       └── src/
-│           ├── main/          # Electron 主进程
-│           ├── preload/       # 上下文桥接
+│           ├── main/          # Electron main process
+│           ├── preload/       # Context bridge
 │           └── renderer/      # React UI (Vite + shadcn)
 └── packages/
-    ├── core/                  # 共享类型
-    └── shared/                # 业务逻辑
+    ├── core/                  # Shared types
+    └── shared/                # Business logic
         └── src/
-            ├── agent/         # CreatorFlowAgent，权限
-            ├── auth/          # OAuth，令牌
-            ├── config/        # 存储，偏好设置，主题
-            ├── credentials/   # AES-256-GCM 加密存储
-            ├── locale/        # 多语言服务
-            ├── sessions/      # 会话持久化
-            ├── sources/       # MCP、API、本地数据源
-            └── statuses/      # 动态状态系统
+            ├── agent/         # CreatorFlow, permissions
+            ├── auth/          # OAuth, tokens
+            ├── config/        # Storage, preferences, themes
+            ├── credentials/   # AES-256-GCM encrypted storage
+            ├── sessions/      # Session persistence
+            ├── sources/       # MCP, API, local sources
+            └── statuses/      # Dynamic status system
 ```
 
-## 开发
+## Development
 
 ```bash
-# 热重载开发
+# Hot reload development
 bun run electron:dev
 
-# 构建并运行
+# Build and run
 bun run electron:start
 
-# 类型检查
+# Type checking
 bun run typecheck:all
 
-# 多语言翻译
-bun run i18n:scan        # 扫描代码中的中文文本
-bun run i18n:translate   # 翻译为目标语言
-
-# 调试日志（写入 ~/Library/Logs/CreatorFlow/）
-# 开发模式下自动启用日志
+# Debug logging — see "Troubleshooting > Debug Logging" below
+# Logs are automatically enabled in development
 ```
 
-### 环境变量
+### Environment Variables
 
-OAuth 集成（Google、Slack、Microsoft）需要凭据。创建 `.env` 文件：
+OAuth integrations (Slack, Microsoft) require credentials baked into the build. Create a `.env` file:
 
 ```bash
 MICROSOFT_OAUTH_CLIENT_ID=your-client-id
-GOOGLE_OAUTH_CLIENT_SECRET=your-google-client-secret
-GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 SLACK_OAUTH_CLIENT_ID=your-slack-client-id
 SLACK_OAUTH_CLIENT_SECRET=your-slack-client-secret
 ```
 
-参见 [Google Cloud Console](https://console.cloud.google.com/apis/credentials) 创建 OAuth 凭据。
+**Note:** Google OAuth credentials are NOT baked into the build. Users provide their own credentials via source configuration. See the [Google OAuth Setup](#google-oauth-setup-gmail-calendar-drive) section below.
 
-## 配置
+### Google OAuth Setup (Gmail, Calendar, Drive)
 
-配置存储在 `~/.creator-flow/`：
+Google integrations require you to create your own OAuth credentials. This is a one-time setup.
+
+#### 1. Create a Google Cloud Project
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project (or select an existing one)
+3. Note your Project ID
+
+#### 2. Enable Required APIs
+
+Go to **APIs & Services → Library** and enable the APIs you need:
+- **Gmail API** - for email integration
+- **Google Calendar API** - for calendar integration
+- **Google Drive API** - for file storage integration
+
+#### 3. Configure OAuth Consent Screen
+
+1. Go to **APIs & Services → OAuth consent screen**
+2. Select **External** user type (unless you have Google Workspace)
+3. Fill in required fields:
+   - App name: e.g., "My Creator Flow"
+   - User support email: your email
+   - Developer contact: your email
+4. Add scopes (optional - can leave default)
+5. Add yourself as a test user (required for External apps in testing mode)
+6. Complete the wizard
+
+#### 4. Create OAuth Credentials
+
+1. Go to **APIs & Services → Credentials**
+2. Click **Create Credentials → OAuth Client ID**
+3. Application type: **Desktop app**
+4. Name: e.g., "Creator Flow Desktop"
+5. Click **Create**
+6. Note the **Client ID** and **Client Secret**
+
+#### 5. Configure in Creator Flow
+
+When setting up a Google source (Gmail, Calendar, Drive), add these fields to your source's `config.json`:
+
+```json
+{
+  "api": {
+    "googleService": "gmail",
+    "googleOAuthClientId": "your-client-id.apps.googleusercontent.com",
+    "googleOAuthClientSecret": "your-client-secret"
+  }
+}
+```
+
+Or simply tell the agent you want to connect Gmail/Calendar/Drive - it will guide you through entering your credentials.
+
+#### Security Notes
+
+- Your OAuth credentials are stored encrypted alongside other source credentials
+- Never commit credentials to version control
+- For production use, consider getting your OAuth consent screen verified by Google
+
+## Troubleshooting
+
+### Debug Logging
+
+In development (`bun run electron:start` or `bun run electron:dev`),
+debug logging is enabled automatically.
+Logs are written to both the console and a log file.
+
+In packaged builds, logs are disabled by default.
+To enable them, launch the app with the `--debug` flag:
+
+```bash
+# macOS
+/Applications/Craft\ Agents.app/Contents/MacOS/Craft\ Agents --debug
+
+# Linux
+craft-agents --debug
+```
+
+```powershell
+# Windows (PowerShell) - from the install directory
+& ".\Creator Flow.exe" --debug
+```
+
+You can also set the `CRAFT_DEBUG=1` environment variable
+to enable debug output from the shared/SDK layer.
+(Note: in the desktop app, `--debug` also enables `CRAFT_DEBUG`.)
+
+Logs are written by `electron-log` to a platform-specific app logs directory.
+The most reliable way to find the exact path is to launch with `--debug`
+and look for the startup line:
+
+```text
+Debug mode enabled - logs at: /path/to/log/file.log
+```
+
+You can also search for a `Creator Flow` folder within your app-data directory.
+
+### WSL2 Notes
+
+On WSL2, OAuth login (Claude Max / Claude Pro) may fail because Electron's `shell.openExternal`
+cannot open a browser on the Windows host by default.
+
+**Fix: install `wslu`** to bridge `xdg-open` to the Windows side:
+
+```bash
+sudo apt install wslu
+```
+
+Also ensure WSL interop is enabled (it is by default on most distros).
+You can verify with:
+
+```bash
+cat /proc/sys/fs/binfmt_misc/WSLInterop
+```
+
+If you see output (not "No such file"), interop is working.
+
+**Alternative:** If you are running WSLg
+(GUI support built into recent Windows 11 builds),
+a Linux browser can handle the OAuth redirect directly.
+In that case `wslu` is not required,
+but you need a browser installed inside WSL.
+
+## Configuration
+
+Configuration is stored at `~/.creator-flow/`:
 
 ```
 ~/.creator-flow/
-├── config.json              # 主配置（工作区、认证类型）
-├── credentials.enc          # 加密凭据（AES-256-GCM）
-├── preferences.json         # 用户偏好设置
-├── theme.json               # 应用级主题
+├── config.json              # Main config (workspaces, auth type)
+├── credentials.enc          # Encrypted credentials (AES-256-GCM)
+├── preferences.json         # User preferences
+├── theme.json               # App-level theme
 └── workspaces/
     └── {id}/
-        ├── config.json      # 工作区设置
-        ├── theme.json       # 工作区主题覆盖
-        ├── sessions/        # 会话数据（JSONL）
-        ├── sources/         # 已连接的数据源
-        ├── skills/          # 自定义技能
-        └── statuses/        # 状态配置
+        ├── config.json      # Workspace settings
+        ├── theme.json       # Workspace theme override
+        ├── sessions/        # Session data (JSONL)
+        ├── sources/         # Connected sources
+        ├── skills/          # Custom skills
+        └── statuses/        # Status configuration
 ```
 
-## 高级功能
+## Advanced Features
 
-### 大型响应处理
+### Large Response Handling
 
-超过约 60KB 的工具响应会自动使用 Claude Haiku 进行意图感知的摘要。`_intent` 字段会注入到 MCP 工具模式中以保持摘要焦点。
+Tool responses exceeding ~60KB are automatically summarized using Claude Haiku with intent-aware context. The `_intent` field is injected into MCP tool schemas to preserve summarization focus.
 
-### 深度链接
+### Deep Linking
 
-外部应用可以使用 `creatorflow://` URL 导航：
+External apps can navigate using `creatorflow://` URLs:
 
 ```
-creatorflow://allChats                    # 所有聊天视图
-creatorflow://allChats/chat/session123    # 特定聊天
-creatorflow://settings                    # 设置
-creatorflow://sources/source/github       # 数据源信息
-creatorflow://action/new-chat             # 创建新聊天
+creatorflow://allChats                    # All chats view
+creatorflow://allChats/chat/session123    # Specific chat
+creatorflow://settings                    # Settings
+creatorflow://sources/source/github       # Source info
+creatorflow://action/new-chat             # Create new chat
 ```
 
-### 多语言支持
+## Tech Stack
 
-CreatorFlow 内置多语言支持系统，使用方式：
-
-```typescript
-// 在 React 组件中使用
-import { useT } from '@/context/LocaleContext'
-
-function MyComponent() {
-  const t = useT()
-  return <div>{t('设置')}</div>
-}
-
-// 在非 React 代码中使用
-import { t } from '@creator-flow/shared/locale'
-console.log(t('操作成功'))
-```
-
-语言包位于 `apps/electron/src/renderer/locales/`，支持自动翻译脚本。
-
-## 技术栈
-
-| 层 | 技术 |
-|----|------|
-| 运行时 | [Bun](https://bun.sh/) |
+| Layer | Technology |
+|-------|------------|
+| Runtime | [Bun](https://bun.sh/) |
 | AI | [@anthropic-ai/claude-agent-sdk](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) |
-| 桌面 | [Electron](https://www.electronjs.org/) + React |
+| Desktop | [Electron](https://www.electronjs.org/) + React |
 | UI | [shadcn/ui](https://ui.shadcn.com/) + Tailwind CSS v4 |
-| 构建 | esbuild (main) + Vite (renderer) |
-| 凭据 | AES-256-GCM 加密文件存储 |
+| Build | esbuild (main) + Vite (renderer) |
+| Credentials | AES-256-GCM encrypted file storage |
 
-## 许可证
+## License
 
-本项目采用 Apache License 2.0 许可证 - 详见 [LICENSE](LICENSE) 文件。
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-### 第三方许可证
+### Third-Party Licenses
 
-本项目使用 [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)，受 [Anthropic 商业服务条款](https://www.anthropic.com/legal/commercial-terms) 约束。
+This project uses the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk), which is subject to [Anthropic's Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms).
 
-### 商标
+### Trademark
 
-"Craft" 和 "CreatorFlow" 是 Craft Docs Ltd. 的商标。使用指南请参见 [TRADEMARK.md](TRADEMARK.md)。
+"Craft" and "Creator Flow" are trademarks of Craft Docs Ltd. See [TRADEMARK.md](TRADEMARK.md) for usage guidelines.
 
-## 贡献
+## Contributing
 
-我们欢迎贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解指南。
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 安全
+## Security
 
-### 本地 MCP 服务器隔离
+### Local MCP Server Isolation
 
-在启动本地 MCP 服务器（stdio 传输）时，敏感环境变量会被过滤以防止凭据泄露到子进程。被阻止的变量包括：
+When spawning local MCP servers (stdio transport), sensitive environment variables are filtered out to prevent credential leakage to subprocesses. Blocked variables include:
 
-- `ANTHROPIC_API_KEY`、`CLAUDE_CODE_OAUTH_TOKEN`（应用认证）
-- `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`AWS_SESSION_TOKEN`
-- `GITHUB_TOKEN`、`GH_TOKEN`、`OPENAI_API_KEY`、`GOOGLE_API_KEY`、`STRIPE_SECRET_KEY`、`NPM_TOKEN`
+- `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` (app auth)
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
+- `GITHUB_TOKEN`, `GH_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `STRIPE_SECRET_KEY`, `NPM_TOKEN`
 
-要显式将环境变量传递给特定 MCP 服务器，请在源配置中使用 `env` 字段。
+To explicitly pass an env var to a specific MCP server, use the `env` field in the source config.
 
-报告安全漏洞，请参见 [SECURITY.md](SECURITY.md)。
+To report security vulnerabilities, please see [SECURITY.md](SECURITY.md).

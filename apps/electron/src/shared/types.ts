@@ -1133,7 +1133,6 @@ export interface ElectronAPI {
   // Tool icon mappings (for Appearance settings page)
   getToolIconMappings(): Promise<ToolIconMapping[]>
 
-
   // Theme (app-level default)
   getAppTheme(): Promise<import('@config/theme').ThemeOverrides | null>
   // Preset themes (app-level)

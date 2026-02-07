@@ -148,7 +148,6 @@ function loadSkillsFromDir(skillsDir: string, source: SkillSource): LoadedSkill[
 }
 
 /**
-/**
  * Load a single skill from a workspace
  * @param workspaceRoot - Absolute path to workspace root
  * @param slug - Skill directory name
