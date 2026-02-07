@@ -1,7 +1,7 @@
 import { app, ipcMain, nativeTheme, nativeImage, dialog, shell, BrowserWindow } from 'electron'
 import { readFile, readdir, stat, realpath, mkdir, writeFile, unlink, rm } from 'fs/promises'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { normalize, isAbsolute, join, basename, dirname, resolve, relative, sep } from 'path'
+import { normalize, isAbsolute, join, basename, dirname, resolve, relative } from 'path'
 import { homedir, tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 import { execSync } from 'child_process'
@@ -54,67 +54,26 @@ function getWorkspaceOrThrow(workspaceId: string): Workspace {
 }
 
 /**
- * Validates that a file path is within allowed directories to prevent path traversal attacks.
- * Allowed directories: user's home directory and /tmp
+ * 规范化文件路径，解析 ~ 和符号链接
  */
 async function validateFilePath(filePath: string): Promise<string> {
-  // Normalize the path to resolve . and .. components
   let normalizedPath = normalize(filePath)
 
-  // Expand ~ to home directory
+  // 展开 ~ 为用户主目录
   if (normalizedPath.startsWith('~')) {
     normalizedPath = normalizedPath.replace(/^~/, homedir())
   }
 
-  // Must be an absolute path
   if (!isAbsolute(normalizedPath)) {
     throw new Error('Only absolute file paths are allowed')
   }
 
-  // Resolve symlinks to get the real path
-  let realPath: string
+  // 解析符号链接获取真实路径
   try {
-    realPath = await realpath(normalizedPath)
+    return await realpath(normalizedPath)
   } catch {
-    // File doesn't exist or can't be resolved - use normalized path
-    realPath = normalizedPath
+    return normalizedPath
   }
-
-  // Define allowed base directories
-  const allowedDirs = [
-    homedir(),      // User's home directory
-    tmpdir(),       // Platform-appropriate temp directory
-  ]
-
-  // Check if the real path is within an allowed directory (cross-platform)
-  const isAllowed = allowedDirs.some(dir => {
-    const normalizedDir = normalize(dir)
-    const normalizedReal = normalize(realPath)
-    return normalizedReal.startsWith(normalizedDir + sep) || normalizedReal === normalizedDir
-  })
-
-  if (!isAllowed) {
-    throw new Error('Access denied: file path is outside allowed directories')
-  }
-
-  // Block sensitive files even within home directory
-  const sensitivePatterns = [
-    /\.ssh\//,
-    /\.gnupg\//,
-    /\.aws\/credentials/,
-    /\.env$/,
-    /\.env\./,
-    /credentials\.json$/,
-    /secrets?\./i,
-    /\.pem$/,
-    /\.key$/,
-  ]
-
-  if (sensitivePatterns.some(pattern => pattern.test(realPath))) {
-    throw new Error('Access denied: cannot read sensitive files')
-  }
-
-  return realPath
 }
 
 export function registerIpcHandlers(sessionManager: SessionManager, windowManager: WindowManager): void {
