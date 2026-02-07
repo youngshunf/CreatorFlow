@@ -193,7 +193,7 @@ export function MarketplaceInfoPage({
   }
 
   const item = type === 'skill' ? skill! : app!
-  const versions = type === 'skill' ? skillVersions : appVersions
+  const versions: Array<{ version: string; changelog: string | null; is_latest: boolean; published_at: string }> = type === 'skill' ? skillVersions : appVersions
   const latestVersion = versions.find(v => v.is_latest)
   const isInstalled = installedInfo !== null
   const hasUpdate = isInstalled && installedInfo.hasUpdate
@@ -331,7 +331,7 @@ export function MarketplaceInfoPage({
             <div className="space-y-2">
               {versions.slice(1, 5).map((version) => (
                 <div
-                  key={'version' in version ? version.version : version.version}
+                  key={version.version}
                   className="p-3 rounded-lg bg-foreground/[0.02] border border-foreground/5"
                 >
                   <div className="flex items-center justify-between">

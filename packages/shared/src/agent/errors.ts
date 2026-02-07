@@ -21,6 +21,7 @@ export type ErrorCode =
   | 'invalid_model'          // Model ID not found
   | 'data_policy_error'      // OpenRouter data policy restriction
   | 'invalid_request'        // API rejected the request (e.g., bad image, invalid content)
+  | 'provider_error'         // AI provider-side error (api_error, overloaded, etc.)
   | 'unknown_error';
 
 export interface RecoveryAction {
@@ -182,6 +183,16 @@ const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalEr
       { key: 'r', label: 'Retry', action: 'retry' },
     ],
     canRetry: true,
+  },
+  provider_error: {
+    title: 'AI 服务提供商错误',
+    message: 'AI 服务提供商出现问题，这不是您的配置问题。',
+    actions: [
+      { key: 'r', label: '重试', action: 'retry' },
+      { key: 's', label: '设置', action: 'settings' },
+    ],
+    canRetry: true,
+    retryDelayMs: 5000,
   },
   unknown_error: {
     title: '错误',

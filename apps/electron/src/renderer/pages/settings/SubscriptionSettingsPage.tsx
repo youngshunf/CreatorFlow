@@ -653,17 +653,17 @@ export default function SubscriptionSettingsPage() {
                   {historyBalances.map((balance) => (
                     <div key={balance.id} className="p-4 rounded-xl bg-muted/30 border border-border/50">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium">{balance.source_description || balance.source_type}</span>
+                        <span className="text-sm font-medium">{balance.description || balance.source_type}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">已过期</span>
                       </div>
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-lg font-semibold text-muted-foreground line-through">
-                          {formatCredits(balance.remaining_credits)}/{formatCredits(balance.initial_credits)}
+                          {formatCredits(balance.remaining_amount)}/{formatCredits(balance.original_amount)}
                         </span>
                         <span className="text-xs text-muted-foreground">积分</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        过期时间: {new Date(balance.expires_at).toLocaleDateString('zh-CN')}
+                        过期时间: {balance.expires_at ? new Date(balance.expires_at).toLocaleDateString('zh-CN') : '永不过期'}
                       </div>
                     </div>
                   ))}

@@ -37,7 +37,7 @@ import {
   type SessionMetadata,
   type TodoState,
 } from '@creator-flow/shared/sessions'
-import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS } from '@creator-flow/shared/sources'
+import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS, TokenRefreshManager, createTokenGetter } from '@creator-flow/shared/sources'
 import { ConfigWatcher, type ConfigWatcherCallbacks } from '@creator-flow/shared/config'
 import { getAuthState } from '@creator-flow/shared/auth'
 import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@creator-flow/shared/agent'
@@ -62,6 +62,10 @@ function sanitizeForTitle(content: string): string {
   return content
     .replace(/<edit_request>[\s\S]*?<\/edit_request>/g, '') // Strip entire edit_request blocks
     .replace(/<[^>]+>/g, '')     // Strip remaining XML/HTML tags
+    .replace(/\[skill:(?:[\w-]+:)?[\w-]+\]/g, '')   // Strip [skill:...] mentions
+    .replace(/\[source:[\w-]+\]/g, '')                // Strip [source:...] mentions
+    .replace(/\[file:[^\]]+\]/g, '')                  // Strip [file:...] mentions
+    .replace(/\[folder:[^\]]+\]/g, '')                // Strip [folder:...] mentions
     .replace(/\s+/g, ' ')        // Collapse whitespace
     .trim()
 }
@@ -81,8 +85,13 @@ export const AGENT_FLAGS = {
  *
  * @param sources - Sources to build servers for
  * @param sessionPath - Optional path to session folder for saving large API responses
+ * @param tokenRefreshManager - Optional TokenRefreshManager for OAuth token refresh
  */
-async function buildServersFromSources(sources: LoadedSource[], sessionPath?: string) {
+async function buildServersFromSources(
+  sources: LoadedSource[],
+  sessionPath?: string,
+  tokenRefreshManager?: TokenRefreshManager
+) {
   const span = perf.span('sources.buildServers', { count: sources.length })
   const credManager = getSourceCredentialManager()
   const serverBuilder = getSourceServerBuilder()
@@ -101,31 +110,15 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
   sessionLog.info(`构建 Source 服务器：为 ${sources.length} 个来源加载凭据耗时 ${credsMs}ms`)
 
   // Build token getter for OAuth sources (Google, Slack, Microsoft use OAuth)
-  // Automatically refreshes expired or expiring tokens before API calls
+  // Uses TokenRefreshManager for unified refresh logic (DRY principle)
   const getTokenForSource = (source: LoadedSource) => {
     const provider = source.config.provider
     if (isApiOAuthProvider(provider)) {
-      return async () => {
-        // Load credential with expiry info
-        const cred = await credManager.load(source)
-
-        // Refresh if expired or expiring soon (within 5 min)
-        if (!cred || credManager.isExpired(cred) || credManager.needsRefresh(cred)) {
-          sessionLog.debug(`[OAuth] Refreshing token for ${source.config.slug}`)
-          try {
-            const token = await credManager.refresh(source)
-            if (token) return token
-          } catch (err) {
-            sessionLog.warn(`[OAuth] Refresh failed for ${source.config.slug}: ${err}`)
-          }
-        }
-
-        // Use cached token if still valid
-        if (cred?.value) return cred.value
-
-        // No valid token after refresh attempt
-        throw new Error(`No token for ${source.config.slug}`)
-      }
+      // Use TokenRefreshManager if provided, otherwise create temporary one
+      const manager = tokenRefreshManager ?? new TokenRefreshManager(credManager, {
+        log: (msg) => sessionLog.debug(msg),
+      })
+      return createTokenGetter(manager, source)
     }
     return undefined
   }
@@ -153,6 +146,71 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
 
   span.end()
   return result
+}
+
+/**
+ * Result of MCP OAuth token refresh operation.
+ */
+interface McpTokenRefreshResult {
+  /** Whether any tokens were refreshed (configs were updated) */
+  tokensRefreshed: boolean
+  /** Sources that failed to refresh (for warning display) */
+  failedSources: Array<{ slug: string; reason: string }>
+}
+
+/**
+ * Refresh expired MCP OAuth tokens and rebuild server configs.
+ * Uses TokenRefreshManager for unified refresh logic (DRY/SOLID principles).
+ *
+ * This implements "lazy refresh at query time" - tokens are refreshed before
+ * each agent.chat() call, then server configs are rebuilt with fresh headers.
+ *
+ * @param agent - The agent to update server configs on
+ * @param sources - All loaded sources for the session
+ * @param sessionPath - Path to session folder for API response storage
+ * @param tokenRefreshManager - TokenRefreshManager instance for this session
+ */
+async function refreshMcpOAuthTokensIfNeeded(
+  agent: CreatorFlowAgent,
+  sources: LoadedSource[],
+  sessionPath: string,
+  tokenRefreshManager: TokenRefreshManager
+): Promise<McpTokenRefreshResult> {
+  sessionLog.debug('[OAuth] Checking if any MCP OAuth tokens need refresh')
+
+  // Use TokenRefreshManager to find sources needing refresh (handles rate limiting)
+  const needRefresh = await tokenRefreshManager.getSourcesNeedingRefresh(sources)
+
+  if (needRefresh.length === 0) {
+    return { tokensRefreshed: false, failedSources: [] }
+  }
+
+  sessionLog.debug(`[OAuth] Found ${needRefresh.length} source(s) needing token refresh: ${needRefresh.map(s => s.config.slug).join(', ')}`)
+
+  // Use TokenRefreshManager to refresh all tokens (handles rate limiting and error tracking)
+  const { refreshed, failed } = await tokenRefreshManager.refreshSources(needRefresh)
+
+  // Convert failed results to the expected format
+  const failedSources = failed.map(({ source, reason }) => ({
+    slug: source.config.slug,
+    reason,
+  }))
+
+  if (refreshed.length > 0) {
+    // Rebuild server configs with fresh tokens
+    sessionLog.debug(`[OAuth] Rebuilding servers after ${refreshed.length} token refresh(es)`)
+    const enabledSources = sources.filter(s => s.config.enabled && s.config.isAuthenticated)
+    const { mcpServers, apiServers } = await buildServersFromSources(
+      enabledSources,
+      sessionPath,
+      tokenRefreshManager
+    )
+    const intendedSlugs = enabledSources.map(s => s.config.slug)
+    agent.setSourceServers(mcpServers, apiServers, intendedSlugs)
+    return { tokensRefreshed: true, failedSources }
+  }
+
+  return { tokensRefreshed: false, failedSources }
 }
 
 /**
@@ -226,7 +284,7 @@ function resolveToolDisplayMeta(
 
   // CLI tool icon resolution for Bash commands
   // Parses the command string to detect known tools (git, npm, docker, etc.)
-  // and resolves their brand icon from ~/.craft-agent/tool-icons/
+  // and resolves their brand icon from ~/.creator-flow/tool-icons/
   if (toolName === 'Bash' && toolInput?.command) {
     const toolIconsDir = getToolIconsDir()
     const match = resolveToolIcon(String(toolInput.command), toolIconsDir)
@@ -281,7 +339,7 @@ interface ManagedSession {
   // Used to detect if a follow-up message has superseded the current one (stale-request guard).
   processingGeneration: number
   // NOTE: Parent-child tracking state (pendingTools, parentToolStack, toolToParentMap,
-  // pendingTextParent) has been removed. CraftAgent now provides parentToolUseId
+  // pendingTextParent) has been removed. CreatorFlow now provides parentToolUseId
   // directly on all events using the SDK's authoritative parent_tool_use_id field.
   // See: packages/shared/src/agent/tool-matching.ts
   // Session name (user-defined or AI-generated)
@@ -374,6 +432,8 @@ interface ManagedSession {
   authRetryInProgress?: boolean
   // Whether this session is hidden from session list (e.g., mini edit sessions)
   hidden?: boolean
+  // Token refresh manager for this session (handles OAuth token refresh with rate limiting)
+  tokenRefreshManager?: TokenRefreshManager
 }
 
 // Convert runtime Message to StoredMessage for persistence
@@ -658,7 +718,7 @@ export class SessionManager {
         // Todo state
         if (managed.todoState !== header.todoState) {
           managed.todoState = header.todoState
-          this.sendEvent({ type: 'todo_state_changed', sessionId, todoState: header.todoState }, managed.workspace.id)
+          this.sendEvent({ type: 'todo_state_changed', sessionId, todoState: header.todoState ?? '' }, managed.workspace.id)
           changed = true
         }
 
@@ -727,7 +787,7 @@ export class SessionManager {
 
   /**
    * Broadcast default permissions changed event to all windows
-   * Triggered when ~/.craft-agent/permissions/default.json changes
+   * Triggered when ~/.creator-flow/permissions/default.json changes
    */
   private broadcastDefaultPermissionsChanged(): void {
     if (!this.windowManager) return
@@ -746,7 +806,7 @@ export class SessionManager {
     const workspaceRootPath = managed.workspace.rootPath
     sessionLog.info(`Reloading sources for session ${managed.id}`)
 
-    // Reload all sources from disk (craft-agents-docs is always available as MCP server)
+    // Reload all sources from disk (creator-flow-docs is always available as MCP server)
     const allSources = loadAllSources(workspaceRootPath)
     managed.agent.setAllSources(allSources)
 
@@ -772,7 +832,7 @@ export class SessionManager {
    * Bun's automatic .env loading is disabled in the subprocess (--env-file=/dev/null)
    * to prevent a user's project .env from injecting ANTHROPIC_API_KEY and overriding
    * OAuth auth — Claude Code prioritizes API key over OAuth token when both are set.
-   * See: https://github.com/lukilabs/craft-agents-oss/issues/39
+   * See: https://github.com/lukilabs/creator-flow-oss/issues/39
    */
   async reinitializeAuth(): Promise<void> {
     try {
@@ -1000,6 +1060,10 @@ export class SessionManager {
             sharedUrl: meta.sharedUrl,
             sharedId: meta.sharedId,
             hidden: meta.hidden,
+            // Initialize TokenRefreshManager for this session
+            tokenRefreshManager: new TokenRefreshManager(getSourceCredentialManager(), {
+              log: (msg) => sessionLog.debug(msg),
+            }),
           }
 
           this.sessions.set(meta.id, managed)
@@ -1139,6 +1203,9 @@ export class SessionManager {
       const result = await credManager.authenticate(source, {
         onStatus: (msg) => sessionLog.info(`[OAuth ${request.sourceSlug}] ${msg}`),
         onError: (err) => sessionLog.error(`[OAuth ${request.sourceSlug}] ${err}`),
+      }, {
+        sessionId: managed.id,
+        deeplinkScheme: process.env.CREATORFLOW_DEEPLINK_SCHEME || 'creatorflow',
       })
 
       if (result.success) {
@@ -1295,6 +1362,12 @@ export class SessionManager {
         await credManager.set(
           { type: 'source_bearer', workspaceId: wsId, sourceId: request.sourceSlug },
           { value: response.value! }
+        )
+      } else if (request.mode === 'multi-header') {
+        // Store multi-header credentials as JSON { "DD-API-KEY": "...", "DD-APPLICATION-KEY": "..." }
+        await credManager.set(
+          { type: 'source_apikey', workspaceId: wsId, sourceId: request.sourceSlug },
+          { value: JSON.stringify(response.headers) }
         )
       } else {
         // header or query - both use API key storage
@@ -1512,6 +1585,9 @@ export class SessionManager {
       permissionMode: defaultPermissionMode,
       workingDirectory: resolvedWorkingDir,
       hidden: options?.hidden,
+      todoState: options?.todoState,
+      labels: options?.labels,
+      isFlagged: options?.isFlagged,
     })
 
     // Model priority: options.model > storedSession.model > workspace default
@@ -1531,7 +1607,9 @@ export class SessionManager {
       lastMessageAt: storedSession.lastMessageAt ?? storedSession.lastUsedAt,  // Fallback for sessions saved before lastMessageAt was persisted
       streamingText: '',
       processingGeneration: 0,
-      isFlagged: false,
+      isFlagged: options?.isFlagged ?? false,
+      todoState: options?.todoState,
+      labels: options?.labels,
       permissionMode: defaultPermissionMode,
       workingDirectory: resolvedWorkingDir,
       sdkCwd: storedSession.sdkCwd,
@@ -1544,6 +1622,10 @@ export class SessionManager {
       backgroundShellCommands: new Map(),
       messagesLoaded: true,  // New sessions don't need to load messages from disk
       hidden: options?.hidden,
+      // Initialize TokenRefreshManager for this session (handles OAuth token refresh with rate limiting)
+      tokenRefreshManager: new TokenRefreshManager(getSourceCredentialManager(), {
+        log: (msg) => sessionLog.debug(msg),
+      }),
     }
 
     this.sessions.set(storedSession.id, managed)
@@ -1555,9 +1637,10 @@ export class SessionManager {
       lastMessageAt: managed.lastMessageAt,
       messages: [],
       isProcessing: false,
-      isFlagged: false,
+      isFlagged: options?.isFlagged ?? false,
       permissionMode: defaultPermissionMode,
-      todoState: undefined,  // User-controlled, defaults to undefined (treated as 'todo')
+      todoState: options?.todoState,
+      labels: options?.labels,
       workingDirectory: resolvedWorkingDir,
       model: managed.model,
       thinkingLevel: defaultThinkingLevel,
@@ -1731,7 +1814,9 @@ export class SessionManager {
             authDescription: request.description,
             authHint: request.hint,
             authHeaderName: request.headerName,
+            authHeaderNames: request.headerNames,
             authSourceUrl: request.sourceUrl,
+            authPasswordRequired: request.passwordRequired,
           }),
         }
 
@@ -2225,6 +2310,14 @@ export class SessionManager {
   }
 
   /**
+   * Clear active viewing session for a workspace.
+   * Called when all windows leave a workspace to ensure read/unread state is correct.
+   */
+  clearActiveViewingSession(workspaceId: string): void {
+    this.activeViewingSession.delete(workspaceId)
+  }
+
+  /**
    * Check if a session is currently being viewed by the user
    */
   private isSessionBeingViewed(sessionId: string, workspaceId: string): boolean {
@@ -2566,8 +2659,18 @@ export class SessionManager {
       // AI generation will enhance it later, but we always have a title from the start
       const isFirstUserMessage = managed.messages.filter(m => m.role === 'user').length === 1
       if (isFirstUserMessage && !managed.name) {
-        // Sanitize message to remove XML blocks (e.g. <edit_request>) before using as title
-        const sanitized = sanitizeForTitle(message)
+        // Replace bracket mentions with their display labels (e.g. [skill:ws:commit] → "Commit")
+        // so titles show human-readable names instead of raw IDs
+        let titleSource = message
+        if (options?.badges) {
+          for (const badge of options.badges) {
+            if (badge.rawText && badge.label) {
+              titleSource = titleSource.replace(badge.rawText, badge.label)
+            }
+          }
+        }
+        // Sanitize: strip any remaining bracket mentions, XML blocks, tags
+        const sanitized = sanitizeForTitle(titleSource)
         const initialTitle = sanitized.slice(0, 50) + (sanitized.length > 50 ? '…' : '')
         managed.name = initialTitle
         this.persistSession(managed)
@@ -2580,7 +2683,7 @@ export class SessionManager {
         }, managed.workspace.id)
 
         // Generate AI title asynchronously (will update the initial title)
-        this.generateTitle(managed, message)
+        this.generateTitle(managed, sanitized)
       }
     }
 
@@ -2679,6 +2782,33 @@ export class SessionManager {
         sessionLog.info(`Applied ${mcpCount} MCP + ${apiCount} API sources to session ${sessionId} (${allSources.length} total)`)
       }
       sendSpan.mark('servers.applied')
+
+      // Refresh MCP OAuth tokens if needed (before chat uses them)
+      // This handles the case where tokens expired mid-session
+      // Ensure tokenRefreshManager exists (created at session initialization)
+      if (!managed.tokenRefreshManager) {
+        managed.tokenRefreshManager = new TokenRefreshManager(getSourceCredentialManager(), {
+          log: (msg) => sessionLog.debug(msg),
+        })
+      }
+      const refreshResult = await refreshMcpOAuthTokensIfNeeded(
+        agent,
+        sources,
+        sessionPath,
+        managed.tokenRefreshManager
+      )
+      if (refreshResult.tokensRefreshed) {
+        sendSpan.mark('oauth.tokens.refreshed')
+      }
+      // Emit warnings for any sources that failed to refresh
+      for (const failed of refreshResult.failedSources) {
+        this.sendEvent({
+          type: 'info',
+          sessionId,
+          message: `Token refresh failed for "${failed.slug}" - source may need re-authentication`,
+          level: 'warning'
+        }, managed.workspace.id)
+      }
     }
 
     try {
@@ -2703,7 +2833,7 @@ export class SessionManager {
 
       // Skills mentioned via @mentions are handled by the SDK's Skill tool.
       // The UI layer (extractBadges in mentions.ts) injects fully-qualified names
-      // in the rawText, and canUseTool in craft-agent.ts provides a fallback
+      // in the rawText, and canUseTool in creator-flow-agent.ts provides a fallback
       // to qualify short names. No transformation needed here.
 
       sendSpan.mark('chat.starting')
@@ -3146,6 +3276,28 @@ To view this task's output:
   }
 
   /**
+   * Respond to a pending interactive UI request
+   * Returns true if the response was delivered, false if no pending request found
+   */
+  async respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): Promise<boolean> {
+    const managed = this.sessions.get(sessionId)
+    if (managed?.agent) {
+      sessionLog.info(`Interactive response for ${requestId}: type=${response.type}`)
+      // Send interactive_completed event to renderer
+      this.sendEvent({
+        type: 'interactive_completed',
+        sessionId,
+        requestId,
+        response,
+      }, managed.workspace.id)
+      return true
+    } else {
+      sessionLog.warn(`Cannot respond to interactive - no agent for session ${sessionId}`)
+      return false
+    }
+  }
+
+  /**
    * Set the permission mode for a session ('safe', 'ask', 'allow-all')
    */
   setSessionPermissionMode(sessionId: string, mode: PermissionMode): void {
@@ -3372,7 +3524,7 @@ To view this task's output:
       }
 
       case 'tool_result': {
-        // toolName comes directly from CraftAgent (resolved via ToolIndex)
+        // toolName comes directly from CreatorFlow (resolved via ToolIndex)
         const toolName = event.toolName || 'unknown'
 
         // Format absolute paths to relative paths for better readability
@@ -3385,7 +3537,7 @@ To view this task's output:
 
         sessionLog.info(`RESULT MATCH: toolUseId=${event.toolUseId}, found=${!!existingToolMsg}, toolName=${existingToolMsg?.toolName || toolName}, wasComplete=${wasAlreadyComplete}`)
 
-        // parentToolUseId comes from CraftAgent (SDK-authoritative) or existing message
+        // parentToolUseId comes from CreatorFlow (SDK-authoritative) or existing message
         const parentToolUseId = existingToolMsg?.parentToolUseId || event.parentToolUseId
 
         if (existingToolMsg) {

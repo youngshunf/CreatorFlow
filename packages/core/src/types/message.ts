@@ -24,6 +24,7 @@ export type CredentialInputMode =
   | 'bearer'      // Single token field (Bearer Token, API Key)
   | 'basic'       // Username + Password fields
   | 'header'      // API Key with custom header name
+  | 'multi-header' // Multiple API Keys with custom header names
   | 'query';      // API Key for query parameter
 
 /**
@@ -210,6 +211,7 @@ export interface Message {
   authStatus?: AuthStatus;
   authCredentialMode?: CredentialInputMode;  // For credential requests
   authHeaderName?: string;        // For header auth - the header name
+  authHeaderNames?: string[];     // For multi-header auth - array of header names
   authLabels?: {                  // Custom field labels
     credential?: string;
     username?: string;
@@ -218,6 +220,7 @@ export interface Message {
   authDescription?: string;       // Description/instructions
   authHint?: string;              // Hint about where to find credentials
   authSourceUrl?: string;         // Source URL for password manager domain matching (1Password)
+  authPasswordRequired?: boolean; // For basic auth: whether password is required (default true)
   authError?: string;             // Error message if auth failed
   authEmail?: string;             // Authenticated email (for OAuth)
   authWorkspace?: string;         // Authenticated workspace (for Slack)
@@ -285,6 +288,7 @@ export interface StoredMessage {
   authStatus?: AuthStatus;
   authCredentialMode?: CredentialInputMode;
   authHeaderName?: string;
+  authHeaderNames?: string[];
   authLabels?: {
     credential?: string;
     username?: string;
@@ -293,6 +297,7 @@ export interface StoredMessage {
   authDescription?: string;
   authHint?: string;
   authSourceUrl?: string;
+  authPasswordRequired?: boolean;
   authError?: string;
   authEmail?: string;
   authWorkspace?: string;
@@ -351,6 +356,7 @@ export type ErrorCode =
   | 'invalid_model'          // Model ID not found
   | 'data_policy_error'      // OpenRouter data policy restriction
   | 'invalid_request'        // API rejected the request (e.g., bad image, invalid content)
+  | 'provider_error'         // AI provider-side error (api_error, overloaded, etc.)
   | 'unknown_error';
 
 /**

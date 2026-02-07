@@ -434,7 +434,7 @@ export function NavigationProvider({
               // No sessions in current workspace
               const stateWithoutDetails: NavigationState = {
                 ...newState,
-                details: undefined,
+                details: null,
               }
               setSession({ selected: null })
               setNavigationState(stateWithoutDetails)
@@ -729,37 +729,46 @@ export function NavigationProvider({
   // Track the previous workspace ID to detect workspace switches
   const prevWorkspaceIdRef = useRef<string | null>(null)
 
-  // Re-validate navigation state when workspace changes
-  // This handles the case where user switches workspaces and the current
-  // selected session doesn't belong to the new workspace
+  // Reset navigation state when workspace changes
+  // This prevents back/forward navigating to sessions from the wrong workspace
+  // and ensures sidebar doesn't show stale context
   useEffect(() => {
-    // Skip on initial render or if workspace is not set
-    if (!workspaceId || !isReady) return
+    if (!workspaceId) return
 
-    // Skip if this is the first workspace (not a switch)
-    if (prevWorkspaceIdRef.current === null) {
-      prevWorkspaceIdRef.current = workspaceId
-      return
-    }
+    // Skip on initial mount (no previous workspace)
+    if (prevWorkspaceIdRef.current !== null && prevWorkspaceIdRef.current !== workspaceId) {
+      console.log('[Navigation] Workspace changed from', prevWorkspaceIdRef.current, 'to', workspaceId)
 
-    // Skip if workspace hasn't actually changed
-    if (prevWorkspaceIdRef.current === workspaceId) return
+      // Clear history stack - old routes belong to previous workspace
+      historyStackRef.current = []
+      historyIndexRef.current = -1
+      setCanGoBack(false)
+      setCanGoForward(false)
 
-    console.log('[Navigation] Workspace changed from', prevWorkspaceIdRef.current, 'to', workspaceId)
-    prevWorkspaceIdRef.current = workspaceId
+      // Close right sidebar - its context is workspace-specific
+      setNavigationState(prev => ({
+        ...prev,
+        rightSidebar: undefined,
+      }))
 
-    // If currently in chats navigator, re-validate the selection
-    if (isChatsNavigation(navigationState)) {
+      // Reset initial route restoration flag so new workspace can restore its route
+      initialRouteRestoredRef.current = false
+
+      // If currently in chats navigator, re-validate the selection
       // Always re-apply navigation state to trigger proper session selection
       // for the new workspace. This will either:
       // 1. Clear invalid session and auto-select first session in new workspace
       // 2. Show empty state if new workspace has no sessions
-      const newState: NavigationState = {
-        ...navigationState,
-        details: undefined, // Clear any existing selection
+      if (isChatsNavigation(navigationState)) {
+        const newState: NavigationState = {
+          ...navigationState,
+          details: null, // Clear any existing selection
+        }
+        applyNavigationState(newState)
       }
-      applyNavigationState(newState)
     }
+
+    prevWorkspaceIdRef.current = workspaceId
   }, [workspaceId, isReady, navigationState, applyNavigationState])
 
   // Initialize history stack on first load

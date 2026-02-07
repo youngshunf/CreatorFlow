@@ -44,7 +44,7 @@ function printAnnotation(text: string) {
 
 console.log(`
 ${colors.bgMagenta}${colors.bold}                                                                                ${colors.reset}
-${colors.bgMagenta}${colors.bold}                    CRAFT AGENT SYSTEM PROMPT BREAKDOWN                         ${colors.reset}
+${colors.bgMagenta}${colors.bold}                    CREATOR FLOW SYSTEM PROMPT BREAKDOWN                         ${colors.reset}
 ${colors.bgMagenta}${colors.bold}                                                                                ${colors.reset}
 `);
 

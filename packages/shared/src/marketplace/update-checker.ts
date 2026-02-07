@@ -40,7 +40,7 @@ export async function checkForUpdates(
     .filter((skill) => skill.version !== 'unknown')
     .map((skill) => ({
       id: skill.skillId,
-      version: skill.version.split('-local.')[0], // Use base version for comparison
+      version: skill.version.split('-local.')[0]!, // Use base version for comparison
       type: 'skill' as const,
     }));
 
@@ -213,8 +213,8 @@ export async function forceSync(
  */
 export function compareVersions(a: string, b: string): number {
   // Remove any local suffix
-  const cleanA = a.split('-local.')[0];
-  const cleanB = b.split('-local.')[0];
+  const cleanA = a.split('-local.')[0]!;
+  const cleanB = b.split('-local.')[0]!;
 
   const partsA = cleanA.split('.').map(Number);
   const partsB = cleanB.split('.').map(Number);

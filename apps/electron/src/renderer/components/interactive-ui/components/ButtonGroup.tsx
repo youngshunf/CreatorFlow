@@ -22,6 +22,7 @@ export function ButtonGroup({ props, onAction }: ButtonGroupComponentProps) {
     center: 'justify-center',
     end: 'justify-end',
     between: 'justify-between',
+    stretch: 'justify-stretch',
   }
 
   return (

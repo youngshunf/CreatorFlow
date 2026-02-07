@@ -254,6 +254,8 @@ export interface CredentialResponse {
   username?: string
   /** Password for basic auth */
   password?: string
+  /** Header values for multi-header mode (e.g., { "DD-API-KEY": "...", "DD-APPLICATION-KEY": "..." }) */
+  headers?: Record<string, string>
   /** Whether user cancelled */
   cancelled: boolean
 }
@@ -445,6 +447,12 @@ export interface CreateSessionOptions {
   systemPromptPreset?: 'default' | 'mini' | string
   /** When true, session won't appear in session list (e.g., mini edit sessions) */
   hidden?: boolean
+  /** Initial todo state (status) for the session */
+  todoState?: TodoState
+  /** Initial labels for the session */
+  labels?: string[]
+  /** Whether the session should be flagged */
+  isFlagged?: boolean
 }
 
 // Events sent from main to renderer
@@ -484,6 +492,7 @@ export type SessionEvent =
   // Session metadata events (for multi-window sync)
   | { type: 'session_flagged'; sessionId: string }
   | { type: 'session_unflagged'; sessionId: string }
+  | { type: 'name_changed'; sessionId: string; name?: string }
   | { type: 'session_model_changed'; sessionId: string; model: string | null }
   | { type: 'todo_state_changed'; sessionId: string; todoState: TodoState }
   | { type: 'session_deleted'; sessionId: string }
@@ -646,7 +655,9 @@ export const IPC_CHANNELS = {
   MENU_NEW_WINDOW: 'menu:newWindow',
   MENU_OPEN_SETTINGS: 'menu:openSettings',
   MENU_KEYBOARD_SHORTCUTS: 'menu:keyboardShortcuts',
-  // Deep link navigation (main → renderer, for external craftagents:// URLs)
+  MENU_TOGGLE_FOCUS_MODE: 'menu:toggleFocusMode',
+  MENU_TOGGLE_SIDEBAR: 'menu:toggleSidebar',
+  // Deep link navigation (main → renderer, for external creatorflow:// URLs)
   DEEP_LINK_NAVIGATE: 'deeplink:navigate',
 
   // Auth
@@ -767,7 +778,7 @@ export const IPC_CHANNELS = {
   WORKSPACE_SETTINGS_GET: 'workspaceSettings:get',
   WORKSPACE_SETTINGS_UPDATE: 'workspaceSettings:update',
 
-  // Theme (app-level only)
+  // Theme (app-level default)
   THEME_GET_APP: 'theme:getApp',
   THEME_GET_PRESETS: 'theme:getPresets',
   THEME_LOAD_PRESET: 'theme:loadPreset',
@@ -776,7 +787,14 @@ export const IPC_CHANNELS = {
   THEME_BROADCAST_PREFERENCES: 'theme:broadcastPreferences',  // Send preferences to main for broadcast
   THEME_PREFERENCES_CHANGED: 'theme:preferencesChanged',  // Broadcast: preferences changed in another window
 
-  // Tool icons (for Appearance settings)
+  // Workspace-level theme overrides
+  THEME_GET_WORKSPACE_COLOR_THEME: 'theme:getWorkspaceColorTheme',
+  THEME_SET_WORKSPACE_COLOR_THEME: 'theme:setWorkspaceColorTheme',
+  THEME_GET_ALL_WORKSPACE_THEMES: 'theme:getAllWorkspaceThemes',
+  THEME_BROADCAST_WORKSPACE_THEME: 'theme:broadcastWorkspaceTheme',  // Send workspace theme change to main for broadcast
+  THEME_WORKSPACE_THEME_CHANGED: 'theme:workspaceThemeChanged',  // Broadcast: workspace theme changed in another window
+
+  // Tool icon mappings (for Appearance settings)
   TOOL_ICONS_GET_MAPPINGS: 'toolIcons:getMappings',
 
   // Logo URL resolution (uses Node.js filesystem cache)
@@ -839,6 +857,20 @@ export const IPC_CHANNELS = {
   MENU_PASTE: 'menu:paste',
   MENU_SELECT_ALL: 'menu:selectAll',
 } as const
+
+/**
+ * Tool icon mapping for CLI command icons in chat activity
+ */
+export interface ToolIconMapping {
+  /** Tool name (e.g., 'git', 'npm') */
+  tool: string
+  /** Display name for the tool */
+  displayName: string
+  /** Data URL of the icon (SVG or PNG) */
+  iconDataUrl: string
+  /** CLI commands that trigger this icon */
+  commands: string[]
+}
 
 // Re-import types for ElectronAPI
 import type { Workspace, SessionMetadata, StoredAttachment as StoredAttachmentType } from '@creator-flow/core/types';
@@ -903,6 +935,10 @@ export interface ElectronAPI {
 
   // File operations
   readFile(path: string): Promise<string>
+  /** Read a file as binary data (Uint8Array) */
+  readFileBinary(path: string): Promise<Uint8Array>
+  /** Read a file as a data URL (data:{mime};base64,...) for binary preview (images, PDFs) */
+  readFileDataUrl(path: string): Promise<string>
   openFileDialog(): Promise<string[]>
   readFileAttachment(path: string): Promise<FileAttachment | null>
   storeAttachment(sessionId: string, attachment: FileAttachment): Promise<import('../../../../packages/core/src/types/index.ts').StoredAttachment>
@@ -955,8 +991,10 @@ export interface ElectronAPI {
   onMenuNewChat(callback: () => void): () => void
   onMenuOpenSettings(callback: () => void): () => void
   onMenuKeyboardShortcuts(callback: () => void): () => void
+  onMenuToggleFocusMode(callback: () => void): () => void
+  onMenuToggleSidebar(callback: () => void): () => void
 
-  // Deep link navigation listener (for external craftagents:// URLs)
+  // Deep link navigation listener (for external creatorflow:// URLs)
   onDeepLinkNavigate(callback: (nav: DeepLinkNavigation) => void): () => void
 
   // Auth
@@ -1045,7 +1083,7 @@ export interface ElectronAPI {
   onDefaultPermissionsChanged(callback: () => void): () => void
 
   // Skills
-  getSkills(workspaceId: string): Promise<LoadedSkill[]>
+  getSkills(workspaceId: string, workingDirectory?: string): Promise<LoadedSkill[]>
   getSkillFiles?(workspaceId: string, skillSlug: string): Promise<SkillFile[]>
   deleteSkill(workspaceId: string, skillSlug: string): Promise<void>
   openSkillInEditor(workspaceId: string, skillSlug: string): Promise<void>
@@ -1058,16 +1096,16 @@ export interface ElectronAPI {
   listBundledApps(): Promise<Array<{ id: string; name: string; description: string; version: string; iconPath?: string }>>
 
   // Marketplace
-  marketplaceListSkills(options?: import('@creator-flow/shared/marketplace').ListSkillsOptions): Promise<import('@creator-flow/shared/marketplace').ListSkillsResult>
-  marketplaceGetSkill(skillId: string): Promise<import('@creator-flow/shared/marketplace').GetSkillResult>
-  marketplaceListApps(options?: import('@creator-flow/shared/marketplace').ListAppsOptions): Promise<import('@creator-flow/shared/marketplace').ListAppsResult>
-  marketplaceGetApp(appId: string): Promise<import('@creator-flow/shared/marketplace').GetAppResult>
+  marketplaceListSkills(options?: import('@creator-flow/shared/marketplace').ListSkillsParams): Promise<import('@creator-flow/shared/marketplace').PaginatedResponse<import('@creator-flow/shared/marketplace').MarketplaceSkill>>
+  marketplaceGetSkill(skillId: string): Promise<{ skill: import('@creator-flow/shared/marketplace').MarketplaceSkill; versions: import('@creator-flow/shared/marketplace').MarketplaceSkillVersion[] }>
+  marketplaceListApps(options?: import('@creator-flow/shared/marketplace').ListAppsParams): Promise<import('@creator-flow/shared/marketplace').PaginatedResponse<import('@creator-flow/shared/marketplace').MarketplaceApp>>
+  marketplaceGetApp(appId: string): Promise<{ app: import('@creator-flow/shared/marketplace').MarketplaceApp; versions: import('@creator-flow/shared/marketplace').MarketplaceAppVersion[] }>
   marketplaceGetAppSkills(appId: string): Promise<import('@creator-flow/shared/marketplace').MarketplaceSkill[]>
   marketplaceListCategories(): Promise<import('@creator-flow/shared/marketplace').MarketplaceCategory[]>
-  marketplaceSearch(query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions): Promise<import('@creator-flow/shared/marketplace').SearchResult>
+  marketplaceSearch(query: string, options?: import('@creator-flow/shared/marketplace').SearchParams): Promise<import('@creator-flow/shared/marketplace').SearchResponse>
   marketplaceInstallSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
   marketplaceUpdateSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
-  marketplaceCheckUpdates(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').UpdateCheckResult>
+  marketplaceCheckUpdates(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').UpdateItem[]>
   marketplaceGetInstalled(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').InstalledSkillInfo[]>
   onMarketplaceInstallProgress(callback: (progress: import('@creator-flow/shared/marketplace').InstallProgress) => void): () => void
 
@@ -1092,13 +1130,21 @@ export interface ElectronAPI {
   readWorkspaceImage(workspaceId: string, relativePath: string): Promise<string>
   writeWorkspaceImage(workspaceId: string, relativePath: string, base64: string, mimeType: string): Promise<void>
 
-  // Theme (app-level only)
+  // Tool icon mappings (for Appearance settings page)
+  getToolIconMappings(): Promise<ToolIconMapping[]>
+
+
+  // Theme (app-level default)
   getAppTheme(): Promise<import('@config/theme').ThemeOverrides | null>
   // Preset themes (app-level)
   loadPresetThemes(): Promise<import('@config/theme').PresetTheme[]>
   loadPresetTheme(themeId: string): Promise<import('@config/theme').PresetTheme | null>
   getColorTheme(): Promise<string>
   setColorTheme(themeId: string): Promise<void>
+  // Workspace-level theme overrides
+  getWorkspaceColorTheme(workspaceId: string): Promise<string | null>
+  setWorkspaceColorTheme(workspaceId: string, themeId: string | null): Promise<void>
+  getAllWorkspaceThemes(): Promise<Record<string, string | undefined>>
 
   // Theme change listeners (live updates when theme.json files change)
   onAppThemeChange(callback: (theme: import('@config/theme').ThemeOverrides | null) => void): () => void
@@ -1130,6 +1176,10 @@ export interface ElectronAPI {
   // Theme preferences sync across windows (mode, colorTheme, font)
   broadcastThemePreferences(preferences: { mode: string; colorTheme: string; font: string }): Promise<void>
   onThemePreferencesChange(callback: (preferences: { mode: string; colorTheme: string; font: string }) => void): () => void
+
+  // Workspace theme sync across windows
+  broadcastWorkspaceThemeChange(workspaceId: string, themeId: string | null): Promise<void>
+  onWorkspaceThemeChange(callback: (data: { workspaceId: string; themeId: string | null }) => void): () => void
 
   // Git operations
   getGitBranch(dirPath: string): Promise<string | null>
@@ -1188,8 +1238,10 @@ export interface UpdateInfo {
   latestVersion: string | null
   /** Download state */
   downloadState: 'idle' | 'downloading' | 'ready' | 'installing' | 'error'
-  /** Download progress (0-100) */
+  /** Download progress (0-100, or -1 for indeterminate on macOS) */
   downloadProgress: number
+  /** Whether this platform supports download progress events (false on macOS) */
+  supportsProgress: boolean
   /** Error message if download/install failed */
   error?: string
 }
@@ -1433,6 +1485,15 @@ export const getNavigationStateKey = (state: NavigationState): string => {
   if (state.navigator === 'settings') {
     return `settings:${state.subpage}`
   }
+  if (state.navigator === 'files') {
+    return 'files'
+  }
+  if (state.navigator === 'marketplace') {
+    if (state.details) {
+      return `marketplace/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
+    }
+    return 'marketplace'
+  }
   // Chats
   const f = state.filter
   let base: string
@@ -1475,7 +1536,7 @@ export const parseNavigationStateKey = (key: string): NavigationState | null => 
   if (key === 'settings') return { navigator: 'settings', subpage: 'user-profile' }
   if (key.startsWith('settings:')) {
     const subpage = key.slice(9) as SettingsSubpage
-    if (['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription'].includes(subpage)) {
+    if (['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription', 'sources', 'skills'].includes(subpage)) {
       return { navigator: 'settings', subpage }
     }
   }

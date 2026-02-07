@@ -18,7 +18,7 @@
 │                    CreatorFlow Electron                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │ File Manager│  │   webview   │  │    AI Service       │  │
-│  │  (Chonky)   │  │ OnlyOffice  │  │  (CraftAgent)       │  │
+│  │  (Chonky)   │  │ OnlyOffice  │  │  (CreatorFlowAgent)       │  │
 │  │             │  │   Editor    │  │                     │  │
 │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
 │         │                │                     │             │
@@ -652,10 +652,10 @@ function renderActionMenu() {
 
 ```typescript
 // apps/electron/src/main/onlyoffice/ai-handler.ts
-import { CraftAgent } from '@craft-agent/shared';
+import { CreatorFlowAgent } from '@creator-flow/shared';
 
 export async function handleOnlyOfficeAI(
-  agent: CraftAgent,
+  agent: CreatorFlowAgent,
   action: string,
   text: string,
   customPrompt?: string

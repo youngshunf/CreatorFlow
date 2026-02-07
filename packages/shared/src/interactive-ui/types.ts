@@ -65,9 +65,15 @@ export const FormFieldSchema = z.object({
     minLength: z.number().optional(),
     maxLength: z.number().optional(),
     pattern: z.string().optional(),
+    /** Custom validation error message */
+    message: z.string().optional(),
   }).optional(),
   /** Help text shown below field */
   helpText: z.string().optional(),
+  /** Whether field is disabled */
+  disabled: z.boolean().optional(),
+  /** Hint text shown below field (alternative to helpText) */
+  hint: z.string().optional(),
 });
 
 export type FormField = z.infer<typeof FormFieldSchema>;
@@ -85,6 +91,8 @@ export const TableColumnSchema = z.object({
   width: z.string().optional(),
   /** Text alignment */
   align: z.enum(['left', 'center', 'right']).optional(),
+  /** Column data type for rendering */
+  type: z.enum(['text', 'number', 'date', 'boolean', 'badge']).optional(),
 });
 
 export type TableColumn = z.infer<typeof TableColumnSchema>;
@@ -156,6 +164,8 @@ export const ConfirmPropsSchema = z.object({
   cancelLabel: z.string().optional(),
   /** Confirm button variant */
   confirmVariant: z.enum(['default', 'primary', 'destructive']).optional(),
+  /** Dialog variant (affects icon and styling) */
+  variant: z.enum(['default', 'info', 'warning', 'danger', 'success']).optional(),
 });
 
 export type ConfirmProps = z.infer<typeof ConfirmPropsSchema>;
@@ -177,6 +187,21 @@ export const FormPropsSchema = z.object({
 export type FormProps = z.infer<typeof FormPropsSchema>;
 
 /** Card - Information card */
+export const CardActionSchema = z.object({
+  /** Action ID (sent to agent) */
+  id: z.string(),
+  /** Display label */
+  label: z.string(),
+  /** Button variant */
+  variant: z.enum(['default', 'primary', 'secondary', 'destructive', 'ghost', 'outline']).optional(),
+  /** Icon (lucide icon name) */
+  icon: z.string().optional(),
+  /** Whether action is disabled */
+  disabled: z.boolean().optional(),
+});
+
+export type CardAction = z.infer<typeof CardActionSchema>;
+
 export const CardPropsSchema = z.object({
   /** Card title */
   title: z.string(),
@@ -185,42 +210,74 @@ export const CardPropsSchema = z.object({
   /** Image URL */
   image: z.string().optional(),
   /** Footer actions */
-  actions: z.array(ActionSchema).optional(),
+  actions: z.array(CardActionSchema).optional(),
   /** Card variant */
   variant: z.enum(['default', 'outlined', 'elevated']).optional(),
+  /** Footer text */
+  footer: z.string().optional(),
+  /** Metadata items */
+  metadata: z.array(z.object({
+    /** Icon (lucide icon name) */
+    icon: z.string().optional(),
+    /** Label text */
+    label: z.string().optional(),
+    /** Value text */
+    value: z.string(),
+  })).optional(),
 });
 
 export type CardProps = z.infer<typeof CardPropsSchema>;
 
 /** List - Ordered or unordered list */
+export const ListItemSchema = z.object({
+  /** Unique item ID */
+  id: z.string(),
+  /** Item label */
+  label: z.string(),
+  /** Item description */
+  description: z.string().optional(),
+  /** Icon (lucide icon name) */
+  icon: z.string().optional(),
+  /** Badge text */
+  badge: z.string().optional(),
+  /** Secondary text */
+  secondary: z.string().optional(),
+});
+
+export type ListItem = z.infer<typeof ListItemSchema>;
+
 export const ListPropsSchema = z.object({
   /** List title */
   title: z.string().optional(),
-  /** List items (can be strings or objects with label/description) */
-  items: z.array(z.union([
-    z.string(),
-    z.object({
-      label: z.string(),
-      description: z.string().optional(),
-      icon: z.string().optional(),
-    }),
-  ])),
+  /** List items */
+  items: z.array(ListItemSchema),
   /** Whether list is ordered (numbered) */
   ordered: z.boolean().optional(),
   /** Whether items are selectable */
   selectable: z.boolean().optional(),
+  /** Whether to use compact layout */
+  compact: z.boolean().optional(),
 });
 
 export type ListProps = z.infer<typeof ListPropsSchema>;
 
 /** DataTable - Tabular data display */
+export const TableRowSchema = z.object({
+  /** Unique row ID */
+  id: z.string(),
+  /** Row data keyed by column ID */
+  data: z.record(z.string(), z.unknown()),
+});
+
+export type TableRow = z.infer<typeof TableRowSchema>;
+
 export const DataTablePropsSchema = z.object({
   /** Table title */
   title: z.string().optional(),
   /** Column definitions */
   columns: z.array(TableColumnSchema),
-  /** Row data (array of objects) */
-  rows: z.array(z.record(z.string(), z.unknown())),
+  /** Row data (array of TableRow objects) */
+  rows: z.array(TableRowSchema),
   /** Whether rows are selectable */
   selectable: z.boolean().optional(),
   /** Whether to allow multiple selection */
@@ -241,6 +298,10 @@ export const ButtonPropsSchema = z.object({
   icon: z.string().optional(),
   /** Whether button is full width */
   fullWidth: z.boolean().optional(),
+  /** Whether button is disabled */
+  disabled: z.boolean().optional(),
+  /** Button size */
+  size: z.enum(['sm', 'md', 'lg', 'default', 'small', 'large']).optional(),
 });
 
 export type ButtonProps = z.infer<typeof ButtonPropsSchema>;

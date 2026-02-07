@@ -26,7 +26,7 @@ Include the following information:
 
 This policy applies to:
 - The CreatorFlow desktop application
-- The `@craft-agent/*` npm packages
+- The `@creator-flow/*` npm packages
 - Official CreatorFlow repositories
 
 ### Out of Scope

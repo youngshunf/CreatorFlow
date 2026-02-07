@@ -1,6 +1,6 @@
 {
   "name": "@creator-flow/shared",
-  "version": "0.3.1",
+  "version": "0.3.4",
   "license": "Apache-2.0",
   "description": "Shared business logic for CreatorFlow - agent, auth, config, credentials, MCP integration",
   "type": "module",
@@ -60,7 +60,9 @@
   },
   "dependencies": {
     "@creator-flow/core": "workspace:*",
+    "@creator-flow/mermaid": "workspace:*",
     "@isaacs/ttlcache": "^2.1.4",
+    "glob": "^11.0.0",
     "@leeoniya/ufuzzy": "^1.0.19",
     "bash-parser": "^0.5.0",
     "filtrex": "^3.1.0",

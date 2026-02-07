@@ -23,7 +23,7 @@ export function SkillsSettingsPage() {
 
   const handleSkillClick = React.useCallback((skill: LoadedSkill) => {
     // 使用 deep link 在新窗口打开详情
-    window.electronAPI.openUrl(`craftagents://skills/skill/${skill.slug}?window=focused`)
+    window.electronAPI.openUrl(`creatorflow://skills/skill/${skill.slug}?window=focused`)
   }, [])
 
   const handleDeleteSkill = React.useCallback(async (skillSlug: string) => {
@@ -77,7 +77,7 @@ export function SkillsSettingsPage() {
                 <SkillCard
                   key={skill.slug}
                   skill={skill}
-                  workspaceId={activeWorkspaceId}
+                  workspaceId={activeWorkspaceId ?? undefined}
                   onClick={() => handleSkillClick(skill)}
                   onDelete={() => handleDeleteSkill(skill.slug)}
                 />

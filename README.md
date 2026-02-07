@@ -40,7 +40,7 @@ Fully supported. Stdio-based MCP servers run as local subprocesses on your machi
 Yes. Paste an OpenAPI spec, some endpoint URLs, screenshots of docs, whatever you have. It figures it out and guides you through the rest.
 
 **APIs too? Not just MCPs?**
-Craft Agents connects to anything. We have it hooked up to a direct Postgres DB behind a jumpbox. Skills + Sources = magic.
+Creator Flow connects to anything. We have it hooked up to a direct Postgres DB behind a jumpbox. Skills + Sources = magic.
 
 **How do I import my Claude Code skills and MCPs?**
 Tell the agent you want to import your skills from Claude Code. It handles the migration.
@@ -74,8 +74,8 @@ irm https://agents.craft.do/install-app.ps1 | iex
 ### 从源码构建
 
 ```bash
-git clone https://github.com/lukilabs/craft-agents-oss.git
-cd craft-agents-oss
+git clone https://github.com/lukilabs/creator-flow-oss.git
+cd creator-flow-oss
 bun install
 bun run electron:start
 ```
@@ -147,7 +147,7 @@ bun run electron:start
 ## 架构
 
 ```
-craft-agent/
+creator-flow/
 ├── apps/
 │   └── electron/              # 桌面 GUI（主要）
 │       └── src/
@@ -158,7 +158,7 @@ craft-agent/
     ├── core/                  # 共享类型
     └── shared/                # 业务逻辑
         └── src/
-            ├── agent/         # CraftAgent，权限
+            ├── agent/         # CreatorFlowAgent，权限
             ├── auth/          # OAuth，令牌
             ├── config/        # 存储，偏好设置，主题
             ├── credentials/   # AES-256-GCM 加密存储
@@ -204,10 +204,10 @@ SLACK_OAUTH_CLIENT_SECRET=your-slack-client-secret
 
 ## 配置
 
-配置存储在 `~/.craft-agent/`：
+配置存储在 `~/.creator-flow/`：
 
 ```
-~/.craft-agent/
+~/.creator-flow/
 ├── config.json              # 主配置（工作区、认证类型）
 ├── credentials.enc          # 加密凭据（AES-256-GCM）
 ├── preferences.json         # 用户偏好设置
@@ -230,14 +230,14 @@ SLACK_OAUTH_CLIENT_SECRET=your-slack-client-secret
 
 ### 深度链接
 
-外部应用可以使用 `craftagents://` URL 导航：
+外部应用可以使用 `creatorflow://` URL 导航：
 
 ```
-craftagents://allChats                    # 所有聊天视图
-craftagents://allChats/chat/session123    # 特定聊天
-craftagents://settings                    # 设置
-craftagents://sources/source/github       # 数据源信息
-craftagents://action/new-chat             # 创建新聊天
+creatorflow://allChats                    # 所有聊天视图
+creatorflow://allChats/chat/session123    # 特定聊天
+creatorflow://settings                    # 设置
+creatorflow://sources/source/github       # 数据源信息
+creatorflow://action/new-chat             # 创建新聊天
 ```
 
 ### 多语言支持
@@ -254,7 +254,7 @@ function MyComponent() {
 }
 
 // 在非 React 代码中使用
-import { t } from '@craft-agent/shared/locale'
+import { t } from '@creator-flow/shared/locale'
 console.log(t('操作成功'))
 ```
 

@@ -883,11 +883,11 @@ export class CreatorFlowAgent {
 
       // Log mini agent mode details
       if (isMiniAgent) {
-        debug('[CraftAgent] 🤖 MINI AGENT mode - optimized for quick config edits');
-        debug('[CraftAgent] Mini agent optimizations:', {
+        debug('[CreatorFlow] 🤖 MINI AGENT mode - optimized for quick config edits');
+        debug('[CreatorFlow] Mini agent optimizations:', {
           model,
           tools: ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash'],
-          mcpServers: ['session', 'craft-agents-docs'],
+          mcpServers: ['session', 'creator-flow-docs'],
           thinking: 'disabled',
           systemPrompt: 'lean (no Claude Code preset)',
         });
@@ -953,7 +953,7 @@ export class CreatorFlowAgent {
           const toolsValue = isMiniAgent
             ? ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash']
             : { type: 'preset' as const, preset: 'claude_code' as const };
-          debug('[CraftAgent] 🔧 Tools configuration:', JSON.stringify(toolsValue));
+          debug('[CreatorFlow] 🔧 Tools configuration:', JSON.stringify(toolsValue));
           return toolsValue;
         })(),
         // Bypass SDK's built-in permission system - we handle all permissions via PreToolUse hook
@@ -1227,9 +1227,11 @@ export class CreatorFlowAgent {
               if (input.tool_name === 'Skill') {
                 const toolInput = input.tool_input as { skill?: string; args?: string };
                 if (toolInput.skill && !toolInput.skill.includes(':')) {
-                  // Short name detected - prepend workspaceId
-                  const workspaceId = this.config.workspace.id;
-                  const qualifiedSkill = `${workspaceId}:${toolInput.skill}`;
+                  // Short name detected - prepend workspace slug (folder name)
+                  // SDK expects: "workspaceSlug:skillSlug" format, NOT UUID
+                  const pathParts = this.workspaceRootPath.split('/').filter(Boolean);
+                  const workspaceSlug = pathParts[pathParts.length - 1] || this.config.workspace.id;
+                  const qualifiedSkill = `${workspaceSlug}:${toolInput.skill}`;
                   this.onDebug?.(`Skill tool: qualified "${toolInput.skill}" → "${qualifiedSkill}"`);
                   return {
                     continue: true,
@@ -1908,7 +1910,7 @@ export class CreatorFlowAgent {
           ));
 
         if (isConfigCorruption && !_isRetry) {
-          debug('[CraftAgent] Detected .claude.json corruption, repairing and retrying...');
+          debug('[CreatorFlow] Detected .claude.json corruption, repairing and retrying...');
           // Reset the once-per-process guard so ensureClaudeConfig() runs again
           // on the retry — it will repair the file before the next subprocess spawn
           resetClaudeConfigCheck();
@@ -2707,7 +2709,39 @@ Please continue the conversation naturally from where we left off.
       },
     };
 
-    const error = errorMap[errorCode];
+    let error = errorMap[errorCode];
+
+    // Check if this is an API provider error (internal server error, api_error, overloaded, etc.)
+    // These indicate issues on the provider side, not the user's side
+    if (errorCode === 'unknown' && actualError) {
+      const isProviderError =
+        actualError.errorType === 'api_error' ||
+        actualError.errorType === 'overloaded_error' ||
+        actualError.message.toLowerCase().includes('internal server error') ||
+        actualError.message.toLowerCase().includes('overloaded') ||
+        actualError.message.toLowerCase().includes('service unavailable');
+
+      if (isProviderError) {
+        error = {
+          code: 'provider_error',
+          title: 'AI Provider Error',
+          message: 'The AI provider is experiencing issues. This is not a problem with your setup.',
+          details: [
+            ...(actualError.requestId ? [`Request ID: ${actualError.requestId}`] : []),
+            'Check the provider status page for outages',
+            'Try again in a few minutes',
+            'Consider switching to a different AI provider in settings',
+          ],
+          actions: [
+            { key: 'r', label: 'Retry', action: 'retry' },
+            { key: 's', label: 'Settings', action: 'settings' },
+          ],
+          canRetry: true,
+          retryDelayMs: 5000,
+        };
+      }
+    }
+
     return {
       type: 'typed_error',
       error,
@@ -3139,7 +3173,7 @@ Please continue the conversation naturally from where we left off.
             if (toolUse?.name === 'Task' && toolUseId) {
               activeParentTools.delete(toolUseId);
               parentToChildren.delete(toolUseId);
-              console.log(`[CraftAgent] PARENT CLEANED UP (task-result): ${toolUseId}`);
+              console.log(`[CreatorFlow] PARENT CLEANED UP (task-result): ${toolUseId}`);
             }
 
             // Detect background task start - Task tool with agent_id in result

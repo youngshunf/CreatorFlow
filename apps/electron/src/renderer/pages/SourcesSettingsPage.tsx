@@ -23,7 +23,7 @@ export function SourcesSettingsPage() {
 
   const handleSourceClick = React.useCallback((source: LoadedSource) => {
     // 使用 deep link 在新窗口打开详情
-    window.electronAPI.openUrl(`craftagents://sources/source/${source.config.slug}?window=focused`)
+    window.electronAPI.openUrl(`creatorflow://sources/source/${source.config.slug}?window=focused`)
   }, [])
 
   const handleDeleteSource = React.useCallback(async (sourceSlug: string) => {

@@ -25,13 +25,20 @@ files:
   - dist/assets/bundled-apps/**/*
   # Include network interceptor for API error capture and MCP schema injection
   - packages/shared/src/network-interceptor.ts
-  # Exclude everything else from node_modules
+  # Include bundled Bun runtime (platform-specific, set by build script)
+  - vendor/bun/**/*
+  # Exclude everything from node_modules (will use extraResources for SDK)
   - "!node_modules/**/*"
-  # Include specific packages we need (these override the exclusion above)
-  - node_modules/@anthropic-ai/**/*
-  # Include SDK dependencies
-  - node_modules/zod/**/*
-  - node_modules/json-schema-to-ts/**/*
+
+# Include SDK as extraResources to bypass node_modules auto-exclusion
+# Since electron-builder v20.15.2, directories named "node_modules" are automatically excluded
+# Using extraResources with explicit from/to paths works around this limitation
+# See: https://github.com/electron-userland/electron-builder/issues/3104
+extraResources:
+  - from: node_modules/@anthropic-ai/claude-agent-sdk
+    to: app/node_modules/@anthropic-ai/claude-agent-sdk
+    filter:
+      - "**/*"
 
 extraMetadata:
   main: dist/main.cjs

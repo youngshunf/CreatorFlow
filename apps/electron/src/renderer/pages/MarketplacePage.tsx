@@ -98,7 +98,7 @@ export function MarketplacePage({
       setOriginalApps(appsResult.items)
       setOriginalSkillsTotal(skillsResult.total)
       setOriginalAppsTotal(appsResult.total)
-      setCategories(Array.isArray(categoriesResult) ? categoriesResult : categoriesResult.items || [])
+      setCategories(Array.isArray(categoriesResult) ? categoriesResult : [])
       setInstalledSkills(installedResult)
     } catch (err) {
       console.error('Failed to load marketplace data:', err)

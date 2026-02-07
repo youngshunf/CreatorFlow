@@ -1,3 +1,4 @@
+export * from './types.ts';
 export * from './callback-page.ts';
 export * from './callback-server.ts';
 export * from './claude-oauth.ts';
@@ -8,4 +9,4 @@ export * from './slack-oauth.ts';
 export * from './microsoft-oauth.ts';
 export * from './oauth.ts';
 export * from './pkce.ts';
-export * from './state.ts';
+export { getAuthState, getSetupNeeds, type MigrationInfo, type TokenResult, _resetRefreshMutex } from './state.ts';

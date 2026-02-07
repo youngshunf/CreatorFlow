@@ -1,6 +1,6 @@
 {
   "name": "creator-flow",
-  "version": "0.3.1",
+  "version": "0.3.4",
   "description": "AI创作操作系统 - 面向自媒体创作者的智能创作平台",
   "type": "module",
   "private": true,
@@ -31,7 +31,7 @@
     "electron:dev:terminal": "bun run scripts/electron-dev.ts --terminal",
     "electron:dev:win": "bun run electron:clean:vite:win && bun run electron:build:resources:win && concurrently -k \"bun run electron:dev:vite\" \"bun run electron:dev:main:win\" \"bun run electron:dev:preload\" \"bun run electron:dev:electron:win\"",
     "electron:dev:menu": "bash scripts/electron-dev.sh",
-    "electron:dev:logs": "pgrep -f 'tail -f.*Craft Agents/main.log' > /dev/null || osascript -e \"tell application \\\"Terminal\\\" to do script \\\"$PWD/scripts/tail-electron-logs.sh\\\"\"",
+    "electron:dev:logs": "pgrep -f 'tail -f.*Creator Flow/main.log' > /dev/null || osascript -e \"tell application \\\"Terminal\\\" to do script \\\"$PWD/scripts/tail-electron-logs.sh\\\"\"",
     "sync-secrets": "bash scripts/sync-secrets.sh",
     "fresh-start": "bun run scripts/fresh-start.ts",
     "fresh-start:token": "bun run scripts/fresh-start.ts --token-only",

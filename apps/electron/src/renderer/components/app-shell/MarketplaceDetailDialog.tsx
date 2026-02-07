@@ -146,6 +146,8 @@ export function MarketplaceDetailDialog({
           // Update installedInfo to reflect installed state
           setInstalledInfo({
             skillId: itemId!,
+            name: skill?.name || itemId!,
+            description: skill?.description || '',
             version: progress.skillId ? 'latest' : 'latest',
             path: '',
             hasUpdate: false,
@@ -203,7 +205,7 @@ export function MarketplaceDetailDialog({
   }
 
   const item = type === 'skill' ? skill : app
-  const versions = type === 'skill' ? skillVersions : appVersions
+  const versions: Array<{ version: string; changelog: string | null; is_latest: boolean; published_at: string }> = type === 'skill' ? skillVersions : appVersions
   const latestVersion = versions?.find(v => v.is_latest)
   // Use item.latest_version as fallback if no version found in versions array
   const displayVersion = latestVersion?.version || item?.latest_version
@@ -387,7 +389,7 @@ export function MarketplaceDetailDialog({
                     <div className="space-y-2">
                       {versions.slice(1, 5).map((version) => (
                         <div
-                          key={'version' in version ? version.version : version.version}
+                          key={version.version}
                           className="p-3 rounded-lg bg-foreground/[0.02] border border-foreground/5"
                         >
                           <div className="flex items-center justify-between">

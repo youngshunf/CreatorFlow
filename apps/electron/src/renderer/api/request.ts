@@ -99,7 +99,7 @@ class RequestClient {
       }
 
       // 如果后端返回标准结构，取 data；否则直接返回整个 body (兼容性)
-      return (res.code === 200 && res.data !== undefined) ? res.data : res;
+      return (res.code === 200 && res.data !== undefined) ? res.data as T : res as unknown as T;
 
     } catch (error: any) {
       console.error('[Request] Error:', error.message || error);

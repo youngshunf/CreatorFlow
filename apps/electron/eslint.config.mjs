@@ -44,8 +44,8 @@ export default [
       '@typescript-eslint': tsPlugin,
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
-      // Custom plugin for Craft Agent rules
-      'craft-agent': {
+      // Custom plugin for CreatorFlow rules
+      'creator-flow': {
         rules: {
           'no-direct-navigation-state': noDirectNavigationState,
           'no-localstorage': noLocalStorage,
@@ -80,9 +80,9 @@ export default [
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
-      // Custom Craft Agent rules
-      'craft-agent/no-direct-navigation-state': 'error',
-      'craft-agent/no-localstorage': 'warn',
+      // Custom CreatorFlow rules
+      'creator-flow/no-direct-navigation-state': 'error',
+      'creator-flow/no-localstorage': 'warn',
 
       // Custom platform detection rule
       'craft-platform/no-direct-platform-check': 'error',

@@ -51,7 +51,7 @@ export default function LabelsSettingsPage() {
   // Secondary action: open the labels config file directly in system editor
   const editFileAction = rootPath ? {
     label: 'Edit File',
-    filePath: `${rootPath}/labels/config.json`,
+    onClick: () => window.electronAPI.openFile(`${rootPath}/labels/config.json`),
   } : undefined
 
   return (

@@ -215,7 +215,7 @@ export function markSkillModified(skillDir: string): void {
     // Increment local version
     const parts = meta.localVersion.split('-local.');
     const baseVersion = parts[0];
-    const localNum = parts.length > 1 ? parseInt(parts[1], 10) + 1 : 1;
+    const localNum = parts.length > 1 ? parseInt(parts[1]!, 10) + 1 : 1;
     
     meta.localVersion = `${baseVersion}-local.${localNum}`;
     meta.isModified = true;
@@ -263,11 +263,11 @@ export function getInstalledSkills(
         const content = readFileSync(skillFile, 'utf-8');
         const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
         if (frontmatterMatch) {
-          const frontmatter = frontmatterMatch[1];
+          const frontmatter = frontmatterMatch[1]!;
           const nameMatch = frontmatter.match(/name:\s*(.+)/);
           const descMatch = frontmatter.match(/description:\s*(.+)/);
-          if (nameMatch) name = nameMatch[1].trim();
-          if (descMatch) description = descMatch[1].trim();
+          if (nameMatch) name = nameMatch[1]!.trim();
+          if (descMatch) description = descMatch[1]!.trim();
         }
       } catch {
         // Ignore parsing errors
@@ -281,7 +281,7 @@ export function getInstalledSkills(
           try {
             const configContent = readFileSync(configPath, 'utf-8');
             const versionMatch = configContent.match(/^version:\s*(.+)$/m);
-            if (versionMatch) version = versionMatch[1].trim();
+            if (versionMatch) version = versionMatch[1]!.trim();
           } catch {
             // Ignore parsing errors
           }

@@ -37,11 +37,10 @@ function loadEnvFile(): void {
 // Get build-time defines for esbuild (OAuth, Sentry DSN, environment)
 // NOTE: Sentry source map upload is intentionally disabled for the main process.
 // To enable in the future, add @sentry/esbuild-plugin. See apps/electron/CLAUDE.md.
+// NOTE: Google OAuth credentials are NOT baked into the build - users provide their own
+// via source config. See README_FOR_OSS.md for setup instructions.
 function getBuildDefines(): string[] {
-  // OAuth and Sentry credentials from .env
-  const credentialVars = [
-    "GOOGLE_OAUTH_CLIENT_ID",
-    "GOOGLE_OAUTH_CLIENT_SECRET",
+  const definedVars = [
     "SLACK_OAUTH_CLIENT_ID",
     "SLACK_OAUTH_CLIENT_SECRET",
     "MICROSOFT_OAUTH_CLIENT_ID",
@@ -49,7 +48,7 @@ function getBuildDefines(): string[] {
     "SENTRY_ELECTRON_INGEST_URL",
   ];
 
-  const defines = credentialVars.map((varName) => {
+  const defines = definedVars.map((varName) => {
     const value = process.env[varName] || "";
     return `--define:process.env.${varName}="${value}"`;
   });

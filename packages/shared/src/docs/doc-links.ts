@@ -22,6 +22,7 @@ export type DocFeature =
   | 'themes'
   | 'app-settings'
   | 'preferences'
+  | 'user-profile'
 
 export interface DocInfo {
   /** Path relative to DOC_BASE_URL */
@@ -104,6 +105,12 @@ export const DOCS: Record<DocFeature, DocInfo> = {
     title: 'Preferences',
     summary:
       'Personal preferences like your name, timezone, and language that help the agent personalize responses. Stored in ~/.creator-flow/preferences.json.',
+  },
+  'user-profile': {
+    path: '/reference/user-profile',
+    title: 'User Profile',
+    summary:
+      'Manage your user profile information including display name, avatar, and account settings.',
   },
 }
 

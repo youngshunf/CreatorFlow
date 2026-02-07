@@ -93,9 +93,9 @@ if (isDebugMode) {
   setPerfEnabled(true)
 }
 
-// Custom URL scheme for deeplinks (e.g., craftagents://auth-complete)
-// Supports multi-instance dev: CRAFT_DEEPLINK_SCHEME env var (craftagents1, craftagents2, etc.)
-const DEEPLINK_SCHEME = process.env.CRAFT_DEEPLINK_SCHEME || 'craftagents'
+// Custom URL scheme for deeplinks (e.g., creatorflow://auth-complete)
+// Supports multi-instance dev: CREATORFLOW_DEEPLINK_SCHEME env var (creatorflow1, creatorflow2, etc.)
+const DEEPLINK_SCHEME = process.env.CREATORFLOW_DEEPLINK_SCHEME || 'creatorflow'
 
 let windowManager: WindowManager | null = null
 let sessionManager: SessionManager | null = null
@@ -107,7 +107,7 @@ let pendingDeepLink: string | null = null
 // Supports multi-instance dev: CRAFT_APP_NAME env var (e.g., "CreatorFlow [1]")
 app.setName(process.env.CRAFT_APP_NAME || '智小芽')
 
-// Register as default protocol client for craftagents:// URLs
+// Register as default protocol client for creatorflow:// URLs
 // This must be done before app.whenReady() on some platforms
 if (process.defaultApp) {
   // Development mode: need to pass the app path
@@ -317,7 +317,7 @@ app.whenReady().then(async () => {
     // 通知用户初始化失败（非阻塞）
     setTimeout(() => {
       if (windowManager) {
-        windowManager.sendToAll('system:notification', {
+        windowManager.broadcastToAll('system:notification', {
           type: 'error',
           title: '全局技能初始化失败',
           message: '部分功能可能不可用，请检查日志或重新安装应用',
@@ -329,7 +329,7 @@ app.whenReady().then(async () => {
   // Ensure default permissions file exists (copies bundled default.json on first run)
   ensureDefaultPermissions()
 
-  // Seed tool icons to ~/.craft-agent/tool-icons/ (copies bundled SVGs on first run)
+  // Seed tool icons to ~/.creator-flow/tool-icons/ (copies bundled SVGs on first run)
   ensureToolIcons()
 
   // Sync marketplace metadata in background (non-blocking, 4-hour interval)

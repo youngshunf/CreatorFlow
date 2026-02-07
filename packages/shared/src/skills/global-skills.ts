@@ -344,6 +344,7 @@ function loadSkillFromDir(skillDir: string, slug: string): LoadedSkill | null {
       content: body,
       iconPath,
       path: skillDir,
+      source: 'global' as const,
     };
   } catch (error) {
     debug(`[loadSkillFromDir] 加载技能 ${slug} 失败:`, error);

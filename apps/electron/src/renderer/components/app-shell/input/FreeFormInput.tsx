@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/styled-dropdown'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { PATH_SEP, getPathBasename } from '@/lib/platform'
+import { isMac, PATH_SEP, getPathBasename } from '@/lib/platform'
 import { applySmartTypography } from '@/lib/smart-typography'
 import { AttachmentPreview } from '../AttachmentPreview'
 import { MODELS as FALLBACK_MODELS, getModelShortName, getModelContextWindow, isClaudeModel } from '@config/models'
@@ -81,6 +81,9 @@ function formatTokenCount(tokens: number): string {
   return tokens.toString()
 }
 
+/** Platform-specific modifier key for keyboard shortcuts */
+const cmdKey = isMac ? '⌘' : 'Ctrl'
+
 /** Default rotating placeholders for onboarding/empty state */
 const DEFAULT_PLACEHOLDERS_ZH = [
   '你想做什么？',
@@ -96,6 +99,8 @@ const DEFAULT_PLACEHOLDERS_EN = [
   'Type @ to mention files, folders, or skills',
   'Type # to apply labels to this conversation',
   'Press Shift + Return to add a new line',
+  `Press ${cmdKey} + B to toggle the sidebar`,
+  `Press ${cmdKey} + . for focus mode`,
 ]
 
 /** Fisher-Yates shuffle — returns a new array in random order */
@@ -267,6 +272,14 @@ export function FreeFormInput({
     if (!appShellCtx || !workspaceId) return null
     return appShellCtx.workspaces.find(w => w.id === workspaceId)?.rootPath ?? null
   }, [appShellCtx, workspaceId])
+
+  // Compute workspace slug from rootPath for SDK skill qualification
+  // SDK expects "workspaceSlug:skillSlug" format, NOT UUID
+  const workspaceSlug = React.useMemo(() => {
+    if (!workspaceRootPath) return workspaceId // Fallback to ID if no path
+    const pathParts = workspaceRootPath.split('/').filter(Boolean)
+    return pathParts[pathParts.length - 1] || workspaceId
+  }, [workspaceRootPath, workspaceId])
 
   // Shuffle placeholder order once per mount so each session feels fresh
   const effectivePlaceholder = placeholder ?? defaultPlaceholders
@@ -718,7 +731,8 @@ export function FreeFormInput({
     sources,
     basePath: workingDirectory,
     onSelect: handleMentionSelect,
-    workspaceId,
+    // Use workspace slug (not UUID) for SDK skill qualification
+    workspaceId: workspaceSlug,
   })
 
   // Inline label menu hook (for #labels)
@@ -1297,7 +1311,7 @@ export function FreeFormInput({
             systemPromptPreset={addLabelEditConfig.systemPromptPreset}
             secondaryAction={workspaceRootPath ? {
               label: 'Edit File',
-              filePath: `${workspaceRootPath}/labels/config.json`,
+              onClick: () => window.electronAPI.openFile(`${workspaceRootPath}/labels/config.json`),
             } : undefined}
             side="top"
             align="start"

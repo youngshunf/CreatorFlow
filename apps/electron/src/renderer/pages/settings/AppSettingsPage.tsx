@@ -294,7 +294,18 @@ export default function AppSettingsPage() {
                     <span className="text-muted-foreground">
                       {updateChecker.updateInfo?.currentVersion ?? t('加载中...')}
                     </span>
-                    {updateChecker.updateAvailable && updateChecker.updateInfo?.latestVersion && (
+                    {/* 下载进度指示器 */}
+                    {updateChecker.isDownloading && updateChecker.updateInfo?.latestVersion && (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <Spinner className="w-3 h-3" />
+                        {updateChecker.isIndeterminate ? (
+                          <span>{t('正在下载')} v{updateChecker.updateInfo.latestVersion}...</span>
+                        ) : (
+                          <span>{t('正在下载')} v{updateChecker.updateInfo.latestVersion} ({updateChecker.downloadProgress}%)</span>
+                        )}
+                      </div>
+                    )}
+                    {updateChecker.updateAvailable && !updateChecker.isDownloading && updateChecker.updateInfo?.latestVersion && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -322,13 +333,13 @@ export default function AppSettingsPage() {
                     )}
                   </Button>
                 </SettingsRow>
-                {updateChecker.isReadyToInstall && (
+                {updateChecker.isReadyToInstall && updateChecker.updateInfo?.latestVersion && (
                   <SettingsRow label={t('安装更新')}>
                     <Button
                       size="sm"
                       onClick={updateChecker.installUpdate}
                     >
-                      {t('重启并更新')}
+                      {t('重启并更新到')} v{updateChecker.updateInfo.latestVersion}
                     </Button>
                   </SettingsRow>
                 )}

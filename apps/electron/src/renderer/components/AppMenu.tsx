@@ -11,42 +11,21 @@ import {
   StyledDropdownMenuSubTrigger,
   StyledDropdownMenuSubContent,
 } from "@/components/ui/styled-dropdown"
-import {
-  Settings,
-  Keyboard,
-  User,
-  ChevronLeft,
-  ChevronRight,
-  HelpCircle,
-  ExternalLink,
-  Undo2,
-  Redo2,
-  Scissors,
-  Copy,
-  ClipboardPaste,
-  TextSelect,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Minimize2,
-  Maximize2,
-  LogOut,
-  Bug,
-  Download,
-  Wrench,
-  Pencil,
-  Eye,
-  AppWindow,
-} from "lucide-react"
+import * as Icons from "lucide-react"
 import { CreatorFlowSymbol } from "./icons/CreatorFlowSymbol"
 import { SquarePenRounded } from "./icons/SquarePenRounded"
 import { TopBarButton } from "./ui/TopBarButton"
 import { useT } from "@/context/LocaleContext"
+import { SETTINGS_ITEMS } from "../../shared/menu-schema"
+import type { SettingsMenuItem } from "../../shared/menu-schema"
+import { SETTINGS_ICONS } from "./icons/SettingsIcons"
 
 interface AppMenuProps {
   onNewChat: () => void
   onNewWindow?: () => void
   onOpenSettings: () => void
+  /** Navigate to a specific settings subpage */
+  onOpenSettingsSubpage: (subpage: SettingsMenuItem['id']) => void
   onOpenKeyboardShortcuts: () => void
   onOpenStoredUserPreferences: () => void
   onBack?: () => void
@@ -54,7 +33,7 @@ interface AppMenuProps {
   canGoBack?: boolean
   canGoForward?: boolean
   onToggleSidebar?: () => void
-  isSidebarVisible?: boolean
+  onToggleFocusMode?: () => void
 }
 
 /**
@@ -77,12 +56,15 @@ export function AppMenu({
   onNewChat,
   onNewWindow,
   onOpenSettings,
+  onOpenSettingsSubpage,
   onOpenKeyboardShortcuts,
   onOpenStoredUserPreferences,
   onBack,
   onForward,
   canGoBack = true,
   canGoForward = true,
+  onToggleSidebar,
+  onToggleFocusMode,
 }: AppMenuProps) {
   const t = useT()
   const [isDebugMode, setIsDebugMode] = useState(false)
@@ -110,7 +92,7 @@ export function AppMenu({
           </StyledDropdownMenuItem>
           {onNewWindow && (
             <StyledDropdownMenuItem onClick={onNewWindow}>
-              <AppWindow className="h-3.5 w-3.5" />
+              <Icons.AppWindow className="h-3.5 w-3.5" />
               {t('新建窗口')}
               <DropdownMenuShortcut className="pl-6">{modKey}⇧N</DropdownMenuShortcut>
             </StyledDropdownMenuItem>
@@ -121,39 +103,39 @@ export function AppMenu({
           {/* Edit submenu */}
           <DropdownMenuSub>
             <StyledDropdownMenuSubTrigger>
-              <Pencil className="h-3.5 w-3.5" />
+              <Icons.Pencil className="h-3.5 w-3.5" />
               {t('编辑')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuUndo()}>
-                <Undo2 className="h-3.5 w-3.5" />
+                <Icons.Undo2 className="h-3.5 w-3.5" />
                 {t('撤销')}
                 <DropdownMenuShortcut className="pl-6">{modKey}Z</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuRedo()}>
-                <Redo2 className="h-3.5 w-3.5" />
+                <Icons.Redo2 className="h-3.5 w-3.5" />
                 {t('重做')}
                 <DropdownMenuShortcut className="pl-6">{modKey}⇧Z</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuSeparator />
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuCut()}>
-                <Scissors className="h-3.5 w-3.5" />
+                <Icons.Scissors className="h-3.5 w-3.5" />
                 {t('剪切')}
                 <DropdownMenuShortcut className="pl-6">{modKey}X</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuCopy()}>
-                <Copy className="h-3.5 w-3.5" />
+                <Icons.Copy className="h-3.5 w-3.5" />
                 {t('复制')}
                 <DropdownMenuShortcut className="pl-6">{modKey}C</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuPaste()}>
-                <ClipboardPaste className="h-3.5 w-3.5" />
+                <Icons.ClipboardPaste className="h-3.5 w-3.5" />
                 {t('粘贴')}
                 <DropdownMenuShortcut className="pl-6">{modKey}V</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuSeparator />
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuSelectAll()}>
-                <TextSelect className="h-3.5 w-3.5" />
+                <Icons.TextSelect className="h-3.5 w-3.5" />
                 {t('全选')}
                 <DropdownMenuShortcut className="pl-6">{modKey}A</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
@@ -163,22 +145,22 @@ export function AppMenu({
           {/* View submenu */}
           <DropdownMenuSub>
             <StyledDropdownMenuSubTrigger>
-              <Eye className="h-3.5 w-3.5" />
+              <Icons.Eye className="h-3.5 w-3.5" />
               {t('视图')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuZoomIn()}>
-                <ZoomIn className="h-3.5 w-3.5" />
+                <Icons.ZoomIn className="h-3.5 w-3.5" />
                 {t('放大')}
                 <DropdownMenuShortcut className="pl-6">{modKey}+</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuZoomOut()}>
-                <ZoomOut className="h-3.5 w-3.5" />
+                <Icons.ZoomOut className="h-3.5 w-3.5" />
                 {t('缩小')}
                 <DropdownMenuShortcut className="pl-6">{modKey}-</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuZoomReset()}>
-                <RotateCcw className="h-3.5 w-3.5" />
+                <Icons.RotateCcw className="h-3.5 w-3.5" />
                 {t('重置缩放')}
                 <DropdownMenuShortcut className="pl-6">{modKey}0</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
@@ -188,17 +170,17 @@ export function AppMenu({
           {/* Window submenu */}
           <DropdownMenuSub>
             <StyledDropdownMenuSubTrigger>
-              <AppWindow className="h-3.5 w-3.5" />
+              <Icons.AppWindow className="h-3.5 w-3.5" />
               {t('窗口')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuMinimize()}>
-                <Minimize2 className="h-3.5 w-3.5" />
+                <Icons.Minimize2 className="h-3.5 w-3.5" />
                 {t('最小化')}
                 <DropdownMenuShortcut className="pl-6">{modKey}M</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={() => window.electronAPI.menuMaximize()}>
-                <Maximize2 className="h-3.5 w-3.5" />
+                <Icons.Maximize2 className="h-3.5 w-3.5" />
                 {t('最大化')}
               </StyledDropdownMenuItem>
             </StyledDropdownMenuSubContent>
@@ -206,35 +188,50 @@ export function AppMenu({
 
           <StyledDropdownMenuSeparator />
 
-          {/* Settings submenu */}
+          {/* Settings submenu - items from shared schema */}
           <DropdownMenuSub>
             <StyledDropdownMenuSubTrigger>
-              <Settings className="h-3.5 w-3.5" />
+              <Icons.Settings className="h-3.5 w-3.5" />
               {t('设置')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
+              {/* Main settings entry with keyboard shortcut */}
               <StyledDropdownMenuItem onClick={onOpenSettings}>
-                <Wrench className="h-3.5 w-3.5" />
+                <Icons.Wrench className="h-3.5 w-3.5" />
                 {t('设置...')}
                 <DropdownMenuShortcut className="pl-6">{modKey},</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={onOpenStoredUserPreferences}>
-                <User className="h-3.5 w-3.5" />
+                <Icons.User className="h-3.5 w-3.5" />
                 {t('已存储的用户偏好')}
               </StyledDropdownMenuItem>
+              <StyledDropdownMenuSeparator />
+              {/* All settings subpages from shared schema */}
+              {SETTINGS_ITEMS.map((item) => {
+                const Icon = SETTINGS_ICONS[item.id]
+                return (
+                  <StyledDropdownMenuItem
+                    key={item.id}
+                    onClick={() => onOpenSettingsSubpage(item.id)}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {t(item.label)}
+                  </StyledDropdownMenuItem>
+                )
+              })}
             </StyledDropdownMenuSubContent>
           </DropdownMenuSub>
 
           {/* Help submenu */}
           <DropdownMenuSub>
             <StyledDropdownMenuSubTrigger>
-              <HelpCircle className="h-3.5 w-3.5" />
+              <Icons.HelpCircle className="h-3.5 w-3.5" />
               {t('帮助')}
             </StyledDropdownMenuSubTrigger>
             <StyledDropdownMenuSubContent>
               {/* Documentation link disabled - external service removed */}
               <StyledDropdownMenuItem onClick={onOpenKeyboardShortcuts}>
-                <Keyboard className="h-3.5 w-3.5" />
+                <Icons.Keyboard className="h-3.5 w-3.5" />
                 {t('键盘快捷键')}
                 <DropdownMenuShortcut className="pl-6">{modKey}/</DropdownMenuShortcut>
               </StyledDropdownMenuItem>
@@ -246,21 +243,21 @@ export function AppMenu({
             <>
               <DropdownMenuSub>
                 <StyledDropdownMenuSubTrigger>
-                  <Bug className="h-3.5 w-3.5" />
+                  <Icons.Bug className="h-3.5 w-3.5" />
                   {t('调试')}
                 </StyledDropdownMenuSubTrigger>
                 <StyledDropdownMenuSubContent>
                   <StyledDropdownMenuItem onClick={() => window.electronAPI.checkForUpdates()}>
-                    <Download className="h-3.5 w-3.5" />
+                    <Icons.Download className="h-3.5 w-3.5" />
                     {t('检查更新')}
                   </StyledDropdownMenuItem>
                   <StyledDropdownMenuItem onClick={() => window.electronAPI.installUpdate()}>
-                    <Download className="h-3.5 w-3.5" />
+                    <Icons.Download className="h-3.5 w-3.5" />
                     {t('安装更新')}
                   </StyledDropdownMenuItem>
                   <StyledDropdownMenuSeparator />
                   <StyledDropdownMenuItem onClick={() => window.electronAPI.menuToggleDevTools()}>
-                    <Bug className="h-3.5 w-3.5" />
+                    <Icons.Bug className="h-3.5 w-3.5" />
                     {t('切换开发者工具')}
                     <DropdownMenuShortcut className="pl-6">{isMac ? '⌥⌘I' : 'Ctrl+Shift+I'}</DropdownMenuShortcut>
                   </StyledDropdownMenuItem>
@@ -273,7 +270,7 @@ export function AppMenu({
 
           {/* Quit */}
           <StyledDropdownMenuItem onClick={() => window.electronAPI.menuQuit()}>
-            <LogOut className="h-3.5 w-3.5" />
+            <Icons.LogOut className="h-3.5 w-3.5" />
             {t('退出智小芽')}
             <DropdownMenuShortcut className="pl-6">{modKey}Q</DropdownMenuShortcut>
           </StyledDropdownMenuItem>
@@ -289,7 +286,7 @@ export function AppMenu({
         disabled={!canGoBack}
         aria-label="Go back"
       >
-        <ChevronLeft className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
+        <Icons.ChevronLeft className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
       </TopBarButton>
 
       {/* Forward Navigation */}
@@ -298,7 +295,7 @@ export function AppMenu({
         disabled={!canGoForward}
         aria-label="Go forward"
       >
-        <ChevronRight className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
+        <Icons.ChevronRight className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
       </TopBarButton>
     </div>
   )

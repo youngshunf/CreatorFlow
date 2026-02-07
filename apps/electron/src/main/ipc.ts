@@ -12,8 +12,8 @@ import { registerOnboardingHandlers } from './onboarding'
 import { registerFileManagerIpc } from './file-manager'
 import { IPC_CHANNELS, type FileAttachment, type StoredAttachment, type AuthType, type ApiSetupInfo, type SendMessageOptions } from '../shared/types'
 import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@creator-flow/shared/utils'
-import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, type Workspace, SUMMARIZATION_MODEL } from '@creator-flow/shared/config'
-import { getSessionAttachmentsPath } from '@creator-flow/shared/sessions'
+import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, resolveModelId, type Workspace, SUMMARIZATION_MODEL } from '@creator-flow/shared/config'
+import { getSessionAttachmentsPath, validateSessionId } from '@creator-flow/shared/sessions'
 import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@creator-flow/shared/sources'
 import { isValidThinkingLevel } from '@creator-flow/shared/agent/thinking-levels'
 import { getCredentialManager } from '@creator-flow/shared/credentials'
@@ -281,7 +281,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Open a session in a new window
   ipcMain.handle(IPC_CHANNELS.OPEN_SESSION_IN_NEW_WINDOW, async (_event, workspaceId: string, sessionId: string) => {
     // Build deep link for session navigation
-    const deepLink = `craftagents://allChats/chat/${sessionId}`
+    const deepLink = `creatorflow://allChats/chat/${sessionId}`
     windowManager.createWindow({
       workspaceId,
       focused: true,
@@ -314,6 +314,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   ipcMain.handle(IPC_CHANNELS.SWITCH_WORKSPACE, async (event, workspaceId: string) => {
     const end = perf.start('ipc.switchWorkspace', { workspaceId })
 
+    // Get the old workspace ID before updating
+    const oldWorkspaceId = windowManager.getWorkspaceForWindow(event.sender.id)
+
     // Update the window's workspace mapping
     const updated = windowManager.updateWindowWorkspace(event.sender.id, workspaceId)
 
@@ -324,6 +327,15 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       if (win) {
         windowManager.registerWindow(win, workspaceId)
         windowLog.info(`Re-registered window ${event.sender.id} for workspace ${workspaceId}`)
+      }
+    }
+
+    // Clear activeViewingSession for old workspace if no other windows are viewing it
+    // This ensures read/unread state is correct after workspace switch
+    if (oldWorkspaceId && oldWorkspaceId !== workspaceId) {
+      const otherWindows = windowManager.getAllWindowsForWorkspace(oldWorkspaceId)
+      if (otherWindows.length === 0) {
+        sessionManager.clearActiveViewingSession(oldWorkspaceId)
       }
     }
 
@@ -662,6 +674,10 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         throw new Error(`Workspace not found: ${workspaceId}`)
       }
       const workspaceRootPath = workspace.rootPath
+
+      // SECURITY: Validate sessionId to prevent path traversal attacks
+      // This must happen before using sessionId in any file path operations
+      validateSessionId(sessionId)
 
       // Create attachments directory if it doesn't exist
       const attachmentsDir = getSessionAttachmentsPath(workspaceRootPath, sessionId)
@@ -1052,16 +1068,16 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return getDismissedUpdateVersion()
   })
 
-  // Shell operations - open URL in external browser (or handle craftagents:// internally)
+  // Shell operations - open URL in external browser (or handle creatorflow:// internally)
   ipcMain.handle(IPC_CHANNELS.OPEN_URL, async (_event, url: string) => {
     ipcLog.info('[OPEN_URL] Received request:', url)
     try {
       // Validate URL format
       const parsed = new URL(url)
 
-      // Handle craftagents:// URLs internally via deep link handler
+      // Handle creatorflow:// URLs internally via deep link handler
       // This ensures ?window= params work correctly for "Open in New Window"
-      if (parsed.protocol === 'craftagents:') {
+      if (parsed.protocol === 'creatorflow:') {
         ipcLog.info('[OPEN_URL] Handling as deep link')
         const { handleDeepLink } = await import('./deep-link')
         const result = await handleDeepLink(url, windowManager)
@@ -1357,21 +1373,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       if (authType === 'api_key') {
         await manager.setApiKey(credential)
       } else if (authType === 'oauth_token') {
-        // Import full credentials including refresh token and expiry from Claude CLI
-        const { getExistingClaudeCredentials } = await import('@creator-flow/shared/auth')
-        const cliCreds = getExistingClaudeCredentials()
-        if (cliCreds) {
-          await manager.setClaudeOAuthCredentials({
-            accessToken: cliCreds.accessToken,
-            refreshToken: cliCreds.refreshToken,
-            expiresAt: cliCreds.expiresAt,
-          })
-          ipcLog.info('Saved Claude OAuth credentials with refresh token')
-        } else {
-          // Fallback to just saving the access token
-          await manager.setClaudeOAuth(credential)
-          ipcLog.info('Saved Claude OAuth access token only')
-        }
+        // Save the access token (refresh token and expiry are managed by the OAuth flow)
+        await manager.setClaudeOAuth(credential)
+        ipcLog.info('Saved Claude OAuth access token')
       }
     } else if (credential === '') {
       // Empty string means user explicitly cleared the credential
@@ -1434,7 +1438,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         testModel = userModel
       } else if (!trimmedUrl || trimmedUrl.includes('openrouter.ai') || trimmedUrl.includes('ai-gateway.vercel.sh')) {
         // Anthropic, OpenRouter, and Vercel are all Anthropic-compatible — same model IDs
-        testModel = SUMMARIZATION_MODEL
+        testModel = resolveModelId(SUMMARIZATION_MODEL)
       } else {
         // Custom endpoint with no model specified — can't test without knowing the model
         return { success: false, error: 'Please specify a model for custom endpoints' }
@@ -1492,7 +1496,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         lowerMsg.includes('tool use is not supported') ||
         (lowerMsg.includes('tool') && lowerMsg.includes('not') && lowerMsg.includes('support'))
       if (isToolSupportError) {
-        const displayModel = modelName?.trim() || SUMMARIZATION_MODEL
+        const displayModel = modelName?.trim() || resolveModelId(SUMMARIZATION_MODEL)
         return { success: false, error: `Model "${displayModel}" does not support tool/function calling. CreatorFlow requires a model with tool support (e.g. Claude, GPT-4, Gemini).` }
       }
 
@@ -2138,17 +2142,17 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Skills (Workspace-scoped)
   // ============================================================
 
-  // Get all skills for a workspace
-  ipcMain.handle(IPC_CHANNELS.SKILLS_GET, async (_event, workspaceId: string) => {
-    ipcLog.info(`SKILLS_GET: Loading skills for workspace: ${workspaceId}`)
+  // Get all skills for a workspace (and optionally project-level skills from workingDirectory)
+  ipcMain.handle(IPC_CHANNELS.SKILLS_GET, async (_event, workspaceId: string, workingDirectory?: string) => {
+    ipcLog.info(`SKILLS_GET: Loading skills for workspace: ${workspaceId}${workingDirectory ? `, workingDirectory: ${workingDirectory}` : ''}`)
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) {
       ipcLog.error(`SKILLS_GET: Workspace not found: ${workspaceId}`)
       return []
     }
     const { loadAllSkills } = await import('@creator-flow/shared/skills')
-    const skills = loadAllSkills(workspace.rootPath)
-    ipcLog.info(`SKILLS_GET: Loaded ${skills.length} skills (global + workspace) from ${workspace.rootPath}`)
+    const skills = loadAllSkills(workspace.rootPath, workingDirectory)
+    ipcLog.info(`SKILLS_GET: Loaded ${skills.length} skills from ${workspace.rootPath}`)
     return skills
   })
 
@@ -2500,6 +2504,50 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
           managed.window.webContents.mainFrame &&
           managed.window.webContents.id !== senderId) {
         managed.window.webContents.send(IPC_CHANNELS.THEME_PREFERENCES_CHANGED, preferences)
+      }
+    }
+  })
+
+  // Workspace-level theme overrides
+  ipcMain.handle(IPC_CHANNELS.THEME_GET_WORKSPACE_COLOR_THEME, async (_event, workspaceId: string) => {
+    const { getWorkspaces } = await import('@creator-flow/shared/config/storage')
+    const { getWorkspaceColorTheme } = await import('@creator-flow/shared/workspaces/storage')
+    const workspaces = getWorkspaces()
+    const workspace = workspaces.find(w => w.id === workspaceId)
+    if (!workspace) return null
+    return getWorkspaceColorTheme(workspace.rootPath) ?? null
+  })
+
+  ipcMain.handle(IPC_CHANNELS.THEME_SET_WORKSPACE_COLOR_THEME, async (_event, workspaceId: string, themeId: string | null) => {
+    const { getWorkspaces } = await import('@creator-flow/shared/config/storage')
+    const { setWorkspaceColorTheme } = await import('@creator-flow/shared/workspaces/storage')
+    const workspaces = getWorkspaces()
+    const workspace = workspaces.find(w => w.id === workspaceId)
+    if (!workspace) return
+    setWorkspaceColorTheme(workspace.rootPath, themeId ?? undefined)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.THEME_GET_ALL_WORKSPACE_THEMES, async () => {
+    const { getWorkspaces } = await import('@creator-flow/shared/config/storage')
+    const { getWorkspaceColorTheme } = await import('@creator-flow/shared/workspaces/storage')
+    const workspaces = getWorkspaces()
+    const themes: Record<string, string | undefined> = {}
+    for (const ws of workspaces) {
+      themes[ws.id] = getWorkspaceColorTheme(ws.rootPath)
+    }
+    return themes
+  })
+
+  // Broadcast workspace theme change to all other windows (for cross-window sync)
+  ipcMain.handle(IPC_CHANNELS.THEME_BROADCAST_WORKSPACE_THEME, async (event, workspaceId: string, themeId: string | null) => {
+    const senderId = event.sender.id
+    // Broadcast to all windows except the sender
+    for (const managed of windowManager.getAllWindows()) {
+      if (!managed.window.isDestroyed() &&
+          !managed.window.webContents.isDestroyed() &&
+          managed.window.webContents.mainFrame &&
+          managed.window.webContents.id !== senderId) {
+        managed.window.webContents.send(IPC_CHANNELS.THEME_WORKSPACE_THEME_CHANGED, { workspaceId, themeId })
       }
     }
   })
