@@ -10,21 +10,26 @@ export interface CloudModel {
   context_window?: number
   provider?: string
   enabled?: boolean
+  visible?: boolean
 }
 
 /**
  * API 返回的原始模型格式
+ * 兼容后端 GetAvailableModel (available 接口) 和 GetModelConfigList (分页列表接口)
  */
 export interface RawCloudModel {
   id?: number
+  model_id?: string        // available 接口返回的模型 ID
   model_name: string
   display_name: string
-  description?: string  // 模型描述，用于前端显示
+  description?: string
   model_type?: string
   max_context_length?: number
   max_tokens?: number
-  provider_name?: string
+  provider?: string        // available 接口返回的供应商类型
+  provider_name?: string   // 分页列表接口返回的供应商名称
   enabled?: boolean
+  visible?: boolean
 }
 
 /**
@@ -32,5 +37,5 @@ export interface RawCloudModel {
  * 返回 unknown 类型，由调用方解析具体格式
  */
 export async function getAvailableModels(): Promise<unknown> {
-  return request.get('/llm/models')
+  return request.get('/llm/models/available')
 }

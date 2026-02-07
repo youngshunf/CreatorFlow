@@ -34,6 +34,8 @@ import {
   SettingsToggle,
   SettingsMenuSelectRow,
 } from '@/components/settings'
+import { useCloudModels } from '@/hooks/useCloudModels'
+import { MODELS as FALLBACK_MODELS } from '@creator-flow/shared/config/models'
 
 export const meta: DetailsPageMeta = {
   navigator: 'settings',
@@ -52,6 +54,23 @@ export default function WorkspaceSettingsPage() {
   const activeWorkspaceId = appShellContext.activeWorkspaceId
   const onRefreshWorkspaces = appShellContext.onRefreshWorkspaces
   const customModel = appShellContext.customModel
+
+  // Cloud models: dynamic list from backend, with local fallback
+  const { cloudModels, loading: modelsLoading } = useCloudModels()
+  const modelOptions = React.useMemo(() => {
+    if (cloudModels.length > 0) {
+      return cloudModels.map(m => ({
+        value: m.id,
+        label: m.name,
+        description: m.description || '',
+      }))
+    }
+    return FALLBACK_MODELS.map(m => ({
+      value: m.id,
+      label: m.name,
+      description: m.description,
+    }))
+  }, [cloudModels])
 
   // Workspace settings state
   const [wsName, setWsName] = useState('')
@@ -411,11 +430,7 @@ export default function WorkspaceSettingsPage() {
                     description={t('新聊天的 AI 模型')}
                     value={wsModel}
                     onValueChange={handleModelChange}
-                    options={[
-                      { value: 'claude-opus-4-5-20251101', label: 'Opus 4.5', description: t('最适合复杂工作') },
-                      { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5', description: t('最适合日常任务') },
-                      { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', description: t('最快的快速回答') },
-                    ]}
+                    options={modelOptions}
                   />
                 )}
                 <SettingsMenuSelectRow

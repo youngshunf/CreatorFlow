@@ -36,6 +36,7 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { OnboardingWizard } from '@/components/onboarding'
 import { useAppShellContext } from '@/context/AppShellContext'
+import { subscriptionApi, type SubscriptionInfo } from '@/api/subscription'
 import type { PresetTheme } from '@config/theme'
 
 export const meta: DetailsPageMeta = {
@@ -69,6 +70,10 @@ export default function AppSettingsPage() {
   const updateChecker = useUpdateChecker()
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false)
 
+  // Subscription state — custom API connection requires ultra yearly
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+  const isUltraYearly = subscription?.tier === 'ultra' && subscription?.subscription_type === 'yearly'
+
   const handleCheckForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true)
     try {
@@ -82,13 +87,15 @@ export default function AppSettingsPage() {
   const loadConnectionInfo = useCallback(async () => {
     if (!window.electronAPI) return
     try {
-      const [billing, notificationsOn] = await Promise.all([
+      const [billing, notificationsOn, sub] = await Promise.all([
         window.electronAPI.getApiSetup(),
         window.electronAPI.getNotificationsEnabled(),
+        subscriptionApi.getInfo().catch(() => null),
       ])
       setAuthType(billing.authType)
       setHasCredential(billing.hasCredential)
       setNotificationsEnabled(notificationsOn)
+      if (sub) setSubscription(sub)
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
@@ -234,17 +241,20 @@ export default function AppSettingsPage() {
                 <SettingsRow
                   label={t('连接类型')}
                   description={
-                    authType === 'oauth_token' && hasCredential
-                      ? t('Claude Pro/Max — 使用您的 Claude 订阅')
-                      : authType === 'api_key' && hasCredential
-                        ? t('API Key — Anthropic、OpenRouter 或兼容 API')
-                        : t('未配置')
+                    !isUltraYearly
+                      ? t('需要旗舰版年度订阅才能使用自定义 API 连接')
+                      : authType === 'oauth_token' && hasCredential
+                        ? t('Claude Pro/Max — 使用您的 Claude 订阅')
+                        : authType === 'api_key' && hasCredential
+                          ? t('API Key — Anthropic、OpenRouter 或兼容 API')
+                          : t('未配置')
                   }
                 >
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={openApiSetup}
+                    disabled={!isUltraYearly}
                   >
                     {t('编辑')}
                   </Button>
