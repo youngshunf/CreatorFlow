@@ -8,7 +8,7 @@ import { parseError, type AgentError } from './errors.ts';
 import { runErrorDiagnostics } from './diagnostics.ts';
 import { getLastApiError } from '../network-interceptor.ts';
 import { loadStoredConfig, loadConfigDefaults, getAnthropicBaseUrl, resolveModelId, type Workspace } from '../config/storage.ts';
-import { isLocalMcpEnabled, getGlobalPluginDataPath, ensureGlobalPluginManifest } from '../workspaces/storage.ts';
+import { isLocalMcpEnabled, getGlobalPluginDataPath, ensureGlobalPluginManifest, migratePluginDir } from '../workspaces/storage.ts';
 import { loadPlanFromPath, type SessionConfig as Session } from '../sessions/storage.ts';
 import { DEFAULT_MODEL, isClaudeModel } from '../config/models.ts';
 import { getCredentialManager } from '../credentials/index.ts';
@@ -1601,24 +1601,27 @@ export class SproutyAgent {
         // Selectively disable tools - file tools are disabled (use MCP), web/code controlled by settings
         disallowedTools,
         // Load workspace and global plugins for SDK integration (enables skills, commands, agents).
-        // Global plugins are loaded from ~/.sprouty-ai/.claude-plugin/
-        // Workspace plugins are loaded from .sprouty-ai/.claude-plugin/
+        // Global plugins are loaded from ~/.sprouty-ai/plugins/
+        // Workspace plugins are loaded from .sprouty-ai/plugins/
         plugins: (() => {
           const globalPath = getGlobalPluginDataPath();
           const wsPath = `${this.workspaceRootPath}/.sprouty-ai`;
+          // 自动迁移旧插件目录结构（.claude-plugin/{name}/ → plugins/{name}/）
+          migratePluginDir(globalPath);
+          migratePluginDir(wsPath);
           const pluginEntries: Array<{ type: 'local'; path: string }> = [
             { type: 'local' as const, path: globalPath },
             { type: 'local' as const, path: wsPath },
           ];
-          // Scan for nested plugins inside .claude-plugin/ directories.
+          // Scan for nested plugins inside plugins/ directories.
           // SDK only loads top-level plugin paths, so nested plugins (e.g. productivity/)
           // must be added as separate entries.
           for (const basePath of [globalPath, wsPath]) {
-            const claudePluginDir = `${basePath}/.claude-plugin`;
-            if (!existsSync(claudePluginDir)) continue;
+            const pluginsDir = `${basePath}/plugins`;
+            if (!existsSync(pluginsDir)) continue;
             try {
-              for (const entry of readdirSync(claudePluginDir)) {
-                const nestedDir = `${claudePluginDir}/${entry}`;
+              for (const entry of readdirSync(pluginsDir)) {
+                const nestedDir = `${pluginsDir}/${entry}`;
                 try {
                   if (!statSync(nestedDir).isDirectory()) continue;
                 } catch { continue; }

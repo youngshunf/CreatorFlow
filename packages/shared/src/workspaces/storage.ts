@@ -593,4 +593,46 @@ export function ensureGlobalPluginManifest(): void {
   writeFileSync(manifestPath, JSON.stringify({ name: 'sprouty', version: '1.0.0' }, null, 2));
 }
 
+/**
+ * 迁移插件目录结构：.claude-plugin/{name}/ → plugins/{name}/
+ *
+ * 旧结构: {basePath}/.claude-plugin/{pluginName}/
+ * 新结构: {basePath}/plugins/{pluginName}/
+ *
+ * 自动将旧目录中的嵌套插件移动到新位置。
+ * .claude-plugin/plugin.json 保持不变（SDK 需要）。
+ *
+ * @param basePath - 插件基础路径（全局路径或工作区 .sprouty-ai 路径）
+ */
+export function migratePluginDir(basePath: string): void {
+  const oldDir = join(basePath, '.claude-plugin');
+  const newDir = join(basePath, 'plugins');
+
+  if (!existsSync(oldDir)) return;
+
+  try {
+    const entries = readdirSync(oldDir);
+    for (const entry of entries) {
+      // 跳过非目录文件（plugin.json, .DS_Store 等）
+      const oldPath = join(oldDir, entry);
+      try {
+        if (!statSync(oldPath).isDirectory()) continue;
+      } catch { continue; }
+
+      // 检查是否是一个插件（有 .claude-plugin/plugin.json）
+      if (!existsSync(join(oldPath, '.claude-plugin', 'plugin.json'))) continue;
+
+      const newPath = join(newDir, entry);
+      if (existsSync(newPath)) continue; // 已迁移，跳过
+
+      // 创建 plugins/ 目录并移动
+      mkdirSync(newDir, { recursive: true });
+      renameSync(oldPath, newPath);
+      console.error(`[migratePluginDir] 已迁移插件: ${entry} → plugins/${entry}`);
+    }
+  } catch {
+    // 静默忽略迁移错误
+  }
+}
+
 export { CONFIG_DIR, DEFAULT_WORKSPACES_DIR };

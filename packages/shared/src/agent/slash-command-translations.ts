@@ -3,7 +3,7 @@
  *
  * 两层翻译：
  * 1. SDK 内置命令 - 硬编码在 slash-command-data.ts 中
- * 2. Plugin 命令 - 从 plugin 目录的 .claude-plugin/translations.json 加载（需要 fs）
+ * 2. Plugin 命令 - 从 plugins/{name}/.claude-plugin/translations.json 加载（需要 fs）
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
@@ -16,7 +16,7 @@ export { SDK_COMMAND_TRANSLATIONS, getCommandDisplay, type SlashCommandTranslati
 /**
  * 从 plugin 目录加载翻译文件
  *
- * 翻译文件格式: {plugin-dir}/.claude-plugin/translations.json
+ * 翻译文件格式: plugins/{plugin-name}/.claude-plugin/translations.json
  * ```json
  * {
  *   "locale": "zh-CN",
@@ -59,7 +59,6 @@ export function loadPluginTranslations(
  *
  * 目录结构:
  * {pluginBaseDir}/
- *   plugin.json          (plugin manifest)
  *   {pluginName}/        (installed plugin)
  *     commands/
  *       {command}.md
@@ -171,11 +170,11 @@ export function scanWorkspaceCommands(
 
   // Scan global plugins (if provided)
   if (globalPluginDataPath) {
-    scanPluginDirectory(join(globalPluginDataPath, '.claude-plugin'), commands, translations)
+    scanPluginDirectory(join(globalPluginDataPath, 'plugins'), commands, translations)
   }
 
   // Scan workspace plugins
-  scanPluginDirectory(join(workspaceRootPath, '.sprouty-ai', '.claude-plugin'), commands, translations)
+  scanPluginDirectory(join(workspaceRootPath, '.sprouty-ai', 'plugins'), commands, translations)
 
   return { commands, translations }
 }
