@@ -598,6 +598,7 @@ export const IPC_CHANNELS = {
   // Workspace management
   GET_WORKSPACES: 'workspaces:get',
   CREATE_WORKSPACE: 'workspaces:create',
+  DELETE_WORKSPACE: 'workspaces:delete',
   CHECK_WORKSPACE_SLUG: 'workspaces:checkSlug',
 
   // Window management
@@ -928,6 +929,7 @@ export interface ElectronAPI {
   getWorkspaces(): Promise<Workspace[]>
   /** @param installMode - 'force' to overwrite with backup, 'merge' to merge files */
   createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge'): Promise<CreateWorkspaceResult>
+  deleteWorkspace(workspaceId: string, mode: 'delete' | 'backup'): Promise<boolean>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
 
   // Window management

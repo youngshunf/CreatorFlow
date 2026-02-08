@@ -32,6 +32,8 @@ const api: ElectronAPI = {
   getWorkspaces: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WORKSPACES),
   createWorkspace: (folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') =>
     ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId, appSource, installMode),
+  deleteWorkspace: (workspaceId: string, mode: 'delete' | 'backup') =>
+    ipcRenderer.invoke(IPC_CHANNELS.DELETE_WORKSPACE, workspaceId, mode),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
 

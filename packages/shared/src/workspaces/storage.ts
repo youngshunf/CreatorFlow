@@ -405,6 +405,29 @@ export function deleteWorkspaceFolder(rootPath: string): boolean {
 }
 
 /**
+ * Backup a workspace data folder by renaming .sprouty-ai to .sprouty-ai-backup.
+ * If a previous backup exists, it will be removed first.
+ * @param rootPath - Absolute path to workspace root folder
+ */
+export function backupWorkspaceFolder(rootPath: string): boolean {
+  const dataPath = getWorkspaceDataPath(rootPath);
+  if (!existsSync(dataPath)) return false;
+
+  const backupPath = join(rootPath, '.sprouty-ai-backup');
+
+  try {
+    // 如果已存在旧备份，先删除
+    if (existsSync(backupPath)) {
+      rmSync(backupPath, { recursive: true });
+    }
+    renameSync(dataPath, backupPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if a valid workspace exists at a path
  * @param rootPath - Absolute path to check
  */

@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import { routes } from '@/lib/navigate'
 import { Spinner } from '@sprouty-ai/ui'
 import { RenameDialog } from '@/components/ui/rename-dialog'
+import { DeleteWorkspaceDialog } from '@/components/DeleteWorkspaceDialog'
 import type { PermissionMode, ThinkingLevel, WorkspaceSettings } from '../../../shared/types'
 import { DEFAULT_THINKING_LEVEL, THINKING_LEVELS } from '@sprouty-ai/shared/agent/thinking-levels'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
@@ -87,6 +88,9 @@ export default function WorkspaceSettingsPage() {
   // Mode cycling state
   const [enabledModes, setEnabledModes] = useState<PermissionMode[]>(['safe', 'ask', 'allow-all'])
   const [modeCyclingError, setModeCyclingError] = useState<string | null>(null)
+
+  // Delete workspace state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Load workspace settings when active workspace changes
   useEffect(() => {
@@ -306,6 +310,22 @@ export default function WorkspaceSettingsPage() {
     },
     [enabledModes, updateWorkspaceSetting]
   )
+
+  // Delete workspace handler
+  const handleDeleteWorkspace = useCallback(async (mode: 'delete' | 'backup') => {
+    if (!window.electronAPI || !activeWorkspaceId) return
+    setDeleteDialogOpen(false)
+
+    try {
+      const success = await window.electronAPI.deleteWorkspace(activeWorkspaceId, mode)
+      if (success) {
+        // 刷新工作区列表，切换到其他工作区
+        onRefreshWorkspaces?.()
+      }
+    } catch (error) {
+      console.error('Failed to delete workspace:', error)
+    }
+  }, [activeWorkspaceId, onRefreshWorkspaces])
 
   // Show empty state if no workspace is active
   if (!activeWorkspaceId) {
@@ -542,6 +562,32 @@ export default function WorkspaceSettingsPage() {
                 />
               </SettingsCard>
             </SettingsSection>
+
+            {/* Danger Zone */}
+            <SettingsSection title={t('危险操作')}>
+              <SettingsCard>
+                <SettingsRow
+                  label={t('删除工作区')}
+                  description={t('删除此工作区的所有数据')}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                    >
+                      {t('删除工作区')}
+                    </button>
+                  }
+                />
+              </SettingsCard>
+            </SettingsSection>
+
+            <DeleteWorkspaceDialog
+              open={deleteDialogOpen}
+              workspaceName={wsName}
+              onConfirm={handleDeleteWorkspace}
+              onCancel={() => setDeleteDialogOpen(false)}
+            />
 
           </div>
         </div>

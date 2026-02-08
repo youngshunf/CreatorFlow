@@ -214,6 +214,48 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return { exists, path: workspacePath }
   })
 
+  // Delete a workspace (backup or permanently delete .sprouty-ai data)
+  ipcMain.handle(IPC_CHANNELS.DELETE_WORKSPACE, async (_event, workspaceId: string, mode: 'delete' | 'backup') => {
+    const workspace = getWorkspaceByNameOrId(workspaceId)
+    if (!workspace) {
+      ipcLog.error(`[deleteWorkspace] Workspace not found: ${workspaceId}`)
+      return false
+    }
+
+    try {
+      const { deleteWorkspaceFolder, backupWorkspaceFolder } = await import('@sprouty-ai/shared/workspaces')
+      const { removeWorkspace } = await import('@sprouty-ai/shared/config')
+
+      // 根据模式删除或备份工作区数据文件夹
+      const folderResult = mode === 'backup'
+        ? backupWorkspaceFolder(workspace.rootPath)
+        : deleteWorkspaceFolder(workspace.rootPath)
+
+      if (!folderResult) {
+        ipcLog.error(`[deleteWorkspace] Failed to ${mode} workspace folder at ${workspace.rootPath}`)
+        return false
+      }
+
+      // 从全局配置中移除工作区记录并清理凭证
+      await removeWorkspace(workspaceId)
+
+      // 关闭该工作区的所有窗口
+      const allWindows = BrowserWindow.getAllWindows()
+      for (const win of allWindows) {
+        const winWorkspaceId = windowManager.getWorkspaceForWindow(win.webContents.id)
+        if (winWorkspaceId === workspaceId) {
+          win.close()
+        }
+      }
+
+      ipcLog.info(`[deleteWorkspace] Workspace "${workspace.name}" ${mode === 'backup' ? 'backed up' : 'deleted'} successfully`)
+      return true
+    } catch (error) {
+      ipcLog.error(`[deleteWorkspace] Error:`, error)
+      return false
+    }
+  })
+
   // ============================================================
   // Window Management
   // ============================================================

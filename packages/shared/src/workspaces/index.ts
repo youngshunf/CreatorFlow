@@ -33,6 +33,7 @@ export {
   generateUniqueWorkspacePath,
   createWorkspaceAtPath,
   deleteWorkspaceFolder,
+  backupWorkspaceFolder,
   isValidWorkspace,
   renameWorkspaceFolder,
   // Auto-discovery
