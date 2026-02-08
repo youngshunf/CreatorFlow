@@ -115,7 +115,17 @@ export function WorkspaceSwitcher({
     setFullscreenOverlayOpen(false)
     toast.success($t('工作区 "{name}" 已创建', { name: workspace.name }))
     onWorkspaceCreated?.(workspace)
-    onSelect(workspace.id)
+    // Delay workspace switch to let Radix Dialog close animation complete.
+    // Without this, switchWorkspace triggers heavy re-renders that can prevent
+    // the Dialog cleanup callback from firing, leaving pointer-events: none
+    // on <body> permanently (app appears frozen).
+    setTimeout(() => {
+      onSelect(workspace.id)
+      // Safety net: force-clear pointer-events in case Dialog cleanup was skipped
+      requestAnimationFrame(() => {
+        document.body.style.removeProperty('pointer-events')
+      })
+    }, 0)
   }
 
   const handleCloseCreationScreen = () => {

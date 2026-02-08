@@ -493,14 +493,13 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
       )
     }
 
-    // Session truly doesn't exist
+    // Session truly doesn't exist — render empty placeholder.
+    // This state is transient during deletion (removeSession fires before
+    // contextNavigate selects the next session), so avoid flashing an error.
     return (
       <div className="h-full flex flex-col">
         <PanelHeader  title={t('聊天')} rightSidebarButton={rightSidebarButton} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-          <AlertCircle className="h-10 w-10" />
-          <p className="text-sm">{t('此会话已不存在')}</p>
-        </div>
+        <div className="flex-1" />
       </div>
     )
   }

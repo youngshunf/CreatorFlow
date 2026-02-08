@@ -595,7 +595,7 @@ function AppShellContent({
   const filePreviewHandleRef = React.useRef<HTMLDivElement>(null)
   const [session, setSession] = useSession()
   const { resolvedMode, isDark, setMode } = useTheme()
-  const { canGoBack, canGoForward, goBack, goForward, navigateToSource } = useNavigation()
+  const { canGoBack, canGoForward, goBack, goForward, navigateToSource, navigate: contextNavigate } = useNavigation()
   const t = useT()
 
   // Double-Esc interrupt feature: first Esc shows warning, second Esc interrupts
@@ -1510,29 +1510,28 @@ function AppShellContent({
   // This prevents stale state during re-renders that could cause crashes
   const handleDeleteSession = useCallback(async (sessionId: string, skipConfirmation?: boolean): Promise<boolean> => {
     const wasSelected = session.selected === sessionId
-    // Clear selection first if this is the selected session
-    if (wasSelected) {
-      setSession({ selected: null })
-    }
     const result = await onDeleteSession(sessionId, skipConfirmation)
-    // Navigate away from the deleted session to prevent rendering stale data
+    // Navigate away from the deleted session immediately after removal.
+    // contextNavigate is synchronous and updates navState in the same
+    // React batch as the removeSession that just ran inside onDeleteSession,
+    // so there should be no intermediate render with stale session data.
     if (result && wasSelected) {
       if (!chatFilter || chatFilter.kind === 'allChats') {
-        navigate(routes.view.allChats())
+        contextNavigate(routes.view.allChats())
       } else if (chatFilter.kind === 'flagged') {
-        navigate(routes.view.flagged())
+        contextNavigate(routes.view.flagged())
       } else if (chatFilter.kind === 'state') {
-        navigate(routes.view.state(chatFilter.stateId))
+        contextNavigate(routes.view.state(chatFilter.stateId))
       } else if (chatFilter.kind === 'label') {
-        navigate(routes.view.label(chatFilter.labelId))
+        contextNavigate(routes.view.label(chatFilter.labelId))
       } else if (chatFilter.kind === 'view') {
-        navigate(routes.view.view(chatFilter.viewId))
+        contextNavigate(routes.view.view(chatFilter.viewId))
       } else {
-        navigate(routes.view.allChats())
+        contextNavigate(routes.view.allChats())
       }
     }
     return result
-  }, [session.selected, setSession, onDeleteSession, chatFilter])
+  }, [session.selected, onDeleteSession, chatFilter, contextNavigate])
 
   // Right sidebar OPEN button (fades out when sidebar is open, hidden in non-chat views)
   const rightSidebarOpenButton = React.useMemo(() => {

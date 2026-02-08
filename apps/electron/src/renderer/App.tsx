@@ -754,6 +754,12 @@ export default function App() {
     await window.electronAPI.deleteSession(sessionId)
     // Remove from per-session atom and metadata map (no sessionsAtom)
     removeSession(sessionId)
+    // Radix Dialog sets pointer-events: none on <body> while open.
+    // Heavy re-renders from removeSession can prevent the close animation
+    // callback from firing, leaving the style permanently. Force cleanup.
+    requestAnimationFrame(() => {
+      document.body.style.removeProperty('pointer-events')
+    })
     return true
   }, [store, removeSession])
 
@@ -1282,7 +1288,7 @@ export default function App() {
       store.set(sessionMetaMapAtom, new Map())
       store.set(sessionIdsAtom, [])
 
-      // Note: Navigation state will be re-validated automatically by NavigationProvider
+      // Note: Navigation state (details) will be cleared by NavigationProvider
       // when it detects workspaceId change. Sessions and theme will reload automatically
       // due to windowWorkspaceId dependency in useEffect hooks.
     }
@@ -1512,8 +1518,12 @@ export default function App() {
               open={!!deleteSessionState}
               sessionName={deleteSessionState?.name ?? ''}
               onConfirm={() => {
-                deleteSessionState?.resolve(true)
+                const resolve = deleteSessionState?.resolve
                 setDeleteSessionState(null)
+                // Use setTimeout(0) to let React process the Dialog close (open=false)
+                // before resolving. The actual pointer-events cleanup is handled by
+                // a requestAnimationFrame safety net in handleDeleteSession.
+                setTimeout(() => resolve?.(true), 0)
               }}
               onCancel={() => {
                 deleteSessionState?.resolve(false)

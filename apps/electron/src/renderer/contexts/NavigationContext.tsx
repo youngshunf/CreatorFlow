@@ -751,24 +751,30 @@ export function NavigationProvider({
         rightSidebar: undefined,
       }))
 
-      // Reset initial route restoration flag so new workspace can restore its route
-      initialRouteRestoredRef.current = false
-      // If currently in chats navigator, re-validate the selection
-      // Always re-apply navigation state to trigger proper session selection
-      // for the new workspace. This will either:
-      // 1. Clear invalid session and auto-select first session in new workspace
-      // 2. Show empty state if new workspace has no sessions
-      if (isChatsNavigation(navigationState)) {
-        const newState: NavigationState = {
-          ...navigationState,
-          details: null, // Clear any existing selection
-        }
-        applyNavigationState(newState)
-      }
+      // Clear the URL route parameter — it belongs to the previous workspace
+      // and must not be restored by the initial route restoration effect.
+      const url = new URL(window.location.href)
+      url.searchParams.delete('route')
+      url.searchParams.delete('sidebar')
+      history.replaceState({}, '', url.toString())
+
+      // Clear the current session selection immediately.
+      // IMPORTANT: Use setNavigationState directly instead of applyNavigationState.
+      // applyNavigationState would call getFirstSessionId() which reads sessionMetas —
+      // but during workspace switch, sessionMetas may still contain stale data from the
+      // previous workspace (React hasn't re-rendered yet with the cleared atoms).
+      // This would cause it to auto-select a session from the old workspace.
+      // The correct session will be selected later when sessions finish reloading.
+      setNavigationState(prev => ({
+        ...prev,
+        details: null,
+        rightSidebar: undefined,
+      }))
+      setSession({ selected: null })
     }
 
     prevWorkspaceIdRef.current = workspaceId
-  }, [workspaceId, isReady, navigationState, applyNavigationState])
+  }, [workspaceId, isReady, setSession])
 
   // Initialize history stack on first load
   useEffect(() => {
