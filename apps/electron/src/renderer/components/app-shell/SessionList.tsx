@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { formatDistanceToNow, formatDistanceToNowStrict, isToday, isYesterday, format, startOfDay } from "date-fns"
 import type { Locale } from "date-fns"
+import { zhCN } from "date-fns/locale"
 import { MoreHorizontal, Flag, Copy, Link2Off, CloudUpload, Globe, RefreshCw, Inbox } from "lucide-react"
 import { toast } from "sonner"
 
@@ -11,7 +12,7 @@ import type { LabelConfig } from "@sprouty-ai/shared/labels"
 import { flattenLabels, parseLabelEntry, formatLabelEntry, formatDisplayValue } from "@sprouty-ai/shared/labels"
 import { resolveEntityColor } from "@sprouty-ai/shared/colors"
 import { useTheme } from "@/context/ThemeContext"
-import { useT } from "@/context/LocaleContext"
+import { useT, useLocale } from "@/context/LocaleContext"
 import { Spinner, Tooltip, TooltipTrigger, TooltipContent } from "@sprouty-ai/ui"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
@@ -63,30 +64,33 @@ const BATCH_SIZE = 20
 const MAX_SEARCH_RESULTS = 100
 
 /** Short relative time locale for date-fns formatDistanceToNowStrict.
- *  Produces compact strings: "7m", "2h", "3d", "2w", "5mo", "1y" */
-const shortTimeLocale: Pick<Locale, 'formatDistance'> = {
-  formatDistance: (token: string, count: number) => {
-    const units: Record<string, string> = {
-      xSeconds: `${count}s`,
-      xMinutes: `${count}m`,
-      xHours: `${count}h`,
-      xDays: `${count}d`,
-      xWeeks: `${count}w`,
-      xMonths: `${count}mo`,
-      xYears: `${count}y`,
-    }
-    return units[token] || `${count}`
-  },
+ *  Produces compact strings like "7分", "2时", "3天", "2周", "5月", "1年" (zh)
+ *  or "7m", "2h", "3d", "2w", "5mo", "1y" (en) */
+function getShortTimeLocale(t: (text: string) => string): Pick<Locale, 'formatDistance'> {
+  return {
+    formatDistance: (token: string, count: number) => {
+      const units: Record<string, string> = {
+        xSeconds: `${count}${t('秒')}`,
+        xMinutes: `${count}${t('分')}`,
+        xHours: `${count}${t('时')}`,
+        xDays: `${count}${t('天')}`,
+        xWeeks: `${count}${t('周')}`,
+        xMonths: `${count}${t('月')}`,
+        xYears: `${count}${t('年')}`,
+      }
+      return units[token] || `${count}`
+    },
+  }
 }
 
 /**
  * Format a date for the date header
- * Returns localized "Today", "Yesterday", or formatted date like "Dec 19"
+ * Returns localized "Today", "Yesterday", or formatted date like "12月19日" / "Dec 19"
  */
 function formatDateHeader(date: Date, t: (text: string) => string): string {
   if (isToday(date)) return t('今天')
   if (isYesterday(date)) return t('昨天')
-  return format(date, "M月d日")
+  return format(date, t('M月d日'))
 }
 
 /**
@@ -334,6 +338,8 @@ function SessionItem({
   chatMatchCount,
 }: SessionItemProps) {
   const t = useT()
+  const { locale } = useLocale()
+  const dateFnsLocale = locale === 'en' ? undefined : zhCN
   const [menuOpen, setMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [todoMenuOpen, setTodoMenuOpen] = useState(false)
@@ -624,11 +630,11 @@ function SessionItem({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="shrink-0 text-[11px] text-foreground/40 whitespace-nowrap cursor-default">
-                      {formatDistanceToNowStrict(new Date(item.lastMessageAt), { locale: shortTimeLocale as Locale, roundingMethod: 'floor' })}
+                      {formatDistanceToNowStrict(new Date(item.lastMessageAt), { locale: getShortTimeLocale(t) as Locale, roundingMethod: 'floor' })}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={4}>
-                    {formatDistanceToNow(new Date(item.lastMessageAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(item.lastMessageAt), { addSuffix: true, locale: dateFnsLocale })}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -1119,10 +1125,10 @@ export function SessionList({
   const handleFlagWithToast = useCallback((sessionId: string) => {
     if (!onFlag) return
     onFlag(sessionId)
-    toast('Conversation flagged', {
-      description: 'Added to your flagged items',
+    toast(t('对话已标记'), {
+      description: t('已添加到标记列表'),
       action: onUnflag ? {
-        label: 'Undo',
+        label: t('撤销'),
         onClick: () => onUnflag(sessionId),
       } : undefined,
     })
@@ -1131,10 +1137,10 @@ export function SessionList({
   const handleUnflagWithToast = useCallback((sessionId: string) => {
     if (!onUnflag) return
     onUnflag(sessionId)
-    toast('Flag removed', {
-      description: 'Removed from flagged items',
+    toast(t('已从标记列表移除'), {
+      description: t('已从标记列表移除'),
       action: onFlag ? {
-        label: 'Undo',
+        label: t('撤销'),
         onClick: () => onFlag(sessionId),
       } : undefined,
     })
@@ -1145,7 +1151,7 @@ export function SessionList({
     // We await so toast only shows after successful deletion (if user confirmed)
     const deleted = await onDelete(sessionId)
     if (deleted) {
-      toast('Conversation deleted')
+      toast(t('对话已删除'))
     }
     return deleted
   }, [onDelete])
@@ -1277,7 +1283,7 @@ export function SessionList({
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full">
       {/* Search header - input + status row (shared with playground) */}
       {searchActive && (
         <SessionSearchHeader

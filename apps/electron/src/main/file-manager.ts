@@ -147,14 +147,14 @@ export function registerFileManagerIpc(): void {
     try {
       const stats = await fs.stat(filePath)
       const limit = maxSize || 10 * 1024 * 1024 // Default 10MB limit
-      
+
       if (stats.size > limit) {
         throw new Error(`File too large: ${stats.size} bytes (max ${limit})`)
       }
-      
+
       const buffer = await fs.readFile(filePath)
       const base64 = buffer.toString('base64')
-      
+
       // Determine MIME type from extension
       const ext = path.extname(filePath).toLowerCase().slice(1)
       const mimeTypes: Record<string, string> = {
@@ -177,12 +177,39 @@ export function registerFileManagerIpc(): void {
         mp4: 'video/mp4',
         webm: 'video/webm',
       }
-      
+
       const mimeType = mimeTypes[ext] || 'application/octet-stream'
-      
+
       return { data: base64, mimeType }
     } catch (err) {
       ipcLog.error('fm:readFileBase64 error:', err)
+      throw err
+    }
+  })
+
+  // Write text file content
+  ipcMain.handle(IPC_CHANNELS.FM_WRITE_FILE, async (_, filePath: string, content: string): Promise<void> => {
+    try {
+      // 允许写入的文件扩展名（文本/代码类文件）
+      const ext = path.extname(filePath).toLowerCase().slice(1)
+      const allowedExtensions = [
+        // 文本
+        'txt', 'md', 'markdown', 'mdx', 'log', 'csv', 'ini', 'conf', 'cfg',
+        // 代码
+        'ts', 'tsx', 'js', 'jsx', 'json', 'yaml', 'yml', 'py', 'rb', 'go', 'rs',
+        'java', 'c', 'cpp', 'h', 'css', 'scss', 'less', 'html', 'xml', 'sh', 'bash',
+        'zsh', 'vue', 'svelte', 'swift', 'kt', 'php', 'sql', 'graphql', 'toml', 'env',
+        'dockerfile', 'makefile',
+      ]
+
+      if (!allowedExtensions.includes(ext)) {
+        throw new Error(`不允许写入此类型的文件: .${ext}`)
+      }
+
+      await fs.writeFile(filePath, content, 'utf-8')
+      ipcLog.info(`Wrote file: ${filePath}`)
+    } catch (err) {
+      ipcLog.error('fm:writeFile error:', err)
       throw err
     }
   })

@@ -23,7 +23,6 @@ import { routes } from '@/lib/navigate'
 import { Spinner } from '@sprouty-ai/ui'
 import { RenameDialog } from '@/components/ui/rename-dialog'
 import type { PermissionMode, ThinkingLevel, WorkspaceSettings } from '../../../shared/types'
-import { PERMISSION_MODE_CONFIG } from '@sprouty-ai/shared/agent/mode-types'
 import { DEFAULT_THINKING_LEVEL, THINKING_LEVELS } from '@sprouty-ai/shared/agent/thinking-levels'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 
@@ -456,9 +455,9 @@ export default function WorkspaceSettingsPage() {
                   value={permissionMode}
                   onValueChange={(v) => handlePermissionModeChange(v as PermissionMode)}
                   options={[
-                    { value: 'safe', label: PERMISSION_MODE_CONFIG['safe'].shortName, description: t('只读，不允许更改') },
-                    { value: 'ask', label: PERMISSION_MODE_CONFIG['ask'].shortName, description: t('编辑前提示') },
-                    { value: 'allow-all', label: PERMISSION_MODE_CONFIG['allow-all'].shortName, description: t('完全自主执行') },
+                    { value: 'safe', label: t('探索'), description: t('只读，不允许更改') },
+                    { value: 'ask', label: t('询问编辑'), description: t('编辑前提示') },
+                    { value: 'allow-all', label: t('执行'), description: t('完全自主执行') },
                   ]}
                 />
               </SettingsCard>
@@ -471,13 +470,22 @@ export default function WorkspaceSettingsPage() {
             >
               <SettingsCard>
                 {(['safe', 'ask', 'allow-all'] as const).map((m) => {
-                  const config = PERMISSION_MODE_CONFIG[m]
+                  const modeLabel: Record<PermissionMode, string> = {
+                    'safe': t('探索'),
+                    'ask': t('询问编辑'),
+                    'allow-all': t('执行'),
+                  }
+                  const modeDesc: Record<PermissionMode, string> = {
+                    'safe': t('只读探索，阻止写入，不提示。'),
+                    'ask': t('编辑前提示。'),
+                    'allow-all': t('自动执行，不提示。'),
+                  }
                   const isEnabled = enabledModes.includes(m)
                   return (
                     <SettingsToggle
                       key={m}
-                      label={config.displayName}
-                      description={config.description}
+                      label={modeLabel[m]}
+                      description={modeDesc[m]}
                       checked={isEnabled}
                       onCheckedChange={(checked) => handleModeToggle(m, checked)}
                     />

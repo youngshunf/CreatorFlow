@@ -437,6 +437,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   // Input is only disabled when explicitly disabled (e.g., agent needs activation)
   // User can type during streaming - submitting will stop the stream and send
   const isInputDisabled = disabled
+  const t = useT()
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const scrollViewportRef = React.useRef<HTMLDivElement>(null)
   const prevSessionIdRef = React.useRef<string | null>(null)
@@ -1278,8 +1279,8 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
                   {/* Empty state for compact mode - inviting conversational prompt, centered in full popover */}
                   {compactMode && turns.length === 0 && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center select-none gap-1 pointer-events-none">
-                      <span className="text-sm text-muted-foreground">What would you like to change?</span>
-                      <span className="text-xs text-muted-foreground/50">Just describe it — I'll handle the rest</span>
+                      <span className="text-sm text-muted-foreground">{t('你想修改什么？')}</span>
+                      <span className="text-xs text-muted-foreground/50">{t('描述一下，剩下的交给我')}</span>
                     </div>
                   )}
                   {/* Load more indicator - shown when there are older messages */}

@@ -555,4 +555,18 @@ export class WindowManager {
       }
     }
   }
+
+  /**
+   * 调整窗口宽度（正值=变宽，负值=变窄）。
+   * 保持左边缘不动，仅向右扩展/收缩。
+   * 尊重 minWidth(800) 和屏幕边界。
+   */
+  adjustWindowWidth(webContentsId: number, delta: number): void {
+    const managed = this.windows.get(webContentsId)
+    if (!managed || managed.window.isDestroyed()) return
+    const win = managed.window
+    const bounds = win.getBounds()
+    const newWidth = Math.max(800, bounds.width + delta)
+    win.setBounds({ ...bounds, width: newWidth })
+  }
 }

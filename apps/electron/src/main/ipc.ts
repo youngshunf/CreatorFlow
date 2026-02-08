@@ -268,6 +268,11 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     windowManager.setTrafficLightsVisible(event.sender.id, visible)
   })
 
+  // 调整窗口宽度（正值=变宽，负值=变窄）
+  ipcMain.handle(IPC_CHANNELS.WINDOW_ADJUST_WIDTH, (event, delta: number) => {
+    windowManager.adjustWindowWidth(event.sender.id, delta)
+  })
+
   // Switch workspace in current window (in-window switching)
   ipcMain.handle(IPC_CHANNELS.SWITCH_WORKSPACE, async (event, workspaceId: string) => {
     const end = perf.start('ipc.switchWorkspace', { workspaceId })

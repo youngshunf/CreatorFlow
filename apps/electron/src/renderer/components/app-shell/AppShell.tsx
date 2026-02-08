@@ -584,13 +584,15 @@ function AppShellContent({
   const OVERLAY_THRESHOLD = MIN_INLINE_SPACE + leftSidebarEffectiveWidth + sessionListWidth
   const shouldUseOverlay = windowWidth < OVERLAY_THRESHOLD
 
-  const [isResizing, setIsResizing] = React.useState<'sidebar' | 'session-list' | 'right-sidebar' | null>(null)
+  const [isResizing, setIsResizing] = React.useState<'sidebar' | 'session-list' | 'right-sidebar' | 'file-tree-height' | 'file-preview' | null>(null)
   const [sidebarHandleY, setSidebarHandleY] = React.useState<number | null>(null)
   const [sessionListHandleY, setSessionListHandleY] = React.useState<number | null>(null)
   const [rightSidebarHandleY, setRightSidebarHandleY] = React.useState<number | null>(null)
+  const [filePreviewHandleY, setFilePreviewHandleY] = React.useState<number | null>(null)
   const resizeHandleRef = React.useRef<HTMLDivElement>(null)
   const sessionListHandleRef = React.useRef<HTMLDivElement>(null)
   const rightSidebarHandleRef = React.useRef<HTMLDivElement>(null)
+  const filePreviewHandleRef = React.useRef<HTMLDivElement>(null)
   const [session, setSession] = useSession()
   const { resolvedMode, isDark, setMode } = useTheme()
   const { canGoBack, canGoForward, goBack, goForward, navigateToSource } = useNavigation()
@@ -745,6 +747,10 @@ function AppShellContent({
       setIsRightSidebarVisible(false)
       // Reset skip flag after state update
       setTimeout(() => setSkipRightSidebarAnimation(false), 0)
+    }
+    // 离开 chats navigation 时关闭文件预览（不调整窗口宽度，因为导航切换时布局不同）
+    if (!isChatsNavigation(navState)) {
+      setIsFilePreviewVisible(false)
     }
   }, [navState])
 
@@ -917,6 +923,23 @@ function AppShellContent({
   // File manager state - selected file for preview
   const [selectedFile, setSelectedFile] = useState<FMFileEntry | null>(null)
 
+  // 文件树面板状态（会话列表内嵌）
+  const [isFileTreeCollapsed, setIsFileTreeCollapsed] = React.useState(() =>
+    storage.get(storage.KEYS.fileTreeCollapsed, false)
+  )
+  const [fileTreeHeightRatio, setFileTreeHeightRatio] = React.useState(() =>
+    storage.get(storage.KEYS.fileTreeHeight, 0.5)
+  )
+
+  // 文件预览面板状态
+  const [isFilePreviewVisible, setIsFilePreviewVisible] = React.useState(false)
+  const [filePreviewRatio, setFilePreviewRatio] = React.useState(() =>
+    storage.get(storage.KEYS.filePreviewRatio, 0.5)
+  )
+
+  // 文件预览 resize refs
+  const sessionColumnRef = React.useRef<HTMLDivElement>(null)
+
   // Workspace manager overlay state
   const [showWorkspaceManager, setShowWorkspaceManager] = useState(false)
   
@@ -926,6 +949,28 @@ function AppShellContent({
   // Handle manage workspaces click from workspace switcher
   const handleManageWorkspaces = React.useCallback(() => {
     setShowWorkspaceManager(true)
+  }, [])
+
+  // 文件树折叠切换
+  const handleToggleFileTree = React.useCallback(() => {
+    setIsFileTreeCollapsed(prev => {
+      const next = !prev
+      storage.set(storage.KEYS.fileTreeCollapsed, next)
+      return next
+    })
+  }, [])
+
+  // 文件选择 → 打开预览
+  const handleFileTreeSelect = React.useCallback((file: FMFileEntry) => {
+    setSelectedFile(file)
+    if (!file.isDirectory) {
+      setIsFilePreviewVisible(true)
+    }
+  }, [])
+
+  // 关闭预览
+  const handleCloseFilePreview = React.useCallback(() => {
+    setIsFilePreviewVisible(false)
   }, [])
   
   // Handle "Use" click on marketplace app - triggers workspace creation with that app
@@ -1201,6 +1246,22 @@ function AppShellContent({
           const rect = rightSidebarHandleRef.current.getBoundingClientRect()
           setRightSidebarHandleY(e.clientY - rect.top)
         }
+      } else if (isResizing === 'file-tree-height') {
+        if (sessionColumnRef.current) {
+          const rect = sessionColumnRef.current.getBoundingClientRect()
+          const sessionRatio = (e.clientY - rect.top) / rect.height
+          const clampedRatio = Math.min(Math.max(sessionRatio, 0.2), 0.8)
+          setFileTreeHeightRatio(1 - clampedRatio)
+        }
+      } else if (isResizing === 'file-preview') {
+        // 计算预览面板和聊天区共享区域的起止位置
+        const leftEdge = (isSidebarVisible ? sidebarWidth : 0) + sessionListWidth + 20
+        const rightEdge = window.innerWidth - (isRightSidebarVisible ? rightSidebarWidth + 20 : 10)
+        const totalWidth = rightEdge - leftEdge
+        if (totalWidth > 0) {
+          const ratio = (e.clientX - leftEdge) / totalWidth
+          setFilePreviewRatio(Math.min(Math.max(ratio, 0.2), 0.8))
+        }
       }
     }
 
@@ -1214,6 +1275,10 @@ function AppShellContent({
       } else if (isResizing === 'right-sidebar') {
         storage.set(storage.KEYS.rightSidebarWidth, rightSidebarWidth)
         setRightSidebarHandleY(null)
+      } else if (isResizing === 'file-tree-height') {
+        storage.set(storage.KEYS.fileTreeHeight, fileTreeHeightRatio)
+      } else if (isResizing === 'file-preview') {
+        storage.set(storage.KEYS.filePreviewRatio, filePreviewRatio)
       }
       setIsResizing(null)
     }
@@ -1225,7 +1290,7 @@ function AppShellContent({
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isResizing, sidebarWidth, sessionListWidth, rightSidebarWidth, isSidebarVisible])
+  }, [isResizing, sidebarWidth, sessionListWidth, rightSidebarWidth, isSidebarVisible, isRightSidebarVisible, fileTreeHeightRatio, filePreviewRatio])
 
   // Spring transition config - shared between sidebar and header
   // Critical damping (no bounce): damping = 2 * sqrt(stiffness * mass)
@@ -1444,12 +1509,30 @@ function AppShellContent({
   // Wrap delete handler to clear selection when deleting the currently selected session
   // This prevents stale state during re-renders that could cause crashes
   const handleDeleteSession = useCallback(async (sessionId: string, skipConfirmation?: boolean): Promise<boolean> => {
+    const wasSelected = session.selected === sessionId
     // Clear selection first if this is the selected session
-    if (session.selected === sessionId) {
+    if (wasSelected) {
       setSession({ selected: null })
     }
-    return onDeleteSession(sessionId, skipConfirmation)
-  }, [session.selected, setSession, onDeleteSession])
+    const result = await onDeleteSession(sessionId, skipConfirmation)
+    // Navigate away from the deleted session to prevent rendering stale data
+    if (result && wasSelected) {
+      if (!chatFilter || chatFilter.kind === 'allChats') {
+        navigate(routes.view.allChats())
+      } else if (chatFilter.kind === 'flagged') {
+        navigate(routes.view.flagged())
+      } else if (chatFilter.kind === 'state') {
+        navigate(routes.view.state(chatFilter.stateId))
+      } else if (chatFilter.kind === 'label') {
+        navigate(routes.view.label(chatFilter.labelId))
+      } else if (chatFilter.kind === 'view') {
+        navigate(routes.view.view(chatFilter.viewId))
+      } else {
+        navigate(routes.view.allChats())
+      }
+    }
+    return result
+  }, [session.selected, setSession, onDeleteSession, chatFilter])
 
   // Right sidebar OPEN button (fades out when sidebar is open, hidden in non-chat views)
   const rightSidebarOpenButton = React.useMemo(() => {
@@ -2398,7 +2481,17 @@ function AppShellContent({
               </div>
               {/* File Preview Panel (right) */}
               <div className="flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle rounded-l-[10px] rounded-r-[14px]">
-                <FilePreviewPanel file={selectedFile} />
+                <FilePreviewPanel
+                  file={selectedFile}
+                  onConvertRequest={(filePath, format) => {
+                    if (!session.selected) return
+                    const message = format === 'word'
+                      ? `请将文件 ${filePath} 转换为 Word 格式`
+                      : `请将文件 ${filePath} 转换为 PDF 格式`
+                    onSendMessage(session.selected, message)
+                    navigate(routes.view.allChats(session.selected))
+                  }}
+                />
               </div>
             </>
           )}
@@ -3019,63 +3112,100 @@ function AppShellContent({
             )}
             {/* Marketplace now uses full-page layout in MainContentPanel */}
             {isChatsNavigation(navState) && (
-              /* Sessions List */
-              <>
-                {/* SessionList: Scrollable list of session cards */}
-                {/* Key on sidebarMode forces full remount when switching views, skipping animations */}
-                <SessionList
-                  key={chatFilter?.kind}
-                  items={searchActive ? workspaceSessionMetas : filteredSessionMetas}
-                  onDelete={handleDeleteSession}
-                  onFlag={onFlagSession}
-                  onUnflag={onUnflagSession}
-                  onMarkUnread={onMarkSessionUnread}
-                  onTodoStateChange={onTodoStateChange}
-                  onRename={onRenameSession}
-                  onFocusChatInput={focusChatInput}
-                  onSessionSelect={(selectedMeta) => {
-                    // Navigate to the session via central routing (with filter context)
-                    if (!chatFilter || chatFilter.kind === 'allChats') {
-                      navigate(routes.view.allChats(selectedMeta.id))
-                    } else if (chatFilter.kind === 'flagged') {
-                      navigate(routes.view.flagged(selectedMeta.id))
-                    } else if (chatFilter.kind === 'state') {
-                      navigate(routes.view.state(chatFilter.stateId, selectedMeta.id))
-                    } else if (chatFilter.kind === 'label') {
-                      navigate(routes.view.label(chatFilter.labelId, selectedMeta.id))
-                    } else if (chatFilter.kind === 'view') {
-                      navigate(routes.view.view(chatFilter.viewId, selectedMeta.id))
-                    }
-                  }}
-                  onOpenInNewWindow={(selectedMeta) => {
-                    if (activeWorkspaceId) {
-                      window.electronAPI.openSessionInNewWindow(activeWorkspaceId, selectedMeta.id)
-                    }
-                  }}
-                  onNavigateToView={(view) => {
-                    if (view === 'allChats') {
-                      navigate(routes.view.allChats())
-                    } else if (view === 'flagged') {
-                      navigate(routes.view.flagged())
-                    }
-                  }}
-                  sessionOptions={sessionOptions}
-                  searchActive={searchActive}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  onSearchClose={() => {
-                    setSearchActive(false)
-                    setSearchQuery('')
-                  }}
-                  todoStates={effectiveTodoStates}
-                  evaluateViews={evaluateViews}
-                  labels={labelConfigs}
-                  onLabelsChange={handleSessionLabelsChange}
-                  workspaceId={activeWorkspaceId ?? undefined}
-                  statusFilter={listFilter}
-                  labelFilterMap={labelFilter}
-                />
-              </>
+              /* Sessions List + 文件树（垂直分割） */
+              <div ref={sessionColumnRef} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                {/* SessionList 区域 */}
+                <div style={{ flex: isFileTreeCollapsed ? 1 : (1 - fileTreeHeightRatio) }} className="min-h-0 overflow-hidden">
+                  {/* SessionList: Scrollable list of session cards */}
+                  {/* Key on sidebarMode forces full remount when switching views, skipping animations */}
+                  <SessionList
+                    key={chatFilter?.kind}
+                    items={searchActive ? workspaceSessionMetas : filteredSessionMetas}
+                    onDelete={handleDeleteSession}
+                    onFlag={onFlagSession}
+                    onUnflag={onUnflagSession}
+                    onMarkUnread={onMarkSessionUnread}
+                    onTodoStateChange={onTodoStateChange}
+                    onRename={onRenameSession}
+                    onFocusChatInput={focusChatInput}
+                    onSessionSelect={(selectedMeta) => {
+                      // Navigate to the session via central routing (with filter context)
+                      if (!chatFilter || chatFilter.kind === 'allChats') {
+                        navigate(routes.view.allChats(selectedMeta.id))
+                      } else if (chatFilter.kind === 'flagged') {
+                        navigate(routes.view.flagged(selectedMeta.id))
+                      } else if (chatFilter.kind === 'state') {
+                        navigate(routes.view.state(chatFilter.stateId, selectedMeta.id))
+                      } else if (chatFilter.kind === 'label') {
+                        navigate(routes.view.label(chatFilter.labelId, selectedMeta.id))
+                      } else if (chatFilter.kind === 'view') {
+                        navigate(routes.view.view(chatFilter.viewId, selectedMeta.id))
+                      }
+                    }}
+                    onOpenInNewWindow={(selectedMeta) => {
+                      if (activeWorkspaceId) {
+                        window.electronAPI.openSessionInNewWindow(activeWorkspaceId, selectedMeta.id)
+                      }
+                    }}
+                    onNavigateToView={(view) => {
+                      if (view === 'allChats') {
+                        navigate(routes.view.allChats())
+                      } else if (view === 'flagged') {
+                        navigate(routes.view.flagged())
+                      }
+                    }}
+                    sessionOptions={sessionOptions}
+                    searchActive={searchActive}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    onSearchClose={() => {
+                      setSearchActive(false)
+                      setSearchQuery('')
+                    }}
+                    todoStates={effectiveTodoStates}
+                    evaluateViews={evaluateViews}
+                    labels={labelConfigs}
+                    onLabelsChange={handleSessionLabelsChange}
+                    workspaceId={activeWorkspaceId ?? undefined}
+                    statusFilter={listFilter}
+                    labelFilterMap={labelFilter}
+                  />
+                </div>
+
+                {/* 水平 resize handle（仅展开时，在 toggle bar 上方） */}
+                {!isFileTreeCollapsed && (
+                  <div
+                    onMouseDown={(e) => { e.preventDefault(); setIsResizing('file-tree-height') }}
+                    className="h-0 shrink-0 relative cursor-row-resize"
+                  >
+                    <div className="absolute -top-1 -bottom-1 inset-x-0 cursor-row-resize z-10" />
+                  </div>
+                )}
+
+                {/* 文件树折叠/展开 toggle bar — 始终固定在底部 */}
+                <div
+                  className="flex items-center gap-1.5 px-3 h-9 shrink-0 border-t bg-background/60 backdrop-blur-sm shadow-[0_-1px_3px_rgba(0,0,0,0.08)] cursor-pointer select-none hover:bg-accent/50 transition-colors"
+                  onClick={handleToggleFileTree}
+                >
+                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('文件')}</span>
+                  <ChevronDown className={cn("h-3 w-3 text-muted-foreground ml-auto transition-transform", isFileTreeCollapsed && "rotate-180")} />
+                </div>
+
+                {/* 文件树面板 — 展开时从底部向上占据空间 */}
+                {!isFileTreeCollapsed && (
+                  <div style={{ flex: fileTreeHeightRatio }} className="min-h-0 overflow-hidden border-t">
+                    {activeWorkspace?.rootPath && (
+                      <FileTreePanel
+                        compact
+                        rootPath={activeWorkspace.rootPath}
+                        selectedPath={selectedFile?.path}
+                        onSelectFile={handleFileTreeSelect}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
             )}
             </div>
           </motion.div>
@@ -3105,10 +3235,58 @@ function AppShellContent({
           </div>
           )}
 
+          {/* 文件预览面板 — 按比例分配空间 */}
+          {isChatsNavigation(navState) && isFilePreviewVisible && (
+          <div
+            style={{ flex: filePreviewRatio }}
+            className="overflow-hidden min-w-0 h-full bg-foreground-2 shadow-middle rounded-[10px]"
+          >
+              <FilePreviewPanel
+                file={selectedFile}
+                onClose={handleCloseFilePreview}
+                onConvertRequest={(filePath, format) => {
+                  if (!session.selected) return
+                  const message = format === 'word'
+                    ? `请将文件 ${filePath} 转换为 Word 格式`
+                    : `请将文件 ${filePath} 转换为 PDF 格式`
+                  onSendMessage(session.selected, message)
+                  navigate(routes.view.allChats(session.selected))
+                }}
+              />
+          </div>
+          )}
+
+          {/* 文件预览面板与聊天区之间的 resize handle */}
+          {isChatsNavigation(navState) && isFilePreviewVisible && (
+          <div
+            ref={filePreviewHandleRef}
+            onMouseDown={(e) => { e.preventDefault(); setIsResizing('file-preview') }}
+            onMouseMove={(e) => {
+              if (filePreviewHandleRef.current) {
+                const rect = filePreviewHandleRef.current.getBoundingClientRect()
+                setFilePreviewHandleY(e.clientY - rect.top)
+              }
+            }}
+            onMouseLeave={() => { if (isResizing !== 'file-preview') setFilePreviewHandleY(null) }}
+            className="relative w-0 h-full cursor-col-resize flex justify-center shrink-0"
+          >
+            {/* Touch area */}
+            <div className="absolute inset-y-0 -left-1.5 -right-1.5 flex justify-center cursor-col-resize">
+              <div
+                className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5"
+                style={getResizeGradientStyle(filePreviewHandleY)}
+              />
+            </div>
+          </div>
+          )}
+
           {/* === MAIN CONTENT PANEL === (hidden in files navigation; full-width for marketplace navigation) */}
           {!isFilesNavigation(navState) && (
-          <div className={cn(
-            "flex-1 overflow-hidden min-w-0 bg-foreground-2 shadow-middle",
+          <div
+            style={isChatsNavigation(navState) && isFilePreviewVisible ? { flex: 1 - filePreviewRatio } : undefined}
+            className={cn(
+            "overflow-hidden min-w-0 bg-foreground-2 shadow-middle",
+            !(isChatsNavigation(navState) && isFilePreviewVisible) && "flex-1",
             effectiveFocusMode ? "rounded-l-[14px]" : "rounded-l-[10px]",
             isRightSidebarVisible ? "rounded-r-[10px]" : "rounded-r-[14px]"
           )}>

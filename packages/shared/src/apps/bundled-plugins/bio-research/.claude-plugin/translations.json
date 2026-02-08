@@ -1,0 +1,6 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "start": { "label": "启动环境", "description": "设置生物研究环境并探索可用工具" }
+  }
+}

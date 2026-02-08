@@ -1,0 +1,8 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "call-summary": { "label": "通话总结", "description": "处理通话记录或录音——提取行动项、起草跟进邮件、生成内部摘要" },
+    "forecast": { "label": "销售预测", "description": "生成加权销售预测，包含最佳/可能/最差场景、承诺与上行空间分析" },
+    "pipeline-review": { "label": "管道审查", "description": "分析销售管道健康度——排列交易优先级、标记风险、生成每周行动计划" }
+  }
+}

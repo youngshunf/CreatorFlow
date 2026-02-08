@@ -1864,6 +1864,14 @@
     "Delete session"
   ],
   [
+    "确认删除会话",
+    "Delete Conversation"
+  ],
+  [
+    "确定要删除",
+    "Are you sure you want to delete"
+  ],
+  [
     "删除技能失败",
     "Failed to delete skill"
   ],
@@ -3750,5 +3758,61 @@
   [
     "无结果",
     "No results"
+  ],
+  [
+    "你想修改什么？",
+    "What would you like to change?"
+  ],
+  [
+    "描述一下，剩下的交给我",
+    "Just describe it — I'll handle the rest"
+  ],
+  [
+    "询问编辑",
+    "Ask to Edit"
+  ],
+  [
+    "只读探索，阻止写入，不提示。",
+    "Read-only exploration. Blocks writes, never prompts."
+  ],
+  [
+    "编辑前提示。",
+    "Prompts before making edits."
+  ],
+  [
+    "自动执行，不提示。",
+    "Automatic execution, no prompts."
+  ],
+  [
+    "秒",
+    "s"
+  ],
+  [
+    "分",
+    "m"
+  ],
+  [
+    "时",
+    "h"
+  ],
+  [
+    "天",
+    "d"
+  ],
+  [
+    "周",
+    "w"
+  ],
+  [
+    "月",
+    "mo"
+  ],
+  [
+    "年",
+    "y"
+  ],
+  [
+    "M月d日",
+    "MMM d"
   ]
 ]

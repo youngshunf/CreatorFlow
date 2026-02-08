@@ -1,0 +1,10 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "brief": { "label": "法律简报", "description": "生成法律工作的上下文简报——每日摘要、主题研究或事件响应" },
+    "respond": { "label": "法律回复", "description": "使用配置的模板生成常见法律咨询的回复" },
+    "review-contract": { "label": "合同审查", "description": "根据组织的谈判手册审查合同——标记偏差、生成修改意见、提供商业影响分析" },
+    "triage-nda": { "label": "NDA 分诊", "description": "快速分诊收到的 NDA——分类为标准审批、法律顾问审查或完整法律审查" },
+    "vendor-check": { "label": "供应商检查", "description": "在所有已连接系统中检查与供应商的现有协议状态" }
+  }
+}

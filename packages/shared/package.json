@@ -57,7 +57,9 @@
     "./skills": "./src/skills/index.ts",
     "./skills/types": "./src/skills/types.ts",
     "./marketplace": "./src/marketplace/index.ts",
-    "./search": "./src/search/index.ts"
+    "./search": "./src/search/index.ts",
+    "./plugins": "./src/plugins/index.ts",
+    "./plugins/global-plugins": "./src/plugins/global-plugins.ts"
   },
   "dependencies": {
     "@sprouty-ai/core": "workspace:*",

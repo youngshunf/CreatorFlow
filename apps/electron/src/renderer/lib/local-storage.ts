@@ -47,6 +47,11 @@ export const KEYS = {
 
   // Settings navigator expanded folders
   settingsExpandedFolders: 'settings-expanded-folders',
+
+  // 会话列表内嵌文件树
+  fileTreeCollapsed: 'file-tree-collapsed',
+  fileTreeHeight: 'file-tree-height',
+  filePreviewRatio: 'file-preview-ratio',
 } as const
 
 export type StorageKey = typeof KEYS[keyof typeof KEYS]

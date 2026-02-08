@@ -1,0 +1,11 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "competitive-brief": { "label": "竞品分析", "description": "为一个或多个竞争对手或功能领域创建竞品分析简报" },
+    "metrics-review": { "label": "指标审查", "description": "审查和分析产品指标，包含趋势分析和可执行洞察" },
+    "roadmap-update": { "label": "路线图更新", "description": "更新、创建或重新排列产品路线图优先级" },
+    "stakeholder-update": { "label": "干系人通报", "description": "根据受众和频率生成干系人通报" },
+    "synthesize-research": { "label": "研究综合", "description": "将用户访谈、调查和反馈综合为结构化洞察" },
+    "write-spec": { "label": "撰写规格", "description": "从问题陈述或功能想法撰写功能规格或 PRD" }
+  }
+}

@@ -49,6 +49,7 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, handler)
   },
   setTrafficLightsVisible: (visible: boolean) => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_SET_TRAFFIC_LIGHTS, visible),
+  adjustWindowWidth: (delta: number) => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_ADJUST_WIDTH, delta),
 
   // Event listeners
   onSessionEvent: (callback: (event: SessionEvent) => void) => {
@@ -523,6 +524,7 @@ const api: ElectronAPI = {
     copy: (srcPaths: string[], destDir: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_COPY, srcPaths, destDir),
     getFileInfo: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_GET_FILE_INFO, path),
     readFileBase64: (path: string, maxSize?: number) => ipcRenderer.invoke(IPC_CHANNELS.FM_READ_FILE_BASE64, path, maxSize),
+    writeFile: (path: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_WRITE_FILE, path, content),
     watchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_WATCH_DIRECTORY, path),
     unwatchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_UNWATCH_DIRECTORY, path),
     onDirectoryChanged: (callback: (event: FMDirectoryChangeEvent) => void) => {

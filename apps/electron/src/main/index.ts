@@ -77,6 +77,7 @@ import { ensureToolIcons } from '@sprouty-ai/shared/config'
 import { setBundledAssetsRoot } from '@sprouty-ai/shared/utils'
 import { handleDeepLink } from './deep-link'
 import { registerThumbnailScheme, registerThumbnailHandler } from './thumbnail-protocol'
+import { registerLocalFileScheme, registerLocalFileHandler } from './local-file-protocol'
 import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
 import { setPerfEnabled, enableDebug } from '@sprouty-ai/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
@@ -122,6 +123,7 @@ if (process.defaultApp) {
 // Register thumbnail:// custom protocol for file preview thumbnails in the sidebar.
 // Must happen before app.whenReady() — Electron requires early scheme registration.
 registerThumbnailScheme()
+registerLocalFileScheme()
 
 // Handle deeplink on macOS (when app is already running)
 app.on('open-url', (event, url) => {
@@ -304,7 +306,7 @@ app.whenReady().then(async () => {
   // Initialize bundled docs
   initializeDocs()
 
-  // Initialize global skills (first run: copy bundled skills to ~/.sprouty-ai/global-skills/)
+  // Initialize global skills (first run: copy bundled skills to ~/.sprouty-ai/skills/)
   try {
     const { initializeGlobalSkills } = await import('@sprouty-ai/shared/skills/global-skills')
     await initializeGlobalSkills()
@@ -321,6 +323,15 @@ app.whenReady().then(async () => {
         })
       }
     }, 3000) // 延迟3秒，等待窗口创建
+  }
+
+  // Initialize global plugins (first run: copy bundled plugins to ~/.sprouty-ai/plugins/)
+  try {
+    const { initializeGlobalPlugins } = await import('@sprouty-ai/shared/plugins/global-plugins')
+    await initializeGlobalPlugins()
+    mainLog.info('Global plugins initialized successfully')
+  } catch (error) {
+    mainLog.error('Failed to initialize global plugins:', error)
   }
 
   // Ensure default permissions file exists (copies bundled default.json on first run)
@@ -341,6 +352,9 @@ app.whenReady().then(async () => {
 
   // Register thumbnail:// protocol handler (scheme was registered earlier, before app.whenReady)
   registerThumbnailHandler()
+
+  // Register localfile:// protocol handler for media file streaming
+  registerLocalFileHandler()
 
   // Note: electron-updater handles pending updates internally via autoInstallOnAppQuit
 

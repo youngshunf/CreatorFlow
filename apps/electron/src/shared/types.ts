@@ -831,6 +831,7 @@ export const IPC_CHANNELS = {
   BADGE_DRAW: 'badge:draw',  // Broadcast: { count: number, iconDataUrl: string }
   WINDOW_FOCUS_STATE: 'window:focusState',  // Broadcast: boolean (isFocused)
   WINDOW_GET_FOCUS_STATE: 'window:getFocusState',
+  WINDOW_ADJUST_WIDTH: 'window:adjustWidth',
 
   // File Manager (workspace file browsing)
   FM_LIST_DIRECTORY: 'fm:listDirectory',
@@ -843,6 +844,7 @@ export const IPC_CHANNELS = {
   FM_READ_FILE_BASE64: 'fm:readFileBase64',
   FM_WATCH_DIRECTORY: 'fm:watchDirectory',
   FM_UNWATCH_DIRECTORY: 'fm:unwatchDirectory',
+  FM_WRITE_FILE: 'fm:writeFile',
   FM_DIRECTORY_CHANGED: 'fm:directoryChanged',
 
   // Git operations
@@ -940,6 +942,8 @@ export interface ElectronAPI {
   onCloseRequested(callback: () => void): () => void
   /** Show/hide macOS traffic light buttons (for fullscreen overlays) */
   setTrafficLightsVisible(visible: boolean): Promise<void>
+  /** 调整窗口宽度（正值=变宽，负值=变窄） */
+  adjustWindowWidth(delta: number): Promise<void>
 
   // Event listeners
   onSessionEvent(callback: (event: SessionEvent) => void): () => void
@@ -970,6 +974,7 @@ export interface ElectronAPI {
     copy(srcPaths: string[], destDir: string): Promise<void>
     getFileInfo(path: string): Promise<FMFileInfo>
     readFileBase64(path: string, maxSize?: number): Promise<{ data: string; mimeType: string }>
+    writeFile(path: string, content: string): Promise<void>
     watchDirectory(path: string): void
     unwatchDirectory(path: string): void
     onDirectoryChanged(callback: (event: FMDirectoryChangeEvent) => void): () => void

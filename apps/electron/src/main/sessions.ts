@@ -1463,22 +1463,16 @@ export class SessionManager {
     await this.ensureMessagesLoaded(m)
 
     // Re-push SDK slash commands on session switch so the / menu stays populated.
-    // The agent may already have commands from a previous init; if so, re-send them.
-    if (m.agent) {
-      const cmds = m.agent.getSdkSlashCommands()
-      if (cmds.length > 0) {
-        const plugins = m.agent.getSdkPlugins()
-        const translations = loadPluginTranslations(plugins)
-        this.sendEvent({
-          type: 'slash_commands_available',
-          sessionId: m.id,
-          commands: cmds,
-          translations,
-        }, m.workspace.id)
-      }
-    } else {
-      // No agent yet: scan filesystem for immediate command list
+    // Always use scanWorkspaceCommands as the source of truth — it only scans commands/
+    // directories, excluding skills and MCP servers that SDK may include.
+    {
       const { commands, translations } = scanWorkspaceCommands(m.workspace.rootPath, getGlobalPluginDataPath())
+      // Merge plugin translations from SDK plugins if agent is available
+      if (m.agent) {
+        const plugins = m.agent.getSdkPlugins()
+        const pluginTrans = loadPluginTranslations(plugins)
+        Object.assign(translations, pluginTrans)
+      }
       if (commands.length > 0) {
         this.sendEvent({
           type: 'slash_commands_available',
@@ -1786,21 +1780,28 @@ export class SessionManager {
 
       // Wire up onSlashCommandsAvailable to push SDK commands to renderer (for @ menu)
       // When SDK init returns slash_commands + plugins, load translations from plugin paths
-      // and push enriched data to renderer
+      // and push enriched data to renderer.
+      // IMPORTANT: SDK slash_commands includes skills (not just commands), so we filter
+      // against our own scanWorkspaceCommands whitelist to only show actual commands.
       managed.agent.onSlashCommandsAvailable = (commands, plugins) => {
         const translations = loadPluginTranslations(plugins)
-        sessionLog.info(`SDK slash commands available for session ${managed.id}: ${commands.map(c => c.name).join(', ')}`)
+        // Build whitelist of known commands (SDK built-in + plugin commands/ entries)
+        const { commands: knownCommands } = scanWorkspaceCommands(managed.workspace.rootPath, getGlobalPluginDataPath())
+        const knownNames = new Set(knownCommands.map(c => c.name))
+        // Filter SDK commands: only keep those in our whitelist
+        const filteredCommands = commands.filter(c => knownNames.has(c.name))
+        sessionLog.info(`SDK slash commands available for session ${managed.id}: ${filteredCommands.length}/${commands.length} (filtered from SDK)`)
         this.sendEvent({
           type: 'slash_commands_available',
           sessionId: managed.id,
-          commands,
+          commands: filteredCommands,
           translations,
         }, managed.workspace.id)
       }
 
       // Scan workspace for all commands (SDK built-in + installed plugins) and send immediately
       // so @ menu works before first message
-      const { commands: allCommands, translations: pluginTranslations } = scanWorkspaceCommands(managed.workspace.rootPath)
+      const { commands: allCommands, translations: pluginTranslations } = scanWorkspaceCommands(managed.workspace.rootPath, getGlobalPluginDataPath())
       this.sendEvent({
         type: 'slash_commands_available',
         sessionId: managed.id,

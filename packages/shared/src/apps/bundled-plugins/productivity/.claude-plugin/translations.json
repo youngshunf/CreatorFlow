@@ -1,0 +1,7 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "start": { "label": "开始工作", "description": "初始化生产力系统并打开仪表盘" },
+    "update": { "label": "同步更新", "description": "从当前活动同步任务并刷新记忆" }
+  }
+}

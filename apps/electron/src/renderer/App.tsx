@@ -13,6 +13,7 @@ import type { AppShellContextType } from '@/context/AppShellContext'
 import { OnboardingWizard, ReauthScreen } from '@/components/onboarding'
 import { LoginScreen } from '@/components/auth/LoginScreen'
 import { ResetConfirmationDialog } from '@/components/ResetConfirmationDialog'
+import { DeleteSessionDialog } from '@/components/DeleteSessionDialog'
 import { SplashScreen } from '@/components/SplashScreen'
 import { TooltipProvider } from '@sprouty-ai/ui'
 import { FocusProvider } from '@/context/FocusContext'
@@ -245,6 +246,8 @@ export default function App() {
   const [appTheme, setAppTheme] = useState<ThemeOverrides | null>(null)
   // Reset confirmation dialog
   const [showResetDialog, setShowResetDialog] = useState(false)
+  // Delete session confirmation dialog
+  const [deleteSessionState, setDeleteSessionState] = useState<{ sessionId: string; name: string; resolve: (confirmed: boolean) => void } | null>(null)
 
   // Auto-update state
   const updateChecker = useUpdateChecker()
@@ -741,7 +744,9 @@ export default function App() {
       const isEmpty = !meta || (!meta.lastFinalMessageId && !meta.name)
 
       if (!isEmpty) {
-        const confirmed = await window.electronAPI.showDeleteSessionConfirmation(meta?.name || 'Untitled')
+        const confirmed = await new Promise<boolean>((resolve) => {
+          setDeleteSessionState({ sessionId, name: meta?.name || 'Untitled', resolve })
+        })
         if (!confirmed) return false
       }
     }
@@ -1502,6 +1507,18 @@ export default function App() {
               open={showResetDialog}
               onConfirm={executeReset}
               onCancel={() => setShowResetDialog(false)}
+            />
+            <DeleteSessionDialog
+              open={!!deleteSessionState}
+              sessionName={deleteSessionState?.name ?? ''}
+              onConfirm={() => {
+                deleteSessionState?.resolve(true)
+                setDeleteSessionState(null)
+              }}
+              onCancel={() => {
+                deleteSessionState?.resolve(false)
+                setDeleteSessionState(null)
+              }}
             />
           </div>
 
