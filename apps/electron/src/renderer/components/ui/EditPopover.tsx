@@ -106,7 +106,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'workspace-permissions': (location) => ({
     context: {
       label: 'Permission Settings',
-      filePath: `${location}/permissions.json`,
+      filePath: `${location}/.sprouty-ai/permissions.json`,
       context:
         'The user is on the Settings Screen and pressed the edit button on Workspace Permission settings. ' +
         'Their intent is likely to update the setting immediately unless otherwise specified. ' +
@@ -268,7 +268,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source': (location) => ({
     context: {
       label: 'Add Source',
-      filePath: `${location}/sources/`, // location is the workspace root path
+      filePath: `${location}/.sprouty-ai/sources/`, // location is the workspace root path
       context:
         'The user wants to add a new source to their workspace. ' +
         'Sources can be MCP servers (HTTP/SSE or stdio), REST APIs, or local filesystems. ' +
@@ -285,7 +285,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-api': (location) => ({
     context: {
       label: 'Add API',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user is viewing API sources and wants to add a new REST API. ' +
         'Default to creating an API source (type: "api") unless they specify otherwise. ' +
@@ -302,7 +302,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-mcp': (location) => ({
     context: {
       label: 'Add MCP Server',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user is viewing MCP sources and wants to add a new MCP server. ' +
         'Default to creating an MCP source (type: "mcp") unless they specify otherwise. ' +
@@ -319,7 +319,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-local': (location) => ({
     context: {
       label: 'Add Local Folder',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user wants to add a local folder source. ' +
         'First, look up the guide: mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" }). ' +
@@ -337,7 +337,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-skill': (location) => ({
     context: {
       label: 'Add Skill',
-      filePath: `${location}/skills/`, // location is the workspace root path
+      filePath: `${location}/.sprouty-ai/skills/`, // location is the workspace root path
       context:
         'The user wants to add a new skill to their workspace. ' +
         'Skills are specialized instructions with a SKILL.md file containing YAML frontmatter (name, description) and markdown instructions. ' +
@@ -354,7 +354,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-statuses': (location) => ({
     context: {
       label: 'Status Configuration',
-      filePath: `${location}/statuses/config.json`,
+      filePath: `${location}/.sprouty-ai/statuses/config.json`,
       context:
         'The user wants to customize session statuses (workflow states). ' +
         'Statuses are stored in statuses/config.json with fields: id, label, icon, category (open/closed), order, isFixed, isDefault. ' +
@@ -374,7 +374,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-labels': (location) => ({
     context: {
       label: 'Label Configuration',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to customize session labels (tagging/categorization). ' +
         'Labels are stored in labels/config.json as a hierarchical tree. ' +
@@ -395,7 +395,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-auto-rules': (location) => ({
     context: {
       label: 'Auto-Apply Rules',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to edit auto-apply rules (regex patterns that auto-tag sessions). ' +
         'Rules live inside the autoRules array on individual labels in labels/config.json. ' +
@@ -415,7 +415,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-label': (location) => ({
     context: {
       label: 'Add Label',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to create a new label from the # inline menu. ' +
         'Labels are stored in labels/config.json as a hierarchical tree. ' +
@@ -436,7 +436,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-views': (location) => ({
     context: {
       label: 'Views Configuration',
-      filePath: `${location}/views.json`,
+      filePath: `${location}/.sprouty-ai/views.json`,
       context:
         'The user wants to edit views (dynamic, expression-based filters). ' +
         'Views are stored in views.json at the workspace root under a "views" array. ' +
