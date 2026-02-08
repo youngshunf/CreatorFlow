@@ -42,7 +42,9 @@ import {
 } from '@/atoms/sessions'
 import { sourcesAtom } from '@/atoms/sources'
 import { skillsAtom } from '@/atoms/skills'
+import { sdkSlashCommandsAtom, commandTranslationsAtom } from '@/atoms/sdk-commands'
 import { extractBadges } from '@/lib/mentions'
+import { SDK_COMMAND_TRANSLATIONS, getCommandDisplay } from '@creator-flow/shared/agent/slash-command-data'
 import { getDefaultStore } from 'jotai'
 import {
   ShikiThemeProvider,
@@ -454,6 +456,15 @@ export default function App() {
         if (session) {
           navigate(routes.view.allChats(session.id))
         }
+      } else if (windowWorkspaceId) {
+        // Auto-select the most recent session for the current workspace
+        // (e.g., after workspace switch). Sessions are already sorted by lastMessageAt desc.
+        const workspaceSessions = loadedSessions
+          .filter(s => s.workspaceId === windowWorkspaceId)
+          .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0))
+        if (workspaceSessions.length > 0) {
+          navigate(routes.view.allChats(workspaceSessions[0].id))
+        }
       }
     })
     // Load stored model preference
@@ -584,6 +595,15 @@ export default function App() {
         window.dispatchEvent(new CustomEvent('craft:compaction-complete', {
           detail: { sessionId }
         }))
+      }
+
+      // Store SDK slash commands when available (for @ menu)
+      if (event.type === 'slash_commands_available') {
+        store.set(sdkSlashCommandsAtom, event.commands)
+        if (event.translations) {
+          store.set(commandTranslationsAtom, event.translations)
+        }
+        return
       }
 
       // Check if session is currently streaming (atom is source of truth)
@@ -867,14 +887,29 @@ export default function App() {
         : []
       const badges: ContentBadge[] = [...(externalBadges || []), ...mentionBadges]
 
-      // Step 4.1: Detect SDK slash commands (e.g., /compact) and create command badges
-      // This makes /compact render as an inline badge rather than raw text
-      const commandMatch = message.match(/^\/([a-z]+)(\s|$)/i)
-      if (commandMatch && commandMatch[1].toLowerCase() === 'compact') {
-        const commandText = commandMatch[0].trimEnd() // "/compact" without trailing space
+      // Step 4.1: Detect SDK slash commands (e.g., /compact, /productivity:start) and create command badges
+      // This makes slash commands render as an inline badge with friendly label rather than raw text
+      const commandMatch = message.match(/^\/([a-zA-Z][\w\-:]*)(\s|$)/)
+      if (commandMatch) {
+        const commandName = commandMatch[1]
+        const commandText = commandMatch[0].trimEnd() // "/command" without trailing space
+
+        // Look up friendly label from translations
+        const sdkCommands = store.get(sdkSlashCommandsAtom)
+        const translations = store.get(commandTranslationsAtom)
+        const sdkCmd = sdkCommands.find(c => c.name === commandName)
+        let label: string
+        if (sdkCmd) {
+          label = getCommandDisplay(sdkCmd, translations).label
+        } else {
+          // Fallback: check built-in translations, then use command name
+          const builtinTrans = SDK_COMMAND_TRANSLATIONS[commandName]
+          label = builtinTrans?.label ?? commandName
+        }
+
         badges.unshift({
           type: 'command',
-          label: 'Compact',
+          label,
           rawText: commandText,
           start: 0,
           end: commandText.length,
@@ -1232,6 +1267,8 @@ export default function App() {
       // (prevents stale data flash during workspace switch - AppShell will reload)
       store.set(sourcesAtom, [])
       store.set(skillsAtom, [])
+      store.set(sdkSlashCommandsAtom, [])
+      store.set(commandTranslationsAtom, {})
 
       // 9. Clear session atoms BEFORE navigating
       // This prevents applyNavigationState from auto-selecting a session from the old workspace.

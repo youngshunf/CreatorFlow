@@ -548,11 +548,31 @@ export function ensurePluginManifest(rootPath: string, workspaceName: string): v
 
   // Create minimal plugin manifest
   const manifest = {
-    name: `craft-workspace-${workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    name: 'sprouty-workspace',
     version: '1.0.0',
   };
 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+}
+
+/**
+ * Get the global plugin data path (~/.creator-flow/)
+ * Used for global plugins that are available across all workspaces.
+ */
+export function getGlobalPluginDataPath(): string {
+  return CONFIG_DIR;
+}
+
+/**
+ * Ensure global plugin manifest exists at ~/.creator-flow/.claude-plugin/plugin.json
+ * This allows global plugins to be loaded by the SDK alongside workspace plugins.
+ */
+export function ensureGlobalPluginManifest(): void {
+  const pluginDir = join(CONFIG_DIR, '.claude-plugin');
+  const manifestPath = join(pluginDir, 'plugin.json');
+  if (existsSync(manifestPath)) return;
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(manifestPath, JSON.stringify({ name: 'sprouty', version: '1.0.0' }, null, 2));
 }
 
 export { CONFIG_DIR, DEFAULT_WORKSPACES_DIR };

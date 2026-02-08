@@ -3,7 +3,8 @@ import * as Sentry from '@sentry/electron/main'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
+import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest, SDK_COMMAND_TRANSLATIONS, scanWorkspaceCommands, loadPluginTranslations } from '@creator-flow/shared/agent'
+import { getGlobalPluginDataPath } from '@creator-flow/shared/workspaces'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -1461,6 +1462,33 @@ export class SessionManager {
     // Lazy-load messages from disk if not yet loaded
     await this.ensureMessagesLoaded(m)
 
+    // Re-push SDK slash commands on session switch so the / menu stays populated.
+    // The agent may already have commands from a previous init; if so, re-send them.
+    if (m.agent) {
+      const cmds = m.agent.getSdkSlashCommands()
+      if (cmds.length > 0) {
+        const plugins = m.agent.getSdkPlugins()
+        const translations = loadPluginTranslations(plugins)
+        this.sendEvent({
+          type: 'slash_commands_available',
+          sessionId: m.id,
+          commands: cmds,
+          translations,
+        }, m.workspace.id)
+      }
+    } else {
+      // No agent yet: scan filesystem for immediate command list
+      const { commands, translations } = scanWorkspaceCommands(m.workspace.rootPath, getGlobalPluginDataPath())
+      if (commands.length > 0) {
+        this.sendEvent({
+          type: 'slash_commands_available',
+          sessionId: m.id,
+          commands,
+          translations,
+        }, m.workspace.id)
+      }
+    }
+
     return {
       id: m.id,
       workspaceId: m.workspace.id,
@@ -1630,6 +1658,17 @@ export class SessionManager {
 
     this.sessions.set(storedSession.id, managed)
 
+    // Push slash commands immediately so the / menu is populated for new sessions
+    const { commands: slashCmds, translations: slashTranslations } = scanWorkspaceCommands(workspaceRootPath, getGlobalPluginDataPath())
+    if (slashCmds.length > 0) {
+      this.sendEvent({
+        type: 'slash_commands_available',
+        sessionId: storedSession.id,
+        commands: slashCmds,
+        translations: slashTranslations,
+      }, workspace.id)
+    }
+
     return {
       id: storedSession.id,
       workspaceId: workspace.id,
@@ -1744,6 +1783,30 @@ export class SessionManager {
           permissionMode: managed.permissionMode,
         }, managed.workspace.id)
       }
+
+      // Wire up onSlashCommandsAvailable to push SDK commands to renderer (for @ menu)
+      // When SDK init returns slash_commands + plugins, load translations from plugin paths
+      // and push enriched data to renderer
+      managed.agent.onSlashCommandsAvailable = (commands, plugins) => {
+        const translations = loadPluginTranslations(plugins)
+        sessionLog.info(`SDK slash commands available for session ${managed.id}: ${commands.map(c => c.name).join(', ')}`)
+        this.sendEvent({
+          type: 'slash_commands_available',
+          sessionId: managed.id,
+          commands,
+          translations,
+        }, managed.workspace.id)
+      }
+
+      // Scan workspace for all commands (SDK built-in + installed plugins) and send immediately
+      // so @ menu works before first message
+      const { commands: allCommands, translations: pluginTranslations } = scanWorkspaceCommands(managed.workspace.rootPath)
+      this.sendEvent({
+        type: 'slash_commands_available',
+        sessionId: managed.id,
+        commands: allCommands,
+        translations: pluginTranslations,
+      }, managed.workspace.id)
 
       // Wire up onPlanSubmitted to add plan message to conversation
       managed.agent.onPlanSubmitted = async (planPath) => {

@@ -63,3 +63,4 @@ id_ed25519*
 credentials.enc
 *.credentials
 download-bun-windows.sh
+debug

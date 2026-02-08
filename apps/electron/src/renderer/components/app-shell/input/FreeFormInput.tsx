@@ -19,13 +19,11 @@ import { Button } from '@/components/ui/button'
 import {
   InlineSlashCommand,
   useInlineSlashCommand,
-  type SlashCommandId,
 } from '@/components/ui/slash-command-menu'
 import {
   InlineMentionMenu,
   useInlineMention,
   type MentionItem,
-  type MentionItemType,
 } from '@/components/ui/mention-menu'
 import {
   InlineLabelMenu,
@@ -659,53 +657,9 @@ export function FreeFormInput({
     return () => window.removeEventListener('craft:paste-files', handlePasteFiles as unknown as EventListener)
   }, [disabled, richInputRef])
 
-  // Build active commands list for slash command menu
-  const activeCommands = React.useMemo(() => {
-    const active: SlashCommandId[] = []
-    // Add the currently active permission mode
-    if (permissionMode === 'safe') active.push('safe')
-    else if (permissionMode === 'ask') active.push('ask')
-    else if (permissionMode === 'allow-all') active.push('allow-all')
-    if (ultrathinkEnabled) active.push('ultrathink')
-    return active
-  }, [permissionMode, ultrathinkEnabled])
-
-  // Handle slash command selection (mode/feature commands)
-  const handleSlashCommand = React.useCallback((commandId: SlashCommandId) => {
-    if (commandId === 'safe') onPermissionModeChange?.('safe')
-    else if (commandId === 'ask') onPermissionModeChange?.('ask')
-    else if (commandId === 'allow-all') onPermissionModeChange?.('allow-all')
-    else if (commandId === 'ultrathink') onUltrathinkChange?.(!ultrathinkEnabled)
-  }, [permissionMode, ultrathinkEnabled, onPermissionModeChange, onUltrathinkChange])
-
-  // Handle folder selection from slash command menu
-  const handleSlashFolderSelect = React.useCallback((path: string) => {
-    if (onWorkingDirectoryChange) {
-      addRecentDir(path)
-      setRecentFolders(getRecentDirs())
-      onWorkingDirectoryChange(path)
-    }
-  }, [onWorkingDirectoryChange])
-
-  // Get recent folders and home directory for slash menu and mention menu
-  const [recentFolders, setRecentFolders] = React.useState<string[]>([])
-  const [homeDir, setHomeDir] = React.useState<string>('')
-
-  React.useEffect(() => {
-    setRecentFolders(getRecentDirs())
-    window.electronAPI?.getHomeDir?.().then((dir: string) => {
-      if (dir) setHomeDir(dir)
-    })
-  }, [])
-
-  // Inline slash command hook (modes, features, and folders)
+  // Inline slash command hook (SDK + plugin commands)
   const inlineSlash = useInlineSlashCommand({
     inputRef: richInputRef,
-    onSelectCommand: handleSlashCommand,
-    onSelectFolder: handleSlashFolderSelect,
-    activeCommands,
-    recentFolders,
-    homeDir,
   })
 
   // Handle mention selection (sources, skills, files)
@@ -1029,7 +983,7 @@ export function FreeFormInput({
     })
 
     return true
-  }, [input, attachments, disabled, disableSend, onInputChange, onSubmit, skills, sources, optimisticSourceSlugs, onSourcesChange, onWorkingDirectoryChange, homeDir])
+  }, [input, attachments, disabled, disableSend, onInputChange, onSubmit, skills, sources, optimisticSourceSlugs, onSourcesChange, onWorkingDirectoryChange])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1193,24 +1147,28 @@ export function FreeFormInput({
   }, [inlineSlash, inlineMention, inlineLabel, syncToParent, autoCapitalisation])
 
   // Handle inline slash command selection (removes the /command text)
-  const handleInlineSlashCommandSelect = React.useCallback((commandId: SlashCommandId) => {
-    const newValue = inlineSlash.handleSelectCommand(commandId)
-    setInput(newValue)
-    syncToParent(newValue)
-    richInputRef.current?.focus()
-  }, [inlineSlash, syncToParent])
-
-  // Handle inline slash folder selection (inserts [dir:/path] badge)
-  const handleInlineSlashFolderSelect = React.useCallback((path: string) => {
-    const newValue = inlineSlash.handleSelectFolder(path)
-    setInput(newValue)
-    syncToParent(newValue)
-    richInputRef.current?.focus()
-  }, [inlineSlash, syncToParent])
+  const handleInlineSlashCommandSelect = React.useCallback((commandName: string, hasArgs: boolean) => {
+    const { value: newValue, cursorPosition } = inlineSlash.handleSelectCommand(commandName, hasArgs)
+    if (!hasArgs) {
+      // No-args command: directly submit
+      onSubmit(`/${commandName}`, undefined)
+      setInput('')
+      syncToParent('')
+    } else {
+      // Has args: insert /{name} and let user type arguments
+      setInput(newValue)
+      syncToParent(newValue)
+      setTimeout(() => {
+        richInputRef.current?.focus()
+        richInputRef.current?.setSelectionRange(cursorPosition, cursorPosition)
+      }, 0)
+    }
+  }, [inlineSlash, syncToParent, onSubmit])
 
   // Handle inline mention selection (inserts appropriate mention text)
   const handleInlineMentionSelect = React.useCallback((item: MentionItem) => {
     const { value: newValue, cursorPosition } = inlineMention.handleSelect(item)
+
     setInput(newValue)
     syncToParent(newValue)
     // Focus input and restore cursor position after badge renders
@@ -1262,9 +1220,7 @@ export function FreeFormInput({
           open={inlineSlash.isOpen}
           onOpenChange={(open) => !open && inlineSlash.close()}
           sections={inlineSlash.sections}
-          activeCommands={activeCommands}
           onSelectCommand={handleInlineSlashCommandSelect}
-          onSelectFolder={handleInlineSlashFolderSelect}
           filter={inlineSlash.filter}
           position={inlineSlash.position}
         />

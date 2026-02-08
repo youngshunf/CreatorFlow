@@ -32,27 +32,9 @@ function SlashCommandDemo() {
     }
   }, [])
 
-  // Handle command selection (toggle active state)
-  const handleCommandSelect = React.useCallback((commandId: SlashCommandId) => {
-    setActiveCommands(prev =>
-      prev.includes(commandId)
-        ? prev.filter(id => id !== commandId)
-        : [...prev, commandId]
-    )
-  }, [])
-
-  // Handle folder selection (no-op in demo)
-  const handleFolderSelect = React.useCallback((_path: string) => {
-    // No-op in demo - just for testing the UI
-  }, [])
-
   // Inline slash command hook
   const inlineSlash = useInlineSlashCommand({
     inputRef,
-    activeCommands,
-    onSelectCommand: handleCommandSelect,
-    onSelectFolder: handleFolderSelect,
-    recentFolders: [], // No folders in demo
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -62,17 +44,9 @@ function SlashCommandDemo() {
     inlineSlash.handleInputChange(value, cursorPosition)
   }
 
-  const handleInlineCommandSelect = (commandId: SlashCommandId) => {
-    const newValue = inlineSlash.handleSelectCommand(commandId)
+  const handleInlineCommandSelect = (commandName: string, hasArgs: boolean) => {
+    const { value: newValue } = inlineSlash.handleSelectCommand(commandName, hasArgs)
     setInputValue(newValue)
-    // Focus back to textarea
-    setTimeout(() => textareaRef.current?.focus(), 0)
-  }
-
-  const handleInlineFolderSelect = (path: string) => {
-    const newValue = inlineSlash.handleSelectFolder(path)
-    setInputValue(newValue)
-    // Focus back to textarea
     setTimeout(() => textareaRef.current?.focus(), 0)
   }
 
@@ -95,36 +69,8 @@ function SlashCommandDemo() {
         </h2>
         <p className="text-xs text-muted-foreground">
           Type <code className="px-1 py-0.5 bg-muted rounded">/</code> to trigger inline autocomplete, or click the button to open the menu.
-          Active commands show a checkmark.
         </p>
       </div>
-
-      {/* Active Commands Display */}
-      {activeCommands.length > 0 && (
-        <div className="shrink-0 px-4 py-2 border-b border-border/50 flex flex-wrap gap-2">
-          <span className="text-xs text-muted-foreground">Active:</span>
-          {activeCommands.map(id => {
-            const cmd = DEFAULT_SLASH_COMMANDS.find(c => c.id === id)
-            const color = cmd?.color || '#888'
-            return cmd ? (
-              <button
-                key={id}
-                onClick={() => setActiveCommands(prev => prev.filter(c => c !== id))}
-                className="h-6 px-2 text-[11px] font-medium rounded flex items-center gap-1.5 transition-all border"
-                style={{
-                  backgroundColor: `${color}1A`, // 10% opacity
-                  color: color,
-                  borderColor: `${color}4D`, // 30% opacity
-                }}
-              >
-                {cmd.icon}
-                <span>{cmd.label}</span>
-                <span className="opacity-60 hover:opacity-100">×</span>
-              </button>
-            ) : null
-          })}
-        </div>
-      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex gap-4 p-4">
@@ -207,9 +153,7 @@ function SlashCommandDemo() {
             if (!open) inlineSlash.close()
           }}
           sections={inlineSlash.sections}
-          activeCommands={activeCommands}
           onSelectCommand={handleInlineCommandSelect}
-          onSelectFolder={handleInlineFolderSelect}
           filter={inlineSlash.filter}
           position={inlineSlash.position}
         />

@@ -1,6 +1,7 @@
 export * from './creator-flow-agent.ts';
 export * from './errors.ts';
 export * from './options.ts';
+export { SDK_COMMAND_TRANSLATIONS, getCommandDisplay, type SlashCommandTranslation, scanWorkspaceCommands, loadPluginTranslations } from './slash-command-translations.ts';
 
 // Export session-scoped-tools - tools scoped to a specific session
 export {

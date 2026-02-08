@@ -37,6 +37,9 @@ export {
   renameWorkspaceFolder,
   // Auto-discovery
   discoverWorkspacesInDefaultLocation,
+  // Global plugin support
+  getGlobalPluginDataPath,
+  ensureGlobalPluginManifest,
   // Constants
   CONFIG_DIR,
   DEFAULT_WORKSPACES_DIR,

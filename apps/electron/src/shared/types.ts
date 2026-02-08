@@ -50,6 +50,15 @@ export type { LoadedSource, FolderSourceConfig, SourceConnectionStatus };
 import type { LoadedSkill, SkillMetadata } from '@creator-flow/shared/skills/types';
 export type { LoadedSkill, SkillMetadata };
 
+/**
+ * SDK slash command info (for @ menu display)
+ */
+export interface SdkSlashCommand {
+  name: string
+  description: string
+  argumentHint: string
+}
+
 
 /**
  * File/directory entry in a skill folder
@@ -508,6 +517,8 @@ export type SessionEvent =
   // Interactive UI events (Agent ↔ User structured interaction)
   | { type: 'interactive_request'; sessionId: string; message: CoreMessage; request: import('@creator-flow/shared/interactive-ui').InteractiveRequest }
   | { type: 'interactive_completed'; sessionId: string; requestId: string; response: import('@creator-flow/shared/interactive-ui').InteractiveResponse }
+  // SDK slash commands available (for @ menu)
+  | { type: 'slash_commands_available'; sessionId: string; commands: SdkSlashCommand[]; translations?: Record<string, { label: string; description: string }> }
 
 // Options for sendMessage
 export interface SendMessageOptions {

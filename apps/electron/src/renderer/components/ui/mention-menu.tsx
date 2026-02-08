@@ -4,6 +4,7 @@ import { FadingText } from '@/components/ui/fading-text'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import type { LoadedSkill, LoadedSource, FileSearchResult } from '../../../shared/types'
+import { t } from '@creator-flow/shared/locale'
 
 // ============================================================================
 // Types
@@ -268,12 +269,12 @@ export function InlineMentionMenu({
     >
       {/* Menu header — sticky above scroll area */}
       <div className="px-3 py-1.5 text-[12px] font-medium text-muted-foreground border-b border-foreground/5">
-        Mention files, skills, sources
+        {t('提及文件、技能和数据源')}
       </div>
 
       <div ref={listRef} className={MENU_LIST_STYLE}>
         {flatItems.length === 0 && filter && (
-          <div className="px-3 py-2 text-[12px] text-muted-foreground/60">No results</div>
+          <div className="px-3 py-2 text-[12px] text-muted-foreground/60">{t('无结果')}</div>
         )}
         {flatItems.map((item, itemIndex) => {
           const isSelected = itemIndex === selectedIndex
@@ -323,7 +324,7 @@ export function InlineMentionMenu({
                 </>
               ) : (
                 <>
-                  {/* Skill/source: label with type badge */}
+                  {/* Skill/source/command: label with type badge */}
                   <div className="flex-1 min-w-0">
                     <span className="truncate block">{item.label}</span>
                   </div>

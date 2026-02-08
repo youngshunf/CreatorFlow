@@ -8,7 +8,7 @@ import { parseError, type AgentError } from './errors.ts';
 import { runErrorDiagnostics } from './diagnostics.ts';
 import { getLastApiError } from '../network-interceptor.ts';
 import { loadStoredConfig, loadConfigDefaults, getAnthropicBaseUrl, resolveModelId, type Workspace } from '../config/storage.ts';
-import { isLocalMcpEnabled } from '../workspaces/storage.ts';
+import { isLocalMcpEnabled, getGlobalPluginDataPath, ensureGlobalPluginManifest } from '../workspaces/storage.ts';
 import { loadPlanFromPath, type SessionConfig as Session } from '../sessions/storage.ts';
 import { DEFAULT_MODEL, isClaudeModel } from '../config/models.ts';
 import { getCredentialManager } from '../credentials/index.ts';
@@ -41,7 +41,7 @@ import {
 } from './mode-manager.ts';
 import { type PermissionsContext, permissionsConfigCache } from './permissions-config.ts';
 import { getSessionPlansPath, getSessionPath } from '../sessions/storage.ts';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { expandPath } from '../utils/paths.ts';
 import {
   ConfigWatcher,
@@ -54,6 +54,8 @@ import { type ThinkingLevel, getThinkingTokens, DEFAULT_THINKING_LEVEL } from '.
 import type { LoadedSource } from '../sources/types.ts';
 import { sourceNeedsAuthentication } from '../sources/credential-manager.ts';
 import { t, $t } from '../locale/index.ts';
+import { SDK_COMMAND_TRANSLATIONS } from './slash-command-data.ts';
+// slash-command-translations is dynamically imported in init handler (scanWorkspaceCommands)
 
 // Re-export permission mode functions for application usage
 export {
@@ -397,6 +399,10 @@ export class CreatorFlowAgent {
   private safeMode: boolean = false;
   // SDK tools list (captured from init message)
   private sdkTools: string[] = [];
+  // SDK slash commands (captured from SDK init message + supportedCommands())
+  private sdkSlashCommands: Array<{ name: string; description: string; argumentHint: string }> = [];
+  // SDK plugins (captured from SDK init message)
+  private sdkPlugins: Array<{ name: string; path: string }> = [];
   // Session-level thinking level ('off', 'think', 'max') - sticky, persisted
   private thinkingLevel: ThinkingLevel = 'think';
   // Ultrathink override - when true, boosts to max thinking for one message (resets after query)
@@ -471,6 +477,13 @@ export class CreatorFlowAgent {
   // This enables auto-enabling sources when the agent tries to use their tools.
   public onSourceActivationRequest: ((sourceSlug: string) => Promise<boolean>) | null = null;
 
+  // Callback when SDK slash commands are available (for @ menu display)
+  // Called with commands from SDK init, then again with enriched data from supportedCommands()
+  public onSlashCommandsAvailable: ((
+    commands: Array<{ name: string; description: string; argumentHint: string }>,
+    plugins: Array<{ name: string; path: string }>,
+  ) => void) | null = null;
+
   constructor(config: CreatorFlowAgentConfig) {
     // Resolve model: prioritize session model > config model > DEFAULT_MODEL
     const model = config.session?.model ?? config.model ?? DEFAULT_MODEL;
@@ -479,6 +492,9 @@ export class CreatorFlowAgent {
 
     // Log which model is being used (helpful for debugging custom models)
     debug(`[CreatorFlowAgent] Using model: ${model}`);
+
+    // Ensure global plugin manifest exists for SDK plugin discovery
+    ensureGlobalPluginManifest();
 
     // Initialize thinking level from config (defaults to 'think' from class initialization)
     if (config.thinkingLevel) {
@@ -1124,6 +1140,61 @@ export class CreatorFlowAgent {
               }
 
               // ============================================================
+              // EMPTY INPUT GUARD: Detect SDK tool_input serialization failures
+              // When the model generates very large tool inputs (e.g., Write with
+              // a full HTML page as content), the SDK subprocess may fail to
+              // serialize the input, resulting in an empty {} object. Without this
+              // guard, the agent enters an infinite retry loop because it keeps
+              // calling Write with the same large content that keeps getting dropped.
+              // See: https://github.com/anthropics/claude-agent-sdk/issues/XXX
+              // ============================================================
+              const writeTools = new Set(['Write', 'Edit', 'MultiEdit']);
+              if (writeTools.has(input.tool_name)) {
+                const toolInput = input.tool_input as Record<string, unknown>;
+                const inputKeys = Object.keys(toolInput);
+
+                if (input.tool_name === 'Write' && (!toolInput.file_path || !toolInput.content)) {
+                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Write tool received empty/missing parameters (keys: ${inputKeys.join(', ') || 'none'})`);
+                  return {
+                    continue: false,
+                    decision: 'block' as const,
+                    reason: `Write tool received empty parameters — this happens when the file content is too large for a single Write call.\n\nTo fix this, split the operation:\n1. Use Bash with heredoc to write the file: cat > "path/to/file" << 'EOF'\n   ...content...\n   EOF\n2. Or use Write to create a small skeleton file first, then use Edit to add content section by section.\n\nDo NOT retry Write with the same large content — it will fail again.`,
+                  };
+                }
+
+                if (input.tool_name === 'Edit' && !toolInput.file_path) {
+                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Edit tool received empty/missing file_path (keys: ${inputKeys.join(', ') || 'none'})`);
+                  return {
+                    continue: false,
+                    decision: 'block' as const,
+                    reason: `Edit tool received empty parameters — the input may be too large for the SDK to serialize.\n\nTry splitting the edit into smaller chunks, or use Bash with heredoc for large content.`,
+                  };
+                }
+
+                if (input.tool_name === 'MultiEdit' && !toolInput.file_path) {
+                  this.onDebug?.(`[EMPTY_INPUT_GUARD] MultiEdit tool received empty/missing file_path (keys: ${inputKeys.join(', ') || 'none'})`);
+                  return {
+                    continue: false,
+                    decision: 'block' as const,
+                    reason: `MultiEdit tool received empty parameters — the input may be too large for the SDK to serialize.\n\nTry splitting the edits into smaller individual Edit calls.`,
+                  };
+                }
+              }
+
+              // Also guard Bash tool against empty command (same SDK serialization issue)
+              if (input.tool_name === 'Bash') {
+                const toolInput = input.tool_input as Record<string, unknown>;
+                if (!toolInput.command) {
+                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Bash tool received empty command (keys: ${Object.keys(toolInput).join(', ') || 'none'})`);
+                  return {
+                    continue: false,
+                    decision: 'block' as const,
+                    reason: `Bash tool received empty command parameter — the command may be too large for the SDK to serialize.\n\nTry splitting the command into smaller parts, or write content to a file first and then execute it.`,
+                  };
+                }
+              }
+
+              // ============================================================
               // PATH EXPANSION: Expand ~ in file paths for SDK file tools
               // Node.js fs doesn't expand ~ so we must do it ourselves
               // ============================================================
@@ -1529,8 +1600,38 @@ export class CreatorFlowAgent {
         },
         // Selectively disable tools - file tools are disabled (use MCP), web/code controlled by settings
         disallowedTools,
-        // Load workspace as SDK plugin (enables skills, commands, agents from workspace)
-        plugins: [{ type: 'local' as const, path: this.workspaceRootPath }],
+        // Load workspace and global plugins for SDK integration (enables skills, commands, agents).
+        // Global plugins are loaded from ~/.creator-flow/.claude-plugin/
+        // Workspace plugins are loaded from .creator-flow/.claude-plugin/
+        plugins: (() => {
+          const globalPath = getGlobalPluginDataPath();
+          const wsPath = `${this.workspaceRootPath}/.creator-flow`;
+          const pluginEntries: Array<{ type: 'local'; path: string }> = [
+            { type: 'local' as const, path: globalPath },
+            { type: 'local' as const, path: wsPath },
+          ];
+          // Scan for nested plugins inside .claude-plugin/ directories.
+          // SDK only loads top-level plugin paths, so nested plugins (e.g. productivity/)
+          // must be added as separate entries.
+          for (const basePath of [globalPath, wsPath]) {
+            const claudePluginDir = `${basePath}/.claude-plugin`;
+            if (!existsSync(claudePluginDir)) continue;
+            try {
+              for (const entry of readdirSync(claudePluginDir)) {
+                const nestedDir = `${claudePluginDir}/${entry}`;
+                try {
+                  if (!statSync(nestedDir).isDirectory()) continue;
+                } catch { continue; }
+                // Check if this subdirectory is a plugin (has .claude-plugin/plugin.json)
+                if (existsSync(`${nestedDir}/.claude-plugin/plugin.json`)) {
+                  pluginEntries.push({ type: 'local' as const, path: nestedDir });
+                }
+              }
+            } catch { /* ignore scan errors */ }
+          }
+          console.error(`[CreatorFlowAgent] Plugin paths: ${pluginEntries.map(p => p.path).join(', ')}`);
+          return pluginEntries;
+        })(),
       };
 
       // Track whether we're trying to resume a session (for error handling)
@@ -1555,16 +1656,25 @@ export class CreatorFlowAgent {
 
       // Known SDK slash commands that bypass context wrapping.
       // These are sent directly to the SDK without date/session/source context.
-      // Currently only 'compact' is supported - add more here as needed.
-      const SDK_SLASH_COMMANDS = ['compact'] as const;
+      // Includes both SDK built-in commands (compact, commit, etc.) and plugin commands
+      // (e.g. productivity:start). Plugin commands are handled by the SDK's plugin system.
+      const FALLBACK_SLASH_COMMANDS = ['compact'];
 
       // Detect SDK slash commands - must be sent directly without context wrapping.
-      // Pattern: /command or /command <instructions>
+      // Pattern: /command or /command <instructions> (supports plugin:command format)
       const trimmedMessage = userMessage.trim();
-      const commandMatch = trimmedMessage.match(/^\/([a-z]+)(\s|$)/i);
+      const commandMatch = trimmedMessage.match(/^\/([a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)?)(\s|$)/i);
       const commandName = commandMatch?.[1]?.toLowerCase();
+      const knownCommands = this.sdkSlashCommands.length > 0
+        ? this.sdkSlashCommands.map(c => c.name)
+        : FALLBACK_SLASH_COMMANDS;
+      // Recognize as slash command if:
+      // 1. It's in the known commands list, OR
+      // 2. It uses plugin:command format (colon indicates a plugin command)
+      //    Plugin commands may not be in sdkSlashCommands yet if the event hasn't fired,
+      //    but the colon format is exclusively used by plugin slash commands.
       const isSlashCommand = commandName &&
-        SDK_SLASH_COMMANDS.includes(commandName as typeof SDK_SLASH_COMMANDS[number]) &&
+        (knownCommands.includes(commandName) || commandName.includes(':')) &&
         !attachments?.length;
 
       // Create the query - handle slash commands, binary attachments, or regular messages
@@ -1676,6 +1786,14 @@ export class CreatorFlowAgent {
           if (!firstMessageReceived) {
             firstMessageReceived = true;
             debug(`[chat] SDK 返回第一条消息，从 chat() 开始到现在耗时 ${Date.now() - chatStartTime}ms`);
+          }
+          // Debug: log all SDK messages for slash command debugging
+          if (isSlashCommand) {
+            console.error(`[CreatorFlowAgent] SDK slash msg: type=${'type' in message ? message.type : '?'}, subtype=${'subtype' in message ? message.subtype : '?'}`);
+            if ('result' in message) {
+              const r = (message as any).result;
+              console.error(`[CreatorFlowAgent] SDK slash result field: type=${typeof r}, value=${typeof r === 'string' ? r.slice(0, 500) : JSON.stringify(r)?.slice(0, 500)}`);
+            }
           }
           // Track if we got any text content from assistant
           if ('type' in message && message.type === 'assistant' && 'message' in message) {
@@ -3373,6 +3491,28 @@ Please continue the conversation naturally from where we left off.
             this.sdkTools = message.tools;
             this.onDebug?.(`SDK init: captured ${this.sdkTools.length} tools`);
           }
+          // Capture plugins from SDK init message
+          if ('plugins' in message && Array.isArray(message.plugins)) {
+            this.sdkPlugins = message.plugins;
+            this.onDebug?.(`SDK init: captured ${this.sdkPlugins.length} plugins: ${this.sdkPlugins.map(p => p.name).join(', ')}`);
+            console.error(`[CreatorFlowAgent] SDK init plugins: ${JSON.stringify(this.sdkPlugins)}`);
+          } else {
+            console.error(`[CreatorFlowAgent] SDK init: NO plugins field in init message`);
+          }
+          // Capture slash commands from SDK init message (names only at this point)
+          if ('slash_commands' in message && Array.isArray(message.slash_commands)) {
+            this.sdkSlashCommands = (message.slash_commands as string[]).map(name => ({
+              name,
+              description: '',
+              argumentHint: '',
+            }));
+            this.onDebug?.(`SDK init: captured ${this.sdkSlashCommands.length} slash commands: ${(message.slash_commands as string[]).join(', ')}`);
+            console.error(`[CreatorFlowAgent] SDK init slash_commands: ${(message.slash_commands as string[]).join(', ')}`);
+            // Notify UI immediately with names (descriptions will follow from enrichSlashCommands)
+            this.onSlashCommandsAvailable?.(this.sdkSlashCommands, this.sdkPlugins);
+            // Enrich with full descriptions asynchronously
+            this.enrichSlashCommands();
+          }
         } else if (message.subtype === 'compact_boundary') {
           events.push({
             type: 'info',
@@ -3539,6 +3679,46 @@ Please continue the conversation naturally from where we left off.
    */
   getSdkTools(): string[] {
     return this.sdkTools;
+  }
+
+  /**
+   * Get the list of SDK slash commands (for @ menu display)
+   */
+  getSdkSlashCommands(): Array<{ name: string; description: string; argumentHint: string }> {
+    return this.sdkSlashCommands;
+  }
+
+  getSdkPlugins(): Array<{ name: string; path: string }> {
+    return this.sdkPlugins;
+  }
+
+  /**
+   * Enrich slash commands with full descriptions from supportedCommands() API.
+   * Called after init message is received. Updates sdkSlashCommands in-place
+   * and notifies UI again with enriched data.
+   */
+  private async enrichSlashCommands(): Promise<void> {
+    try {
+      if (!this.currentQuery) return;
+      const commands = await this.currentQuery.supportedCommands();
+      if (commands && commands.length > 0) {
+        // supportedCommands() returns ALL skills+commands. Only use it to enrich
+        // descriptions for commands we already know about (from SDK init slash_commands).
+        // Do NOT replace the list, as that would add skills to the slash command menu.
+        const enrichMap = new Map(commands.map(cmd => [cmd.name, cmd]));
+        for (const existing of this.sdkSlashCommands) {
+          const enriched = enrichMap.get(existing.name);
+          if (enriched) {
+            existing.description = enriched.description ?? existing.description;
+            existing.argumentHint = enriched.argumentHint ?? existing.argumentHint;
+          }
+        }
+        this.onDebug?.(`SDK enrichSlashCommands: enriched ${this.sdkSlashCommands.length} commands with descriptions`);
+        this.onSlashCommandsAvailable?.(this.sdkSlashCommands, this.sdkPlugins);
+      }
+    } catch (err) {
+      this.onDebug?.(`SDK enrichSlashCommands failed: ${err}`);
+    }
   }
 
   setModel(model: string): void {

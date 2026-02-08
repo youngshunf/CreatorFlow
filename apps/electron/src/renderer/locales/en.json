@@ -3742,5 +3742,13 @@
   [
     "Yarn 读取操作：列出包、检查过时包",
     "Yarn read operations: list packages, check outdated"
+  ],
+  [
+    "提及文件、技能和数据源",
+    "Mention files, skills and sources"
+  ],
+  [
+    "无结果",
+    "No results"
   ]
 ]
