@@ -5,8 +5,8 @@
  * Light mode is default, with optional dark mode overrides.
  *
  * Storage locations:
- * - App override:   ~/.creator-flow/theme.json
- * - Preset themes:  ~/.creator-flow/themes/*.json
+ * - App override:   ~/.sprouty-ai/theme.json
+ * - Preset themes:  ~/.sprouty-ai/themes/*.json
  */
 
 /**

@@ -14,7 +14,7 @@ import type {
   InteractiveRequest as InteractiveRequestType,
   InteractiveResponse,
   InteractiveUIElement,
-} from '@creator-flow/shared/interactive-ui'
+} from '@sprouty-ai/shared/interactive-ui'
 import { InteractiveFormRenderer } from '../../../interactive-ui'
 
 interface InteractiveRequestProps {

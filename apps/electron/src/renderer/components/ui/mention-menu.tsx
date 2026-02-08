@@ -4,7 +4,7 @@ import { FadingText } from '@/components/ui/fading-text'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import type { LoadedSkill, LoadedSource, FileSearchResult } from '../../../shared/types'
-import { t } from '@creator-flow/shared/locale'
+import { t } from '@sprouty-ai/shared/locale'
 
 // ============================================================================
 // Types

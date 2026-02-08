@@ -17,7 +17,7 @@ import type {
   ConfirmProps,
   FormProps,
   InteractiveResponse,
-} from '@creator-flow/shared/interactive-ui'
+} from '@sprouty-ai/shared/interactive-ui'
 import { cn } from '../../lib/utils'
 
 // ============================================
@@ -551,7 +551,7 @@ function ConfirmField({
 // Form Field Component
 // ============================================
 
-import type { FormField as FormFieldType } from '@creator-flow/shared/interactive-ui'
+import type { FormField as FormFieldType } from '@sprouty-ai/shared/interactive-ui'
 
 function FormField({
   field,

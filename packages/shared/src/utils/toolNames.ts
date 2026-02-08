@@ -10,7 +10,7 @@
  */
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   // Documentation tools
-  'SearchCreatorFlowAgents': 'Search Documentation',
+  'SearchSproutyAgents': 'Search Documentation',
 };
 
 /**

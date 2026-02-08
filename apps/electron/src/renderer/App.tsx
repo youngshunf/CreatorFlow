@@ -14,7 +14,7 @@ import { OnboardingWizard, ReauthScreen } from '@/components/onboarding'
 import { LoginScreen } from '@/components/auth/LoginScreen'
 import { ResetConfirmationDialog } from '@/components/ResetConfirmationDialog'
 import { SplashScreen } from '@/components/SplashScreen'
-import { TooltipProvider } from '@creator-flow/ui'
+import { TooltipProvider } from '@sprouty-ai/ui'
 import { FocusProvider } from '@/context/FocusContext'
 import { ModalProvider } from '@/context/ModalContext'
 import { useGlobalShortcuts } from '@/hooks/keyboard'
@@ -44,7 +44,7 @@ import { sourcesAtom } from '@/atoms/sources'
 import { skillsAtom } from '@/atoms/skills'
 import { sdkSlashCommandsAtom, commandTranslationsAtom } from '@/atoms/sdk-commands'
 import { extractBadges } from '@/lib/mentions'
-import { SDK_COMMAND_TRANSLATIONS, getCommandDisplay } from '@creator-flow/shared/agent/slash-command-data'
+import { SDK_COMMAND_TRANSLATIONS, getCommandDisplay } from '@sprouty-ai/shared/agent/slash-command-data'
 import { getDefaultStore } from 'jotai'
 import {
   ShikiThemeProvider,
@@ -54,7 +54,7 @@ import {
   CodePreviewOverlay,
   DocumentFormattedMarkdownOverlay,
   JSONPreviewOverlay,
-} from '@creator-flow/ui'
+} from '@sprouty-ai/ui'
 import { useLinkInterceptor, type FilePreviewState } from '@/hooks/useLinkInterceptor'
 
 type AppState = 'loading' | 'onboarding' | 'reauth' | 'ready'
@@ -173,7 +173,7 @@ export default function App() {
         if (cloudConfig.llmToken) {
           // IMPORTANT: Always use current environment's API URL, ignore saved URL
           // This ensures production builds use production API, not leftover dev/staging URLs
-          const { getCloudApiUrl } = await import('@creator-flow/shared/cloud')
+          const { getCloudApiUrl } = await import('@sprouty-ai/shared/cloud')
           const currentApiUrl = getCloudApiUrl()
           const gatewayUrl = `${currentApiUrl.replace(/\/$/, '')}/llm/proxy`
           
@@ -1381,7 +1381,7 @@ export default function App() {
     openNewChat,
   ])
 
-  // Platform actions for @creator-flow/ui components (overlays, etc.)
+  // Platform actions for @sprouty-ai/ui components (overlays, etc.)
   // Memoized to prevent re-renders when these callbacks don't change
   // NOTE: Must be defined before early returns to maintain consistent hook order
   const platformActions = useMemo(() => ({

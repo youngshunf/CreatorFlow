@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { Markdown, CollapsibleMarkdownProvider, StreamingMarkdown, type RenderMode } from "@/components/markdown"
 import { InteractiveUIParser, hasInteractiveUI } from "../interactive-ui/InteractiveUIParser"
-import type { InteractiveResponse } from "@creator-flow/shared/interactive-ui"
+import type { InteractiveResponse } from "@sprouty-ai/shared/interactive-ui"
 import { AnimatedCollapsibleContent } from "@/components/ui/collapsible"
 import { navigate, routes } from "@/lib/navigate"
 import {
@@ -39,13 +39,13 @@ import {
   type OverlayData,
   type FileChange,
   type DiffViewerSettings,
-} from "@creator-flow/ui"
+} from "@sprouty-ai/ui"
 import { useFocusZone } from "@/hooks/keyboard"
 import { useTheme } from "@/hooks/useTheme"
 import type { Session, Message, FileAttachment, StoredAttachment, PermissionRequest, CredentialRequest, CredentialResponse, LoadedSource, LoadedSkill } from "../../../shared/types"
-import type { PermissionMode } from "@creator-flow/shared/agent/modes"
-import type { ThinkingLevel } from "@creator-flow/shared/agent/thinking-levels"
-import { TurnCard, UserMessageBubble, groupMessagesByTurn, formatTurnAsMarkdown, formatActivityAsMarkdown, type Turn, type AssistantTurn, type UserTurn, type SystemTurn, type AuthRequestTurn } from "@creator-flow/ui"
+import type { PermissionMode } from "@sprouty-ai/shared/agent/modes"
+import type { ThinkingLevel } from "@sprouty-ai/shared/agent/thinking-levels"
+import { TurnCard, UserMessageBubble, groupMessagesByTurn, formatTurnAsMarkdown, formatActivityAsMarkdown, type Turn, type AssistantTurn, type UserTurn, type SystemTurn, type AuthRequestTurn } from "@sprouty-ai/ui"
 import { MemoizedAuthRequestCard } from "@/components/chat/AuthRequestCard"
 import { ActiveOptionBadges } from "./ActiveOptionBadges"
 import { InputContainer, type StructuredInputState, type StructuredResponse, type PermissionResponse } from "./input"
@@ -143,7 +143,7 @@ interface ChatDisplayProps {
   skills?: LoadedSkill[]
   // Label selection (for #labels)
   /** Available label configs (tree) for label menu and badge display */
-  labels?: import('@creator-flow/shared/labels').LabelConfig[]
+  labels?: import('@sprouty-ai/shared/labels').LabelConfig[]
   /** Callback when labels change */
   onLabelsChange?: (labels: string[]) => void
   // State/status selection (for # menu and ActiveOptionBadges)
@@ -961,7 +961,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   const [overlayState, setOverlayState] = useState<OverlayState>(null)
 
   // Diff viewer settings - loaded from user preferences on mount, persisted on change
-  // These settings are stored in ~/.creator-flow/preferences.json (not localStorage)
+  // These settings are stored in ~/.sprouty-ai/preferences.json (not localStorage)
   const [diffViewerSettings, setDiffViewerSettings] = useState<Partial<DiffViewerSettings>>({})
 
   // Load diff viewer settings from preferences on mount
@@ -1001,7 +1001,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   }, [])
 
   // Extract overlay data for activity-based overlays
-  // Uses the shared extractOverlayData parser from @creator-flow/ui
+  // Uses the shared extractOverlayData parser from @sprouty-ai/ui
   const overlayData: OverlayData | null = useMemo(() => {
     if (!overlayState || overlayState.type !== 'activity') return null
     return extractOverlayData(overlayState.activity)

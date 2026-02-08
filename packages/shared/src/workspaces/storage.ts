@@ -3,7 +3,7 @@
  *
  * CRUD operations for workspaces.
  * Workspaces can be stored anywhere on disk via rootPath.
- * Default location: ~/.creator-flow/workspaces/
+ * Default location: ~/.sprouty-ai/workspaces/
  */
 
 import {
@@ -14,6 +14,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  renameSync,
 } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -34,18 +35,21 @@ import type {
   WorkspaceSummary,
 } from './types.ts';
 
-const CONFIG_DIR = join(homedir(), '.creator-flow');
+const CONFIG_DIR = join(homedir(), '.sprouty-ai');
 const DEFAULT_WORKSPACES_DIR = join(CONFIG_DIR, 'workspaces');
 
 /** Subdirectory name for workspace internal data (sessions, sources, skills, config) */
-const WORKSPACE_DATA_DIR = '.creator-flow';
+const WORKSPACE_DATA_DIR = '.sprouty-ai';
+
+/** Legacy workspace data directory name (for auto-migration) */
+const LEGACY_WORKSPACE_DATA_DIR = '.creator-flow';
 
 // ============================================================
 // Path Utilities
 // ============================================================
 
 /**
- * Get the default workspaces directory (~/.creator-flow/workspaces/)
+ * Get the default workspaces directory (~/.sprouty-ai/workspaces/)
  */
 export function getDefaultWorkspacesDir(): string {
   return DEFAULT_WORKSPACES_DIR;
@@ -70,11 +74,25 @@ export function getWorkspacePath(workspaceId: string): string {
 }
 
 /**
- * Get path to workspace data directory (.creator-flow)
+ * Get path to workspace data directory (.sprouty-ai)
+ * Auto-migrates from legacy .creator-flow if needed.
  * @param rootPath - Absolute path to workspace root folder
  */
 export function getWorkspaceDataPath(rootPath: string): string {
-  return join(rootPath, WORKSPACE_DATA_DIR);
+  const newPath = join(rootPath, WORKSPACE_DATA_DIR);
+  const legacyPath = join(rootPath, LEGACY_WORKSPACE_DATA_DIR);
+
+  // Auto-migrate legacy workspace data directory
+  if (!existsSync(newPath) && existsSync(legacyPath)) {
+    try {
+      renameSync(legacyPath, newPath);
+    } catch {
+      // Fall back to legacy path if migration fails
+      return legacyPath;
+    }
+  }
+
+  return newPath;
 }
 
 /**
@@ -261,7 +279,7 @@ export function generateSlug(name: string): string {
  * E.g., "my-workspace", "my-workspace-2", "my-workspace-3", ...
  *
  * @param name - Display name to derive the slug from
- * @param baseDir - Parent directory where workspace folders live (e.g., ~/.creator-flow/workspaces/)
+ * @param baseDir - Parent directory where workspace folders live (e.g., ~/.sprouty-ai/workspaces/)
  * @returns Full path to a unique, non-existing folder
  */
 export function generateUniqueWorkspacePath(name: string, baseDir: string): string {
@@ -337,7 +355,7 @@ export function createWorkspaceAtPath(
     updatedAt: now,
   };
 
-  // Create workspace directory structure (all under .creator-flow)
+  // Create workspace directory structure (all under .sprouty-ai)
   mkdirSync(rootPath, { recursive: true });
   mkdirSync(getWorkspaceDataPath(rootPath), { recursive: true });
   mkdirSync(getWorkspaceSourcesPath(rootPath), { recursive: true });
@@ -369,8 +387,8 @@ export function createWorkspaceAtPath(
 }
 
 /**
- * Delete a workspace data folder (.creator-flow) and its contents.
- * Only removes the .creator-flow subdirectory, preserving user's project files.
+ * Delete a workspace data folder (.sprouty-ai) and its contents.
+ * Only removes the .sprouty-ai subdirectory, preserving user's project files.
  * @param rootPath - Absolute path to workspace root folder
  */
 export function deleteWorkspaceFolder(rootPath: string): boolean {
@@ -378,7 +396,7 @@ export function deleteWorkspaceFolder(rootPath: string): boolean {
   if (!existsSync(dataPath)) return false;
 
   try {
-    // Only delete the .creator-flow data directory, not the user's project folder
+    // Only delete the .sprouty-ai data directory, not the user's project folder
     rmSync(dataPath, { recursive: true });
     return true;
   } catch {
@@ -414,7 +432,7 @@ export function renameWorkspaceFolder(rootPath: string, newName: string): boolea
 
 /**
  * Discover workspace folders in the default location that have valid config.json
- * Returns paths to valid workspaces found in ~/.creator-flow/workspaces/
+ * Returns paths to valid workspaces found in ~/.sprouty-ai/workspaces/
  */
 export function discoverWorkspacesInDefaultLocation(): string[] {
   const discovered: string[] = [];
@@ -496,14 +514,14 @@ export function setWorkspaceColorTheme(rootPath: string, themeId: string | undef
 
 /**
  * Check if local (stdio) MCP servers are enabled for a workspace.
- * Resolution order: ENV (CRAFT_LOCAL_MCP_ENABLED) > workspace config > default (true)
+ * Resolution order: ENV (SPROUTY_LOCAL_MCP_ENABLED) > workspace config > default (true)
  *
  * @param rootPath - Absolute path to workspace root folder
  * @returns true if local MCP servers should be enabled
  */
 export function isLocalMcpEnabled(rootPath: string): boolean {
   // 1. Environment variable override (highest priority)
-  const envValue = process.env.CRAFT_LOCAL_MCP_ENABLED;
+  const envValue = process.env.SPROUTY_LOCAL_MCP_ENABLED || process.env.CRAFT_LOCAL_MCP_ENABLED;
   if (envValue !== undefined) {
     return envValue.toLowerCase() === 'true';
   }
@@ -556,7 +574,7 @@ export function ensurePluginManifest(rootPath: string, workspaceName: string): v
 }
 
 /**
- * Get the global plugin data path (~/.creator-flow/)
+ * Get the global plugin data path (~/.sprouty-ai/)
  * Used for global plugins that are available across all workspaces.
  */
 export function getGlobalPluginDataPath(): string {
@@ -564,7 +582,7 @@ export function getGlobalPluginDataPath(): string {
 }
 
 /**
- * Ensure global plugin manifest exists at ~/.creator-flow/.claude-plugin/plugin.json
+ * Ensure global plugin manifest exists at ~/.sprouty-ai/.claude-plugin/plugin.json
  * This allows global plugins to be loaded by the SDK alongside workspace plugins.
  */
 export function ensureGlobalPluginManifest(): void {

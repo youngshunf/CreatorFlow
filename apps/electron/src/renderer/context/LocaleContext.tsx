@@ -30,7 +30,7 @@ import {
   $t as $tService,
   SUPPORTED_LANGUAGES,
   type LanguageInfo,
-} from '@creator-flow/shared/locale';
+} from '@sprouty-ai/shared/locale';
 import { setupLocales, localeConfig } from '../locales';
 
 /**

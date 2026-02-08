@@ -467,7 +467,7 @@ function getLocalWebFetchInstructions(): string {
  * This marker is embedded in the system prompt and allows us to identify
  * CreatorFlow sessions when importing from Claude Code.
  */
-function getCreatorFlowAgentEnvironmentMarker(): string {
+function getSproutyAgentEnvironmentMarker(): string {
   const platform = process.platform; // 'darwin', 'win32', 'linux'
   const arch = process.arch; // 'arm64', 'x64'
   const osVersion = os.release(); // OS kernel version
@@ -486,12 +486,12 @@ function getCraftAssistantPrompt(workspaceRootPath?: string): string {
   const workspacePath = workspaceRootPath || `${APP_ROOT}/workspaces/{id}`;
 
   // Extract workspaceId from path (last component of the path)
-  // Path format: ~/.creator-flow/workspaces/{workspaceId}
+  // Path format: ~/.sprouty-ai/workspaces/{workspaceId}
   const pathParts = workspacePath.split('/');
   const workspaceId = pathParts[pathParts.length - 1] || '{workspaceId}';
 
   // Environment marker for SDK JSONL detection
-  const environmentMarker = getCreatorFlowAgentEnvironmentMarker();
+  const environmentMarker = getSproutyAgentEnvironmentMarker();
 
   return `${environmentMarker}
 
@@ -508,14 +508,14 @@ Sources are external data connections. Each source has:
 - \`config.json\` - Connection settings and authentication
 - \`guide.md\` - Usage guidelines (read before first use!)
 
-**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/.creator-flow/sources/{slug}/guide.md\`.
+**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/.sprouty-ai/sources/{slug}/guide.md\`.
 
 **Before creating/modifying a source**, read \`${DOC_REFS.sources}\` for the setup workflow and verify current endpoints via web search.
 
 **Workspace structure:**
-- Sources: \`${workspacePath}/.creator-flow/sources/{slug}/\`
-- Skills: \`${workspacePath}/.creator-flow/skills/{slug}/\`
-- Theme: \`${workspacePath}/.creator-flow/theme.json\`
+- Sources: \`${workspacePath}/.sprouty-ai/sources/{slug}/\`
+- Skills: \`${workspacePath}/.sprouty-ai/skills/{slug}/\`
+- Theme: \`${workspacePath}/.sprouty-ai/theme.json\`
 
 **SDK Plugin:** This workspace is mounted as a Claude Code SDK plugin. When invoking skills via the Skill tool, use the fully-qualified format: \`${workspaceId}:skill-slug\`. For example, to invoke a skill named "commit", use \`${workspaceId}:commit\`.
 

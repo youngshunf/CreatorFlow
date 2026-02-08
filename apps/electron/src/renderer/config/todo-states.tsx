@@ -1,8 +1,8 @@
 import * as React from 'react'
-import type { StatusConfig } from '@creator-flow/shared/statuses'
-import { isEmoji } from '@creator-flow/shared/utils/icon-constants'
-import { resolveEntityColor, getDefaultStatusColor } from '@creator-flow/shared/colors'
-import type { EntityColor } from '@creator-flow/shared/colors'
+import type { StatusConfig } from '@sprouty-ai/shared/statuses'
+import { isEmoji } from '@sprouty-ai/shared/utils/icon-constants'
+import { resolveEntityColor, getDefaultStatusColor } from '@sprouty-ai/shared/colors'
+import type { EntityColor } from '@sprouty-ai/shared/colors'
 import { StatusIcon } from '@/components/ui/status-icon'
 import { iconCache } from '@/lib/icon-cache'
 

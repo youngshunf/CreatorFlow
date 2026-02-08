@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { FormProps, FormField } from '@creator-flow/shared/interactive-ui'
+import type { FormProps, FormField } from '@sprouty-ai/shared/interactive-ui'
 
 interface FormComponentProps {
   props: FormProps

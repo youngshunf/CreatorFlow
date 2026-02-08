@@ -1,10 +1,10 @@
 /**
  * Global Skills System
  *
- * 管理全局技能（存储在 ~/.creator-flow/skills/）
+ * 管理全局技能（存储在 ~/.sprouty-ai/skills/）
  * 全局技能在首次启动时从内置技能复制，并自动加载到所有工作区
  *
- * 兼容 Claude 技能系统：使用相同的目录结构 ~/.creator-flow/skills/
+ * 兼容 Claude 技能系统：使用相同的目录结构 ~/.sprouty-ai/skills/
  */
 
 import {
@@ -28,10 +28,10 @@ import { debug } from '../utils/debug.ts';
 
 /**
  * 获取全局技能目录路径
- * 使用 ~/.creator-flow/skills/ 以兼容 Claude 技能系统
+ * 使用 ~/.sprouty-ai/skills/ 以兼容 Claude 技能系统
  */
 export function getGlobalSkillsDir(): string {
-  return join(homedir(), '.creator-flow', 'skills');
+  return join(homedir(), '.sprouty-ai', 'skills');
 }
 
 /**
@@ -180,7 +180,7 @@ function copyDirectoryRecursive(source: string, target: string): void {
 
 /**
  * 初始化全局技能系统
- * 首次启动时将内置技能复制到全局技能目录 ~/.creator-flow/skills/
+ * 首次启动时将内置技能复制到全局技能目录 ~/.sprouty-ai/skills/
  */
 export async function initializeGlobalSkills(): Promise<void> {
   const globalSkillsDir = getGlobalSkillsDir();

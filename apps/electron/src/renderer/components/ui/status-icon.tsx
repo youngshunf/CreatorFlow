@@ -5,13 +5,13 @@
  * a Tailwind color class (e.g. 'text-success') which cascades into colorable
  * SVGs via CSS currentColor inheritance.
  *
- * Status icons are discovered at `.creator-flow/statuses/icons/{statusId}.{ext}`.
+ * Status icons are discovered at `.sprouty-ai/statuses/icons/{statusId}.{ext}`.
  */
 
 import { Circle } from 'lucide-react'
 import { EntityIcon } from '@/components/ui/entity-icon'
 import { useEntityIcon } from '@/lib/icon-cache'
-import type { IconSize } from '@creator-flow/shared/icons'
+import type { IconSize } from '@sprouty-ai/shared/icons'
 
 interface StatusIconProps {
   /** Status identifier (used to discover icon file) */
@@ -43,7 +43,7 @@ export function StatusIcon({
     workspaceId,
     entityType: 'status',
     identifier: statusId,
-    iconDir: '.creator-flow/statuses/icons',
+    iconDir: '.sprouty-ai/statuses/icons',
     iconValue: icon,
     // Status icons use {statusId}.ext naming (not icon.ext)
     iconFileName: statusId,

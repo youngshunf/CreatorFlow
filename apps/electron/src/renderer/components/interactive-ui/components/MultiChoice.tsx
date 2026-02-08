@@ -10,7 +10,7 @@ import * as React from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { MultiChoiceProps, ChoiceOption } from '@creator-flow/shared/interactive-ui'
+import type { MultiChoiceProps, ChoiceOption } from '@sprouty-ai/shared/interactive-ui'
 
 interface MultiChoiceComponentProps {
   props: MultiChoiceProps

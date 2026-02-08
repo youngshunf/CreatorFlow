@@ -43,7 +43,7 @@ import type {
   MarketplaceAppVersion,
   InstallProgress,
   InstalledSkillInfo,
-} from '@creator-flow/shared/marketplace'
+} from '@sprouty-ai/shared/marketplace'
 
 export interface MarketplaceDetailDialogProps {
   open: boolean

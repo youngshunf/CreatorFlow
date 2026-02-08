@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Search, X } from 'lucide-react'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 
 /**
  * SessionSearchHeader - Presentational component for session list search UI.

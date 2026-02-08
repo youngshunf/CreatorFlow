@@ -1,5 +1,5 @@
 /**
- * Chat component exports for @creator-flow/ui
+ * Chat component exports for @sprouty-ai/ui
  */
 
 // Turn utilities (pure functions, no React)

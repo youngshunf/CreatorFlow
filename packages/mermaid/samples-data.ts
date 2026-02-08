@@ -1,5 +1,5 @@
 /**
- * Sample definitions for the @creator-flow/mermaid visual test suite.
+ * Sample definitions for the @sprouty-ai/mermaid visual test suite.
  *
  * Shared by:
  *   - index.ts     — generates the HTML visual test page

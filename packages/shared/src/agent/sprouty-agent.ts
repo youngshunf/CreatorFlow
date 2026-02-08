@@ -68,10 +68,10 @@ export {
   PERMISSION_MODE_ORDER,
   PERMISSION_MODE_CONFIG,
 } from './mode-manager.ts';
-// Documentation is served via local files at ~/.creator-flow/docs/
+// Documentation is served via local files at ~/.sprouty-ai/docs/
 
 // Import and re-export AgentEvent from core (single source of truth)
-import type { AgentEvent } from '@creator-flow/core/types';
+import type { AgentEvent } from '@sprouty-ai/core/types';
 export type { AgentEvent };
 
 // Re-export types for UI components
@@ -103,7 +103,7 @@ export interface RecoveryMessage {
   content: string;
 }
 
-export interface CreatorFlowAgentConfig {
+export interface SproutyAgentConfig {
   workspace: Workspace;
   session?: Session;           // Current session (primary isolation boundary)
   mcpToken?: string;           // Override token (for testing)
@@ -370,8 +370,8 @@ function buildSkillsDirError(errorText: string): { type: 'typed_error'; error: A
   };
 }
 
-export class CreatorFlowAgent {
-  private config: CreatorFlowAgentConfig;
+export class SproutyAgent {
+  private config: SproutyAgentConfig;
   private currentQuery: Query | null = null;
   private currentQueryAbortController: AbortController | null = null;
   private lastAbortReason: AbortReason | null = null;
@@ -484,14 +484,14 @@ export class CreatorFlowAgent {
     plugins: Array<{ name: string; path: string }>,
   ) => void) | null = null;
 
-  constructor(config: CreatorFlowAgentConfig) {
+  constructor(config: SproutyAgentConfig) {
     // Resolve model: prioritize session model > config model > DEFAULT_MODEL
     const model = config.session?.model ?? config.model ?? DEFAULT_MODEL;
     this.config = { ...config, model };
     this.isHeadless = config.isHeadless ?? false;
 
     // Log which model is being used (helpful for debugging custom models)
-    debug(`[CreatorFlowAgent] Using model: ${model}`);
+    debug(`[SproutyAgent] Using model: ${model}`);
 
     // Ensure global plugin manifest exists for SDK plugin discovery
     ensureGlobalPluginManifest();
@@ -524,11 +524,11 @@ export class CreatorFlowAgent {
     // Register session-scoped tool callbacks
     registerSessionScopedToolCallbacks(sessionId, {
       onPlanSubmitted: (planPath) => {
-        this.onDebug?.(`[CreatorFlowAgent] onPlanSubmitted received: ${planPath}`);
+        this.onDebug?.(`[SproutyAgent] onPlanSubmitted received: ${planPath}`);
         this.onPlanSubmitted?.(planPath);
       },
       onAuthRequest: (request) => {
-        this.onDebug?.(`[CreatorFlowAgent] onAuthRequest received: ${request.sourceSlug} (type: ${request.type})`);
+        this.onDebug?.(`[SproutyAgent] onAuthRequest received: ${request.sourceSlug} (type: ${request.type})`);
         this.onAuthRequest?.(request);
       },
     });
@@ -550,23 +550,23 @@ export class CreatorFlowAgent {
 
     this.configWatcher = createConfigWatcher(this.workspaceRootPath, {
       onSourceChange: (slug, source) => {
-        debug('[CreatorFlowAgent] Source changed:', slug, source ? 'updated' : 'deleted');
+        debug('[SproutyAgent] Source changed:', slug, source ? 'updated' : 'deleted');
         this.onSourceChange?.(slug, source);
       },
       onSourcesListChange: (sources) => {
-        debug('[CreatorFlowAgent] Sources list changed:', sources.length);
+        debug('[SproutyAgent] Sources list changed:', sources.length);
         this.onSourcesListChange?.(sources);
       },
       onValidationError: (file, result) => {
-        debug('[CreatorFlowAgent] Config validation error:', file, result.errors);
+        debug('[SproutyAgent] Config validation error:', file, result.errors);
         this.onConfigValidationError?.(file, result.errors);
       },
       onError: (file, error) => {
-        debug('[CreatorFlowAgent] Config file error:', file, error.message);
+        debug('[SproutyAgent] Config file error:', file, error.message);
       },
     });
 
-    debug('[CreatorFlowAgent] Config watcher started');
+    debug('[SproutyAgent] Config watcher started');
   }
 
   /**
@@ -576,7 +576,7 @@ export class CreatorFlowAgent {
     if (this.configWatcher) {
       this.configWatcher.stop();
       this.configWatcher = null;
-      debug('[CreatorFlowAgent] Config watcher stopped');
+      debug('[SproutyAgent] Config watcher stopped');
     }
   }
 
@@ -590,7 +590,7 @@ export class CreatorFlowAgent {
       delete this.sourceMcpServers[slug];
       delete this.sourceApiServers[slug];
       this.activeSourceServerNames.delete(slug);
-      debug('[CreatorFlowAgent] Removed source:', slug);
+      debug('[SproutyAgent] Removed source:', slug);
       return;
     }
 
@@ -600,11 +600,11 @@ export class CreatorFlowAgent {
       delete this.sourceMcpServers[slug];
       delete this.sourceApiServers[slug];
       this.activeSourceServerNames.delete(slug);
-      debug('[CreatorFlowAgent] Disabled source:', slug);
+      debug('[SproutyAgent] Disabled source:', slug);
     } else {
       // Enabled - add to active servers (will be rebuilt on next query)
       this.activeSourceServerNames.add(slug);
-      debug('[CreatorFlowAgent] Enabled source:', slug);
+      debug('[SproutyAgent] Enabled source:', slug);
       // Note: Actual MCP/API server configs are rebuilt in getOptions()
       // This just marks the source as active for the next run
     }
@@ -616,7 +616,7 @@ export class CreatorFlowAgent {
    */
   setThinkingLevel(level: ThinkingLevel): void {
     this.thinkingLevel = level;
-    this.onDebug?.(`[CreatorFlowAgent] Thinking level: ${level}`);
+    this.onDebug?.(`[SproutyAgent] Thinking level: ${level}`);
   }
 
   /**
@@ -633,7 +633,7 @@ export class CreatorFlowAgent {
    */
   setUltrathinkOverride(enabled: boolean): void {
     this.ultrathinkOverride = enabled;
-    this.onDebug?.(`[CreatorFlowAgent] Ultrathink override: ${enabled ? 'ENABLED' : 'disabled'}`);
+    this.onDebug?.(`[SproutyAgent] Ultrathink override: ${enabled ? 'ENABLED' : 'disabled'}`);
   }
 
   /**
@@ -1576,14 +1576,14 @@ export class CreatorFlowAgent {
           SubagentStart: [{
             hooks: [async (input, _hookToolUseID) => {
               const typedInput = input as { agent_id?: string; agent_type?: string };
-              console.log(`[CreatorFlowAgent] SubagentStart: agent_id=${typedInput.agent_id}, type=${typedInput.agent_type}`);
+              console.log(`[SproutyAgent] SubagentStart: agent_id=${typedInput.agent_id}, type=${typedInput.agent_type}`);
               return { continue: true };
             }],
           }],
           SubagentStop: [{
             hooks: [async (input, _toolUseID) => {
               const typedInput = input as { agent_id?: string };
-              console.log(`[CreatorFlowAgent] SubagentStop: agent_id=${typedInput.agent_id}`);
+              console.log(`[SproutyAgent] SubagentStop: agent_id=${typedInput.agent_id}`);
               return { continue: true };
             }],
           }],
@@ -1601,11 +1601,11 @@ export class CreatorFlowAgent {
         // Selectively disable tools - file tools are disabled (use MCP), web/code controlled by settings
         disallowedTools,
         // Load workspace and global plugins for SDK integration (enables skills, commands, agents).
-        // Global plugins are loaded from ~/.creator-flow/.claude-plugin/
-        // Workspace plugins are loaded from .creator-flow/.claude-plugin/
+        // Global plugins are loaded from ~/.sprouty-ai/.claude-plugin/
+        // Workspace plugins are loaded from .sprouty-ai/.claude-plugin/
         plugins: (() => {
           const globalPath = getGlobalPluginDataPath();
-          const wsPath = `${this.workspaceRootPath}/.creator-flow`;
+          const wsPath = `${this.workspaceRootPath}/.sprouty-ai`;
           const pluginEntries: Array<{ type: 'local'; path: string }> = [
             { type: 'local' as const, path: globalPath },
             { type: 'local' as const, path: wsPath },
@@ -1629,7 +1629,7 @@ export class CreatorFlowAgent {
               }
             } catch { /* ignore scan errors */ }
           }
-          console.error(`[CreatorFlowAgent] Plugin paths: ${pluginEntries.map(p => p.path).join(', ')}`);
+          console.error(`[SproutyAgent] Plugin paths: ${pluginEntries.map(p => p.path).join(', ')}`);
           return pluginEntries;
         })(),
       };
@@ -1640,11 +1640,11 @@ export class CreatorFlowAgent {
 
       // Log resume attempt for debugging session failures
       if (wasResuming) {
-        console.error(`[CreatorFlowAgent] Attempting to resume SDK session: ${this.sessionId}`);
-        debug(`[CreatorFlowAgent] Attempting to resume SDK session: ${this.sessionId}`);
+        console.error(`[SproutyAgent] Attempting to resume SDK session: ${this.sessionId}`);
+        debug(`[SproutyAgent] Attempting to resume SDK session: ${this.sessionId}`);
       } else {
-        console.error(`[CreatorFlowAgent] Starting fresh SDK session (no resume)`);
-        debug(`[CreatorFlowAgent] Starting fresh SDK session (no resume)`);
+        console.error(`[SproutyAgent] Starting fresh SDK session (no resume)`);
+        debug(`[SproutyAgent] Starting fresh SDK session (no resume)`);
       }
 
       // Create AbortController for this query - allows force-stopping via forceAbort()
@@ -1789,10 +1789,10 @@ export class CreatorFlowAgent {
           }
           // Debug: log all SDK messages for slash command debugging
           if (isSlashCommand) {
-            console.error(`[CreatorFlowAgent] SDK slash msg: type=${'type' in message ? message.type : '?'}, subtype=${'subtype' in message ? message.subtype : '?'}`);
+            console.error(`[SproutyAgent] SDK slash msg: type=${'type' in message ? message.type : '?'}, subtype=${'subtype' in message ? message.subtype : '?'}`);
             if ('result' in message) {
               const r = (message as any).result;
-              console.error(`[CreatorFlowAgent] SDK slash result field: type=${typeof r}, value=${typeof r === 'string' ? r.slice(0, 500) : JSON.stringify(r)?.slice(0, 500)}`);
+              console.error(`[SproutyAgent] SDK slash result field: type=${typeof r}, value=${typeof r === 'string' ? r.slice(0, 500) : JSON.stringify(r)?.slice(0, 500)}`);
             }
           }
           // Track if we got any text content from assistant
@@ -1921,7 +1921,7 @@ export class CreatorFlowAgent {
         }
       } catch (sdkError) {
         // Debug: log inner catch trigger (stderr to avoid SDK JSON pollution)
-        console.error(`[CreatorFlowAgent] INNER CATCH triggered: ${sdkError instanceof Error ? sdkError.message : String(sdkError)}`);
+        console.error(`[SproutyAgent] INNER CATCH triggered: ${sdkError instanceof Error ? sdkError.message : String(sdkError)}`);
 
         // Handle user interruption
         if (sdkError instanceof AbortError) {
@@ -2068,8 +2068,8 @@ export class CreatorFlowAgent {
 
           if (isSessionExpired && wasResuming && !_isRetry) {
             debug('[SESSION_DEBUG] >>> TAKING PATH: Session expired recovery');
-            console.error('[CreatorFlowAgent] SDK session expired server-side, clearing and retrying fresh');
-            debug('[CreatorFlowAgent] SDK session expired server-side, clearing and retrying fresh');
+            console.error('[SproutyAgent] SDK session expired server-side, clearing and retrying fresh');
+            debug('[SproutyAgent] SDK session expired server-side, clearing and retrying fresh');
             this.sessionId = null;
             // Clear pinned state so retry captures fresh values
             this.pinnedPreferencesPrompt = null;
@@ -2177,8 +2177,8 @@ export class CreatorFlowAgent {
 
     } catch (error) {
       // Debug: log outer catch trigger (stderr to avoid SDK JSON pollution)
-      console.error(`[CreatorFlowAgent] OUTER CATCH triggered: ${error instanceof Error ? error.message : String(error)}`);
-      console.error(`[CreatorFlowAgent] Error stack: ${error instanceof Error ? error.stack : 'no stack'}`);
+      console.error(`[SproutyAgent] OUTER CATCH triggered: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[SproutyAgent] Error stack: ${error instanceof Error ? error.stack : 'no stack'}`);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -2664,7 +2664,7 @@ Please continue the conversation naturally from where we left off.
     const capturedError = getLastApiError();
     if (capturedError) {
       debug(`[mapSDKErrorToTypedError] Captured API error: status=${capturedError.status}, message=${capturedError.message}`);
-      console.error(`[CreatorFlowAgent] Captured API error: ${capturedError.status} ${capturedError.message}`);
+      console.error(`[SproutyAgent] Captured API error: ${capturedError.status} ${capturedError.message}`);
       
       // Map HTTP status codes to proper error types
       if (capturedError.status === 429) {
@@ -2898,7 +2898,7 @@ Please continue the conversation naturally from where we left off.
         // These errors are set by the SDK when API calls fail
         if ('error' in message && message.error) {
           // DEBUG: Log the exact error code from SDK for troubleshooting
-          console.error(`[CreatorFlowAgent] SDK returned error code: '${message.error}' (type: ${typeof message.error})`);
+          console.error(`[SproutyAgent] SDK returned error code: '${message.error}' (type: ${typeof message.error})`);
           debug(`[SDK ERROR] message.error = '${message.error}'`);
           // Extract actual API error from SDK debug log for better error details
           // Uses async to allow retry with delays for race condition handling
@@ -2987,7 +2987,7 @@ Please continue the conversation naturally from where we left off.
                 parentToChildren.get(parentId)?.push(block.id);
                 childToParent.set(block.id, parentId);
                 parentToolUseId = parentId;
-                console.log(`[CreatorFlowAgent] CHILD REGISTERED (assistant/single-parent): ${block.name} (${block.id}) under parent ${parentId}`);
+                console.log(`[SproutyAgent] CHILD REGISTERED (assistant/single-parent): ${block.name} (${block.id}) under parent ${parentId}`);
               } else if (activeParentTools.size > 1) {
                 // Multiple active parents - use SDK's parent_tool_use_id (authoritative source)
                 // Messages from subagent context include parent_tool_use_id pointing to the Task
@@ -2996,14 +2996,14 @@ Please continue the conversation naturally from where we left off.
                   parentToChildren.get(sdkParentId)?.push(block.id);
                   childToParent.set(block.id, sdkParentId);
                   parentToolUseId = sdkParentId;
-                  console.log(`[CreatorFlowAgent] CHILD REGISTERED (assistant/sdk-parent): ${block.name} (${block.id}) → Task (${sdkParentId})`);
+                  console.log(`[SproutyAgent] CHILD REGISTERED (assistant/sdk-parent): ${block.name} (${block.id}) → Task (${sdkParentId})`);
                 } else {
                   // Fallback: FIFO if SDK doesn't provide parent
                   const parentId = Array.from(activeParentTools)[0]!;
                   parentToChildren.get(parentId)?.push(block.id);
                   childToParent.set(block.id, parentId);
                   parentToolUseId = parentId;
-                  console.log(`[CreatorFlowAgent] CHILD REGISTERED (assistant/fifo-fallback): ${block.name} (${block.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
+                  console.log(`[SproutyAgent] CHILD REGISTERED (assistant/fifo-fallback): ${block.name} (${block.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
                 }
               }
               // else: no active parents - tool is top-level, no parent needed
@@ -3100,27 +3100,27 @@ Please continue the conversation naturally from where we left off.
             const sdkParentId = message.parent_tool_use_id;
 
             // Debug: log what SDK provides for parent tracking
-            console.log(`[CreatorFlowAgent] TOOL START: ${toolBlock.name} (${toolBlock.id}), sdk_parent=${sdkParentId}, activeParents=[${Array.from(activeParentTools).join(',')}]`);
+            console.log(`[SproutyAgent] TOOL START: ${toolBlock.name} (${toolBlock.id}), sdk_parent=${sdkParentId}, activeParents=[${Array.from(activeParentTools).join(',')}]`);
 
             let parentToolUseId: string | undefined;
             if (isParentTool) {
               // This is a parent tool (Task, TaskOutput) - it can spawn children
               activeParentTools.add(toolBlock.id);
               parentToChildren.set(toolBlock.id, []);
-              console.log(`[CreatorFlowAgent] PARENT REGISTERED (stream): ${toolBlock.name} (${toolBlock.id})`);
+              console.log(`[SproutyAgent] PARENT REGISTERED (stream): ${toolBlock.name} (${toolBlock.id})`);
             } else if (sdkParentId && activeParentTools.has(sdkParentId)) {
               // SDK provides correct parent for subagent tools - use it
               parentToolUseId = sdkParentId;
               parentToChildren.get(sdkParentId)?.push(toolBlock.id);
               childToParent.set(toolBlock.id, sdkParentId);
-              console.log(`[CreatorFlowAgent] CHILD REGISTERED (stream/sdk): ${toolBlock.name} (${toolBlock.id}) under parent ${sdkParentId}`);
+              console.log(`[SproutyAgent] CHILD REGISTERED (stream/sdk): ${toolBlock.name} (${toolBlock.id}) under parent ${sdkParentId}`);
             } else if (activeParentTools.size === 1) {
               // Single active parent - unambiguous, assign directly
               const parentId = Array.from(activeParentTools)[0]!;
               parentToChildren.get(parentId)?.push(toolBlock.id);
               childToParent.set(toolBlock.id, parentId);
               parentToolUseId = parentId;
-              console.log(`[CreatorFlowAgent] CHILD REGISTERED (stream/single-parent): ${toolBlock.name} (${toolBlock.id}) under parent ${parentId}`);
+              console.log(`[SproutyAgent] CHILD REGISTERED (stream/single-parent): ${toolBlock.name} (${toolBlock.id}) under parent ${parentId}`);
             } else if (activeParentTools.size > 1) {
               // Multiple active parents - use SDK's parent_tool_use_id (authoritative source)
               // sdkParentId is already extracted above from message.parent_tool_use_id
@@ -3128,14 +3128,14 @@ Please continue the conversation naturally from where we left off.
                 parentToChildren.get(sdkParentId)?.push(toolBlock.id);
                 childToParent.set(toolBlock.id, sdkParentId);
                 parentToolUseId = sdkParentId;
-                console.log(`[CreatorFlowAgent] CHILD REGISTERED (stream/sdk-parent): ${toolBlock.name} (${toolBlock.id}) → Task (${sdkParentId})`);
+                console.log(`[SproutyAgent] CHILD REGISTERED (stream/sdk-parent): ${toolBlock.name} (${toolBlock.id}) → Task (${sdkParentId})`);
               } else {
                 // Fallback: FIFO if SDK doesn't provide parent
                 const parentId = Array.from(activeParentTools)[0]!;
                 parentToChildren.get(parentId)?.push(toolBlock.id);
                 childToParent.set(toolBlock.id, parentId);
                 parentToolUseId = parentId;
-                console.log(`[CreatorFlowAgent] CHILD REGISTERED (stream/fifo-fallback): ${toolBlock.name} (${toolBlock.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
+                console.log(`[SproutyAgent] CHILD REGISTERED (stream/fifo-fallback): ${toolBlock.name} (${toolBlock.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
               }
             }
             // else: no active parents - tool is top-level, no parent needed
@@ -3190,10 +3190,10 @@ Please continue the conversation naturally from where we left off.
             // This result is for a CHILD of that parent, not the parent itself
             // Match to the first unmatched child in FIFO order
             const children = parentToChildren.get(toolUseId);
-            console.log(`[CreatorFlowAgent] RESULT MATCHING: parent=${toolUseId}, children.length=${children?.length || 0}`);
+            console.log(`[SproutyAgent] RESULT MATCHING: parent=${toolUseId}, children.length=${children?.length || 0}`);
             if (children && children.length > 0) {
               const firstChild = children.shift()!; // Remove first child (FIFO)
-              console.log(`[CreatorFlowAgent] MATCHED TO CHILD: ${firstChild}`);
+              console.log(`[SproutyAgent] MATCHED TO CHILD: ${firstChild}`);
               this.onDebug?.(`Matched child result: parent=${toolUseId}, child=${firstChild}`);
               toolUseId = firstChild;
               toolUse = pendingToolUses.get(toolUseId);
@@ -3208,14 +3208,14 @@ Please continue the conversation naturally from where we left off.
 
               if (pendingChildId) {
                 // Match to a pending late-started child
-                console.log(`[CreatorFlowAgent] MATCHED TO LATE CHILD: ${pendingChildId} (parent=${toolUseId})`);
+                console.log(`[SproutyAgent] MATCHED TO LATE CHILD: ${pendingChildId} (parent=${toolUseId})`);
                 this.onDebug?.(`Matched late child result: parent=${toolUseId}, child=${pendingChildId}`);
                 toolUseId = pendingChildId;
                 toolUse = pendingToolUses.get(toolUseId);
                 childToParent.delete(pendingChildId);
               } else {
                 // Truly no more children - this is the parent's own result
-                console.log(`[CreatorFlowAgent] NO CHILDREN LEFT - treating as parent's own result: ${toolUseId}`);
+                console.log(`[SproutyAgent] NO CHILDREN LEFT - treating as parent's own result: ${toolUseId}`);
                 this.onDebug?.(`Parent tool completing: ${toolUseId} (no more children)`);
                 toolUse = pendingToolUses.get(toolUseId);
                 // Clean up parent tracking
@@ -3233,7 +3233,7 @@ Please continue the conversation naturally from where we left off.
 
             if (pendingChildId) {
               // This is a child result for a completed parent - match to the pending child
-              console.log(`[CreatorFlowAgent] MATCHED TO ORPHANED CHILD: ${pendingChildId} (parent=${toolUseId})`);
+              console.log(`[SproutyAgent] MATCHED TO ORPHANED CHILD: ${pendingChildId} (parent=${toolUseId})`);
               this.onDebug?.(`Matched orphaned child result: parent=${toolUseId}, child=${pendingChildId}`);
               toolUseId = pendingChildId;
               toolUse = pendingToolUses.get(toolUseId);
@@ -3374,7 +3374,7 @@ Please continue the conversation naturally from where we left off.
         };
 
         // Debug: log tool_progress structure
-        console.log(`[CreatorFlowAgent] tool_progress: tool=${progress.tool_name} (${progress.tool_use_id}), parent=${progress.parent_tool_use_id}, elapsed=${progress.elapsed_time_seconds}`);
+        console.log(`[SproutyAgent] tool_progress: tool=${progress.tool_name} (${progress.tool_use_id}), parent=${progress.parent_tool_use_id}, elapsed=${progress.elapsed_time_seconds}`);
 
         // Forward elapsed time to UI for live progress updates
         // Use parent_tool_use_id if this is a child tool, so progress updates the parent Task
@@ -3405,7 +3405,7 @@ Please continue the conversation naturally from where we left off.
             parentToolUseId = progress.parent_tool_use_id;
             parentToChildren.get(progress.parent_tool_use_id)?.push(progress.tool_use_id);
             childToParent.set(progress.tool_use_id, progress.parent_tool_use_id);
-            console.log(`[CreatorFlowAgent] CHILD REGISTERED (tool_progress/sdk): ${progress.tool_name} (${progress.tool_use_id}) → ${progress.parent_tool_use_id}`);
+            console.log(`[SproutyAgent] CHILD REGISTERED (tool_progress/sdk): ${progress.tool_name} (${progress.tool_use_id}) → ${progress.parent_tool_use_id}`);
           }
 
           // Emit tool_start for this child tool
@@ -3423,7 +3423,7 @@ Please continue the conversation naturally from where we left off.
 
       case 'result': {
         // Debug: log result message details (stderr to avoid SDK JSON pollution)
-        console.error(`[CreatorFlowAgent] result message: subtype=${message.subtype}, errors=${'errors' in message ? JSON.stringify((message as any).errors) : 'none'}`);
+        console.error(`[SproutyAgent] result message: subtype=${message.subtype}, errors=${'errors' in message ? JSON.stringify((message as any).errors) : 'none'}`);
 
         // Get contextWindow from modelUsage (this is correct - it's the model's context window size)
         const modelUsageEntries = Object.values(message.modelUsage || {});
@@ -3495,9 +3495,9 @@ Please continue the conversation naturally from where we left off.
           if ('plugins' in message && Array.isArray(message.plugins)) {
             this.sdkPlugins = message.plugins;
             this.onDebug?.(`SDK init: captured ${this.sdkPlugins.length} plugins: ${this.sdkPlugins.map(p => p.name).join(', ')}`);
-            console.error(`[CreatorFlowAgent] SDK init plugins: ${JSON.stringify(this.sdkPlugins)}`);
+            console.error(`[SproutyAgent] SDK init plugins: ${JSON.stringify(this.sdkPlugins)}`);
           } else {
-            console.error(`[CreatorFlowAgent] SDK init: NO plugins field in init message`);
+            console.error(`[SproutyAgent] SDK init: NO plugins field in init message`);
           }
           // Capture slash commands from SDK init message (names only at this point)
           if ('slash_commands' in message && Array.isArray(message.slash_commands)) {
@@ -3507,7 +3507,7 @@ Please continue the conversation naturally from where we left off.
               argumentHint: '',
             }));
             this.onDebug?.(`SDK init: captured ${this.sdkSlashCommands.length} slash commands: ${(message.slash_commands as string[]).join(', ')}`);
-            console.error(`[CreatorFlowAgent] SDK init slash_commands: ${(message.slash_commands as string[]).join(', ')}`);
+            console.error(`[SproutyAgent] SDK init slash_commands: ${(message.slash_commands as string[]).join(', ')}`);
             // Notify UI immediately with names (descriptions will follow from enrichSlashCommands)
             this.onSlashCommandsAvailable?.(this.sdkSlashCommands, this.sdkPlugins);
             // Enrich with full descriptions asynchronously

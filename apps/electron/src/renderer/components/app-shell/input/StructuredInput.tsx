@@ -1,5 +1,5 @@
 import type { PermissionRequest as PermissionRequestType, CredentialRequest as CredentialRequestType } from '../../../../shared/types'
-import type { InteractiveRequest as InteractiveRequestType } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveRequest as InteractiveRequestType } from '@sprouty-ai/shared/interactive-ui'
 import { PermissionRequest } from './structured/PermissionRequest'
 import { CredentialRequest } from './structured/CredentialRequest'
 import { InteractiveRequest } from './structured/InteractiveRequest'

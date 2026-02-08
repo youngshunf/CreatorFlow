@@ -5,7 +5,7 @@
  * They replace the old "connections" concept with a more flexible, folder-based architecture.
  *
  * File structure:
- * ~/.creator-flow/workspaces/{workspaceId}/sources/{sourceSlug}/
+ * ~/.sprouty-ai/workspaces/{workspaceId}/sources/{sourceSlug}/
  *   ├── config.json   - Source settings
  *   └── guide.md      - Usage guidelines + cached data (in YAML frontmatter)
  */
@@ -355,7 +355,7 @@ export interface LoadedSource {
   /** Absolute path to source folder (for resolving relative icon paths) */
   folderPath: string;
 
-  /** Absolute path to workspace folder (e.g., ~/.creator-flow/workspaces/xxx) */
+  /** Absolute path to workspace folder (e.g., ~/.sprouty-ai/workspaces/xxx) */
   workspaceRootPath: string;
 
   /**

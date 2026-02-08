@@ -5,11 +5,11 @@
  * Uses recursive directory watching for simplicity and reliability.
  *
  * Watched paths:
- * - ~/.creator-flow/config.json - Main app configuration
- * - ~/.creator-flow/preferences.json - User preferences
- * - ~/.creator-flow/theme.json - App-level theme overrides
- * - ~/.creator-flow/themes/*.json - Preset theme files (app-level)
- * - {workspaceRoot}/.creator-flow/ - Workspace data directory (recursive)
+ * - ~/.sprouty-ai/config.json - Main app configuration
+ * - ~/.sprouty-ai/preferences.json - User preferences
+ * - ~/.sprouty-ai/theme.json - App-level theme overrides
+ * - ~/.sprouty-ai/themes/*.json - Preset theme files (app-level)
+ * - {workspaceRoot}/.sprouty-ai/ - Workspace data directory (recursive)
  *   - config.json - Workspace configuration
  *   - sources/{slug}/config.json, guide.md, permissions.json
  *   - skills/{slug}/SKILL.md, icon.*
@@ -108,7 +108,7 @@ export interface ConfigWatcherCallbacks {
   onSkillsListChange?: (skills: LoadedSkill[]) => void;
 
   // Permissions callbacks
-  /** Called when app-level default permissions change (~/.creator-flow/permissions/default.json) */
+  /** Called when app-level default permissions change (~/.sprouty-ai/permissions/default.json) */
   onDefaultPermissionsChange?: () => void;
   /** Called when workspace permissions.json changes */
   onWorkspacePermissionsChange?: (workspaceId: string) => void;
@@ -344,27 +344,27 @@ export class ConfigWatcher {
 
   /**
    * Handle a file change within the workspace directory
-   * All workspace data is under .creator-flow/ subdirectory
+   * All workspace data is under .sprouty-ai/ subdirectory
    */
   private handleWorkspaceFileChange(relativePath: string, eventType: string): void {
     const parts = relativePath.split('/');
 
-    // All workspace data is now under .creator-flow/
+    // All workspace data is now under .sprouty-ai/
     // Skip if not in the data directory
-    if (parts[0] !== '.creator-flow') {
+    if (parts[0] !== '.sprouty-ai') {
       return;
     }
 
-    // Remove the .creator-flow prefix for easier matching
+    // Remove the .sprouty-ai prefix for easier matching
     const dataParts = parts.slice(1);
 
-    // Workspace-level permissions.json (.creator-flow/permissions.json)
+    // Workspace-level permissions.json (.sprouty-ai/permissions.json)
     if (dataParts.length === 1 && dataParts[0] === 'permissions.json') {
       this.debounce('workspace-permissions', () => this.handleWorkspacePermissionsChange());
       return;
     }
 
-    // Sources changes: .creator-flow/sources/{slug}/...
+    // Sources changes: .sprouty-ai/sources/{slug}/...
     if (dataParts[0] === 'sources' && dataParts.length >= 2) {
       const slug = dataParts[1]!;  // Safe: checked dataParts.length >= 2
       const file = dataParts[2];
@@ -386,7 +386,7 @@ export class ConfigWatcher {
       return;
     }
 
-    // Skills changes: .creator-flow/skills/{slug}/...
+    // Skills changes: .sprouty-ai/skills/{slug}/...
     if (dataParts[0] === 'skills' && dataParts.length >= 2) {
       const slug = dataParts[1]!;  // Safe: checked dataParts.length >= 2
       const file = dataParts[2];
@@ -407,7 +407,7 @@ export class ConfigWatcher {
       return;
     }
 
-    // Session metadata changes: .creator-flow/sessions/{id}/session.jsonl
+    // Session metadata changes: .sprouty-ai/sessions/{id}/session.jsonl
     // Detects external modifications (other instances, scripts, manual edits).
     // Only reads line 1 (header) — lightweight even during active streaming.
     if (dataParts[0] === 'sessions' && dataParts.length >= 3) {
@@ -421,7 +421,7 @@ export class ConfigWatcher {
       return;
     }
 
-    // Statuses changes: .creator-flow/statuses/...
+    // Statuses changes: .sprouty-ai/statuses/...
     if (dataParts[0] === 'statuses' && dataParts.length >= 2) {
       const file = dataParts[1];
 
@@ -431,7 +431,7 @@ export class ConfigWatcher {
         return;
       }
 
-      // Icon file changes: .creator-flow/statuses/icons/*.svg, *.png, etc.
+      // Icon file changes: .sprouty-ai/statuses/icons/*.svg, *.png, etc.
       if (file === 'icons' && dataParts.length >= 3) {
         const iconFilename = dataParts[2];
         if (iconFilename) {
@@ -443,7 +443,7 @@ export class ConfigWatcher {
       }
     }
 
-    // Labels changes: .creator-flow/labels/...
+    // Labels changes: .sprouty-ai/labels/...
     if (dataParts[0] === 'labels' && dataParts.length >= 2) {
       const file = dataParts[1];
 
@@ -898,7 +898,7 @@ export class ConfigWatcher {
   }
 
   /**
-   * Watch app-level themes directory (~/.creator-flow/themes/)
+   * Watch app-level themes directory (~/.sprouty-ai/themes/)
    */
   private watchAppThemesDir(): void {
     const themesDir = getAppThemesDir();
@@ -927,7 +927,7 @@ export class ConfigWatcher {
   }
 
   /**
-   * Watch app-level permissions directory (~/.creator-flow/permissions/)
+   * Watch app-level permissions directory (~/.sprouty-ai/permissions/)
    * Watches for changes to default.json which contains the default read-only patterns
    */
   private watchAppPermissionsDir(): void {

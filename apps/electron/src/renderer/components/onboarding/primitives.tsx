@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import { Button, type ButtonProps } from "@/components/ui/button"
-import { Spinner } from "@creator-flow/ui"
+import { Spinner } from "@sprouty-ai/ui"
 
 /* =============================================================================
    ONBOARDING PRIMITIVES

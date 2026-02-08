@@ -4,7 +4,7 @@
  * Imports the shared UI theme and adds viewer-specific styles.
  */
 
-@import "@creator-flow/ui/styles";
+@import "@sprouty-ai/ui/styles";
 
 /* Scan this app's source files for Tailwind classes */
 @source "../src/**/*.{tsx,ts}";

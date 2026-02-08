@@ -23,7 +23,7 @@ export function SkillsSettingsPage() {
 
   const handleSkillClick = React.useCallback((skill: LoadedSkill) => {
     // 使用 deep link 在新窗口打开详情
-    window.electronAPI.openUrl(`creatorflow://skills/skill/${skill.slug}?window=focused`)
+    window.electronAPI.openUrl(`sproutyai://skills/skill/${skill.slug}?window=focused`)
   }, [])
 
   const handleDeleteSkill = React.useCallback(async (skillSlug: string) => {

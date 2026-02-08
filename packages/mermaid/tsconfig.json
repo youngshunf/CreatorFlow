@@ -21,8 +21,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@creator-flow/mermaid": ["./src/index.ts"],
-      "@creator-flow/mermaid/*": ["./src/*"]
+      "@sprouty-ai/mermaid": ["./src/index.ts"],
+      "@sprouty-ai/mermaid/*": ["./src/*"]
     },
     "rootDir": "src",
     "outDir": "dist",

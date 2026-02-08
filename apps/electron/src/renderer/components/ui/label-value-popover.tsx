@@ -16,7 +16,7 @@ import { Calendar } from './calendar'
 import { cn } from '@/lib/utils'
 import { parseDate } from 'chrono-node'
 import { format, parse } from 'date-fns'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { useT } from '@/context/LocaleContext'
 
 export interface LabelValuePopoverProps {

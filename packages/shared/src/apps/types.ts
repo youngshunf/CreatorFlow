@@ -247,7 +247,7 @@ export interface AppCapabilities {
  * Application Manifest
  *
  * The complete definition of an application, stored as manifest.json in the app directory.
- * Applications are installed globally at ~/.creator-flow/apps/{app-id}/
+ * Applications are installed globally at ~/.sprouty-ai/apps/{app-id}/
  */
 export interface AppManifest {
   /** Unique application ID (format: "app.name" for main apps, "plugin.name" for plugins) */

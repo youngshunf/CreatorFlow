@@ -24,7 +24,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { useMenuComponents } from '@/components/ui/menu-context'
-import { getDocUrl, type DocFeature } from '@creator-flow/shared/docs/doc-links'
+import { getDocUrl, type DocFeature } from '@sprouty-ai/shared/docs/doc-links'
 import { useT } from '@/context/LocaleContext'
 
 export type SidebarMenuType = 'allChats' | 'flagged' | 'status' | 'sources' | 'skills' | 'labels' | 'views' | 'newChat'
@@ -84,7 +84,7 @@ export function SidebarMenu({
   // New Chat: only shows "Open in New Window"
   if (type === 'newChat') {
     return (
-      <MenuItem onClick={() => window.electronAPI.openUrl('creatorflow://action/new-chat?window=focused')}>
+      <MenuItem onClick={() => window.electronAPI.openUrl('sproutyai://action/new-chat?window=focused')}>
         <AppWindow className="h-3.5 w-3.5" />
         <span className="flex-1">{t('在新窗口打开')}</span>
       </MenuItem>

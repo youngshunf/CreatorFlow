@@ -1,5 +1,5 @@
 // ============================================================================
-// @creator-flow/mermaid — public API
+// @sprouty-ai/mermaid — public API
 //
 // Renders Mermaid diagrams to styled SVG strings.
 // Framework-agnostic, no DOM required. Pure TypeScript.
@@ -15,7 +15,7 @@
 // See src/theme.ts for the full variable system.
 //
 // Usage:
-//   import { renderMermaid } from '@creator-flow/mermaid'
+//   import { renderMermaid } from '@sprouty-ai/mermaid'
 //   const svg = await renderMermaid('graph TD\n  A --> B')
 //   const svg = await renderMermaid('graph TD\n  A --> B', { bg: '#1a1b26', fg: '#a9b1d6' })
 // ============================================================================

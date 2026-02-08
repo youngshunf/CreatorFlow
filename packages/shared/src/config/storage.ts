@@ -12,7 +12,7 @@ import { findIconFile } from '../utils/icon.ts';
 import { initializeDocs } from '../docs/index.ts';
 import { expandPath, toPortablePath, getBundledAssetsDir } from '../utils/paths.ts';
 import { CONFIG_DIR } from './paths.ts';
-import type { StoredAttachment, StoredMessage } from '@creator-flow/core/types';
+import type { StoredAttachment, StoredMessage } from '@sprouty-ai/core/types';
 import type { Plan } from '../agent/plan-types.ts';
 import type { PermissionMode } from '../agent/mode-manager.ts';
 import { BUNDLED_CONFIG_DEFAULTS, type ConfigDefaults } from './config-defaults-schema.ts';
@@ -26,10 +26,10 @@ export type {
   McpAuthType,
   AuthType,
   OAuthCredentials,
-} from '@creator-flow/core/types';
+} from '@sprouty-ai/core/types';
 
 // Import for local use
-import type { Workspace, AuthType } from '@creator-flow/core/types';
+import type { Workspace, AuthType } from '@sprouty-ai/core/types';
 
 // Config stored in JSON file (credentials stored in encrypted file, not here)
 export interface StoredConfig {
@@ -92,7 +92,7 @@ export function ensureConfigDir(): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
-  // Initialize bundled docs (creates ~/.creator-flow/docs/ with sources.md, agents.md, permissions.md)
+  // Initialize bundled docs (creates ~/.sprouty-ai/docs/ with sources.md, agents.md, permissions.md)
   initializeDocs();
 
   // Initialize config defaults
@@ -606,7 +606,7 @@ function ensureWorkspaceDir(workspaceId: string): string {
 
 
 // Re-export types from core for convenience
-export type { StoredAttachment, StoredMessage } from '@creator-flow/core/types';
+export type { StoredAttachment, StoredMessage } from '@sprouty-ai/core/types';
 
 export interface WorkspaceConversation {
   messages: StoredMessage[];
@@ -836,7 +836,7 @@ let presetsInitialized = false;
 
 /**
  * Get the app-level themes directory.
- * Preset themes are stored at ~/.creator-flow/themes/
+ * Preset themes are stored at ~/.sprouty-ai/themes/
  */
 export function getAppThemesDir(): string {
   return APP_THEMES_DIR;
@@ -1192,7 +1192,7 @@ import { copyFileSync } from 'fs';
 const TOOL_ICONS_DIR_NAME = 'tool-icons';
 
 /**
- * Returns the path to the tool-icons directory: ~/.creator-flow/tool-icons/
+ * Returns the path to the tool-icons directory: ~/.sprouty-ai/tool-icons/
  */
 export function getToolIconsDir(): string {
   return join(CONFIG_DIR, TOOL_ICONS_DIR_NAME);

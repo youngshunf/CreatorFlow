@@ -2,7 +2,7 @@
  * Views Storage
  *
  * Filesystem-based storage for workspace view configurations.
- * Views are stored at {workspaceRootPath}/.creator-flow/views.json
+ * Views are stored at {workspaceRootPath}/.sprouty-ai/views.json
  *
  * Views are dynamic, expression-based filters computed at runtime from session state.
  * They are never persisted on sessions — purely runtime-evaluated.
@@ -14,7 +14,7 @@ import type { ViewConfig } from './types.ts';
 import { getDefaultViews } from './defaults.ts';
 import { debug } from '../utils/debug.ts';
 
-const WORKSPACE_DATA_DIR = '.creator-flow';
+const WORKSPACE_DATA_DIR = '.sprouty-ai';
 const VIEWS_FILE = 'views.json';
 
 /**
@@ -70,7 +70,7 @@ export function saveViewsConfig(
   const dataDir = join(workspaceRootPath, WORKSPACE_DATA_DIR);
   const configPath = join(dataDir, VIEWS_FILE);
 
-  // Ensure .creator-flow directory exists
+  // Ensure .sprouty-ai directory exists
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true });
   }

@@ -159,7 +159,7 @@ class ModeManager {
 
     debug(`[Mode] Set permission mode to ${mode} for session ${sessionId}`);
 
-    // Notify callbacks (for CreatorFlowAgent internal sync)
+    // Notify callbacks (for SproutyAgent internal sync)
     const callbacks = this.callbacks.get(sessionId);
     if (callbacks?.onStateChange) {
       callbacks.onStateChange(newState);

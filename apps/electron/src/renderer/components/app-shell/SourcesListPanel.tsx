@@ -8,12 +8,12 @@
 import * as React from 'react'
 import { useState } from 'react'
 import { MoreHorizontal, DatabaseZap } from 'lucide-react'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@creator-flow/ui'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@sprouty-ai/ui'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { deriveConnectionStatus } from '@/components/ui/source-status-indicator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty'
-import { getDocUrl } from '@creator-flow/shared/docs/doc-links'
+import { getDocUrl } from '@sprouty-ai/shared/docs/doc-links'
 import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
@@ -319,7 +319,7 @@ function SourceItem({ source, isSelected, isFirst, localMcpEnabled, onClick, onD
                     sourceSlug={config.slug}
                     sourceName={config.name}
                     onOpenInNewWindow={() => {
-                      window.electronAPI.openUrl(`creatorflow://sources/source/${config.slug}?window=focused`)
+                      window.electronAPI.openUrl(`sproutyai://sources/source/${config.slug}?window=focused`)
                     }}
                     onShowInFinder={() => {
                       window.electronAPI.showInFolder(source.folderPath)
@@ -340,7 +340,7 @@ function SourceItem({ source, isSelected, isFirst, localMcpEnabled, onClick, onD
               sourceSlug={config.slug}
               sourceName={config.name}
               onOpenInNewWindow={() => {
-                window.electronAPI.openUrl(`creatorflow://sources/source/${config.slug}?window=focused`)
+                window.electronAPI.openUrl(`sproutyai://sources/source/${config.slug}?window=focused`)
               }}
               onShowInFinder={() => {
                 window.electronAPI.showInFolder(source.folderPath)

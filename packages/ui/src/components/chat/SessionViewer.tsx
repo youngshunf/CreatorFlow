@@ -9,7 +9,7 @@
 
 import type { ReactNode } from 'react'
 import { useMemo, useState, useCallback } from 'react'
-import type { StoredSession } from '@creator-flow/core'
+import type { StoredSession } from '@sprouty-ai/core'
 import { cn } from '../../lib/utils'
 import { CHAT_LAYOUT, CHAT_CLASSES } from '../../lib/layout'
 import { PlatformProvider, type PlatformActions } from '../../context'
@@ -49,9 +49,9 @@ export interface SessionViewerProps {
 }
 
 /**
- * CreatorFlowAgentLogo - The CreatorFlow "C" logo for branding
+ * SproutyAgentLogo - The CreatorFlow "C" logo for branding
  */
-function CreatorFlowAgentLogo({ className }: { className?: string }) {
+function SproutyAgentLogo({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -219,7 +219,7 @@ export function SessionViewer({
 
             {/* Bottom branding */}
             <div className={CHAT_CLASSES.brandingContainer}>
-              <CreatorFlowAgentLogo className="w-8 h-8 text-[#9570BE]/40" />
+              <SproutyAgentLogo className="w-8 h-8 text-[#9570BE]/40" />
             </div>
             </div>
           </div>

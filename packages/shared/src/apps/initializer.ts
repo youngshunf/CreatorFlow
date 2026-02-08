@@ -261,7 +261,7 @@ function copyAppLabelsToWorkspace(appPath: string, workspaceRoot: string): boole
     return false;
   }
   
-  const workspaceLabelsDir = join(workspaceRoot, '.creator-flow', 'labels');
+  const workspaceLabelsDir = join(workspaceRoot, '.sprouty-ai', 'labels');
   const workspaceLabelsConfig = join(workspaceLabelsDir, 'config.json');
   
   // Ensure workspace labels directory exists
@@ -289,7 +289,7 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
     return false;
   }
   
-  const workspaceStatusesDir = join(workspaceRoot, '.creator-flow', 'statuses');
+  const workspaceStatusesDir = join(workspaceRoot, '.sprouty-ai', 'statuses');
   const workspaceStatusesConfig = join(workspaceStatusesDir, 'config.json');
   const workspaceIconsDir = join(workspaceStatusesDir, 'icons');
   
@@ -364,7 +364,7 @@ function copyAppSourcesToWorkspace(appPath: string, workspaceRoot: string): bool
     return false;
   }
   
-  const workspaceSourcesDir = join(workspaceRoot, '.creator-flow', 'sources');
+  const workspaceSourcesDir = join(workspaceRoot, '.sprouty-ai', 'sources');
   
   // Ensure workspace sources directory exists
   if (!existsSync(workspaceSourcesDir)) {
@@ -404,7 +404,7 @@ function copyAppSourcesToWorkspace(appPath: string, workspaceRoot: string): bool
 
 /**
  * Copy app manifest.json to workspace root for app info display.
- * The manifest is copied to .creator-flow/app-manifest.json.
+ * The manifest is copied to .sprouty-ai/app-manifest.json.
  */
 function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void {
   const appPath = getAppPath(appId);
@@ -440,7 +440,7 @@ function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void 
  * Copy AGENTS.md from app source directory to workspace data directory.
  * This provides workspace-specific AI agent guidance based on the app type.
  *
- * The file is copied to .creator-flow/AGENTS.md in the workspace,
+ * The file is copied to .sprouty-ai/AGENTS.md in the workspace,
  * where it will be discovered by the agent's project context file mechanism.
  */
 function copyAppAgentsToWorkspace(appId: string, workspaceRoot: string): void {

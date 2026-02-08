@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authApi, type LoginResult } from '@/api/auth'
 import { cn } from '@/lib/utils'
-import { enableCloudMode, type CloudConfig, getCloudApiUrl, getCurrentEnv, isDebugMode } from '@creator-flow/shared/cloud'
+import { enableCloudMode, type CloudConfig, getCloudApiUrl, getCurrentEnv, isDebugMode } from '@sprouty-ai/shared/cloud'
 import { toast } from 'sonner'
 
 interface LoginScreenProps {

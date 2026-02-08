@@ -4,7 +4,7 @@
  * Maps component types to their React implementations.
  */
 
-import type { InteractiveComponentType, InteractiveUIElement } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveComponentType, InteractiveUIElement } from '@sprouty-ai/shared/interactive-ui'
 
 // Re-export component type
 export type { InteractiveComponentType }

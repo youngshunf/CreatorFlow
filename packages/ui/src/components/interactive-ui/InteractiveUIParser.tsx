@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react'
-import type { InteractiveUIElement, InteractiveResponse } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveUIElement, InteractiveResponse } from '@sprouty-ai/shared/interactive-ui'
 import { InteractiveFormRenderer } from './InteractiveUIRenderer'
 
 // Regex to match <interactive-ui>...</interactive-ui> blocks

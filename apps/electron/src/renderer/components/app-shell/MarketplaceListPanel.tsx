@@ -29,7 +29,7 @@ import type {
   MarketplaceApp, 
   MarketplaceCategory,
   InstalledSkillInfo,
-} from '@creator-flow/shared/marketplace'
+} from '@sprouty-ai/shared/marketplace'
 
 export interface MarketplaceListPanelProps {
   filter: MarketplaceFilter

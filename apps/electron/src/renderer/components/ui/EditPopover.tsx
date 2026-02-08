@@ -15,7 +15,7 @@ import { Popover, PopoverTrigger, PopoverContent } from './popover'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
 import { useT } from '@/context/LocaleContext'
-import { usePlatform } from '@creator-flow/ui'
+import { usePlatform } from '@sprouty-ai/ui'
 import type { ContentBadge, Session, CreateSessionOptions } from '../../../shared/types'
 import { useActiveWorkspace, useAppShellContext, useSession } from '@/context/AppShellContext'
 import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
@@ -126,7 +126,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       label: 'Default Permissions',
       filePath: location, // location is the full path for default permissions
       context:
-        'The user is editing app-level default permissions (~/.creator-flow/permissions/default.json). ' +
+        'The user is editing app-level default permissions (~/.sprouty-ai/permissions/default.json). ' +
         'This file configures Explore mode rules that apply to ALL workspaces. ' +
         'It can contain: allowedBashPatterns, allowedMcpPatterns, allowedApiEndpoints, blockedTools, and allowedWritePaths. ' +
         'Each pattern can be a string or an object with pattern and comment fields. ' +
@@ -252,7 +252,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       label: 'Preferences Notes',
       filePath: location, // location is the full path for preferences
       context:
-        'The user is editing the notes field in their preferences (~/.creator-flow/preferences.json). ' +
+        'The user is editing the notes field in their preferences (~/.sprouty-ai/preferences.json). ' +
         'This is a JSON file. Only modify the "notes" field unless explicitly asked otherwise. ' +
         'The notes field is free-form text that provides context about the user to the AI. ' +
         'After editing, call config_validate with target "preferences" to verify the changes. ' +
@@ -274,7 +274,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Sources can be MCP servers (HTTP/SSE or stdio), REST APIs, or local filesystems. ' +
         'Ask clarifying questions if needed: What service? MCP or API? Auth type? ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接我的 Craft 空间',
@@ -292,7 +292,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'APIs connect to REST endpoints with authentication (bearer, header, basic, or query). ' +
         'Ask about the API endpoint URL and auth type. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接 OpenAI API',
@@ -309,7 +309,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'MCP servers can use HTTP/SSE transport (remote) or stdio transport (local subprocess). ' +
         'Ask about the service they want to connect to and whether it\'s a remote URL or local command. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接 Linear',
@@ -322,12 +322,12 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       filePath: `${location}/sources/`,
       context:
         'The user wants to add a local folder source. ' +
-        'First, look up the guide: mcp__creator-flows-docs__SearchCreatorFlowAgents({ query: "filesystem" }). ' +
+        'First, look up the guide: mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" }). ' +
         'Local folders are bookmarks - use type: "local" with a local.path field. ' +
         'They use existing Read, Write, Glob, Grep tools - no MCP server needed. ' +
         'If unclear, ask about the folder path they want to connect. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接我的 Obsidian 知识库',
@@ -343,7 +343,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Skills are specialized instructions with a SKILL.md file containing YAML frontmatter (name, description) and markdown instructions. ' +
         'Ask clarifying questions if needed: What should the skill do? When should it trigger? ' +
         'Create the skill folder and SKILL.md in the workspace skills directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/skills.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/skills.md. ' +
         'After creating the skill, call skill_validate with the skill slug to verify the SKILL.md file.',
     },
     example: '按照代码规范审查 PR',
@@ -382,7 +382,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
         'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
         'Children form a recursive tree structure — array position determines display order. ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '添加"缺陷"标签（红色）',
@@ -402,7 +402,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Each rule has: pattern (regex with capture groups), flags (default "gi"), valueTemplate ($1/$2 substitution), description. ' +
         'Multiple rules on the same label = multiple ways to trigger. The "g" flag is always enforced. ' +
         'Avoid catastrophic backtracking patterns (e.g., (a+)+). ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '添加检测 GitHub Issue 链接的规则',
@@ -422,7 +422,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Each label has: id (slug, globally unique), name (display), color (optional EntityColor), children (sub-labels array). ' +
         'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
         'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '一个红色的"缺陷"标签',
@@ -460,11 +460,11 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       filePath: location, // location is the full path to tool-icons.json
       context:
         'The user wants to edit CLI tool icon mappings. ' +
-        'The file is tool-icons.json in ~/.creator-flow/tool-icons/. Icon image files live in the same directory. ' +
+        'The file is tool-icons.json in ~/.sprouty-ai/tool-icons/. Icon image files live in the same directory. ' +
         'Schema: { version: 1, tools: [{ id, displayName, icon, commands }] }. ' +
         'Each tool has: id (unique slug), displayName (shown in UI), icon (filename like "git.ico"), commands (array of CLI command names). ' +
         'Supported icon formats: .png, .ico, .svg, .jpg. Icons display at 20x20px. ' +
-        'Read ~/.creator-flow/docs/tool-icons.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/tool-icons.md for full format reference. ' +
         'After editing, call config_validate with target "tool-icons" to verify the changes are valid. ' +
         'Confirm clearly when done.',
     },
@@ -964,7 +964,7 @@ export function EditPopover({
     const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
     const systemPromptParam = systemPromptPreset ? `&systemPrompt=${encodeURIComponent(systemPromptPreset)}` : ''
     // Navigate in same window by omitting window=focused parameter
-    const url = `creatorflow://action/new-chat?input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}${modelParam}${systemPromptParam}`
+    const url = `sproutyai://action/new-chat?input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}${modelParam}${systemPromptParam}`
 
     window.electronAPI.openUrl(url)
     setOpen(false)

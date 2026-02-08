@@ -127,7 +127,7 @@ function SettingsItemRow({ item, isSelected, isFirst, onSelect }: SettingsItemRo
 
   // Open settings page in a new window via deep link
   const handleOpenInNewWindow = () => {
-    window.electronAPI.openUrl(`creatorflow://settings/${item.id}?window=focused`)
+    window.electronAPI.openUrl(`sproutyai://settings/${item.id}?window=focused`)
   }
 
   return (

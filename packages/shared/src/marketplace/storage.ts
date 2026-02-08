@@ -3,7 +3,7 @@
  *
  * Manages local cache and version tracking for marketplace items.
  * Handles:
- * - Marketplace metadata cache (~/.creator-flow/marketplace/cache/)
+ * - Marketplace metadata cache (~/.sprouty-ai/marketplace/cache/)
  * - Skill meta files ({workspace}/skills/{skill_id}/.skill-meta.json)
  * - Installed package tracking
  */
@@ -35,7 +35,7 @@ import type {
  * Get the root config directory
  */
 export function getConfigRoot(): string {
-  return join(homedir(), '.creator-flow');
+  return join(homedir(), '.sprouty-ai');
 }
 
 /**
@@ -235,7 +235,7 @@ export function getInstalledSkills(
   workspaceRoot: string
 ): InstalledSkillInfo[] {
   const expandedRoot = expandPath(workspaceRoot);
-  const skillsDir = join(expandedRoot, '.creator-flow', 'skills');
+  const skillsDir = join(expandedRoot, '.sprouty-ai', 'skills');
   if (!existsSync(skillsDir)) {
     return [];
   }
@@ -312,7 +312,7 @@ export function isSkillInstalled(
   workspaceRoot: string,
   skillId: string
 ): boolean {
-  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.sprouty-ai', 'skills', skillId);
   const skillFile = join(skillDir, 'SKILL.md');
   return existsSync(skillFile);
 }
@@ -324,7 +324,7 @@ export function getInstalledSkillVersion(
   workspaceRoot: string,
   skillId: string
 ): string | null {
-  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.sprouty-ai', 'skills', skillId);
   const meta = readSkillMeta(skillDir);
   return meta?.baseVersion || null;
 }

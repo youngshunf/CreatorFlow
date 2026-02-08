@@ -1,5 +1,5 @@
 {
-  "name": "@creator-flow/electron",
+  "name": "@sprouty-ai/electron",
   "version": "0.3.5",
   "description": "Electron desktop app for CreatorFlow",
   "main": "dist/main.cjs",
@@ -43,9 +43,9 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.34",
-    "@creator-flow/core": "workspace:*",
-    "@creator-flow/shared": "workspace:*",
-    "@creator-flow/ui": "workspace:*",
+    "@sprouty-ai/core": "workspace:*",
+    "@sprouty-ai/shared": "workspace:*",
+    "@sprouty-ai/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

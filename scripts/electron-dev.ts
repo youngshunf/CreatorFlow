@@ -142,15 +142,15 @@ function getOAuthDefines(): Record<string, string> {
 
 // Get environment variables for electron process
 function getElectronEnv(): Record<string, string> {
-  const vitePort = process.env.CRAFT_VITE_PORT || "5173";
+  const vitePort = process.env.SPROUTY_VITE_PORT || process.env.CRAFT_VITE_PORT || "5173";
 
   return {
     ...process.env as Record<string, string>,
     VITE_DEV_SERVER_URL: `http://localhost:${vitePort}`,
-    CRAFT_CONFIG_DIR: process.env.CRAFT_CONFIG_DIR || "",
-    CRAFT_APP_NAME: process.env.CRAFT_APP_NAME || "Creator Flow",
-    CREATORFLOW_DEEPLINK_SCHEME: process.env.CREATORFLOW_DEEPLINK_SCHEME || "creatorflow",
-    CRAFT_INSTANCE_NUMBER: process.env.CRAFT_INSTANCE_NUMBER || "",
+    SPROUTY_CONFIG_DIR: process.env.SPROUTY_CONFIG_DIR || process.env.CRAFT_CONFIG_DIR || "",
+    SPROUTY_APP_NAME: process.env.SPROUTY_APP_NAME || process.env.CRAFT_APP_NAME || "智小芽",
+    SPROUTY_DEEPLINK_SCHEME: process.env.SPROUTY_DEEPLINK_SCHEME || process.env.CREATORFLOW_DEEPLINK_SCHEME || "sproutyai",
+    SPROUTY_INSTANCE_NUMBER: process.env.SPROUTY_INSTANCE_NUMBER || process.env.CRAFT_INSTANCE_NUMBER || "",
   };
 }
 
@@ -250,7 +250,7 @@ async function main(): Promise<void> {
 
   copyResources();
 
-  const vitePort = process.env.CRAFT_VITE_PORT || "5173";
+  const vitePort = process.env.SPROUTY_VITE_PORT || process.env.CRAFT_VITE_PORT || "5173";
   const oauthDefines = getOAuthDefines();
 
   // Kill any existing process on the Vite port

@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
-import type { ToolDisplayMeta } from '@creator-flow/core'
-import { t } from '@creator-flow/shared/locale'
-import { normalizePath, pathStartsWith, stripPathPrefix } from '@creator-flow/core/utils'
+import type { ToolDisplayMeta } from '@sprouty-ai/core'
+import { t } from '@sprouty-ai/shared/locale'
+import { normalizePath, pathStartsWith, stripPathPrefix } from '@sprouty-ai/core/utils'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ChevronRight,

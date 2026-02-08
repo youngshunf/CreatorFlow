@@ -1,4 +1,4 @@
-import { HeadlessRunner, type HeadlessConfig, type HeadlessEvent } from '@creator-flow/shared/headless'
+import { HeadlessRunner, type HeadlessConfig, type HeadlessEvent } from '@sprouty-ai/shared/headless'
 import { WorkspaceService } from './workspace'
 import { SubscriptionService } from './subscription'
 
@@ -16,7 +16,7 @@ export interface AgentEvent {
 export class AgentService {
   /**
    * Execute an agent query for a user
-   * Reuses the HeadlessRunner from @creator-flow/shared
+   * Reuses the HeadlessRunner from @sprouty-ai/shared
    */
   static async *execute(
     userId: string,

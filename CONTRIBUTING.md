@@ -98,9 +98,9 @@ creator-flow/
 │   ├── electron/    # Desktop GUI (primary interface)
 │   └── tui/         # Terminal CLI (deprecated)
 └── packages/
-    ├── core/        # @creator-flow/core - Shared types
-    ├── shared/      # @creator-flow/shared - Business logic
-    └── ui/          # @creator-flow/ui - React components
+    ├── core/        # @sprouty-ai/core - Shared types
+    ├── shared/      # @sprouty-ai/shared - Business logic
+    └── ui/          # @sprouty-ai/ui - React components
 ```
 
 ## Key Areas

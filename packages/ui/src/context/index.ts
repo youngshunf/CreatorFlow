@@ -1,5 +1,5 @@
 /**
- * Context exports for @creator-flow/ui
+ * Context exports for @sprouty-ai/ui
  */
 
 export {

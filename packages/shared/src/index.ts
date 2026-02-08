@@ -1,20 +1,20 @@
 /**
- * @creator-flow/shared
+ * @sprouty-ai/shared
  *
  * Shared business logic for CreatorFlow.
  * Used by the Electron app.
  *
  * Import specific modules via subpath exports:
- *   import { CreatorFlowAgent } from '@creator-flow/shared/agent';
- *   import { loadStoredConfig } from '@creator-flow/shared/config';
- *   import { getCredentialManager } from '@creator-flow/shared/credentials';
- *   import { CraftMcpClient } from '@creator-flow/shared/mcp';
- *   import { debug } from '@creator-flow/shared/utils';
- *   import { loadSource, createSource, getSourceCredentialManager } from '@creator-flow/shared/sources';
- *   import { createWorkspace, loadWorkspace } from '@creator-flow/shared/workspaces';
+ *   import { SproutyAgent } from '@sprouty-ai/shared/agent';
+ *   import { loadStoredConfig } from '@sprouty-ai/shared/config';
+ *   import { getCredentialManager } from '@sprouty-ai/shared/credentials';
+ *   import { CraftMcpClient } from '@sprouty-ai/shared/mcp';
+ *   import { debug } from '@sprouty-ai/shared/utils';
+ *   import { loadSource, createSource, getSourceCredentialManager } from '@sprouty-ai/shared/sources';
+ *   import { createWorkspace, loadWorkspace } from '@sprouty-ai/shared/workspaces';
  *
  * Available modules:
- *   - agent: CreatorFlowAgent SDK wrapper, plan tools
+ *   - agent: SproutyAgent SDK wrapper, plan tools
  *   - auth: OAuth, token management, auth state
  *   - clients: Craft API client
  *   - config: Storage, models, preferences

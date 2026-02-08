@@ -205,7 +205,7 @@ export interface SkillMeta {
 
 /**
  * Cached marketplace metadata
- * Stored in ~/.creator-flow/marketplace/cache/meta.json
+ * Stored in ~/.sprouty-ai/marketplace/cache/meta.json
  */
 export interface MarketplaceCacheData {
   /** Cache timestamp */

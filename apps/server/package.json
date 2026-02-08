@@ -1,5 +1,5 @@
 {
-  "name": "@creator-flow/server",
+  "name": "@sprouty-ai/server",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@creator-flow/shared": "workspace:*",
-    "@creator-flow/core": "workspace:*",
+    "@sprouty-ai/shared": "workspace:*",
+    "@sprouty-ai/core": "workspace:*",
     "@hono/zod-validator": "^0.4.3",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.7.4",

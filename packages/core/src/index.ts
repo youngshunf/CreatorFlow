@@ -1,5 +1,5 @@
 /**
- * @creator-flow/core
+ * @sprouty-ai/core
  *
  * Core types and utilities for CreatorFlow.
  *

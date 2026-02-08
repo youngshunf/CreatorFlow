@@ -9,9 +9,9 @@
  */
 
 import * as React from 'react'
-import { Markdown, type RenderMode } from '@creator-flow/ui'
+import { Markdown, type RenderMode } from '@sprouty-ai/ui'
 import { InteractiveFormRenderer } from './InteractiveUIRenderer'
-import type { InteractiveUIElement, InteractiveResponse } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveUIElement, InteractiveResponse } from '@sprouty-ai/shared/interactive-ui'
 
 // Regex to match <interactive-ui>...</interactive-ui> blocks
 const INTERACTIVE_UI_REGEX = /<interactive-ui>\s*([\s\S]*?)\s*<\/interactive-ui>/g

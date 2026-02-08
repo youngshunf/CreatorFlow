@@ -23,7 +23,7 @@ import type {
   DataTableProps,
   ButtonGroupProps,
   InteractiveResponse,
-} from '@creator-flow/shared/interactive-ui'
+} from '@sprouty-ai/shared/interactive-ui'
 
 // Local alias for convenience
 type InteractiveElement = InteractiveUIElement

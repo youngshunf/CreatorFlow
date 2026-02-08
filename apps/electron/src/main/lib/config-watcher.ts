@@ -5,11 +5,11 @@
  * Uses recursive directory watching for simplicity and reliability.
  *
  * Watched paths:
- * - ~/.creator-flow/config.json - Main app configuration
- * - ~/.creator-flow/preferences.json - User preferences
- * - ~/.creator-flow/theme.json - App-level theme overrides
- * - ~/.creator-flow/themes/*.json - Preset theme files (app-level)
- * - ~/.creator-flow/workspaces/{slug}/ - Workspace directory (recursive)
+ * - ~/.sprouty-ai/config.json - Main app configuration
+ * - ~/.sprouty-ai/preferences.json - User preferences
+ * - ~/.sprouty-ai/theme.json - App-level theme overrides
+ * - ~/.sprouty-ai/themes/*.json - Preset theme files (app-level)
+ * - ~/.sprouty-ai/workspaces/{slug}/ - Workspace directory (recursive)
  *   - sources/{slug}/config.json, guide.md, permissions.json
  *   - skills/{slug}/SKILL.md, icon.*
  *   - permissions.json
@@ -19,39 +19,39 @@ import { watch, existsSync, readdirSync, statSync, readFileSync, mkdirSync } fro
 import { join, dirname, basename, relative } from 'path';
 import { homedir } from 'os';
 import type { FSWatcher } from 'fs';
-import { debug, perf } from '@creator-flow/shared/utils';
-import { loadStoredConfig, type StoredConfig } from '@creator-flow/shared/config';
+import { debug, perf } from '@sprouty-ai/shared/utils';
+import { loadStoredConfig, type StoredConfig } from '@sprouty-ai/shared/config';
 import {
   validateConfig,
   validatePreferences,
   validateSource,
   type ValidationResult,
-} from '@creator-flow/shared/config';
-import type { LoadedSource, SourceGuide } from '@creator-flow/shared/sources';
+} from '@sprouty-ai/shared/config';
+import type { LoadedSource, SourceGuide } from '@sprouty-ai/shared/sources';
 import {
   loadSource,
   loadWorkspaceSources,
   loadSourceGuide,
   sourceNeedsIconDownload,
   downloadSourceIcon,
-} from '@creator-flow/shared/sources';
-import { permissionsConfigCache, getAppPermissionsDir } from '@creator-flow/shared/agent';
-import { getWorkspacePath, getWorkspaceSourcesPath, getWorkspaceSkillsPath } from '@creator-flow/shared/workspaces';
-import type { LoadedSkill } from '@creator-flow/shared/skills';
-import { loadSkill, loadAllSkills, skillNeedsIconDownload, downloadSkillIcon } from '@creator-flow/shared/skills';
+} from '@sprouty-ai/shared/sources';
+import { permissionsConfigCache, getAppPermissionsDir } from '@sprouty-ai/shared/agent';
+import { getWorkspacePath, getWorkspaceSourcesPath, getWorkspaceSkillsPath } from '@sprouty-ai/shared/workspaces';
+import type { LoadedSkill } from '@sprouty-ai/shared/skills';
+import { loadSkill, loadAllSkills, skillNeedsIconDownload, downloadSkillIcon } from '@sprouty-ai/shared/skills';
 import {
   loadStatusConfig,
   statusNeedsIconDownload,
   downloadStatusIcon,
-} from '@creator-flow/shared/statuses';
-import { loadAppTheme, loadPresetThemes, loadPresetTheme, getAppThemesDir } from '@creator-flow/shared/config';
-import type { ThemeOverrides, PresetTheme } from '@creator-flow/shared/config';
+} from '@sprouty-ai/shared/statuses';
+import { loadAppTheme, loadPresetThemes, loadPresetTheme, getAppThemesDir } from '@sprouty-ai/shared/config';
+import type { ThemeOverrides, PresetTheme } from '@sprouty-ai/shared/config';
 
 // ============================================================
 // Constants
 // ============================================================
 
-const CONFIG_DIR = join(homedir(), '.creator-flow');
+const CONFIG_DIR = join(homedir(), '.sprouty-ai');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 const PREFERENCES_FILE = join(CONFIG_DIR, 'preferences.json');
 
@@ -102,7 +102,7 @@ export interface ConfigWatcherCallbacks {
   onSkillsListChange?: (skills: LoadedSkill[]) => void;
 
   // Permissions callbacks
-  /** Called when app-level default permissions change (~/.creator-flow/permissions/default.json) */
+  /** Called when app-level default permissions change (~/.sprouty-ai/permissions/default.json) */
   onDefaultPermissionsChange?: () => void;
   /** Called when workspace permissions.json changes */
   onWorkspacePermissionsChange?: (workspaceId: string) => void;
@@ -866,7 +866,7 @@ export class ConfigWatcher {
   }
 
   /**
-   * Watch app-level themes directory (~/.creator-flow/themes/)
+   * Watch app-level themes directory (~/.sprouty-ai/themes/)
    */
   private watchAppThemesDir(): void {
     const themesDir = getAppThemesDir();
@@ -895,7 +895,7 @@ export class ConfigWatcher {
   }
 
   /**
-   * Watch app-level permissions directory (~/.creator-flow/permissions/)
+   * Watch app-level permissions directory (~/.sprouty-ai/permissions/)
    * Watches for changes to default.json which contains the default read-only patterns
    */
   private watchAppPermissionsDir(): void {

@@ -25,12 +25,12 @@ import { platform } from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
 import { mainLog } from './logger'
-import { getAppVersion } from '@creator-flow/shared/version'
-import { getCloudApiUrl } from '@creator-flow/shared/config/environments'
+import { getAppVersion } from '@sprouty-ai/shared/version'
+import { getCloudApiUrl } from '@sprouty-ai/shared/config/environments'
 import {
   getDismissedUpdateVersion,
   clearDismissedUpdateVersion,
-} from '@creator-flow/shared/config'
+} from '@sprouty-ai/shared/config'
 import type { UpdateInfo } from '../shared/types'
 import type { WindowManager } from './window-manager'
 

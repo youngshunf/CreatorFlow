@@ -1,20 +1,20 @@
 /**
  * Deep Link Handler
  *
- * Parses creatorflow:// URLs and routes to appropriate actions.
+ * Parses sproutyai:// URLs and routes to appropriate actions.
  *
  * URL Formats (workspace is optional - uses active window if omitted):
  *
  * Compound format (hierarchical navigation):
- *   creatorflow://allChats[/chat/{sessionId}]            - Chat list (all chats)
- *   creatorflow://flagged[/chat/{sessionId}]             - Chat list (flagged filter)
- *   creatorflow://state/{stateId}[/chat/{sessionId}]     - Chat list (state filter)
- *   creatorflow://sources[/source/{sourceSlug}]          - Sources list
- *   creatorflow://settings[/{subpage}]                   - Settings (general, shortcuts, preferences)
+ *   sproutyai://allChats[/chat/{sessionId}]            - Chat list (all chats)
+ *   sproutyai://flagged[/chat/{sessionId}]             - Chat list (flagged filter)
+ *   sproutyai://state/{stateId}[/chat/{sessionId}]     - Chat list (state filter)
+ *   sproutyai://sources[/source/{sourceSlug}]          - Sources list
+ *   sproutyai://settings[/{subpage}]                   - Settings (general, shortcuts, preferences)
  *
  * Action format:
- *   creatorflow://action/{actionName}[/{id}][?params]
- *   creatorflow://workspace/{workspaceId}/action/{actionName}[?params]
+ *   sproutyai://action/{actionName}[/{id}][?params]
+ *   sproutyai://workspace/{workspaceId}/action/{actionName}[?params]
  *
  * Actions:
  *   new-chat                  - Create new chat, optional ?input=text&name=name&send=true
@@ -25,13 +25,13 @@
  *   unflag-session/{id}       - Unflag session
  *
  * Examples:
- *   creatorflow://allChats                               (all chats view)
- *   creatorflow://allChats/chat/abc123                   (specific chat)
- *   creatorflow://settings/shortcuts                     (shortcuts page)
- *   creatorflow://sources/source/github                  (github source info)
- *   creatorflow://action/new-chat                        (uses active window)
- *   creatorflow://action/resume-sdk-session/{sdkId}      (resume Claude Code session)
- *   creatorflow://workspace/ws123/allChats/chat/abc123   (targets specific workspace)
+ *   sproutyai://allChats                               (all chats view)
+ *   sproutyai://allChats/chat/abc123                   (specific chat)
+ *   sproutyai://settings/shortcuts                     (shortcuts page)
+ *   sproutyai://sources/source/github                  (github source info)
+ *   sproutyai://action/new-chat                        (uses active window)
+ *   sproutyai://action/resume-sdk-session/{sdkId}      (resume Claude Code session)
+ *   sproutyai://workspace/ws123/allChats/chat/abc123   (targets specific workspace)
  */
 
 import type { BrowserWindow } from 'electron'
@@ -95,19 +95,19 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
   try {
     const parsed = new URL(url)
 
-    if (parsed.protocol !== 'creatorflow:') {
+    if (parsed.protocol !== 'sproutyai:') {
       return null
     }
 
     // For custom protocols, the hostname contains the first path segment
-    // e.g., creatorflow://workspace/ws123 → hostname='workspace', pathname='/ws123'
-    // e.g., creatorflow://allChats/chat/abc → hostname='allChats', pathname='/chat/abc'
+    // e.g., sproutyai://workspace/ws123 → hostname='workspace', pathname='/ws123'
+    // e.g., sproutyai://allChats/chat/abc → hostname='allChats', pathname='/chat/abc'
     const host = parsed.hostname
     const pathParts = parsed.pathname.split('/').filter(Boolean)
     const windowMode = parseWindowMode(parsed)
     const rightSidebar = parseRightSidebar(parsed)
 
-    // creatorflow://auth-callback?... (OAuth callbacks - return null to let existing handler process)
+    // sproutyai://auth-callback?... (OAuth callbacks - return null to let existing handler process)
     if (host === 'auth-callback') {
       return null
     }
@@ -117,7 +117,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
       'allChats', 'flagged', 'state', 'sources', 'settings', 'skills'
     ]
 
-    // creatorflow://allChats/..., creatorflow://settings/..., etc. (compound routes)
+    // sproutyai://allChats/..., sproutyai://settings/..., etc. (compound routes)
     if (COMPOUND_ROUTE_PREFIXES.includes(host)) {
       // Reconstruct the full compound route from host + pathname
       const viewRoute = pathParts.length > 0 ? `${host}/${pathParts.join('/')}` : host
@@ -129,7 +129,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
       }
     }
 
-    // creatorflow://workspace/{workspaceId}/... (with workspace targeting)
+    // sproutyai://workspace/{workspaceId}/... (with workspace targeting)
     if (host === 'workspace') {
       const workspaceId = pathParts[0]
       if (!workspaceId) return null
@@ -167,7 +167,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
       return result
     }
 
-    // creatorflow://action/... (no workspace - uses active window)
+    // sproutyai://action/... (no workspace - uses active window)
     if (host === 'action') {
       const result: DeepLinkTarget = {
         workspaceId: undefined,

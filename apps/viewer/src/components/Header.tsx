@@ -5,9 +5,9 @@
 import { Sun, Moon, X } from 'lucide-react'
 
 /**
- * CreatorFlowAgentLogo - The CreatorFlow "C" logo
+ * SproutyAgentLogo - The CreatorFlow "C" logo
  */
-function CreatorFlowAgentLogo({ className }: { className?: string }) {
+function SproutyAgentLogo({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -41,7 +41,7 @@ export function Header({ hasSession, sessionTitle, isDark, onToggleTheme, onClea
         className="hover:opacity-80 transition-opacity"
         title="CreatorFlow"
       >
-        <CreatorFlowAgentLogo className="w-6 h-6 text-[#9570BE]" />
+        <SproutyAgentLogo className="w-6 h-6 text-[#9570BE]" />
       </div>
 
       {/* Session title - centered */}

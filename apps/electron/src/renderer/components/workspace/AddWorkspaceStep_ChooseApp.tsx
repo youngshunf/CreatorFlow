@@ -5,7 +5,7 @@ import { AddWorkspacePrimaryButton } from "./primitives"
 import { useT } from "@/context/LocaleContext"
 import { CrossfadeAvatar } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { MarketplaceApp } from "@creator-flow/shared/marketplace"
+import type { MarketplaceApp } from "@sprouty-ai/shared/marketplace"
 
 interface AppOption {
   id: string

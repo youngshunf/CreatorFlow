@@ -7,7 +7,7 @@ import {
   StyledDropdownMenuItem,
   StyledDropdownMenuSeparator,
 } from '@/components/ui/styled-dropdown'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { BackgroundTask } from './ActiveTasksBar'

@@ -26,7 +26,7 @@ All commands below assume the project root (`creator-flow` monorepo).
 ### Type checking
 - Shared business-logic package only:
   - `bun run typecheck`  # runs `tsc --noEmit` in `packages/shared`
-- All core packages (`@creator-flow/core` and `@creator-flow/shared`):
+- All core packages (`@sprouty-ai/core` and `@sprouty-ai/shared`):
   - `bun run typecheck:all`
 
 ### Tests
@@ -61,20 +61,20 @@ This repository is a Bun-based workspaces monorepo with two primary layers:
 - **Apps (`apps/*`)**
   - `apps/electron`: Main desktop Electron + React UI for CreatorFlow.
     - Uses `esbuild` for the main and preload processes and Vite (React + Tailwind v4 + shadcn/ui) for the renderer.
-    - Wraps the business logic in `@creator-flow/shared` to drive the UI via IPC.
+    - Wraps the business logic in `@sprouty-ai/shared` to drive the UI via IPC.
   - `apps/viewer`: Vite-based viewer application referenced by `viewer:*` scripts (e.g., for documentation/log viewing); less central than the Electron app.
 
 - **Packages (`packages/*`)**
-  - `@creator-flow/core` (`packages/core`)
+  - `@sprouty-ai/core` (`packages/core`)
     - Shared TypeScript **types** and a minimal debug utility; it is intentionally light-weight.
     - Key type groups (from `CLAUDE.md` and `README.md`):
       - Workspace/auth/config (`Workspace`, `McpAuthType`, `AuthType`, `StoredConfig`, `OAuthCredentials`, `CumulativeUsage`).
       - Sessions (`Session`, `StoredSession`, `SessionMetadata`).
       - Messages and events (`Message`, `StoredMessage`, `MessageRole`, `ToolStatus`, `TokenUsage`, `AgentEvent`, `TypedError`, `Question`).
     - Design note: sessions are the primary isolation boundary; each `Session` is 1:1 with an SDK session and belongs to exactly one workspace.
-  - `@creator-flow/shared` (`packages/shared`)
+  - `@sprouty-ai/shared` (`packages/shared`)
     - Core **business logic** for CreatorFlow and the main integration surface for agents:
-      - `src/agent/`: `CreatorFlowAgent`, permission modes, session-scoped tools, and permission configuration.
+      - `src/agent/`: `SproutyAgent`, permission modes, session-scoped tools, and permission configuration.
       - `src/auth/`: OAuth, token handling for Craft/Claude, and persisted auth state.
       - `src/config/`: Application/workspace configuration, themes, preferences, and file-watcher for live updates.
       - `src/credentials/`: AES‑256‑GCM encrypted credential storage.
@@ -84,7 +84,7 @@ This repository is a Bun-based workspaces monorepo with two primary layers:
       - `src/statuses/`: Dynamic status system for session workflows.
       - `src/headless/`: Headless (non-UI) execution mode.
       - `src/prompts/`, `src/version/`, `src/workspaces/`, `src/utils/`, `src/network-interceptor.ts`: system prompt generation, version and install logic, workspace storage, shared utilities, and HTTP interception for API/MCP tooling.
-    - The Electron app and any other consumers import from `@creator-flow/shared` rather than reaching into these directories directly.
+    - The Electron app and any other consumers import from `@sprouty-ai/shared` rather than reaching into these directories directly.
 
 ### Electron app structure (apps/electron)
 
@@ -92,7 +92,7 @@ The Electron app is the main entry point for end users and is split into three l
 
 - **Main process (`apps/electron/src/main`)**
   - `index.ts`: Bootstraps the app, creates windows, and wires up dev tools.
-  - `sessions.ts`: Wraps `CreatorFlowAgent`, manages session lifecycle, handles event streaming from the Claude Agent SDK, and integrates external sources.
+  - `sessions.ts`: Wraps `SproutyAgent`, manages session lifecycle, handles event streaming from the Claude Agent SDK, and integrates external sources.
   - `ipc.ts`: Declares IPC channels for sessions, files, shell actions, etc.
   - `menu.ts`: Application menus and accelerators.
   - `deep-link.ts`: Handles `creatorflow://…` deep links and routes them into the navigation system.
@@ -120,7 +120,7 @@ Understanding config layout is important when you need to adjust behavior withou
 
 - **Config and data root:** `~/.creator-flow/`
   - `config.json`: Global app configuration (workspaces list, auth types, some preferences).
-  - `credentials.enc`: Encrypted credentials (AES‑256‑GCM) managed via `@creator-flow/shared/credentials`.
+  - `credentials.enc`: Encrypted credentials (AES‑256‑GCM) managed via `@sprouty-ai/shared/credentials`.
   - `preferences.json`: User preferences.
   - `theme.json`: App-level theme.
   - `workspaces/{id}/`:
@@ -142,7 +142,7 @@ Understanding config layout is important when you need to adjust behavior withou
 
 - **Dynamic statuses**
   - The workflow/status system is entirely data-driven and backed by files under `~/.creator-flow/workspaces/{id}/statuses/`.
-  - Default statuses (e.g., Todo, In Progress, Needs Review, Done, Cancelled) can be customized via `createStatus`, `updateStatus`, `deleteStatus`, and `reorderStatuses` in `@creator-flow/shared/statuses`.
+  - Default statuses (e.g., Todo, In Progress, Needs Review, Done, Cancelled) can be customized via `createStatus`, `updateStatus`, `deleteStatus`, and `reorderStatuses` in `@sprouty-ai/shared/statuses`.
 
 - **MCP auth separation (important invariant from core CLAUDE rules)**
   - Craft OAuth (`craft_oauth::global`) is used strictly for Craft API operations (spaces, MCP links). It is **not** reused for MCP server authentication.
@@ -153,8 +153,8 @@ Understanding config layout is important when you need to adjust behavior withou
 
 For Warp-based automation or new features, the primary extension points are:
 
-- `@creator-flow/shared/agent` and related exports for adjusting how `CreatorFlowAgent` behaves (tools, permission hooks, summarization rules).
-- `@creator-flow/shared/config`, `credentials`, `sources`, and `statuses` for modifying storage schemas or runtime configuration behavior.
+- `@sprouty-ai/shared/agent` and related exports for adjusting how `SproutyAgent` behaves (tools, permission hooks, summarization rules).
+- `@sprouty-ai/shared/config`, `credentials`, `sources`, and `statuses` for modifying storage schemas or runtime configuration behavior.
 - `apps/electron/src/main/sessions.ts` and `renderer` hooks/components for wiring new capabilities into the desktop UI.
 
 Future agents working in this repo should prefer using these existing layers and conventions rather than introducing parallel mechanisms for configuration, permissions, or session management.
@@ -168,7 +168,7 @@ The project uses a custom i18n system with Chinese text as translation keys. All
 
 **In `packages/ui` and `packages/shared`:**
 ```typescript
-import { t } from '@creator-flow/shared/locale'
+import { t } from '@sprouty-ai/shared/locale'
 
 // Usage
 {t('中文文本')}

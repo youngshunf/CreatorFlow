@@ -2,7 +2,7 @@
  * Config Types (Browser-safe)
  *
  * Pure type definitions for configuration.
- * Re-exports from @creator-flow/core for compatibility.
+ * Re-exports from @sprouty-ai/core for compatibility.
  */
 
 // Re-export all config types from core (single source of truth)
@@ -11,4 +11,4 @@ export type {
   McpAuthType,
   AuthType,
   OAuthCredentials,
-} from '@creator-flow/core/types';
+} from '@sprouty-ai/core/types';

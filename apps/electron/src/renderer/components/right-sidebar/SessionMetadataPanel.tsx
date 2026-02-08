@@ -10,7 +10,7 @@
 
 import * as React from 'react'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { t } from '@creator-flow/shared/locale'
+import { t } from '@sprouty-ai/shared/locale'
 import { PanelHeader } from '../app-shell/PanelHeader'
 import { useSession as useSessionData, useAppShellContext } from '@/context/AppShellContext'
 import { Input } from '../ui/input'

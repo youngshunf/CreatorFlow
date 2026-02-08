@@ -10,7 +10,7 @@ import { useTheme as useThemeContext } from '@/context/ThemeContext'
 
 interface UseThemeOptions {
   /**
-   * App-level theme override (from ~/.creator-flow/theme.json)
+   * App-level theme override (from ~/.sprouty-ai/theme.json)
    * When provided, merges with the preset theme from context.
    */
   appTheme?: ThemeOverrides | null

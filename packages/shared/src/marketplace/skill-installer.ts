@@ -357,7 +357,7 @@ export async function installSkill(
       skillId,
     });
 
-    const skillsDir = join(workspaceRoot, '.creator-flow', 'skills');
+    const skillsDir = join(workspaceRoot, '.sprouty-ai', 'skills');
     const targetDir = join(skillsDir, skillId);
 
     // Ensure skills directory exists

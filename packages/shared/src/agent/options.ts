@@ -247,7 +247,8 @@ export function getDefaultOptions(): Partial<Options> {
                 ...process.env,
                 ... optionsEnv,
                 // Propagate debug mode from argv flag OR existing env var
-                CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+                SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+                CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
             }
         };
     }
@@ -267,7 +268,8 @@ export function getDefaultOptions(): Partial<Options> {
                 BUN_BE_BUN: '1',
                 ... optionsEnv,
                 // Propagate debug mode from argv flag OR existing env var
-                CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+                SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+                CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
             }
         }
     }
@@ -277,7 +279,8 @@ export function getDefaultOptions(): Partial<Options> {
             ... process.env,
             ... optionsEnv,
             // Propagate debug mode from argv flag OR existing env var
-            CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+            SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+            CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
         }
     };
 }

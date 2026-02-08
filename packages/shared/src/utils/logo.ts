@@ -11,7 +11,7 @@ import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 
 // Cache path for persisted provider domains
-const CREATOR_FLOW_DIR = join(homedir(), '.creator-flow');
+const CREATOR_FLOW_DIR = join(homedir(), '.sprouty-ai');
 const PROVIDER_DOMAINS_CACHE_PATH = join(CREATOR_FLOW_DIR, 'provider-domains.json');
 
 // Google Favicon V2 API - free, reliable, no API key needed

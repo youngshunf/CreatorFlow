@@ -4,7 +4,7 @@
  * Provides access to built-in documentation that Claude can reference
  * when performing configuration tasks (sources, agents, permissions, etc.).
  *
- * Docs are stored at ~/.creator-flow/docs/ and synced from bundled assets.
+ * Docs are stored at ~/.sprouty-ai/docs/ and synced from bundled assets.
  * Source content lives in packages/shared/assets/docs/*.md for easier editing.
  */
 
@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 
 import { getBundledAssetsDir } from '../utils/paths.ts';
 import { debug } from '../utils/debug.ts';
 
-const CONFIG_DIR = join(homedir(), '.creator-flow');
+const CONFIG_DIR = join(homedir(), '.sprouty-ai');
 const DOCS_DIR = join(CONFIG_DIR, 'docs');
 
 // Track if docs have been initialized this session (prevents re-init on hot reload)
@@ -92,7 +92,7 @@ export function getDocPath(filename: string): string {
 
 // App root path reference for use in prompts
 // Using ~ for display since actual path varies per system/instance
-export const APP_ROOT = '~/.creator-flow';
+export const APP_ROOT = '~/.sprouty-ai';
 
 /**
  * Documentation file references for use in error messages and tool descriptions.

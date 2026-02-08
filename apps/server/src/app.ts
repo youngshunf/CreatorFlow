@@ -21,7 +21,7 @@ const app = new Hono<Env>()
 app.use('*', logger())
 app.use('*', secureHeaders())
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:3001', 'creatorflow://'],
+  origin: ['http://localhost:5173', 'http://localhost:3001', 'sproutyai://'],
   credentials: true,
 }))
 

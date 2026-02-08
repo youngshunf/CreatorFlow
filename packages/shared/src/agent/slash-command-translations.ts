@@ -175,7 +175,7 @@ export function scanWorkspaceCommands(
   }
 
   // Scan workspace plugins
-  scanPluginDirectory(join(workspaceRootPath, '.creator-flow', '.claude-plugin'), commands, translations)
+  scanPluginDirectory(join(workspaceRootPath, '.sprouty-ai', '.claude-plugin'), commands, translations)
 
   return { commands, translations }
 }

@@ -1,5 +1,5 @@
 // ============================================================================
-// @creator-flow/mermaid — ASCII renderer public API
+// @sprouty-ai/mermaid — ASCII renderer public API
 //
 // Renders Mermaid diagrams to ASCII or Unicode box-drawing art.
 // No external dependencies — pure TypeScript.
@@ -12,7 +12,7 @@
 //   - ER diagrams (erDiagram) — grid layout with crow's foot notation
 //
 // Usage:
-//   import { renderMermaidAscii } from '@creator-flow/mermaid'
+//   import { renderMermaidAscii } from '@sprouty-ai/mermaid'
 //   const ascii = renderMermaidAscii('graph LR\n  A --> B')
 // ============================================================================
 

@@ -222,7 +222,7 @@ function mergeDir(src: string, dest: string): void {
  * @returns InstalledAppInfo if app exists, null otherwise
  */
 export function checkInstalledApp(workspaceRoot: string): InstalledAppInfo | null {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
   const manifestPath = join(creatorFlowDir, 'app-manifest.json');
 
   if (!existsSync(manifestPath)) {
@@ -249,7 +249,7 @@ export function checkInstalledApp(workspaceRoot: string): InstalledAppInfo | nul
  * @returns Backup directory path
  */
 export function backupAppData(workspaceRoot: string): string | null {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
   
   if (!existsSync(creatorFlowDir)) {
     return null;
@@ -257,10 +257,10 @@ export function backupAppData(workspaceRoot: string): string | null {
 
   // Create backup directory with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = join(workspaceRoot, '.creator-flow-backup', timestamp);
+  const backupDir = join(workspaceRoot, '.sprouty-ai-backup', timestamp);
   
-  if (!existsSync(join(workspaceRoot, '.creator-flow-backup'))) {
-    mkdirSync(join(workspaceRoot, '.creator-flow-backup'), { recursive: true });
+  if (!existsSync(join(workspaceRoot, '.sprouty-ai-backup'))) {
+    mkdirSync(join(workspaceRoot, '.sprouty-ai-backup'), { recursive: true });
   }
 
   // Copy directories that might have user customizations
@@ -296,7 +296,7 @@ export function uninstallApp(
   workspaceRoot: string,
   options: AppUninstallOptions = {}
 ): { success: boolean; backupPath?: string; error?: string } {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
 
   // Check if app exists
   const installedApp = checkInstalledApp(workspaceRoot);
@@ -351,7 +351,7 @@ export function uninstallApp(
  * Restore app data from backup
  */
 export function restoreAppData(workspaceRoot: string, backupPath: string): boolean {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
 
   if (!existsSync(backupPath)) {
     return false;
@@ -745,7 +745,7 @@ export async function installApp(
       appId,
     });
 
-    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
     if (!existsSync(creatorFlowDir)) {
       mkdirSync(creatorFlowDir, { recursive: true });
     }
@@ -920,7 +920,7 @@ export async function installAppFromLocal(
       appId,
     });
 
-    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
     if (!existsSync(creatorFlowDir)) {
       mkdirSync(creatorFlowDir, { recursive: true });
     }

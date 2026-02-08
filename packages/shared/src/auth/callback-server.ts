@@ -38,7 +38,7 @@ function tryBind(server: Server, port: number): Promise<void> {
 
 export interface CreateCallbackServerOptions {
   appType?: AppType;
-  /** Deep link URL to redirect to after successful auth (e.g., creatorflow://auth-complete) */
+  /** Deep link URL to redirect to after successful auth (e.g., sproutyai://auth-complete) */
   deeplinkUrl?: string;
 }
 

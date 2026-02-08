@@ -9,7 +9,7 @@ import * as React from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable, SortableHeader } from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import { cn } from '@/lib/utils'
 
 export interface Info_DataTableProps<TData, TValue> {

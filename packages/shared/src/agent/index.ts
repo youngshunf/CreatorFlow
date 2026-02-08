@@ -1,4 +1,4 @@
-export * from './creator-flow-agent.ts';
+export * from './sprouty-agent.ts';
 export * from './errors.ts';
 export * from './options.ts';
 export { SDK_COMMAND_TRANSLATIONS, getCommandDisplay, type SlashCommandTranslation, scanWorkspaceCommands, loadPluginTranslations } from './slash-command-translations.ts';
@@ -89,7 +89,7 @@ export {
   loadSourcePermissionsConfig,
   getWorkspacePermissionsPath,
   getSourcePermissionsPath,
-  // App-level default permissions (at ~/.creator-flow/permissions/)
+  // App-level default permissions (at ~/.sprouty-ai/permissions/)
   getAppPermissionsDir,
   ensureDefaultPermissions,
   loadDefaultPermissions,

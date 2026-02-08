@@ -2,8 +2,8 @@
  * Application Storage
  *
  * CRUD operations for applications.
- * Applications are stored globally at ~/.creator-flow/apps/
- * Built-in (bundled) apps are in ~/.creator-flow/apps/bundled/
+ * Applications are stored globally at ~/.sprouty-ai/apps/
+ * Built-in (bundled) apps are in ~/.sprouty-ai/apps/bundled/
  */
 
 import {
@@ -29,7 +29,7 @@ import { findIconFile } from '../utils/icon.ts';
 // Constants and Paths
 // ============================================================
 
-const CONFIG_DIR = join(homedir(), '.creator-flow');
+const CONFIG_DIR = join(homedir(), '.sprouty-ai');
 const APPS_DIR = join(CONFIG_DIR, 'apps');
 
 /**

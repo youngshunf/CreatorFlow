@@ -371,8 +371,8 @@ else
 # Creator Flow launcher - handles Linux-specific AppImage issues
 
 APPIMAGE_PATH="$HOME/.creator-flow/app/Creator-Flow-x64.AppImage"
-ELECTRON_CACHE="$HOME/.config/@creator-flow"
-ELECTRON_CACHE_ALT="$HOME/.cache/@creator-flow"
+ELECTRON_CACHE="$HOME/.config/@sprouty-ai"
+ELECTRON_CACHE_ALT="$HOME/.cache/@sprouty-ai"
 
 # Verify AppImage exists
 if [ ! -f "$APPIMAGE_PATH" ]; then

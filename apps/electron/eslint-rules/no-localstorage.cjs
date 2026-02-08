@@ -34,7 +34,7 @@ module.exports = {
     },
     messages: {
       noLocalStorage:
-        "Avoid localStorage in CreatorFlow. Store settings in ~/.creator-flow/preferences.json using window.electronAPI.readPreferences/writePreferences. See packages/shared/src/config/preferences.ts for the preferences API.",
+        "Avoid localStorage in CreatorFlow. Store settings in ~/.sprouty-ai/preferences.json using window.electronAPI.readPreferences/writePreferences. See packages/shared/src/config/preferences.ts for the preferences API.",
     },
     schema: [],
   },

@@ -14,7 +14,7 @@
  * Together these eliminate the need for FIFO matching, parent stacks, and orphan recovery.
  */
 
-import type { AgentEvent } from '@creator-flow/core/types';
+import type { AgentEvent } from '@sprouty-ai/core/types';
 
 // ============================================================================
 // Tool Index — append-only, order-independent lookup

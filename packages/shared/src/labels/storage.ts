@@ -16,8 +16,8 @@ import { flattenLabels, findLabelById } from './tree.ts';
 import { migrateLabelColors } from '../colors/migrate.ts';
 import { debug } from '../utils/debug.ts';
 
-const LABEL_CONFIG_DIR = '.creator-flow/labels';
-const LABEL_CONFIG_FILE = '.creator-flow/labels/config.json';
+const LABEL_CONFIG_DIR = '.sprouty-ai/labels';
+const LABEL_CONFIG_FILE = '.sprouty-ai/labels/config.json';
 
 /**
  * Get default label configuration.

@@ -5,7 +5,7 @@
  * 1. Documentation files (packages/shared/assets/docs/)
  * 2. Theme files (apps/electron/resources/themes/)
  *
- * At runtime, these files are installed to ~/.creator-flow/
+ * At runtime, these files are installed to ~/.sprouty-ai/
  */
 
 import { existsSync, cpSync, mkdirSync } from "fs";

@@ -1,5 +1,5 @@
 /**
- * Markdown component exports for @creator-flow/ui
+ * Markdown component exports for @sprouty-ai/ui
  */
 
 export { Markdown, MemoizedMarkdown, type MarkdownProps, type RenderMode } from './Markdown'

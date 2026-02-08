@@ -1,4 +1,4 @@
-import { CreatorFlowAgent, type CreatorFlowAgentConfig, type PermissionMode, type SdkMcpServerConfig } from '../agent/creator-flow-agent.ts';
+import { SproutyAgent, type SproutyAgentConfig, type PermissionMode, type SdkMcpServerConfig } from '../agent/sprouty-agent.ts';
 import { createApiServer } from '../sources/api-tools.ts';
 import { listSessions, getOrCreateSessionById, updateSessionSdkId } from '../sessions/storage.ts';
 import { debug } from '../utils/debug.ts';
@@ -41,7 +41,7 @@ const SAFE_COMMANDS = new Set([
  *
  * Reuses existing components:
  * - CraftMcpClient for MCP connections
- * - CreatorFlowAgent for query execution
+ * - SproutyAgent for query execution
  *
  * Handles interactions automatically:
  * - Permissions: based on policy (deny-all, allow-safe, allow-all)
@@ -50,7 +50,7 @@ const SAFE_COMMANDS = new Set([
  */
 export class HeadlessRunner {
   private config: HeadlessConfig;
-  private agent: CreatorFlowAgent | null = null;
+  private agent: SproutyAgent | null = null;
 
   // Session management
   private workspaceRootPath: string | null = null;
@@ -85,7 +85,7 @@ export class HeadlessRunner {
       yield { type: 'status', message: 'Connecting to workspace...' };
       this.workspaceRootPath = this.config.workspace.rootPath;
 
-      // 2. Create CreatorFlowAgent with headless callbacks
+      // 2. Create SproutyAgent with headless callbacks
       await this.createAgent();
 
       // 3. Execute query
@@ -185,14 +185,14 @@ ${this.config.prompt}
   }
 
   /**
-   * Create CreatorFlowAgent with headless callbacks for permissions and questions.
+   * Create SproutyAgent with headless callbacks for permissions and questions.
    */
   private async createAgent(): Promise<void> {
     // Map permission policy to the new PermissionMode system
     const permissionMode = policyToPermissionMode(this.config.permissionPolicy);
     debug('[HeadlessRunner] Using permission mode:', permissionMode, 'from policy:', this.config.permissionPolicy || 'deny-all');
 
-    const agentConfig: CreatorFlowAgentConfig = {
+    const agentConfig: SproutyAgentConfig = {
       workspace: this.config.workspace,
       model: this.config.model,
       isHeadless: true,
@@ -206,7 +206,7 @@ ${this.config.prompt}
       },
     };
 
-    this.agent = new CreatorFlowAgent(agentConfig);
+    this.agent = new SproutyAgent(agentConfig);
 
     // Wire up permission handler based on policy
     this.agent.onPermissionRequest = (request) => {

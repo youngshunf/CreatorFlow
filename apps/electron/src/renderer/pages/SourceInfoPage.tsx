@@ -28,7 +28,7 @@ import {
   type ToolRow,
 } from '@/components/info'
 import type { LoadedSource, McpToolWithPermission } from '../../shared/types'
-import type { PermissionsConfigFile } from '@creator-flow/shared/agent/modes'
+import type { PermissionsConfigFile } from '@sprouty-ai/shared/agent/modes'
 
 interface SourceInfoPageProps {
   sourceSlug: string
@@ -375,7 +375,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
 
   // Handle opening in new window
   const handleOpenInNewWindow = useCallback(() => {
-    window.electronAPI.openUrl(`creatorflow://sources/source/${sourceSlug}?window=focused`)
+    window.electronAPI.openUrl(`sproutyai://sources/source/${sourceSlug}?window=focused`)
   }, [sourceSlug])
 
   // Get source name for header

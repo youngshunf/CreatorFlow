@@ -1,5 +1,5 @@
 {
-  "name": "@creator-flow/shared",
+  "name": "@sprouty-ai/shared",
   "version": "0.3.5",
   "license": "Apache-2.0",
   "description": "Shared business logic for CreatorFlow - agent, auth, config, credentials, MCP integration",
@@ -60,8 +60,8 @@
     "./search": "./src/search/index.ts"
   },
   "dependencies": {
-    "@creator-flow/core": "workspace:*",
-    "@creator-flow/mermaid": "workspace:*",
+    "@sprouty-ai/core": "workspace:*",
+    "@sprouty-ai/mermaid": "workspace:*",
     "@isaacs/ttlcache": "^2.1.4",
     "glob": "^11.0.0",
     "@leeoniya/ufuzzy": "^1.0.19",

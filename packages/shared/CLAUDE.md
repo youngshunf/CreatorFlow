@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`@creator-flow/shared` is the core business logic package for CreatorFlow. It contains:
+`@sprouty-ai/shared` is the core business logic package for CreatorFlow. It contains:
 - Agent implementation (CreatorFlowAgent, session-scoped tools, permission modes)
 - Authentication (OAuth, credentials, auth state)
 - Configuration (storage, preferences, themes, watcher)
@@ -20,14 +20,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This package uses subpath exports for clean imports:
 
 ```typescript
-import { CreatorFlowAgent, getPermissionMode, setPermissionMode } from '@creator-flow/shared/agent';
-import { loadStoredConfig, type Workspace } from '@creator-flow/shared/config';
-import { getCredentialManager } from '@creator-flow/shared/credentials';
-import { CraftMcpClient } from '@creator-flow/shared/mcp';
-import { loadWorkspaceSources, type LoadedSource } from '@creator-flow/shared/sources';
-import { loadStatusConfig, createStatus } from '@creator-flow/shared/statuses';
-import { resolveTheme } from '@creator-flow/shared/config/theme';
-import { debug } from '@creator-flow/shared/utils';
+import { CreatorFlowAgent, getPermissionMode, setPermissionMode } from '@sprouty-ai/shared/agent';
+import { loadStoredConfig, type Workspace } from '@sprouty-ai/shared/config';
+import { getCredentialManager } from '@sprouty-ai/shared/credentials';
+import { CraftMcpClient } from '@sprouty-ai/shared/mcp';
+import { loadWorkspaceSources, type LoadedSource } from '@sprouty-ai/shared/sources';
+import { loadStatusConfig, createStatus } from '@sprouty-ai/shared/statuses';
+import { resolveTheme } from '@sprouty-ai/shared/config/theme';
+import { debug } from '@sprouty-ai/shared/utils';
 ```
 
 ## Directory Structure
@@ -144,7 +144,7 @@ Sources are external data connections (MCP servers, APIs, local filesystems). St
 
 ## Dependencies
 
-- `@creator-flow/core` - Shared types
+- `@sprouty-ai/core` - Shared types
 - `@anthropic-ai/claude-agent-sdk` - Claude Agent SDK
 
 ## Type Checking

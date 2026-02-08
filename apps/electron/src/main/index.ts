@@ -70,15 +70,15 @@ import { registerIpcHandlers } from './ipc'
 import { createApplicationMenu } from './menu'
 import { WindowManager } from './window-manager'
 import { loadWindowState, saveWindowState } from './window-state'
-import { getWorkspaces, loadStoredConfig } from '@creator-flow/shared/config'
-import { initializeDocs } from '@creator-flow/shared/docs'
-import { ensureDefaultPermissions } from '@creator-flow/shared/agent/permissions-config'
-import { ensureToolIcons } from '@creator-flow/shared/config'
-import { setBundledAssetsRoot } from '@creator-flow/shared/utils'
+import { getWorkspaces, loadStoredConfig } from '@sprouty-ai/shared/config'
+import { initializeDocs } from '@sprouty-ai/shared/docs'
+import { ensureDefaultPermissions } from '@sprouty-ai/shared/agent/permissions-config'
+import { ensureToolIcons } from '@sprouty-ai/shared/config'
+import { setBundledAssetsRoot } from '@sprouty-ai/shared/utils'
 import { handleDeepLink } from './deep-link'
 import { registerThumbnailScheme, registerThumbnailHandler } from './thumbnail-protocol'
 import log, { isDebugMode, mainLog, getLogFilePath } from './logger'
-import { setPerfEnabled, enableDebug } from '@creator-flow/shared/utils'
+import { setPerfEnabled, enableDebug } from '@sprouty-ai/shared/utils'
 import { initNotificationService, clearBadgeCount, initBadgeIcon, initInstanceBadge } from './notifications'
 import { checkForUpdatesOnLaunch, setWindowManager as setAutoUpdateWindowManager, isUpdating } from './auto-update'
 
@@ -87,14 +87,15 @@ log.initialize()
 
 // Enable debug/perf in dev mode (running from source)
 if (isDebugMode) {
-  process.env.CRAFT_DEBUG = '1'
+  process.env.SPROUTY_DEBUG = '1'
+  process.env.CRAFT_DEBUG = '1' // Legacy compat for SDK subprocess
   enableDebug()
   setPerfEnabled(true)
 }
 
-// Custom URL scheme for deeplinks (e.g., creatorflow://auth-complete)
-// Supports multi-instance dev: CREATORFLOW_DEEPLINK_SCHEME env var (creatorflow1, creatorflow2, etc.)
-const DEEPLINK_SCHEME = process.env.CREATORFLOW_DEEPLINK_SCHEME || 'creatorflow'
+// Custom URL scheme for deeplinks (e.g., sproutyai://auth-complete)
+// Supports multi-instance dev: SPROUTY_DEEPLINK_SCHEME env var (sproutyai1, sproutyai2, etc.)
+const DEEPLINK_SCHEME = process.env.SPROUTY_DEEPLINK_SCHEME || process.env.CREATORFLOW_DEEPLINK_SCHEME || 'sproutyai'
 
 let windowManager: WindowManager | null = null
 let sessionManager: SessionManager | null = null
@@ -103,10 +104,10 @@ let sessionManager: SessionManager | null = null
 let pendingDeepLink: string | null = null
 
 // Set app name early (before app.whenReady) to ensure correct macOS menu bar title
-// Supports multi-instance dev: CRAFT_APP_NAME env var (e.g., "CreatorFlow [1]")
-app.setName(process.env.CRAFT_APP_NAME || '智小芽')
+// Supports multi-instance dev: SPROUTY_APP_NAME env var (e.g., "智小芽 [1]")
+app.setName(process.env.SPROUTY_APP_NAME || process.env.CRAFT_APP_NAME || '智小芽')
 
-// Register as default protocol client for creatorflow:// URLs
+// Register as default protocol client for sproutyai:// URLs
 // This must be done before app.whenReady() on some platforms
 if (process.defaultApp) {
   // Development mode: need to pass the app path
@@ -303,9 +304,9 @@ app.whenReady().then(async () => {
   // Initialize bundled docs
   initializeDocs()
 
-  // Initialize global skills (first run: copy bundled skills to ~/.creator-flow/global-skills/)
+  // Initialize global skills (first run: copy bundled skills to ~/.sprouty-ai/global-skills/)
   try {
-    const { initializeGlobalSkills } = await import('@creator-flow/shared/skills/global-skills')
+    const { initializeGlobalSkills } = await import('@sprouty-ai/shared/skills/global-skills')
     await initializeGlobalSkills()
     mainLog.info('Global skills initialized successfully')
   } catch (error) {
@@ -325,12 +326,12 @@ app.whenReady().then(async () => {
   // Ensure default permissions file exists (copies bundled default.json on first run)
   ensureDefaultPermissions()
 
-  // Seed tool icons to ~/.creator-flow/tool-icons/ (copies bundled SVGs on first run)
+  // Seed tool icons to ~/.sprouty-ai/tool-icons/ (copies bundled SVGs on first run)
   ensureToolIcons()
 
   // Sync marketplace metadata in background (non-blocking, 4-hour interval)
   try {
-    const { syncMarketplaceMetadata } = await import('@creator-flow/shared/marketplace/sync')
+    const { syncMarketplaceMetadata } = await import('@sprouty-ai/shared/marketplace/sync')
     syncMarketplaceMetadata().catch(err => {
       mainLog.warn('Failed to sync marketplace metadata:', err)
     })
@@ -360,8 +361,8 @@ app.whenReady().then(async () => {
     }
 
     // Multi-instance dev: show instance number badge on dock icon
-    // CRAFT_INSTANCE_NUMBER is set by detect-instance.sh for numbered folders
-    const instanceNum = process.env.CRAFT_INSTANCE_NUMBER
+    // SPROUTY_INSTANCE_NUMBER is set by detect-instance.sh for numbered folders
+    const instanceNum = process.env.SPROUTY_INSTANCE_NUMBER || process.env.CRAFT_INSTANCE_NUMBER
     if (instanceNum) {
       const num = parseInt(instanceNum, 10)
       if (!isNaN(num) && num > 0) {
@@ -430,7 +431,7 @@ app.whenReady().then(async () => {
     
     // Log environment configuration for debugging
     try {
-      const { getCurrentEnv, getCloudApiUrl, getLlmGatewayUrl } = await import('@creator-flow/shared/config/environments')
+      const { getCurrentEnv, getCloudApiUrl, getLlmGatewayUrl } = await import('@sprouty-ai/shared/config/environments')
       mainLog.info('Environment config:', {
         env: getCurrentEnv(),
         cloudApiUrl: getCloudApiUrl(),

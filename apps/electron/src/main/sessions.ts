@@ -3,8 +3,8 @@ import * as Sentry from '@sentry/electron/main'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest, SDK_COMMAND_TRANSLATIONS, scanWorkspaceCommands, loadPluginTranslations } from '@creator-flow/shared/agent'
-import { getGlobalPluginDataPath } from '@creator-flow/shared/workspaces'
+import { SproutyAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest, SDK_COMMAND_TRANSLATIONS, scanWorkspaceCommands, loadPluginTranslations } from '@sprouty-ai/shared/agent'
+import { getGlobalPluginDataPath } from '@sprouty-ai/shared/workspaces'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -16,8 +16,8 @@ import {
   getAnthropicBaseUrl,
   resolveModelId,
   type Workspace,
-} from '@creator-flow/shared/config'
-import { loadWorkspaceConfig } from '@creator-flow/shared/workspaces'
+} from '@sprouty-ai/shared/config'
+import { loadWorkspaceConfig } from '@sprouty-ai/shared/workspaces'
 import {
   // Session persistence functions
   listSessions as listStoredSessions,
@@ -37,23 +37,23 @@ import {
   type StoredMessage,
   type SessionMetadata,
   type TodoState,
-} from '@creator-flow/shared/sessions'
-import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS, TokenRefreshManager, createTokenGetter } from '@creator-flow/shared/sources'
-import { ConfigWatcher, type ConfigWatcherCallbacks } from '@creator-flow/shared/config'
-import { getAuthState } from '@creator-flow/shared/auth'
-import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@creator-flow/shared/agent'
-import { getCredentialManager } from '@creator-flow/shared/credentials'
-import { CraftMcpClient } from '@creator-flow/shared/mcp'
+} from '@sprouty-ai/shared/sessions'
+import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS, TokenRefreshManager, createTokenGetter } from '@sprouty-ai/shared/sources'
+import { ConfigWatcher, type ConfigWatcherCallbacks } from '@sprouty-ai/shared/config'
+import { getAuthState } from '@sprouty-ai/shared/auth'
+import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@sprouty-ai/shared/agent'
+import { getCredentialManager } from '@sprouty-ai/shared/credentials'
+import { CraftMcpClient } from '@sprouty-ai/shared/mcp'
 import { type Session, type Message, type SessionEvent, type FileAttachment, type StoredAttachment, type SendMessageOptions, IPC_CHANNELS, generateMessageId } from '../shared/types'
-import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient, resolveToolIcon } from '@creator-flow/shared/utils'
-import { t } from '@creator-flow/shared/locale'
-import { loadAllSkills, type LoadedSkill } from '@creator-flow/shared/skills'
-import type { ToolDisplayMeta } from '@creator-flow/core/types'
-import { DEFAULT_MODEL, getToolIconsDir } from '@creator-flow/shared/config'
-import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels'
-import { evaluateAutoLabels } from '@creator-flow/shared/labels/auto'
-import { listLabels } from '@creator-flow/shared/labels/storage'
-import { extractLabelId } from '@creator-flow/shared/labels'
+import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient, resolveToolIcon } from '@sprouty-ai/shared/utils'
+import { t } from '@sprouty-ai/shared/locale'
+import { loadAllSkills, type LoadedSkill } from '@sprouty-ai/shared/skills'
+import type { ToolDisplayMeta } from '@sprouty-ai/core/types'
+import { DEFAULT_MODEL, getToolIconsDir } from '@sprouty-ai/shared/config'
+import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@sprouty-ai/shared/agent/thinking-levels'
+import { evaluateAutoLabels } from '@sprouty-ai/shared/labels/auto'
+import { listLabels } from '@sprouty-ai/shared/labels/storage'
+import { extractLabelId } from '@sprouty-ai/shared/labels'
 
 /**
  * Sanitize message content for use as session title.
@@ -172,7 +172,7 @@ interface McpTokenRefreshResult {
  * @param tokenRefreshManager - TokenRefreshManager instance for this session
  */
 async function refreshMcpOAuthTokensIfNeeded(
-  agent: CreatorFlowAgent,
+  agent: SproutyAgent,
   sources: LoadedSource[],
   sessionPath: string,
   tokenRefreshManager: TokenRefreshManager
@@ -285,7 +285,7 @@ function resolveToolDisplayMeta(
 
   // CLI tool icon resolution for Bash commands
   // Parses the command string to detect known tools (git, npm, docker, etc.)
-  // and resolves their brand icon from ~/.creator-flow/tool-icons/
+  // and resolves their brand icon from ~/.sprouty-ai/tool-icons/
   if (toolName === 'Bash' && toolInput?.command) {
     const toolIconsDir = getToolIconsDir()
     const match = resolveToolIcon(String(toolInput.command), toolIconsDir)
@@ -331,7 +331,7 @@ function resolveToolDisplayMeta(
 interface ManagedSession {
   id: string
   workspace: Workspace
-  agent: CreatorFlowAgent | null  // Lazy-loaded - null until first message
+  agent: SproutyAgent | null  // Lazy-loaded - null until first message
   messages: Message[]
   isProcessing: boolean
   lastMessageAt: number
@@ -680,7 +680,7 @@ export class SessionManager {
       onSkillChange: async (slug, skill) => {
         sessionLog.info(`Skill '${slug}' changed:`, skill ? 'updated' : 'deleted')
         // Broadcast updated list to UI
-        const { loadAllSkills } = await import('@creator-flow/shared/skills')
+        const { loadAllSkills } = await import('@sprouty-ai/shared/skills')
         const skills = loadAllSkills(workspaceRootPath)
         this.broadcastSkillsChanged(skills)
       },
@@ -771,7 +771,7 @@ export class SessionManager {
   /**
    * Broadcast app theme changed event to all windows
    */
-  private broadcastAppThemeChanged(theme: import('@creator-flow/shared/config').ThemeOverrides | null): void {
+  private broadcastAppThemeChanged(theme: import('@sprouty-ai/shared/config').ThemeOverrides | null): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting app theme changed`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.THEME_APP_CHANGED, theme)
@@ -780,7 +780,7 @@ export class SessionManager {
   /**
    * Broadcast skills changed event to all windows
    */
-  private broadcastSkillsChanged(skills: import('@creator-flow/shared/skills').LoadedSkill[]): void {
+  private broadcastSkillsChanged(skills: import('@sprouty-ai/shared/skills').LoadedSkill[]): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting skills changed (${skills.length} skills)`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.SKILLS_CHANGED, skills)
@@ -788,7 +788,7 @@ export class SessionManager {
 
   /**
    * Broadcast default permissions changed event to all windows
-   * Triggered when ~/.creator-flow/permissions/default.json changes
+   * Triggered when ~/.sprouty-ai/permissions/default.json changes
    */
   private broadcastDefaultPermissionsChanged(): void {
     if (!this.windowManager) return
@@ -1206,7 +1206,7 @@ export class SessionManager {
         onError: (err) => sessionLog.error(`[OAuth ${request.sourceSlug}] ${err}`),
       }, {
         sessionId: managed.id,
-        deeplinkScheme: process.env.CREATORFLOW_DEEPLINK_SCHEME || 'creatorflow',
+        deeplinkScheme: process.env.SPROUTY_DEEPLINK_SCHEME || process.env.CREATORFLOW_DEEPLINK_SCHEME || 'sproutyai',
       })
 
       if (result.success) {
@@ -1379,7 +1379,7 @@ export class SessionManager {
       }
 
       // Update source config to mark as authenticated
-      const { markSourceAuthenticated } = await import('@creator-flow/shared/sources')
+      const { markSourceAuthenticated } = await import('@sprouty-ai/shared/sources')
       markSourceAuthenticated(managed.workspace.rootPath, request.sourceSlug)
 
       // Mark source as unseen so fresh guide is injected on next message
@@ -1691,11 +1691,11 @@ export class SessionManager {
   /**
    * Get or create agent for a session (lazy loading)
    */
-  private async getOrCreateAgent(managed: ManagedSession): Promise<CreatorFlowAgent> {
+  private async getOrCreateAgent(managed: ManagedSession): Promise<SproutyAgent> {
     if (!managed.agent) {
       const end = perf.start('agent.create', { sessionId: managed.id })
       const config = loadStoredConfig()
-      managed.agent = new CreatorFlowAgent({
+      managed.agent = new SproutyAgent({
         workspace: managed.workspace,
         // Session model takes priority, fallback to global config, then resolve with customModel override
         model: resolveModelId(managed.model || config?.model || DEFAULT_MODEL),
@@ -1769,7 +1769,7 @@ export class SessionManager {
       }
 
       // Note: Credential requests now flow through onAuthRequest (unified auth flow)
-      // The legacy onCredentialRequest callback has been removed from CreatorFlowAgent
+      // The legacy onCredentialRequest callback has been removed from SproutyAgent
       // Auth refresh for mid-session token expiry is handled by the error handler in sendMessage
       // which destroys/recreates the agent to get fresh credentials
 
@@ -2131,7 +2131,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2195,7 +2195,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api/${managed.sharedId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2240,7 +2240,7 @@ export class SessionManager {
     this.sendEvent({ type: 'async_operation', sessionId, isOngoing: true }, managed.workspace.id)
 
     try {
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(
         `${VIEWER_URL}/s/api/${managed.sharedId}`,
         { method: 'DELETE' }
@@ -2896,7 +2896,7 @@ export class SessionManager {
 
       // Skills mentioned via @mentions are handled by the SDK's Skill tool.
       // The UI layer (extractBadges in mentions.ts) injects fully-qualified names
-      // in the rawText, and canUseTool in creator-flow-agent.ts provides a fallback
+      // in the rawText, and canUseTool in sprouty-agent.ts provides a fallback
       // to qualify short names. No transformation needed here.
 
       sendSpan.mark('chat.starting')
@@ -3342,7 +3342,7 @@ To view this task's output:
    * Respond to a pending interactive UI request
    * Returns true if the response was delivered, false if no pending request found
    */
-  async respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): Promise<boolean> {
+  async respondToInteractive(sessionId: string, requestId: string, response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse): Promise<boolean> {
     const managed = this.sessions.get(sessionId)
     if (managed?.agent) {
       sessionLog.info(`Interactive response for ${requestId}: type=${response.type}`)
@@ -3512,7 +3512,7 @@ To view this task's output:
         const existingStartMsg = managed.messages.find(m => m.toolUseId === event.toolUseId)
         const isDuplicateEvent = !!existingStartMsg
 
-        // Use parentToolUseId directly from the event — CreatorFlowAgent resolves this
+        // Use parentToolUseId directly from the event — SproutyAgent resolves this
         // from SDK's parent_tool_use_id (authoritative, handles parallel Tasks correctly).
         // No stack or map needed; the event carries the correct parent from the start.
         const parentToolUseId = event.parentToolUseId
@@ -3925,7 +3925,7 @@ To view this task's output:
         break
 
       case 'complete':
-        // Complete event from CreatorFlowAgent - accumulate usage from this turn
+        // Complete event from SproutyAgent - accumulate usage from this turn
         // Actual 'complete' sent to renderer comes from the finally block in sendMessage
         if (event.usage) {
           // Initialize tokenUsage if not set

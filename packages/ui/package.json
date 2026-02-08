@@ -1,5 +1,5 @@
 {
-  "name": "@creator-flow/ui",
+  "name": "@sprouty-ai/ui",
   "version": "0.3.5",
   "license": "Apache-2.0",
   "description": "Shared React UI components for CreatorFlow - session viewer, chat display, markdown rendering",
@@ -17,9 +17,9 @@
     "./styles": "./src/styles/index.css"
   },
   "dependencies": {
-    "@creator-flow/core": "workspace:*",
-    "@creator-flow/shared": "workspace:*",
-    "@creator-flow/mermaid": "workspace:*",
+    "@sprouty-ai/core": "workspace:*",
+    "@sprouty-ai/shared": "workspace:*",
+    "@sprouty-ai/mermaid": "workspace:*",
     "@types/mdast": "^4.0.0",
     "@uiw/react-json-view": "^2.0.0-alpha.40",
     "unified": "^11.0.0",

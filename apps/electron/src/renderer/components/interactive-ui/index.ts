@@ -9,7 +9,7 @@
 export { InteractiveUIParser, hasInteractiveUI, type InteractiveUIParserProps } from './InteractiveUIParser'
 
 // Re-export from shared UI package
-export { InteractiveUIRenderer, InteractiveFormRenderer } from '@creator-flow/ui'
+export { InteractiveUIRenderer, InteractiveFormRenderer } from '@sprouty-ai/ui'
 
 // Re-export types from shared
-export type { InteractiveUIElement, InteractiveResponse } from '@creator-flow/shared/interactive-ui'
+export type { InteractiveUIElement, InteractiveResponse } from '@sprouty-ai/shared/interactive-ui'

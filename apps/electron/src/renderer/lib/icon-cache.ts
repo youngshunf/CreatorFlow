@@ -20,8 +20,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react'
-import { isEmoji } from '@creator-flow/shared/utils/icon-constants'
-import type { ResolvedEntityIcon } from '@creator-flow/shared/icons'
+import { isEmoji } from '@sprouty-ai/shared/utils/icon-constants'
+import type { ResolvedEntityIcon } from '@sprouty-ai/shared/icons'
 
 // ============================================================================
 // Types
@@ -190,7 +190,7 @@ export async function loadSourceIcon(
   // Priority 2: Explicit local path in config.icon (e.g., "./icon.svg")
   if (icon?.startsWith('./')) {
     const iconFilename = icon.slice(2) // Remove './'
-    const relativePath = `.creator-flow/sources/${config.slug}/${iconFilename}`
+    const relativePath = `.sprouty-ai/sources/${config.slug}/${iconFilename}`
     const loaded = await loadWorkspaceIcon(workspaceId, relativePath)
     if (loaded) {
       sourceIconCache.set(cacheKey, loaded)
@@ -208,13 +208,13 @@ export async function loadSourceIcon(
   // Priority 4: Auto-discover local icon files (only when config.icon is undefined)
   // This preserves backward compatibility for sources without explicit config.icon
   if (!icon) {
-    const localIconSvg = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.svg`)
+    const localIconSvg = await loadWorkspaceIcon(workspaceId, `.sprouty-ai/sources/${config.slug}/icon.svg`)
     if (localIconSvg) {
       sourceIconCache.set(cacheKey, localIconSvg)
       return localIconSvg
     }
 
-    const localIconPng = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.png`)
+    const localIconPng = await loadWorkspaceIcon(workspaceId, `.sprouty-ai/sources/${config.slug}/icon.png`)
     if (localIconPng) {
       sourceIconCache.set(cacheKey, localIconPng)
       return localIconPng
@@ -307,11 +307,11 @@ export async function loadSkillIcon(
   if (cached) return cached
 
   // Extract relative path from absolute icon path
-  // iconPath is absolute, we need to get the .creator-flow/skills/slug/icon.ext part
-  const skillsMatch = iconPath.match(/\.creator-flow\/skills\/([^/]+)\/(.+)$/)
+  // iconPath is absolute, we need to get the .sprouty-ai/skills/slug/icon.ext part
+  const skillsMatch = iconPath.match(/\.sprouty-ai\/skills\/([^/]+)\/(.+)$/)
   if (!skillsMatch) return null
 
-  const relativePath = `.creator-flow/skills/${skillsMatch[1]}/${skillsMatch[2]}`
+  const relativePath = `.sprouty-ai/skills/${skillsMatch[1]}/${skillsMatch[2]}`
 
   try {
     const result = await window.electronAPI.readWorkspaceImage(workspaceId, relativePath)
@@ -439,10 +439,10 @@ const ICON_FILE_EXTENSIONS = ['.svg', '.png', '.jpg', '.jpeg']
 
 /**
  * Pre-compiled regex for extracting workspace-relative icon paths from absolute paths.
- * Matches any known entity directory prefix (.creator-flow/skills/, .creator-flow/sources/, .creator-flow/statuses/)
+ * Matches any known entity directory prefix (.sprouty-ai/skills/, .sprouty-ai/sources/, .sprouty-ai/statuses/)
  * followed by the rest of the path.
  */
-const ICON_PATH_PATTERN = /\.creator-flow\/(?:skills|sources|statuses)\/.+$/
+const ICON_PATH_PATTERN = /\.sprouty-ai\/(?:skills|sources|statuses)\/.+$/
 
 /**
  * Options for the useEntityIcon hook.
@@ -456,13 +456,13 @@ export interface UseEntityIconOptions {
   identifier: string
   /**
    * Known relative path to icon file (for entities with pre-resolved paths).
-   * e.g. '.creator-flow/skills/my-skill/icon.svg'
+   * e.g. '.sprouty-ai/skills/my-skill/icon.svg'
    * If provided, only this exact path is attempted (no auto-discovery).
    */
   iconPath?: string
   /**
    * Directory to auto-discover icon files in (relative to workspace).
-   * e.g. '.creator-flow/sources/linear' → tries .creator-flow/sources/linear/icon.svg, icon.png, etc.
+   * e.g. '.sprouty-ai/sources/linear' → tries .sprouty-ai/sources/linear/icon.svg, icon.png, etc.
    * Ignored if iconPath is provided.
    */
   iconDir?: string

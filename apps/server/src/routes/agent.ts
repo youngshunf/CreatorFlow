@@ -132,7 +132,7 @@ agent.get('/sessions', authMiddleware, async (c) => {
   const userId = c.get('userId')
   
   const workspacePath = await WorkspaceService.ensureUserWorkspace(userId)
-  const { listSessions } = await import('@creator-flow/shared/sessions')
+  const { listSessions } = await import('@sprouty-ai/shared/sessions')
   const sessions = listSessions(workspacePath)
   
   return c.json({
@@ -152,7 +152,7 @@ agent.get('/sessions/:sessionId', authMiddleware, async (c) => {
   const sessionId = c.req.param('sessionId')
   
   const workspacePath = await WorkspaceService.ensureUserWorkspace(userId)
-  const { loadSession } = await import('@creator-flow/shared/sessions')
+  const { loadSession } = await import('@sprouty-ai/shared/sessions')
   const session = loadSession(workspacePath, sessionId)
   
   if (!session) {
@@ -168,7 +168,7 @@ agent.delete('/sessions/:sessionId', authMiddleware, async (c) => {
   const sessionId = c.req.param('sessionId')
   
   const workspacePath = await WorkspaceService.ensureUserWorkspace(userId)
-  const { deleteSession } = await import('@creator-flow/shared/sessions')
+  const { deleteSession } = await import('@sprouty-ai/shared/sessions')
   
   await deleteSession(workspacePath, sessionId)
   
@@ -180,7 +180,7 @@ agent.get('/workspace', authMiddleware, async (c) => {
   const userId = c.get('userId')
   
   const workspacePath = await WorkspaceService.ensureUserWorkspace(userId)
-  const { loadWorkspaceConfig } = await import('@creator-flow/shared/workspaces')
+  const { loadWorkspaceConfig } = await import('@sprouty-ai/shared/workspaces')
   
   try {
     const config = loadWorkspaceConfig(workspacePath)

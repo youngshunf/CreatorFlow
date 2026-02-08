@@ -5,7 +5,7 @@
  * Converts the flat Message[] array into grouped turns for email-like display.
  */
 
-import type { Message, StoredMessage, MessageRole } from '@creator-flow/core'
+import type { Message, StoredMessage, MessageRole } from '@sprouty-ai/core'
 import type { ActivityItem, ActivityStatus, ActivityType, ResponseContent, TodoItem } from './TurnCard'
 
 // Re-export ActivityItem for consumers

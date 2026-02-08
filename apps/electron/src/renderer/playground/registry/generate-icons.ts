@@ -10,10 +10,10 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const TOOL_ICONS_DIR = path.join(process.env.HOME!, '.creator-flow/tool-icons')
+const TOOL_ICONS_DIR = path.join(process.env.HOME!, '.sprouty-ai/tool-icons')
 const SOURCES_DIR = path.join(
   process.env.HOME!,
-  '.creator-flow/workspaces/046a02d0-6521-98eb-8756-95ec4bb8c41f/sources'
+  '.sprouty-ai/workspaces/046a02d0-6521-98eb-8756-95ec4bb8c41f/sources'
 )
 const OUTPUT_FILE = path.join(__dirname, 'sample-icons.ts')
 
@@ -113,7 +113,7 @@ function generateIconsFile() {
  * DO NOT EDIT MANUALLY
  */
 
-// Native tool icons (from ~/.creator-flow/tool-icons/)
+// Native tool icons (from ~/.sprouty-ai/tool-icons/)
 export const nativeToolIcons = {
 ${Object.entries(nativeIcons)
   .map(([name, data]) => `  ${name}: '${data}',`)

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(__dirname, '..')
 const nodeModulesDir = join(rootDir, 'node_modules')
-const scopeDir = join(nodeModulesDir, '@creator-flow')
+const scopeDir = join(nodeModulesDir, '@sprouty-ai')
 
 // Workspace packages to link
 const packages = [
@@ -27,10 +27,10 @@ function main() {
     return
   }
 
-  // Create @creator-flow scope directory
+  // Create @sprouty-ai scope directory
   if (!existsSync(scopeDir)) {
     mkdirSync(scopeDir, { recursive: true })
-    console.log('📁 Created @creator-flow scope directory')
+    console.log('📁 Created @sprouty-ai scope directory')
   }
 
   let linksCreated = 0
@@ -61,9 +61,9 @@ function main() {
     try {
       symlinkSync(targetPath, linkPath)
       linksCreated++
-      console.log(`🔗 Linked @creator-flow/${pkg.name} -> ${targetPath}`)
+      console.log(`🔗 Linked @sprouty-ai/${pkg.name} -> ${targetPath}`)
     } catch (err) {
-      console.error(`❌ Failed to link @creator-flow/${pkg.name}:`, err)
+      console.error(`❌ Failed to link @sprouty-ai/${pkg.name}:`, err)
     }
   }
 
