@@ -7,7 +7,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { CardProps, CardAction } from '@creator-flow/shared/interactive-ui'
+import type { CardProps, CardAction } from '@sprouty-ai/shared/interactive-ui'
 
 interface CardComponentProps {
   props: CardProps

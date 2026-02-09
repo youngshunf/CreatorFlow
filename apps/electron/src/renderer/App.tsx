@@ -13,8 +13,9 @@ import type { AppShellContextType } from '@/context/AppShellContext'
 import { OnboardingWizard, ReauthScreen } from '@/components/onboarding'
 import { LoginScreen } from '@/components/auth/LoginScreen'
 import { ResetConfirmationDialog } from '@/components/ResetConfirmationDialog'
+import { DeleteSessionDialog } from '@/components/DeleteSessionDialog'
 import { SplashScreen } from '@/components/SplashScreen'
-import { TooltipProvider } from '@creator-flow/ui'
+import { TooltipProvider } from '@sprouty-ai/ui'
 import { FocusProvider } from '@/context/FocusContext'
 import { ModalProvider } from '@/context/ModalContext'
 import { useGlobalShortcuts } from '@/hooks/keyboard'
@@ -35,13 +36,16 @@ import {
   updateSessionAtom,
   sessionAtomFamily,
   sessionMetaMapAtom,
+  sessionIdsAtom,
   backgroundTasksAtomFamily,
   extractSessionMeta,
   type SessionMeta,
 } from '@/atoms/sessions'
 import { sourcesAtom } from '@/atoms/sources'
 import { skillsAtom } from '@/atoms/skills'
+import { sdkSlashCommandsAtom, commandTranslationsAtom } from '@/atoms/sdk-commands'
 import { extractBadges } from '@/lib/mentions'
+import { SDK_COMMAND_TRANSLATIONS, getCommandDisplay } from '@sprouty-ai/shared/agent/slash-command-data'
 import { getDefaultStore } from 'jotai'
 import {
   ShikiThemeProvider,
@@ -51,7 +55,7 @@ import {
   CodePreviewOverlay,
   DocumentFormattedMarkdownOverlay,
   JSONPreviewOverlay,
-} from '@creator-flow/ui'
+} from '@sprouty-ai/ui'
 import { useLinkInterceptor, type FilePreviewState } from '@/hooks/useLinkInterceptor'
 
 type AppState = 'loading' | 'onboarding' | 'reauth' | 'ready'
@@ -170,7 +174,7 @@ export default function App() {
         if (cloudConfig.llmToken) {
           // IMPORTANT: Always use current environment's API URL, ignore saved URL
           // This ensures production builds use production API, not leftover dev/staging URLs
-          const { getCloudApiUrl } = await import('@creator-flow/shared/cloud')
+          const { getCloudApiUrl } = await import('@sprouty-ai/shared/cloud')
           const currentApiUrl = getCloudApiUrl()
           const gatewayUrl = `${currentApiUrl.replace(/\/$/, '')}/llm/proxy`
           
@@ -242,6 +246,8 @@ export default function App() {
   const [appTheme, setAppTheme] = useState<ThemeOverrides | null>(null)
   // Reset confirmation dialog
   const [showResetDialog, setShowResetDialog] = useState(false)
+  // Delete session confirmation dialog
+  const [deleteSessionState, setDeleteSessionState] = useState<{ sessionId: string; name: string; resolve: (confirmed: boolean) => void } | null>(null)
 
   // Auto-update state
   const updateChecker = useUpdateChecker()
@@ -260,6 +266,16 @@ export default function App() {
 
   // Compute if app is fully ready (all data loaded)
   const isFullyReady = appState === 'ready' && sessionsLoaded
+
+  // Compute workspace slug from rootPath for SDK skill qualification
+  // SDK expects "workspaceSlug:skillSlug" format, NOT UUID
+  const windowWorkspaceSlug = useMemo(() => {
+    if (!windowWorkspaceId) return null
+    const workspace = workspaces.find(w => w.id === windowWorkspaceId)
+    if (!workspace?.rootPath) return windowWorkspaceId // Fallback to ID
+    const pathParts = workspace.rootPath.split('/').filter(Boolean)
+    return pathParts[pathParts.length - 1] || windowWorkspaceId
+  }, [windowWorkspaceId, workspaces])
 
   // Trigger splash exit animation when fully ready
   useEffect(() => {
@@ -443,6 +459,15 @@ export default function App() {
         if (session) {
           navigate(routes.view.allChats(session.id))
         }
+      } else if (windowWorkspaceId) {
+        // Auto-select the most recent session for the current workspace
+        // (e.g., after workspace switch). Sessions are already sorted by lastMessageAt desc.
+        const workspaceSessions = loadedSessions
+          .filter(s => s.workspaceId === windowWorkspaceId)
+          .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0))
+        if (workspaceSessions.length > 0) {
+          navigate(routes.view.allChats(workspaceSessions[0].id))
+        }
       }
     })
     // Load stored model preference
@@ -573,6 +598,15 @@ export default function App() {
         window.dispatchEvent(new CustomEvent('craft:compaction-complete', {
           detail: { sessionId }
         }))
+      }
+
+      // Store SDK slash commands when available (for @ menu)
+      if (event.type === 'slash_commands_available') {
+        store.set(sdkSlashCommandsAtom, event.commands)
+        if (event.translations) {
+          store.set(commandTranslationsAtom, event.translations)
+        }
+        return
       }
 
       // Check if session is currently streaming (atom is source of truth)
@@ -710,7 +744,9 @@ export default function App() {
       const isEmpty = !meta || (!meta.lastFinalMessageId && !meta.name)
 
       if (!isEmpty) {
-        const confirmed = await window.electronAPI.showDeleteSessionConfirmation(meta?.name || 'Untitled')
+        const confirmed = await new Promise<boolean>((resolve) => {
+          setDeleteSessionState({ sessionId, name: meta?.name || 'Untitled', resolve })
+        })
         if (!confirmed) return false
       }
     }
@@ -718,6 +754,12 @@ export default function App() {
     await window.electronAPI.deleteSession(sessionId)
     // Remove from per-session atom and metadata map (no sessionsAtom)
     removeSession(sessionId)
+    // Radix Dialog sets pointer-events: none on <body> while open.
+    // Heavy re-renders from removeSession can prevent the close animation
+    // callback from firing, leaving the style permanently. Force cleanup.
+    requestAnimationFrame(() => {
+      document.body.style.removeProperty('pointer-events')
+    })
     return true
   }, [store, removeSession])
 
@@ -850,19 +892,35 @@ export default function App() {
       // Step 4: Extract badges from mentions (sources/skills) with embedded icons
       // Badges are self-contained for display in UserMessageBubble and viewer
       // Merge with any externally provided badges (e.g., from EditPopover context badges)
-      const mentionBadges: ContentBadge[] = windowWorkspaceId
-        ? extractBadges(message, skills, sources, windowWorkspaceId)
+      // Use workspace slug (not UUID) for skill qualification - SDK expects "workspaceSlug:skillSlug"
+      const mentionBadges: ContentBadge[] = windowWorkspaceSlug
+        ? extractBadges(message, skills, sources, windowWorkspaceSlug)
         : []
       const badges: ContentBadge[] = [...(externalBadges || []), ...mentionBadges]
 
-      // Step 4.1: Detect SDK slash commands (e.g., /compact) and create command badges
-      // This makes /compact render as an inline badge rather than raw text
-      const commandMatch = message.match(/^\/([a-z]+)(\s|$)/i)
-      if (commandMatch && commandMatch[1].toLowerCase() === 'compact') {
-        const commandText = commandMatch[0].trimEnd() // "/compact" without trailing space
+      // Step 4.1: Detect SDK slash commands (e.g., /compact, /productivity:start) and create command badges
+      // This makes slash commands render as an inline badge with friendly label rather than raw text
+      const commandMatch = message.match(/^\/([a-zA-Z][\w\-:]*)(\s|$)/)
+      if (commandMatch) {
+        const commandName = commandMatch[1]
+        const commandText = commandMatch[0].trimEnd() // "/command" without trailing space
+
+        // Look up friendly label from translations
+        const sdkCommands = store.get(sdkSlashCommandsAtom)
+        const translations = store.get(commandTranslationsAtom)
+        const sdkCmd = sdkCommands.find(c => c.name === commandName)
+        let label: string
+        if (sdkCmd) {
+          label = getCommandDisplay(sdkCmd, translations).label
+        } else {
+          // Fallback: check built-in translations, then use command name
+          const builtinTrans = SDK_COMMAND_TRANSLATIONS[commandName]
+          label = builtinTrans?.label ?? commandName
+        }
+
         badges.unshift({
           type: 'command',
-          label: 'Compact',
+          label,
           rawText: commandText,
           start: 0,
           end: commandText.length,
@@ -1207,15 +1265,39 @@ export default function App() {
       setPendingPermissions(new Map())
       setPendingCredentials(new Map())
 
-      // Note: Navigation state will be re-validated automatically by NavigationProvider
+      // 6. Clear session options from previous workspace
+      // (session IDs are unique UUIDs, but clearing prevents unbounded memory growth
+      // and ensures no stale state from old workspace persists)
+      setSessionOptions(new Map())
+
+      // 7. Clear message drafts from previous workspace
+      // (prevents memory growth on repeated workspace switches)
+      sessionDraftsRef.current.clear()
+
+      // 8. Reset sources and skills atoms to empty
+      // (prevents stale data flash during workspace switch - AppShell will reload)
+      store.set(sourcesAtom, [])
+      store.set(skillsAtom, [])
+      store.set(sdkSlashCommandsAtom, [])
+      store.set(commandTranslationsAtom, {})
+
+      // 9. Clear session atoms BEFORE navigating
+      // This prevents applyNavigationState from auto-selecting a session from the old workspace.
+      // Without this, getFirstSessionId() would return a session ID from the previous workspace,
+      // causing the detail panel to show a stale chat until sessions reload.
+      store.set(sessionMetaMapAtom, new Map())
+      store.set(sessionIdsAtom, [])
+
+      // Note: Navigation state (details) will be cleared by NavigationProvider
       // when it detects workspaceId change. Sessions and theme will reload automatically
       // due to windowWorkspaceId dependency in useEffect hooks.
     }
-  }, [windowWorkspaceId, setSession])
+  }, [windowWorkspaceId, setSession, store])
 
   // Handle workspace refresh (e.g., after icon upload)
-  const handleRefreshWorkspaces = useCallback(() => {
-    window.electronAPI.getWorkspaces().then(setWorkspaces)
+  const handleRefreshWorkspaces = useCallback(async () => {
+    const updated = await window.electronAPI.getWorkspaces()
+    setWorkspaces(updated)
   }, [])
 
   // Handle cancel during onboarding
@@ -1232,6 +1314,7 @@ export default function App() {
     // and useSession(id) hook for individual sessions. This prevents memory leaks.
     workspaces,
     activeWorkspaceId: windowWorkspaceId,
+    activeWorkspaceSlug: windowWorkspaceSlug,
     currentModel,
     customModel,
     pendingPermissions,
@@ -1275,6 +1358,7 @@ export default function App() {
     // NOTE: sessions removed to prevent memory leaks - components use atoms instead
     workspaces,
     windowWorkspaceId,
+    windowWorkspaceSlug,
     currentModel,
     customModel,
     pendingPermissions,
@@ -1309,7 +1393,7 @@ export default function App() {
     openNewChat,
   ])
 
-  // Platform actions for @creator-flow/ui components (overlays, etc.)
+  // Platform actions for @sprouty-ai/ui components (overlays, etc.)
   // Memoized to prevent re-renders when these callbacks don't change
   // NOTE: Must be defined before early returns to maintain consistent hook order
   const platformActions = useMemo(() => ({
@@ -1430,6 +1514,22 @@ export default function App() {
               open={showResetDialog}
               onConfirm={executeReset}
               onCancel={() => setShowResetDialog(false)}
+            />
+            <DeleteSessionDialog
+              open={!!deleteSessionState}
+              sessionName={deleteSessionState?.name ?? ''}
+              onConfirm={() => {
+                const resolve = deleteSessionState?.resolve
+                setDeleteSessionState(null)
+                // Use setTimeout(0) to let React process the Dialog close (open=false)
+                // before resolving. The actual pointer-events cleanup is handled by
+                // a requestAnimationFrame safety net in handleDeleteSession.
+                setTimeout(() => resolve?.(true), 0)
+              }}
+              onCancel={() => {
+                deleteSessionState?.resolve(false)
+                setDeleteSessionState(null)
+              }}
             />
           </div>
 

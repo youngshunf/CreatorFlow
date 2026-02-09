@@ -1,0 +1,7 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "digest": { "label": "活动摘要", "description": "生成所有已连接数据源的每日或每周活动摘要" },
+    "search": { "label": "全局搜索", "description": "一次查询搜索所有已连接的数据源" }
+  }
+}

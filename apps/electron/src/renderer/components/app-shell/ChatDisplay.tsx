@@ -18,8 +18,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { Markdown, CollapsibleMarkdownProvider, StreamingMarkdown, type RenderMode } from "@/components/markdown"
 import { InteractiveUIParser, hasInteractiveUI } from "../interactive-ui/InteractiveUIParser"
-import type { InteractiveResponse } from "@creator-flow/shared/interactive-ui"
+import type { InteractiveResponse } from "@sprouty-ai/shared/interactive-ui"
 import { AnimatedCollapsibleContent } from "@/components/ui/collapsible"
+import { navigate, routes } from "@/lib/navigate"
 import {
   Spinner,
   parseReadResult,
@@ -38,13 +39,13 @@ import {
   type OverlayData,
   type FileChange,
   type DiffViewerSettings,
-} from "@creator-flow/ui"
+} from "@sprouty-ai/ui"
 import { useFocusZone } from "@/hooks/keyboard"
 import { useTheme } from "@/hooks/useTheme"
 import type { Session, Message, FileAttachment, StoredAttachment, PermissionRequest, CredentialRequest, CredentialResponse, LoadedSource, LoadedSkill } from "../../../shared/types"
-import type { PermissionMode } from "@creator-flow/shared/agent/modes"
-import type { ThinkingLevel } from "@creator-flow/shared/agent/thinking-levels"
-import { TurnCard, UserMessageBubble, groupMessagesByTurn, formatTurnAsMarkdown, formatActivityAsMarkdown, type Turn, type AssistantTurn, type UserTurn, type SystemTurn, type AuthRequestTurn } from "@creator-flow/ui"
+import type { PermissionMode } from "@sprouty-ai/shared/agent/modes"
+import type { ThinkingLevel } from "@sprouty-ai/shared/agent/thinking-levels"
+import { TurnCard, UserMessageBubble, groupMessagesByTurn, formatTurnAsMarkdown, formatActivityAsMarkdown, type Turn, type AssistantTurn, type UserTurn, type SystemTurn, type AuthRequestTurn } from "@sprouty-ai/ui"
 import { MemoizedAuthRequestCard } from "@/components/chat/AuthRequestCard"
 import { ActiveOptionBadges } from "./ActiveOptionBadges"
 import { InputContainer, type StructuredInputState, type StructuredResponse, type PermissionResponse } from "./input"
@@ -142,7 +143,7 @@ interface ChatDisplayProps {
   skills?: LoadedSkill[]
   // Label selection (for #labels)
   /** Available label configs (tree) for label menu and badge display */
-  labels?: import('@creator-flow/shared/labels').LabelConfig[]
+  labels?: import('@sprouty-ai/shared/labels').LabelConfig[]
   /** Callback when labels change */
   onLabelsChange?: (labels: string[]) => void
   // State/status selection (for # menu and ActiveOptionBadges)
@@ -436,6 +437,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   // Input is only disabled when explicitly disabled (e.g., agent needs activation)
   // User can type during streaming - submitting will stop the stream and send
   const isInputDisabled = disabled
+  const t = useT()
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const scrollViewportRef = React.useRef<HTMLDivElement>(null)
   const prevSessionIdRef = React.useRef<string | null>(null)
@@ -960,7 +962,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   const [overlayState, setOverlayState] = useState<OverlayState>(null)
 
   // Diff viewer settings - loaded from user preferences on mount, persisted on change
-  // These settings are stored in ~/.craft-agent/preferences.json (not localStorage)
+  // These settings are stored in ~/.sprouty-ai/preferences.json (not localStorage)
   const [diffViewerSettings, setDiffViewerSettings] = useState<Partial<DiffViewerSettings>>({})
 
   // Load diff viewer settings from preferences on mount
@@ -1000,7 +1002,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
   }, [])
 
   // Extract overlay data for activity-based overlays
-  // Uses the shared extractOverlayData parser from @creator-flow/ui
+  // Uses the shared extractOverlayData parser from @sprouty-ai/ui
   const overlayData: OverlayData | null = useMemo(() => {
     if (!overlayState || overlayState.type !== 'activity') return null
     return extractOverlayData(overlayState.activity)
@@ -1277,8 +1279,8 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
                   {/* Empty state for compact mode - inviting conversational prompt, centered in full popover */}
                   {compactMode && turns.length === 0 && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center select-none gap-1 pointer-events-none">
-                      <span className="text-sm text-muted-foreground">What would you like to change?</span>
-                      <span className="text-xs text-muted-foreground/50">Just describe it — I'll handle the rest</span>
+                      <span className="text-sm text-muted-foreground">{t('你想修改什么？')}</span>
+                      <span className="text-xs text-muted-foreground/50">{t('描述一下，剩下的交给我')}</span>
                     </div>
                   )}
                   {/* Load more indicator - shown when there are older messages */}
@@ -1759,6 +1761,22 @@ function ErrorMessage({ message }: { message: Message }) {
   const hasDetails = (message.errorDetails && message.errorDetails.length > 0) || message.errorOriginal
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
+  // 检测是否为积分不足错误
+  const isInsufficientCredits =
+    message.content?.toLowerCase().includes('insufficient credits') ||
+    message.content?.includes('积分不足') ||
+    message.errorTitle?.toLowerCase().includes('insufficient credits') ||
+    message.errorTitle?.includes('积分不足')
+
+  // 提取当前积分和所需积分（如果有）
+  const creditsMatch = message.content?.match(/current[=\s]*([0-9.]+).*required[=\s]*([0-9.]+)/i)
+  const currentCredits = creditsMatch?.[1]
+  const requiredCredits = creditsMatch?.[2]
+
+  const handleNavigateToSubscription = () => {
+    navigate(routes.view.settings('subscription'))
+  }
+
   return (
     <div className="flex justify-start mt-4">
       {/* Subtle bg (3% opacity) + tinted shadow for softer error appearance */}
@@ -1770,9 +1788,35 @@ function ErrorMessage({ message }: { message: Message }) {
         } as React.CSSProperties}
       >
         <div className="text-xs text-destructive/50 mb-0.5 font-semibold">
-          {message.errorTitle || t('错误')}
+          {isInsufficientCredits ? t('积分不足') : (message.errorTitle || t('错误'))}
         </div>
-        <p className="text-sm text-destructive">{message.content}</p>
+
+        {isInsufficientCredits ? (
+          <>
+            <p className="text-sm text-destructive mb-2">
+              {currentCredits && requiredCredits
+                ? `${t('您的当前积分为')} ${currentCredits}${t('，但本次操作需要')} ${requiredCredits} ${t('积分。请升级订阅或购买积分包以继续使用。')}`
+                : t('您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。')
+              }
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleNavigateToSubscription}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-destructive hover:bg-destructive/90 rounded transition-colors"
+              >
+                {t('升级订阅')}
+              </button>
+              <button
+                onClick={handleNavigateToSubscription}
+                className="px-3 py-1.5 text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/5 rounded transition-colors"
+              >
+                {t('购买积分包')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-destructive">{message.content}</p>
+        )}
 
         {/* Collapsible Details Toggle */}
         {hasDetails && (

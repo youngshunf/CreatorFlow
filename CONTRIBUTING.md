@@ -14,8 +14,8 @@ Thank you for your interest in contributing to CreatorFlow! This document provid
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/lukilabs/craft-agents-oss.git
-   cd craft-agents-oss
+   git clone https://github.com/lukilabs/creator-flow-oss.git
+   cd creator-flow-oss
    ```
 
 2. Install dependencies:
@@ -93,14 +93,14 @@ How you tested these changes
 ## Project Structure
 
 ```
-craft-agents/
+creator-flow/
 ├── apps/
 │   ├── electron/    # Desktop GUI (primary interface)
 │   └── tui/         # Terminal CLI (deprecated)
 └── packages/
-    ├── core/        # @craft-agent/core - Shared types
-    ├── shared/      # @craft-agent/shared - Business logic
-    └── ui/          # @craft-agent/ui - React components
+    ├── core/        # @sprouty-ai/core - Shared types
+    ├── shared/      # @sprouty-ai/shared - Business logic
+    └── ui/          # @sprouty-ai/ui - React components
 ```
 
 ## Key Areas

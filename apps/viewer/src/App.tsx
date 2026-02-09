@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import type { StoredSession } from '@creator-flow/core'
+import type { StoredSession } from '@sprouty-ai/core'
 import {
   SessionViewer,
   GenericOverlay,
@@ -19,12 +19,14 @@ import {
   TerminalPreviewOverlay,
   JSONPreviewOverlay,
   DocumentFormattedMarkdownOverlay,
+  TooltipProvider,
   extractOverlayData,
+  detectLanguage,
   type PlatformActions,
   type ActivityItem,
   type OverlayData,
   type FileChange,
-} from '@creator-flow/ui'
+} from '@sprouty-ai/ui'
 import { SessionUpload } from './components/SessionUpload'
 import { Header } from './components/Header'
 
@@ -182,6 +184,7 @@ export function App() {
   const theme = isDark ? 'dark' : 'light'
 
   return (
+    <TooltipProvider>
     <div className="h-full flex flex-col bg-foreground-2 text-foreground">
       <Header
         hasSession={!!session}
@@ -290,16 +293,27 @@ export function App() {
         />
       )}
 
-      {/* Generic overlay for unknown tools */}
+      {/* Generic overlay for unknown tools - route markdown to fullscreen viewer */}
       {overlayData?.type === 'generic' && (
-        <GenericOverlay
-          isOpen={!!overlayActivity}
-          onClose={handleCloseOverlay}
-          content={overlayData.content}
-          title={overlayData.title}
-          theme={theme}
-        />
+        detectLanguage(overlayData.content) === 'markdown' ? (
+          <DocumentFormattedMarkdownOverlay
+            isOpen={!!overlayActivity}
+            onClose={handleCloseOverlay}
+            content={overlayData.content}
+            onOpenUrl={platformActions.onOpenUrl}
+            error={overlayData.error}
+          />
+        ) : (
+          <GenericOverlay
+            isOpen={!!overlayActivity}
+            onClose={handleCloseOverlay}
+            content={overlayData.content}
+            title={overlayData.title}
+            theme={theme}
+          />
+        )
       )}
     </div>
+    </TooltipProvider>
   )
 }

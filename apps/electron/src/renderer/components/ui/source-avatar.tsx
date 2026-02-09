@@ -14,8 +14,8 @@ import { Globe, HardDrive, Mail, Plug } from 'lucide-react'
 import { EntityIcon, type IconComponent } from '@/components/ui/entity-icon'
 import { useEntityIcon, logoUrlCache } from '@/lib/icon-cache'
 import { McpIcon } from '@/components/icons/McpIcon'
-import type { LoadedSource } from '@creator-flow/shared/sources/types'
-import type { IconSize, ResolvedEntityIcon } from '@creator-flow/shared/icons'
+import type { LoadedSource } from '@sprouty-ai/shared/sources/types'
+import type { IconSize, ResolvedEntityIcon } from '@sprouty-ai/shared/icons'
 import { SourceStatusIndicator, deriveConnectionStatus } from './source-status-indicator'
 
 // ============================================================================
@@ -147,7 +147,7 @@ export function SourceAvatar({ source, size = 'md', fluid, showStatus, className
     workspaceId: source.workspaceId,
     entityType: 'source',
     identifier: source.config.slug,
-    iconDir: `.creator-flow/sources/${source.config.slug}`,
+    iconDir: `.sprouty-ai/sources/${source.config.slug}`,
     iconValue: source.config.icon,
   })
 

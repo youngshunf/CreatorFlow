@@ -1,6 +1,7 @@
-export * from './creator-flow-agent.ts';
+export * from './sprouty-agent.ts';
 export * from './errors.ts';
 export * from './options.ts';
+export { SDK_COMMAND_TRANSLATIONS, getCommandDisplay, type SlashCommandTranslation, scanWorkspaceCommands, loadPluginTranslations } from './slash-command-translations.ts';
 
 // Export session-scoped-tools - tools scoped to a specific session
 export {
@@ -88,7 +89,7 @@ export {
   loadSourcePermissionsConfig,
   getWorkspacePermissionsPath,
   getSourcePermissionsPath,
-  // App-level default permissions (at ~/.creator-flow/permissions/)
+  // App-level default permissions (at ~/.sprouty-ai/permissions/)
   getAppPermissionsDir,
   ensureDefaultPermissions,
   loadDefaultPermissions,
@@ -102,3 +103,6 @@ export {
   type MergedPermissionsConfig,
   type PermissionsContext,
 } from './permissions-config.ts';
+
+// Export LLM tool - secondary Claude calls for subtasks
+export { createLLMTool, type LLMToolOptions } from './llm-tool.ts';

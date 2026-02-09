@@ -189,7 +189,7 @@ interface ShikiThemeLike {
  * @example
  * ```ts
  * import { getSingletonHighlighter } from 'shiki'
- * import { fromShikiTheme } from '@creator-flow/mermaid'
+ * import { fromShikiTheme } from '@sprouty-ai/mermaid'
  *
  * const hl = await getSingletonHighlighter({ themes: ['tokyo-night'] })
  * const colors = fromShikiTheme(hl.getTheme('tokyo-night'))

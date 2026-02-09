@@ -23,8 +23,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@creator-flow/core": ["./src/index.ts"],
-      "@creator-flow/core/*": ["./src/*"]
+      "@sprouty-ai/core": ["./src/index.ts"],
+      "@sprouty-ai/core/*": ["./src/*"]
     },
     "rootDir": "src",
     "outDir": "dist",

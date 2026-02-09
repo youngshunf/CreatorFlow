@@ -7,7 +7,7 @@
 import * as React from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { ListProps, ListItem } from '@creator-flow/shared/interactive-ui'
+import type { ListProps, ListItem } from '@sprouty-ai/shared/interactive-ui'
 
 interface ListComponentProps {
   props: ListProps

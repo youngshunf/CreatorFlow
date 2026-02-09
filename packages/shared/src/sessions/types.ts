@@ -11,7 +11,7 @@
 
 import type { PermissionMode } from '../agent/mode-manager.ts';
 import type { ThinkingLevel } from '../agent/thinking-levels.ts';
-import type { StoredAttachment, MessageRole, ToolStatus, AuthRequestType, AuthStatus, CredentialInputMode, StoredMessage } from '@creator-flow/core/types';
+import type { StoredAttachment, MessageRole, ToolStatus, AuthRequestType, AuthStatus, CredentialInputMode, StoredMessage } from '@sprouty-ai/core/types';
 
 /**
  * Todo state for sessions (user-controlled, never automatic)
@@ -45,9 +45,9 @@ export interface SessionTokenUsage {
 
 /**
  * Stored message format (simplified for persistence)
- * Re-exported from @creator-flow/core for convenience
+ * Re-exported from @sprouty-ai/core for convenience
  */
-export type { StoredMessage } from '@creator-flow/core/types';
+export type { StoredMessage } from '@sprouty-ai/core/types';
 
 /**
  * Session configuration (persisted metadata)
@@ -128,7 +128,7 @@ export interface SessionHeader {
   id: string;
   /** SDK session ID (captured after first message) */
   sdkSessionId?: string;
-  /** Workspace root path (stored as portable path, e.g., ~/.creator-flow/...) */
+  /** Workspace root path (stored as portable path, e.g., ~/.sprouty-ai/...) */
   workspaceRootPath: string;
   /** Optional user-defined name */
   name?: string;

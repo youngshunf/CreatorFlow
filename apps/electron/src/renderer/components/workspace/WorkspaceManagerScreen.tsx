@@ -5,16 +5,19 @@
  * - Card grid showing all workspaces
  * - Edit button to open workspace settings
  * - Open button to open workspace in new window
+ * - Delete button with confirmation dialog
+ * - Uses FullscreenOverlayBase for proper fullscreen overlay behavior
  */
 
 import * as React from 'react'
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
-import { X, ExternalLink, Settings, Folder, Plus } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { AnimatePresence } from 'motion/react'
+import { ExternalLink, Settings, Folder, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CrossfadeAvatar } from '@/components/ui/avatar'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useT } from '@/context/LocaleContext'
+import { FullscreenOverlayBase } from '@sprouty-ai/ui'
+import { DeleteWorkspaceDialog } from '@/components/DeleteWorkspaceDialog'
 import { WorkspaceCreationScreen } from './WorkspaceCreationScreen'
 import type { Workspace } from '../../../shared/types'
 
@@ -26,6 +29,7 @@ interface WorkspaceManagerScreenProps {
   onOpenWorkspace: (workspaceId: string) => void
   onEditWorkspace: (workspaceId: string) => void
   onWorkspaceCreated?: (workspace: Workspace) => void
+  onDeleteWorkspace?: (workspaceId: string, mode: 'delete' | 'backup') => Promise<void>
   /** Initial marketplace app to use when creating workspace (skips app selection) */
   initialMarketplaceApp?: { id: string; name: string }
   /** Callback to clear initialMarketplaceApp after it's been used */
@@ -38,11 +42,12 @@ interface WorkspaceCardProps {
   iconDataUrl?: string
   onOpen: () => void
   onEdit: () => void
+  onDelete: () => void
 }
 
-function WorkspaceCard({ workspace, isActive, iconDataUrl, onOpen, onEdit }: WorkspaceCardProps) {
+function WorkspaceCard({ workspace, isActive, iconDataUrl, onOpen, onEdit, onDelete }: WorkspaceCardProps) {
   const t = useT()
-  
+
   return (
     <div
       className={cn(
@@ -108,6 +113,18 @@ function WorkspaceCard({ workspace, isActive, iconDataUrl, onOpen, onEdit }: Wor
           <ExternalLink className="h-3.5 w-3.5" />
           {t('打开')}
         </button>
+        <button
+          onClick={onDelete}
+          className={cn(
+            'inline-flex items-center justify-center h-8 w-8',
+            'text-xs rounded-md',
+            'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
+            'transition-colors duration-150'
+          )}
+          title={t('删除工作区')}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   )
@@ -121,6 +138,7 @@ export function WorkspaceManagerScreen({
   onOpenWorkspace,
   onEditWorkspace,
   onWorkspaceCreated,
+  onDeleteWorkspace,
   initialMarketplaceApp,
   onClearInitialApp,
 }: WorkspaceManagerScreenProps) {
@@ -129,7 +147,9 @@ export function WorkspaceManagerScreen({
   const [iconCache, setIconCache] = useState<Record<string, string>>({})
   // Show workspace creation screen
   const [showCreationScreen, setShowCreationScreen] = useState(false)
-  
+  // Delete dialog state
+  const [deleteTarget, setDeleteTarget] = useState<Workspace | null>(null)
+
   // Auto-show creation screen if initialMarketplaceApp is provided
   React.useEffect(() => {
     if (isOpen && initialMarketplaceApp) {
@@ -187,104 +207,85 @@ export function WorkspaceManagerScreen({
     onWorkspaceCreated?.(workspace)
     onClose()
   }
-  
+
   const handleCreationClose = () => {
     setShowCreationScreen(false)
     onClearInitialApp?.()
   }
 
-  if (!isOpen) return null
+  const handleDeleteConfirm = useCallback(async (mode: 'delete' | 'backup') => {
+    if (!deleteTarget || !onDeleteWorkspace) return
+    const workspaceId = deleteTarget.id
+    setDeleteTarget(null)
+    await onDeleteWorkspace(workspaceId, mode)
+  }, [deleteTarget, onDeleteWorkspace])
 
   return (
     <>
-    {/* Workspace Creation Screen */}
-    <AnimatePresence>
-      {showCreationScreen && (
-        <WorkspaceCreationScreen
-          onWorkspaceCreated={handleWorkspaceCreated}
-          onClose={handleCreationClose}
-          initialMarketplaceApp={initialMarketplaceApp}
-        />
-      )}
-    </AnimatePresence>
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-50 flex items-center justify-center"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      {/* Workspace Creation Screen */}
+      <AnimatePresence>
+        {showCreationScreen && (
+          <WorkspaceCreationScreen
+            onWorkspaceCreated={handleWorkspaceCreated}
+            onClose={handleCreationClose}
+            initialMarketplaceApp={initialMarketplaceApp}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Content */}
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        className="relative w-full max-w-4xl max-h-[80vh] m-4 bg-muted/50 rounded-2xl shadow-xl overflow-hidden"
+      <FullscreenOverlayBase
+        isOpen={isOpen}
+        onClose={onClose}
+        title={t('管理工作区')}
+        accessibleTitle={t('管理工作区')}
+        headerActions={
+          <button
+            onClick={handleCreateWorkspace}
+            className={cn(
+              'inline-flex items-center gap-1.5 h-8 px-3',
+              'text-sm font-medium rounded-lg',
+              'bg-background/50 text-foreground hover:bg-background/80',
+              'border border-border/50 shadow-sm',
+              'transition-colors duration-150'
+            )}
+          >
+            <Plus className="h-4 w-4" />
+            {t('新建')}
+          </button>
+        }
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
-          <div>
-            <h2 className="text-lg font-semibold">{t('管理工作区')}</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {t('查看和管理所有工作区')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCreateWorkspace}
-              className={cn(
-                'inline-flex items-center gap-1.5 h-8 px-3',
-                'text-sm font-medium rounded-lg',
-                'bg-background text-foreground hover:bg-foreground/5',
-                'border border-border/50 shadow-sm',
-                'transition-colors duration-150'
-              )}
-            >
-              <Plus className="h-4 w-4" />
-              {t('新建')}
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-foreground/5 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+        <div className="px-8 pb-8 w-full">
+          {workspaces.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Folder className="h-12 w-12 mb-4 opacity-50" />
+              <p>{t('暂无工作区')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {workspaces.map((workspace) => (
+                <WorkspaceCard
+                  key={workspace.id}
+                  workspace={workspace}
+                  isActive={workspace.id === activeWorkspaceId}
+                  iconDataUrl={iconCache[workspace.id]}
+                  onOpen={() => handleOpen(workspace.id)}
+                  onEdit={() => handleEdit(workspace.id)}
+                  onDelete={() => setDeleteTarget(workspace)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Body */}
-        <ScrollArea className="h-[calc(80vh-80px)]">
-          <div className="p-6">
-            {workspaces.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Folder className="h-12 w-12 mb-4 opacity-50" />
-                <p>{t('暂无工作区')}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {workspaces.map((workspace) => (
-                  <WorkspaceCard
-                    key={workspace.id}
-                    workspace={workspace}
-                    isActive={workspace.id === activeWorkspaceId}
-                    iconDataUrl={iconCache[workspace.id]}
-                    onOpen={() => handleOpen(workspace.id)}
-                    onEdit={() => handleEdit(workspace.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </motion.div>
-    </motion.div>
+        {/* Delete Confirmation Dialog - must be inside FullscreenOverlayBase
+            so it's within Radix Dialog's focus scope */}
+        <DeleteWorkspaceDialog
+          open={!!deleteTarget}
+          workspaceName={deleteTarget?.name ?? ''}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      </FullscreenOverlayBase>
     </>
   )
 }

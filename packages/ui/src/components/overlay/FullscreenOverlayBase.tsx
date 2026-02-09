@@ -114,6 +114,20 @@ export function FullscreenOverlayBase({
     return () => onSetTrafficLightsVisible?.(true)
   }, [isOpen, onSetTrafficLightsVisible])
 
+  // Safety net: Radix Dialog sets pointer-events: none on <body> while open.
+  // If this component is unmounted while the dialog is open (e.g. parent sets
+  // showCreationScreen=false), Radix never runs its close cleanup, leaving
+  // pointer-events: none permanently on <body> and freezing the entire app.
+  // This effect's cleanup forces removal on unmount.
+  useEffect(() => {
+    if (!isOpen) return
+    return () => {
+      requestAnimationFrame(() => {
+        document.body.style.removeProperty('pointer-events')
+      })
+    }
+  }, [isOpen])
+
   // Content padding clears the floating header at rest (when present).
   // Without a header, just the fade zone inset.
   const contentPaddingTop = hasHeader ? HEADER_HEIGHT + FADE_SIZE : FADE_SIZE
@@ -129,6 +143,7 @@ export function FullscreenOverlayBase({
           )}
           style={{ zIndex: Z_FULLSCREEN }}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          aria-describedby={undefined}
         >
           {/* Visually hidden title for accessibility - required by Radix Dialog */}
           <Dialog.Title className="sr-only">{accessibleTitle}</Dialog.Title>

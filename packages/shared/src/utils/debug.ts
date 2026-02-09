@@ -1,6 +1,6 @@
-// Check CRAFT_DEBUG env var at module load (for SDK subprocess)
+// Check SPROUTY_DEBUG / CRAFT_DEBUG env var at module load (for SDK subprocess)
 // Guard against browser/renderer contexts where process is undefined
-let debugEnabled = typeof process !== 'undefined' && process.env?.CRAFT_DEBUG === '1';
+let debugEnabled = typeof process !== 'undefined' && (process.env?.SPROUTY_DEBUG === '1' || process.env?.CRAFT_DEBUG === '1');
 
 /**
  * Runtime environment detection

@@ -4,9 +4,9 @@
  * Workspaces are the top-level organizational unit. Everything (sources, sessions)
  * is scoped to a workspace.
  *
- * Directory structure (all workspace data is under .creator-flow/ to avoid mixing with user files):
+ * Directory structure (all workspace data is under .sprouty-ai/ to avoid mixing with user files):
  * {workspaceRoot}/
- *   └── .creator-flow/       - All workspace data (hidden from user's project files)
+ *   └── .sprouty-ai/       - All workspace data (hidden from user's project files)
  *       ├── config.json      - Workspace settings
  *       ├── sources/         - Data sources (MCP, API, local)
  *       ├── sessions/        - Conversation sessions
@@ -50,6 +50,7 @@ export interface WorkspaceConfig {
     cyclablePermissionModes?: PermissionMode[]; // Which modes can be cycled with SHIFT+TAB (min 2, default: all 3)
     workingDirectory?: string;
     thinkingLevel?: ThinkingLevel; // Default thinking level ('off', 'think', 'max') - default: 'think'
+    colorTheme?: string; // Color theme override for this workspace (preset ID). Undefined = inherit from app default.
   };
 
   /**

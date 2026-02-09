@@ -5,16 +5,16 @@
  * with the icon size variant for consistent inline display.
  */
 
-import type { IconSize } from '@creator-flow/shared/icons'
-import type { EntityColor } from '@creator-flow/shared/colors'
-import { resolveEntityColor } from '@creator-flow/shared/colors'
+import type { IconSize } from '@sprouty-ai/shared/icons'
+import type { EntityColor } from '@sprouty-ai/shared/colors'
+import { resolveEntityColor } from '@sprouty-ai/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { cn } from '@/lib/utils'
 import { Hash, CalendarDays, Type } from 'lucide-react'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 
 interface LabelIconProps {
-  /** Label configuration (matches LabelConfig from @creator-flow/shared/labels) */
+  /** Label configuration (matches LabelConfig from @sprouty-ai/shared/labels) */
   label: {
     id: string
     /** EntityColor: system color string or custom color object */

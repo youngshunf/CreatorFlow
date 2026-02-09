@@ -4,7 +4,7 @@
  * This module re-exports from the centralized environment configuration.
  * It provides backward compatibility for existing code that imports from here.
  *
- * The actual configuration is defined in @creator-flow/shared/config/environments.ts
+ * The actual configuration is defined in @sprouty-ai/shared/config/environments.ts
  * and is determined at build time via the __APP_ENV__ variable.
  *
  * Usage:

@@ -5,14 +5,14 @@
  */
 import { ipcMain } from 'electron'
 import { mainLog } from './logger'
-import { getAuthState, getSetupNeeds } from '@creator-flow/shared/auth'
-import { getCredentialManager } from '@creator-flow/shared/credentials'
-import { saveConfig, loadStoredConfig, generateWorkspaceId, type AuthType, type StoredConfig } from '@creator-flow/shared/config'
-import { getDefaultWorkspacesDir, generateUniqueWorkspacePath } from '@creator-flow/shared/workspaces'
-import { CraftOAuth, getMcpBaseUrl } from '@creator-flow/shared/auth'
-import { validateMcpConnection } from '@creator-flow/shared/mcp'
-import { startClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState } from '@creator-flow/shared/auth'
-import { getCredentialManager as getCredentialManagerFn } from '@creator-flow/shared/credentials'
+import { getAuthState, getSetupNeeds } from '@sprouty-ai/shared/auth'
+import { getCredentialManager } from '@sprouty-ai/shared/credentials'
+import { saveConfig, loadStoredConfig, generateWorkspaceId, type AuthType, type StoredConfig } from '@sprouty-ai/shared/config'
+import { getDefaultWorkspacesDir, generateUniqueWorkspacePath } from '@sprouty-ai/shared/workspaces'
+import { CraftOAuth } from '@sprouty-ai/shared/auth'
+import { validateMcpConnection } from '@sprouty-ai/shared/mcp'
+import { startClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState } from '@sprouty-ai/shared/auth'
+import { getCredentialManager as getCredentialManagerFn } from '@sprouty-ai/shared/credentials'
 import {
   IPC_CHANNELS,
   type OnboardingSaveResult,
@@ -49,12 +49,11 @@ export function registerOnboardingHandlers(sessionManager: SessionManager): void
   ipcMain.handle(IPC_CHANNELS.ONBOARDING_START_MCP_OAUTH, async (_event, mcpUrl: string) => {
     mainLog.info('[Onboarding:Main] ONBOARDING_START_MCP_OAUTH received', { mcpUrl })
     try {
-      const baseUrl = getMcpBaseUrl(mcpUrl)
-      mainLog.info('[Onboarding:Main] MCP OAuth baseUrl:', baseUrl)
+      mainLog.info('[Onboarding:Main] MCP OAuth URL:', mcpUrl)
       mainLog.info('[Onboarding:Main] Creating CraftOAuth instance...')
 
       const oauth = new CraftOAuth(
-        { mcpBaseUrl: baseUrl },
+        { mcpUrl: mcpUrl },
         {
           onStatus: (msg) => mainLog.info('[Onboarding:Main] MCP OAuth status:', msg),
           onError: (err) => mainLog.error('[Onboarding:Main] MCP OAuth error:', err),

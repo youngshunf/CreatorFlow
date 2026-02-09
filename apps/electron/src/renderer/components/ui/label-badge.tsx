@@ -12,8 +12,8 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { LabelIcon, LabelValueTypeIcon } from './label-icon'
-import { formatDisplayValue } from '@creator-flow/shared/labels'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import { formatDisplayValue } from '@sprouty-ai/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 
 export interface LabelBadgeProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Label configuration (for color, name, valueType) */

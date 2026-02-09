@@ -3,7 +3,7 @@
  * 
  * 使用方式:
  * ```tsx
- * import { t, $t, initLocale, setLocale } from '@creator-flow/shared/locale';
+ * import { t, $t, initLocale, setLocale } from '@sprouty-ai/shared/locale';
  * 
  * // 初始化（默认使用中文）
  * initLocale('zh-cn');

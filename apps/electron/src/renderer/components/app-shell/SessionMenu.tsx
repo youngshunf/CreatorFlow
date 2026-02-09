@@ -41,8 +41,8 @@ import { useMenuComponents, type MenuComponents } from '@/components/ui/menu-con
 import { useT } from '@/context/LocaleContext'
 import { getStateColor, getStateIcon, type TodoStateId } from '@/config/todo-states'
 import type { TodoState } from '@/config/todo-states'
-import type { LabelConfig } from '@creator-flow/shared/labels'
-import { extractLabelId } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
+import { extractLabelId } from '@sprouty-ai/shared/labels'
 import { LabelIcon } from '@/components/ui/label-icon'
 
 export interface SessionMenuProps {

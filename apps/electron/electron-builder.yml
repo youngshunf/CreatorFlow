@@ -22,20 +22,6 @@ files:
   - dist/assets/themes/**/*
   - dist/assets/permissions/**/*
   - dist/assets/config-defaults.json
-  - dist/assets/bundled-apps/**/*
-  # Include SDK for subprocess execution
-  - node_modules/@anthropic-ai/claude-agent-sdk/**/*
-  # Include zod (peer dependency of claude-agent-sdk)
-  - node_modules/zod/**/*
-  # Include ajv and ajv-formats (runtime dependencies of claude-agent-sdk cli.js)
-  - node_modules/ajv/**/*
-  - node_modules/ajv-formats/**/*
-  # Include ajv's dependencies
-  - node_modules/fast-deep-equal/**/*
-  - node_modules/fast-json-stable-stringify/**/*
-  - node_modules/json-schema-traverse/**/*
-  - node_modules/uri-js/**/*
-  - node_modules/punycode/**/*
   # Include network interceptor for API error capture and MCP schema injection
   - packages/shared/src/network-interceptor.ts
   # Include bundled Bun runtime (platform-specific, set by build script)
@@ -53,7 +39,16 @@ files:
   - node_modules/nanoid/**/*
   # Exclude everything else from node_modules
   - "!node_modules/**/*"
-  - node_modules/@anthropic-ai/**/*
+
+# Include SDK as extraResources to bypass node_modules auto-exclusion
+# Since electron-builder v20.15.2, directories named "node_modules" are automatically excluded
+# Using extraResources with explicit from/to paths works around this limitation
+# See: https://github.com/electron-userland/electron-builder/issues/3104
+extraResources:
+  - from: node_modules/@anthropic-ai/claude-agent-sdk
+    to: app/node_modules/@anthropic-ai/claude-agent-sdk
+    filter:
+      - "**/*"
 
 extraMetadata:
   main: dist/main.cjs
@@ -93,6 +88,8 @@ mac:
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/arm64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-linux"
     - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
+    # Include bundled Bun runtime for macOS
+    - vendor/bun/**/*
   # Use predictable naming for macOS packages (applies to zip; dmg uses its own config below)
   artifactName: "智小芽_v${version}-${arch}.${ext}"
   # Code signing & notarization (disabled by default for local builds)
@@ -139,10 +136,6 @@ win:
   extraResources:
     - from: vendor/bun/bun.exe
       to: vendor/bun/bun.exe
-    # Bundle MinGit for Windows - provides bash.exe required by Claude Agent SDK
-    # This eliminates the need for users to install Git for Windows manually
-    - from: vendor/git
-      to: vendor/git
 
 nsis:
   oneClick: true

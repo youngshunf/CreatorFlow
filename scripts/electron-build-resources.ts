@@ -29,3 +29,14 @@ if (existsSync(bundledSkillsSrc)) {
 } else {
   console.log("⚠️ No bundled-skills directory found");
 }
+
+// Copy bundled-plugins for app initialization
+const bundledPluginsSrc = join(SHARED_DIR, "src/apps/bundled-plugins");
+const bundledPluginsDest = join(ELECTRON_DIR, "dist/resources/bundled-plugins");
+
+if (existsSync(bundledPluginsSrc)) {
+  cpSync(bundledPluginsSrc, bundledPluginsDest, { recursive: true, force: true });
+  console.log("📦 Copied bundled-plugins to dist");
+} else {
+  console.log("⚠️ No bundled-plugins directory found");
+}

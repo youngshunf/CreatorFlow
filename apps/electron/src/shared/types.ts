@@ -1,5 +1,5 @@
 // Types shared between main and renderer processes
-// Core types are re-exported from @creator-flow/core
+// Core types are re-exported from @sprouty-ai/core
 
 // Import and re-export core types
 import type {
@@ -12,17 +12,17 @@ import type {
   StoredAttachment as CoreStoredAttachment,
   ContentBadge,
   ToolDisplayMeta,
-} from '@creator-flow/core/types';
+} from '@sprouty-ai/core/types';
 
 // Import mode types from dedicated subpath export (avoids pulling in SDK)
-import type { PermissionMode } from '@creator-flow/shared/agent/modes';
+import type { PermissionMode } from '@sprouty-ai/shared/agent/modes';
 export type { PermissionMode };
-export { PERMISSION_MODE_CONFIG } from '@creator-flow/shared/agent/modes';
+export { PERMISSION_MODE_CONFIG } from '@sprouty-ai/shared/agent/modes';
 
 // Import thinking level types
-import type { ThinkingLevel } from '@creator-flow/shared/agent/thinking-levels';
+import type { ThinkingLevel } from '@sprouty-ai/shared/agent/thinking-levels';
 export type { ThinkingLevel };
-export { THINKING_LEVELS, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels';
+export { THINKING_LEVELS, DEFAULT_THINKING_LEVEL } from '@sprouty-ai/shared/agent/thinking-levels';
 
 export type {
   CoreMessage as Message,
@@ -38,17 +38,26 @@ export type {
 
 // Import and re-export auth types for onboarding
 // Use types-only subpaths to avoid pulling in Node.js dependencies
-import type { AuthState, SetupNeeds } from '@creator-flow/shared/auth/types';
-import type { AuthType } from '@creator-flow/shared/config/types';
+import type { AuthState, SetupNeeds } from '@sprouty-ai/shared/auth/types';
+import type { AuthType } from '@sprouty-ai/shared/config/types';
 export type { AuthState, SetupNeeds, AuthType };
 
 // Import source types for session source selection
-import type { LoadedSource, FolderSourceConfig, SourceConnectionStatus } from '@creator-flow/shared/sources/types';
+import type { LoadedSource, FolderSourceConfig, SourceConnectionStatus } from '@sprouty-ai/shared/sources/types';
 export type { LoadedSource, FolderSourceConfig, SourceConnectionStatus };
 
 // Import skill types
-import type { LoadedSkill, SkillMetadata } from '@creator-flow/shared/skills/types';
+import type { LoadedSkill, SkillMetadata } from '@sprouty-ai/shared/skills/types';
 export type { LoadedSkill, SkillMetadata };
+
+/**
+ * SDK slash command info (for @ menu display)
+ */
+export interface SdkSlashCommand {
+  name: string
+  description: string
+  argumentHint: string
+}
 
 
 /**
@@ -127,12 +136,12 @@ export interface FileSearchResult {
 }
 
 // Import auth request types for unified auth flow
-import type { AuthRequest as SharedAuthRequest, CredentialInputMode as SharedCredentialInputMode, CredentialAuthRequest as SharedCredentialAuthRequest } from '@creator-flow/shared/agent';
+import type { AuthRequest as SharedAuthRequest, CredentialInputMode as SharedCredentialInputMode, CredentialAuthRequest as SharedCredentialAuthRequest } from '@sprouty-ai/shared/agent';
 export type { SharedAuthRequest as AuthRequest };
 export type { SharedCredentialInputMode as CredentialInputMode };
 // CredentialRequest is used by UI components for displaying credential input
 export type CredentialRequest = SharedCredentialAuthRequest;
-export { generateMessageId } from '@creator-flow/core/types';
+export { generateMessageId } from '@sprouty-ai/core/types';
 
 /**
  * OAuth result from main process
@@ -213,8 +222,8 @@ export interface RefreshTitleResult {
 
 
 // Re-export permission types from core, extended with sessionId for multi-session context
-export type { PermissionRequest as BasePermissionRequest } from '@creator-flow/core/types';
-import type { PermissionRequest as BasePermissionRequest } from '@creator-flow/core/types';
+export type { PermissionRequest as BasePermissionRequest } from '@sprouty-ai/core/types';
+import type { PermissionRequest as BasePermissionRequest } from '@sprouty-ai/core/types';
 
 /**
  * Permission request with session context (for multi-session Electron app)
@@ -241,7 +250,7 @@ export interface CloudLLMConfig {
 // Credential Input Types (Secure Auth UI)
 // ============================================
 
-// CredentialInputMode is imported from @creator-flow/shared/agent above
+// CredentialInputMode is imported from @sprouty-ai/shared/agent above
 
 /**
  * Credential response from user (for credential auth requests)
@@ -254,6 +263,8 @@ export interface CredentialResponse {
   username?: string
   /** Password for basic auth */
   password?: string
+  /** Header values for multi-header mode (e.g., { "DD-API-KEY": "...", "DD-APPLICATION-KEY": "..." }) */
+  headers?: Record<string, string>
   /** Whether user cancelled */
   cancelled: boolean
 }
@@ -325,7 +336,7 @@ export interface FileAttachment {
 }
 
 // Import types needed for Session interface
-import type { Message } from '@creator-flow/core/types';
+import type { Message } from '@sprouty-ai/core/types';
 
 /**
  * Electron-specific Session type (includes runtime state)
@@ -445,6 +456,12 @@ export interface CreateSessionOptions {
   systemPromptPreset?: 'default' | 'mini' | string
   /** When true, session won't appear in session list (e.g., mini edit sessions) */
   hidden?: boolean
+  /** Initial todo state (status) for the session */
+  todoState?: TodoState
+  /** Initial labels for the session */
+  labels?: string[]
+  /** Whether the session should be flagged */
+  isFlagged?: boolean
 }
 
 // Events sent from main to renderer
@@ -452,7 +469,7 @@ export interface CreateSessionOptions {
 export type SessionEvent =
   | { type: 'text_delta'; sessionId: string; delta: string; turnId?: string }
   | { type: 'text_complete'; sessionId: string; messageId?: string; text: string; isIntermediate?: boolean; turnId?: string; parentToolUseId?: string }
-  | { type: 'tool_start'; sessionId: string; toolName: string; toolUseId: string; toolInput: Record<string, unknown>; toolIntent?: string; toolDisplayName?: string; toolDisplayMeta?: import('@creator-flow/core').ToolDisplayMeta; turnId?: string; parentToolUseId?: string }
+  | { type: 'tool_start'; sessionId: string; toolName: string; toolUseId: string; toolInput: Record<string, unknown>; toolIntent?: string; toolDisplayName?: string; toolDisplayMeta?: import('@sprouty-ai/core').ToolDisplayMeta; turnId?: string; parentToolUseId?: string }
   | { type: 'tool_result'; sessionId: string; toolUseId: string; toolName: string; result: string; turnId?: string; parentToolUseId?: string; isError?: boolean }
   | { type: 'parent_update'; sessionId: string; toolUseId: string; parentToolUseId: string }
   | { type: 'error'; sessionId: string; error: string }
@@ -484,6 +501,7 @@ export type SessionEvent =
   // Session metadata events (for multi-window sync)
   | { type: 'session_flagged'; sessionId: string }
   | { type: 'session_unflagged'; sessionId: string }
+  | { type: 'name_changed'; sessionId: string; name?: string }
   | { type: 'session_model_changed'; sessionId: string; model: string | null }
   | { type: 'todo_state_changed'; sessionId: string; todoState: TodoState }
   | { type: 'session_deleted'; sessionId: string }
@@ -497,8 +515,10 @@ export type SessionEvent =
   // Real-time usage update during processing (for context display)
   | { type: 'usage_update'; sessionId: string; tokenUsage: { inputTokens: number; contextWindow?: number } }
   // Interactive UI events (Agent ↔ User structured interaction)
-  | { type: 'interactive_request'; sessionId: string; message: CoreMessage; request: import('@creator-flow/shared/interactive-ui').InteractiveRequest }
-  | { type: 'interactive_completed'; sessionId: string; requestId: string; response: import('@creator-flow/shared/interactive-ui').InteractiveResponse }
+  | { type: 'interactive_request'; sessionId: string; message: CoreMessage; request: import('@sprouty-ai/shared/interactive-ui').InteractiveRequest }
+  | { type: 'interactive_completed'; sessionId: string; requestId: string; response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse }
+  // SDK slash commands available (for @ menu)
+  | { type: 'slash_commands_available'; sessionId: string; commands: SdkSlashCommand[]; translations?: Record<string, { label: string; description: string }> }
 
 // Options for sendMessage
 export interface SendMessageOptions {
@@ -507,7 +527,7 @@ export interface SendMessageOptions {
   /** Skill slugs to activate for this message (from @mentions) */
   skillSlugs?: string[]
   /** Content badges for inline display (sources, skills with embedded icons) */
-  badges?: import('@creator-flow/core').ContentBadge[]
+  badges?: import('@sprouty-ai/core').ContentBadge[]
 }
 
 // =============================================================================
@@ -578,6 +598,7 @@ export const IPC_CHANNELS = {
   // Workspace management
   GET_WORKSPACES: 'workspaces:get',
   CREATE_WORKSPACE: 'workspaces:create',
+  DELETE_WORKSPACE: 'workspaces:delete',
   CHECK_WORKSPACE_SLUG: 'workspaces:checkSlug',
 
   // Window management
@@ -646,7 +667,9 @@ export const IPC_CHANNELS = {
   MENU_NEW_WINDOW: 'menu:newWindow',
   MENU_OPEN_SETTINGS: 'menu:openSettings',
   MENU_KEYBOARD_SHORTCUTS: 'menu:keyboardShortcuts',
-  // Deep link navigation (main → renderer, for external craftagents:// URLs)
+  MENU_TOGGLE_FOCUS_MODE: 'menu:toggleFocusMode',
+  MENU_TOGGLE_SIDEBAR: 'menu:toggleSidebar',
+  // Deep link navigation (main → renderer, for external sproutyai:// URLs)
   DEEP_LINK_NAVIGATE: 'deeplink:navigate',
 
   // Auth
@@ -706,7 +729,7 @@ export const IPC_CHANNELS = {
   SOURCES_GET_PERMISSIONS: 'sources:getPermissions',
   // Workspace permissions config (for Explore mode)
   WORKSPACE_GET_PERMISSIONS: 'workspace:getPermissions',
-  // Default permissions from ~/.creator-flow/permissions/default.json
+  // Default permissions from ~/.sprouty-ai/permissions/default.json
   DEFAULT_PERMISSIONS_GET: 'permissions:getDefaults',
   // Broadcast when default permissions change (file watcher)
   DEFAULT_PERMISSIONS_CHANGED: 'permissions:defaultsChanged',
@@ -767,7 +790,7 @@ export const IPC_CHANNELS = {
   WORKSPACE_SETTINGS_GET: 'workspaceSettings:get',
   WORKSPACE_SETTINGS_UPDATE: 'workspaceSettings:update',
 
-  // Theme (app-level only)
+  // Theme (app-level default)
   THEME_GET_APP: 'theme:getApp',
   THEME_GET_PRESETS: 'theme:getPresets',
   THEME_LOAD_PRESET: 'theme:loadPreset',
@@ -776,7 +799,14 @@ export const IPC_CHANNELS = {
   THEME_BROADCAST_PREFERENCES: 'theme:broadcastPreferences',  // Send preferences to main for broadcast
   THEME_PREFERENCES_CHANGED: 'theme:preferencesChanged',  // Broadcast: preferences changed in another window
 
-  // Tool icons (for Appearance settings)
+  // Workspace-level theme overrides
+  THEME_GET_WORKSPACE_COLOR_THEME: 'theme:getWorkspaceColorTheme',
+  THEME_SET_WORKSPACE_COLOR_THEME: 'theme:setWorkspaceColorTheme',
+  THEME_GET_ALL_WORKSPACE_THEMES: 'theme:getAllWorkspaceThemes',
+  THEME_BROADCAST_WORKSPACE_THEME: 'theme:broadcastWorkspaceTheme',  // Send workspace theme change to main for broadcast
+  THEME_WORKSPACE_THEME_CHANGED: 'theme:workspaceThemeChanged',  // Broadcast: workspace theme changed in another window
+
+  // Tool icon mappings (for Appearance settings)
   TOOL_ICONS_GET_MAPPINGS: 'toolIcons:getMappings',
 
   // Logo URL resolution (uses Node.js filesystem cache)
@@ -802,6 +832,7 @@ export const IPC_CHANNELS = {
   BADGE_DRAW: 'badge:draw',  // Broadcast: { count: number, iconDataUrl: string }
   WINDOW_FOCUS_STATE: 'window:focusState',  // Broadcast: boolean (isFocused)
   WINDOW_GET_FOCUS_STATE: 'window:getFocusState',
+  WINDOW_ADJUST_WIDTH: 'window:adjustWidth',
 
   // File Manager (workspace file browsing)
   FM_LIST_DIRECTORY: 'fm:listDirectory',
@@ -814,6 +845,7 @@ export const IPC_CHANNELS = {
   FM_READ_FILE_BASE64: 'fm:readFileBase64',
   FM_WATCH_DIRECTORY: 'fm:watchDirectory',
   FM_UNWATCH_DIRECTORY: 'fm:unwatchDirectory',
+  FM_WRITE_FILE: 'fm:writeFile',
   FM_DIRECTORY_CHANGED: 'fm:directoryChanged',
 
   // Git operations
@@ -840,8 +872,22 @@ export const IPC_CHANNELS = {
   MENU_SELECT_ALL: 'menu:selectAll',
 } as const
 
+/**
+ * Tool icon mapping for CLI command icons in chat activity
+ */
+export interface ToolIconMapping {
+  /** Tool name (e.g., 'git', 'npm') */
+  tool: string
+  /** Display name for the tool */
+  displayName: string
+  /** Data URL of the icon (SVG or PNG) */
+  iconDataUrl: string
+  /** CLI commands that trigger this icon */
+  commands: string[]
+}
+
 // Re-import types for ElectronAPI
-import type { Workspace, SessionMetadata, StoredAttachment as StoredAttachmentType } from '@creator-flow/core/types';
+import type { Workspace, SessionMetadata, StoredAttachment as StoredAttachmentType } from '@sprouty-ai/core/types';
 
 /**
  * Result of workspace creation with app installation
@@ -871,7 +917,7 @@ export interface ElectronAPI {
   getTaskOutput(taskId: string): Promise<string | null>
   respondToPermission(sessionId: string, requestId: string, allowed: boolean, alwaysAllow: boolean): Promise<boolean>
   respondToCredential(sessionId: string, requestId: string, response: CredentialResponse): Promise<boolean>
-  respondToInteractive(sessionId: string, requestId: string, response: import('@creator-flow/shared/interactive-ui').InteractiveResponse): Promise<boolean>
+  respondToInteractive(sessionId: string, requestId: string, response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse): Promise<boolean>
 
   // Consolidated session command handler
   sessionCommand(sessionId: string, command: SessionCommand): Promise<void | ShareResult | RefreshTitleResult>
@@ -883,6 +929,7 @@ export interface ElectronAPI {
   getWorkspaces(): Promise<Workspace[]>
   /** @param installMode - 'force' to overwrite with backup, 'merge' to merge files */
   createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge'): Promise<CreateWorkspaceResult>
+  deleteWorkspace(workspaceId: string, mode: 'delete' | 'backup'): Promise<{ success: boolean; newActiveWorkspaceId?: string | null }>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
 
   // Window management
@@ -897,12 +944,18 @@ export interface ElectronAPI {
   onCloseRequested(callback: () => void): () => void
   /** Show/hide macOS traffic light buttons (for fullscreen overlays) */
   setTrafficLightsVisible(visible: boolean): Promise<void>
+  /** 调整窗口宽度（正值=变宽，负值=变窄） */
+  adjustWindowWidth(delta: number): Promise<void>
 
   // Event listeners
   onSessionEvent(callback: (event: SessionEvent) => void): () => void
 
   // File operations
   readFile(path: string): Promise<string>
+  /** Read a file as binary data (Uint8Array) */
+  readFileBinary(path: string): Promise<Uint8Array>
+  /** Read a file as a data URL (data:{mime};base64,...) for binary preview (images, PDFs) */
+  readFileDataUrl(path: string): Promise<string>
   openFileDialog(): Promise<string[]>
   readFileAttachment(path: string): Promise<FileAttachment | null>
   storeAttachment(sessionId: string, attachment: FileAttachment): Promise<import('../../../../packages/core/src/types/index.ts').StoredAttachment>
@@ -923,6 +976,7 @@ export interface ElectronAPI {
     copy(srcPaths: string[], destDir: string): Promise<void>
     getFileInfo(path: string): Promise<FMFileInfo>
     readFileBase64(path: string, maxSize?: number): Promise<{ data: string; mimeType: string }>
+    writeFile(path: string, content: string): Promise<void>
     watchDirectory(path: string): void
     unwatchDirectory(path: string): void
     onDirectoryChanged(callback: (event: FMDirectoryChangeEvent) => void): () => void
@@ -955,8 +1009,10 @@ export interface ElectronAPI {
   onMenuNewChat(callback: () => void): () => void
   onMenuOpenSettings(callback: () => void): () => void
   onMenuKeyboardShortcuts(callback: () => void): () => void
+  onMenuToggleFocusMode(callback: () => void): () => void
+  onMenuToggleSidebar(callback: () => void): () => void
 
-  // Deep link navigation listener (for external craftagents:// URLs)
+  // Deep link navigation listener (for external sproutyai:// URLs)
   onDeepLinkNavigate(callback: (nav: DeepLinkNavigation) => void): () => void
 
   // Auth
@@ -1030,9 +1086,9 @@ export interface ElectronAPI {
   deleteSource(workspaceId: string, sourceSlug: string): Promise<void>
   startSourceOAuth(workspaceId: string, sourceSlug: string): Promise<{ success: boolean; error?: string; accessToken?: string }>
   saveSourceCredentials(workspaceId: string, sourceSlug: string, credential: string): Promise<void>
-  getSourcePermissionsConfig(workspaceId: string, sourceSlug: string): Promise<import('@creator-flow/shared/agent').PermissionsConfigFile | null>
-  getWorkspacePermissionsConfig(workspaceId: string): Promise<import('@creator-flow/shared/agent').PermissionsConfigFile | null>
-  getDefaultPermissionsConfig(): Promise<{ config: import('@creator-flow/shared/agent').PermissionsConfigFile | null; path: string }>
+  getSourcePermissionsConfig(workspaceId: string, sourceSlug: string): Promise<import('@sprouty-ai/shared/agent').PermissionsConfigFile | null>
+  getWorkspacePermissionsConfig(workspaceId: string): Promise<import('@sprouty-ai/shared/agent').PermissionsConfigFile | null>
+  getDefaultPermissionsConfig(): Promise<{ config: import('@sprouty-ai/shared/agent').PermissionsConfigFile | null; path: string }>
   getMcpTools(workspaceId: string, sourceSlug: string): Promise<McpToolsResult>
 
   // Session content search (full-text search via ripgrep)
@@ -1045,7 +1101,7 @@ export interface ElectronAPI {
   onDefaultPermissionsChanged(callback: () => void): () => void
 
   // Skills
-  getSkills(workspaceId: string): Promise<LoadedSkill[]>
+  getSkills(workspaceId: string, workingDirectory?: string): Promise<LoadedSkill[]>
   getSkillFiles?(workspaceId: string, skillSlug: string): Promise<SkillFile[]>
   deleteSkill(workspaceId: string, skillSlug: string): Promise<void>
   openSkillInEditor(workspaceId: string, skillSlug: string): Promise<void>
@@ -1058,47 +1114,54 @@ export interface ElectronAPI {
   listBundledApps(): Promise<Array<{ id: string; name: string; description: string; version: string; iconPath?: string }>>
 
   // Marketplace
-  marketplaceListSkills(options?: import('@creator-flow/shared/marketplace').ListSkillsOptions): Promise<import('@creator-flow/shared/marketplace').ListSkillsResult>
-  marketplaceGetSkill(skillId: string): Promise<import('@creator-flow/shared/marketplace').GetSkillResult>
-  marketplaceListApps(options?: import('@creator-flow/shared/marketplace').ListAppsOptions): Promise<import('@creator-flow/shared/marketplace').ListAppsResult>
-  marketplaceGetApp(appId: string): Promise<import('@creator-flow/shared/marketplace').GetAppResult>
-  marketplaceGetAppSkills(appId: string): Promise<import('@creator-flow/shared/marketplace').MarketplaceSkill[]>
-  marketplaceListCategories(): Promise<import('@creator-flow/shared/marketplace').MarketplaceCategory[]>
-  marketplaceSearch(query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions): Promise<import('@creator-flow/shared/marketplace').SearchResult>
-  marketplaceInstallSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
-  marketplaceUpdateSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@creator-flow/shared/marketplace').InstallResult>
-  marketplaceCheckUpdates(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').UpdateCheckResult>
-  marketplaceGetInstalled(workspaceId: string): Promise<import('@creator-flow/shared/marketplace').InstalledSkillInfo[]>
-  onMarketplaceInstallProgress(callback: (progress: import('@creator-flow/shared/marketplace').InstallProgress) => void): () => void
+  marketplaceListSkills(options?: import('@sprouty-ai/shared/marketplace').ListSkillsParams): Promise<import('@sprouty-ai/shared/marketplace').PaginatedResponse<import('@sprouty-ai/shared/marketplace').MarketplaceSkill>>
+  marketplaceGetSkill(skillId: string): Promise<{ skill: import('@sprouty-ai/shared/marketplace').MarketplaceSkill; versions: import('@sprouty-ai/shared/marketplace').MarketplaceSkillVersion[] }>
+  marketplaceListApps(options?: import('@sprouty-ai/shared/marketplace').ListAppsParams): Promise<import('@sprouty-ai/shared/marketplace').PaginatedResponse<import('@sprouty-ai/shared/marketplace').MarketplaceApp>>
+  marketplaceGetApp(appId: string): Promise<{ app: import('@sprouty-ai/shared/marketplace').MarketplaceApp; versions: import('@sprouty-ai/shared/marketplace').MarketplaceAppVersion[] }>
+  marketplaceGetAppSkills(appId: string): Promise<import('@sprouty-ai/shared/marketplace').MarketplaceSkill[]>
+  marketplaceListCategories(): Promise<import('@sprouty-ai/shared/marketplace').MarketplaceCategory[]>
+  marketplaceSearch(query: string, options?: import('@sprouty-ai/shared/marketplace').SearchParams): Promise<import('@sprouty-ai/shared/marketplace').SearchResponse>
+  marketplaceInstallSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@sprouty-ai/shared/marketplace').InstallResult>
+  marketplaceUpdateSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@sprouty-ai/shared/marketplace').InstallResult>
+  marketplaceCheckUpdates(workspaceId: string): Promise<import('@sprouty-ai/shared/marketplace').UpdateItem[]>
+  marketplaceGetInstalled(workspaceId: string): Promise<import('@sprouty-ai/shared/marketplace').InstalledSkillInfo[]>
+  onMarketplaceInstallProgress(callback: (progress: import('@sprouty-ai/shared/marketplace').InstallProgress) => void): () => void
 
   // Statuses (workspace-scoped)
-  listStatuses(workspaceId: string): Promise<import('@creator-flow/shared/statuses').StatusConfig[]>
+  listStatuses(workspaceId: string): Promise<import('@sprouty-ai/shared/statuses').StatusConfig[]>
   reorderStatuses(workspaceId: string, orderedIds: string[]): Promise<void>
   // Statuses change listener (live updates when statuses config or icon files change)
   onStatusesChanged(callback: (workspaceId: string) => void): () => void
 
   // Labels (workspace-scoped)
-  listLabels(workspaceId: string): Promise<import('@creator-flow/shared/labels').LabelConfig[]>
-  createLabel(workspaceId: string, input: import('@creator-flow/shared/labels').CreateLabelInput): Promise<import('@creator-flow/shared/labels').LabelConfig>
+  listLabels(workspaceId: string): Promise<import('@sprouty-ai/shared/labels').LabelConfig[]>
+  createLabel(workspaceId: string, input: import('@sprouty-ai/shared/labels').CreateLabelInput): Promise<import('@sprouty-ai/shared/labels').LabelConfig>
   deleteLabel(workspaceId: string, labelId: string): Promise<{ stripped: number }>
   // Labels change listener (live updates when labels config changes)
   onLabelsChanged(callback: (workspaceId: string) => void): () => void
 
   // Views (workspace-scoped, stored in views.json)
-  listViews(workspaceId: string): Promise<import('@creator-flow/shared/views').ViewConfig[]>
-  saveViews(workspaceId: string, views: import('@creator-flow/shared/views').ViewConfig[]): Promise<void>
+  listViews(workspaceId: string): Promise<import('@sprouty-ai/shared/views').ViewConfig[]>
+  saveViews(workspaceId: string, views: import('@sprouty-ai/shared/views').ViewConfig[]): Promise<void>
 
   // Generic workspace image loading/saving (returns data URL for images, raw string for SVG)
   readWorkspaceImage(workspaceId: string, relativePath: string): Promise<string>
   writeWorkspaceImage(workspaceId: string, relativePath: string, base64: string, mimeType: string): Promise<void>
 
-  // Theme (app-level only)
+  // Tool icon mappings (for Appearance settings page)
+  getToolIconMappings(): Promise<ToolIconMapping[]>
+
+  // Theme (app-level default)
   getAppTheme(): Promise<import('@config/theme').ThemeOverrides | null>
   // Preset themes (app-level)
   loadPresetThemes(): Promise<import('@config/theme').PresetTheme[]>
   loadPresetTheme(themeId: string): Promise<import('@config/theme').PresetTheme | null>
   getColorTheme(): Promise<string>
   setColorTheme(themeId: string): Promise<void>
+  // Workspace-level theme overrides
+  getWorkspaceColorTheme(workspaceId: string): Promise<string | null>
+  setWorkspaceColorTheme(workspaceId: string, themeId: string | null): Promise<void>
+  getAllWorkspaceThemes(): Promise<Record<string, string | undefined>>
 
   // Theme change listeners (live updates when theme.json files change)
   onAppThemeChange(callback: (theme: import('@config/theme').ThemeOverrides | null) => void): () => void
@@ -1130,6 +1193,10 @@ export interface ElectronAPI {
   // Theme preferences sync across windows (mode, colorTheme, font)
   broadcastThemePreferences(preferences: { mode: string; colorTheme: string; font: string }): Promise<void>
   onThemePreferencesChange(callback: (preferences: { mode: string; colorTheme: string; font: string }) => void): () => void
+
+  // Workspace theme sync across windows
+  broadcastWorkspaceThemeChange(workspaceId: string, themeId: string | null): Promise<void>
+  onWorkspaceThemeChange(callback: (data: { workspaceId: string; themeId: string | null }) => void): () => void
 
   // Git operations
   getGitBranch(dirPath: string): Promise<string | null>
@@ -1195,8 +1262,10 @@ export interface UpdateInfo {
   latestVersion: string | null
   /** Download state */
   downloadState: 'idle' | 'downloading' | 'ready' | 'installing' | 'error'
-  /** Download progress (0-100) */
+  /** Download progress (0-100, or -1 for indeterminate on macOS) */
   downloadProgress: number
+  /** Whether this platform supports download progress events (false on macOS) */
+  supportsProgress: boolean
   /** Error message if download/install failed */
   error?: string
 }
@@ -1261,7 +1330,7 @@ export type ChatFilter =
 /**
  * Settings subpage options
  */
-export type SettingsSubpage = 'app' | 'appearance' | 'input' | 'workspace' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription'
+export type SettingsSubpage = 'app' | 'appearance' | 'input' | 'workspace' | 'sources' | 'skills' | 'permissions' | 'labels' | 'shortcuts' | 'preferences' | 'user-profile' | 'user-profile-edit' | 'subscription'
 
 /**
  * Chats navigation state - shows SessionList in navigator
@@ -1459,6 +1528,15 @@ export const getNavigationStateKey = (state: NavigationState): string => {
   if (state.navigator === 'settings') {
     return `settings:${state.subpage}`
   }
+  if (state.navigator === 'files') {
+    return 'files'
+  }
+  if (state.navigator === 'marketplace') {
+    if (state.details) {
+      return `marketplace/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
+    }
+    return 'marketplace'
+  }
   // Chats
   const f = state.filter
   let base: string
@@ -1501,7 +1579,7 @@ export const parseNavigationStateKey = (key: string): NavigationState | null => 
   if (key === 'settings') return { navigator: 'settings', subpage: 'user-profile' }
   if (key.startsWith('settings:')) {
     const subpage = key.slice(9) as SettingsSubpage
-    if (['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription'].includes(subpage)) {
+    if (['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription', 'sources', 'skills'].includes(subpage)) {
       return { navigator: 'settings', subpage }
     }
   }

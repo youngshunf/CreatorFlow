@@ -1,7 +1,7 @@
 /**
  * Icons module - re-exports all icon types and constants.
  *
- * Import via: `import { IconSize, ResolvedEntityIcon } from '@creator-flow/shared/icons'`
+ * Import via: `import { IconSize, ResolvedEntityIcon } from '@sprouty-ai/shared/icons'`
  */
 export {
   type IconConfig,

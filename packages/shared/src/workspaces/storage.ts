@@ -3,7 +3,7 @@
  *
  * CRUD operations for workspaces.
  * Workspaces can be stored anywhere on disk via rootPath.
- * Default location: ~/.creator-flow/workspaces/
+ * Default location: ~/.sprouty-ai/workspaces/
  */
 
 import {
@@ -14,11 +14,13 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  renameSync,
 } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { randomUUID } from 'crypto';
 import { expandPath, toPortablePath } from '../utils/paths.ts';
+import { atomicWriteFileSync } from '../utils/files.ts';
 import { getDefaultStatusConfig, saveStatusConfig, ensureDefaultIconFiles } from '../statuses/storage.ts';
 import { getDefaultLabelConfig, saveLabelConfig } from '../labels/storage.ts';
 import { getDefaultViews } from '../views/defaults.ts';
@@ -33,18 +35,21 @@ import type {
   WorkspaceSummary,
 } from './types.ts';
 
-const CONFIG_DIR = join(homedir(), '.creator-flow');
+const CONFIG_DIR = join(homedir(), '.sprouty-ai');
 const DEFAULT_WORKSPACES_DIR = join(CONFIG_DIR, 'workspaces');
 
 /** Subdirectory name for workspace internal data (sessions, sources, skills, config) */
-const WORKSPACE_DATA_DIR = '.creator-flow';
+const WORKSPACE_DATA_DIR = '.sprouty-ai';
+
+/** Legacy workspace data directory name (for auto-migration) */
+const LEGACY_WORKSPACE_DATA_DIR = '.creator-flow';
 
 // ============================================================
 // Path Utilities
 // ============================================================
 
 /**
- * Get the default workspaces directory (~/.creator-flow/workspaces/)
+ * Get the default workspaces directory (~/.sprouty-ai/workspaces/)
  */
 export function getDefaultWorkspacesDir(): string {
   return DEFAULT_WORKSPACES_DIR;
@@ -69,11 +74,25 @@ export function getWorkspacePath(workspaceId: string): string {
 }
 
 /**
- * Get path to workspace data directory (.creator-flow)
+ * Get path to workspace data directory (.sprouty-ai)
+ * Auto-migrates from legacy .creator-flow if needed.
  * @param rootPath - Absolute path to workspace root folder
  */
 export function getWorkspaceDataPath(rootPath: string): string {
-  return join(rootPath, WORKSPACE_DATA_DIR);
+  const newPath = join(rootPath, WORKSPACE_DATA_DIR);
+  const legacyPath = join(rootPath, LEGACY_WORKSPACE_DATA_DIR);
+
+  // Auto-migrate legacy workspace data directory
+  if (!existsSync(newPath) && existsSync(legacyPath)) {
+    try {
+      renameSync(legacyPath, newPath);
+    } catch {
+      // Fall back to legacy path if migration fails
+      return legacyPath;
+    }
+  }
+
+  return newPath;
 }
 
 /**
@@ -157,7 +176,8 @@ export function saveWorkspaceConfig(rootPath: string, config: WorkspaceConfig): 
     };
   }
 
-  writeFileSync(getWorkspaceConfigPath(rootPath), JSON.stringify(storageConfig, null, 2));
+  // Use atomic write to prevent corruption on crash/interrupt
+  atomicWriteFileSync(getWorkspaceConfigPath(rootPath), JSON.stringify(storageConfig, null, 2));
 }
 
 // ============================================================
@@ -259,7 +279,7 @@ export function generateSlug(name: string): string {
  * E.g., "my-workspace", "my-workspace-2", "my-workspace-3", ...
  *
  * @param name - Display name to derive the slug from
- * @param baseDir - Parent directory where workspace folders live (e.g., ~/.creator-flow/workspaces/)
+ * @param baseDir - Parent directory where workspace folders live (e.g., ~/.sprouty-ai/workspaces/)
  * @returns Full path to a unique, non-existing folder
  */
 export function generateUniqueWorkspacePath(name: string, baseDir: string): string {
@@ -335,7 +355,7 @@ export function createWorkspaceAtPath(
     updatedAt: now,
   };
 
-  // Create workspace directory structure (all under .creator-flow)
+  // Create workspace directory structure (all under .sprouty-ai)
   mkdirSync(rootPath, { recursive: true });
   mkdirSync(getWorkspaceDataPath(rootPath), { recursive: true });
   mkdirSync(getWorkspaceSourcesPath(rootPath), { recursive: true });
@@ -367,8 +387,8 @@ export function createWorkspaceAtPath(
 }
 
 /**
- * Delete a workspace data folder (.creator-flow) and its contents.
- * Only removes the .creator-flow subdirectory, preserving user's project files.
+ * Delete a workspace data folder (.sprouty-ai) and its contents.
+ * Only removes the .sprouty-ai subdirectory, preserving user's project files.
  * @param rootPath - Absolute path to workspace root folder
  */
 export function deleteWorkspaceFolder(rootPath: string): boolean {
@@ -376,8 +396,31 @@ export function deleteWorkspaceFolder(rootPath: string): boolean {
   if (!existsSync(dataPath)) return false;
 
   try {
-    // Only delete the .creator-flow data directory, not the user's project folder
+    // Only delete the .sprouty-ai data directory, not the user's project folder
     rmSync(dataPath, { recursive: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Backup a workspace data folder by renaming .sprouty-ai to .sprouty-ai-backup.
+ * If a previous backup exists, it will be removed first.
+ * @param rootPath - Absolute path to workspace root folder
+ */
+export function backupWorkspaceFolder(rootPath: string): boolean {
+  const dataPath = getWorkspaceDataPath(rootPath);
+  if (!existsSync(dataPath)) return false;
+
+  const backupPath = join(rootPath, '.sprouty-ai-backup');
+
+  try {
+    // 如果已存在旧备份，先删除
+    if (existsSync(backupPath)) {
+      rmSync(backupPath, { recursive: true });
+    }
+    renameSync(dataPath, backupPath);
     return true;
   } catch {
     return false;
@@ -412,7 +455,7 @@ export function renameWorkspaceFolder(rootPath: string, newName: string): boolea
 
 /**
  * Discover workspace folders in the default location that have valid config.json
- * Returns paths to valid workspaces found in ~/.creator-flow/workspaces/
+ * Returns paths to valid workspaces found in ~/.sprouty-ai/workspaces/
  */
 export function discoverWorkspacesInDefaultLocation(): string[] {
   const discovered: string[] = [];
@@ -439,19 +482,69 @@ export function discoverWorkspacesInDefaultLocation(): string[] {
 }
 
 // ============================================================
+// Workspace Color Theme
+// ============================================================
+
+/**
+ * Get the color theme setting for a workspace.
+ * Returns undefined if workspace uses the app default.
+ *
+ * @param rootPath - Absolute path to workspace root folder
+ * @returns Theme ID or undefined (inherit from app default)
+ */
+export function getWorkspaceColorTheme(rootPath: string): string | undefined {
+  const config = loadWorkspaceConfig(rootPath);
+  return config?.defaults?.colorTheme;
+}
+
+/**
+ * Set the color theme for a workspace.
+ * Pass undefined to clear and use app default.
+ *
+ * @param rootPath - Absolute path to workspace root folder
+ * @param themeId - Preset theme ID or undefined to inherit
+ */
+export function setWorkspaceColorTheme(rootPath: string, themeId: string | undefined): void {
+  const config = loadWorkspaceConfig(rootPath);
+  if (!config) return;
+
+  // Validate theme ID if provided (skip for undefined = inherit default)
+  // Only allow alphanumeric characters, hyphens, and underscores (max 64 chars)
+  if (themeId && themeId !== 'default') {
+    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(themeId)) {
+      console.warn(`[workspace-storage] Invalid theme ID rejected: ${themeId}`);
+      return;
+    }
+  }
+
+  // Initialize defaults if not present
+  if (!config.defaults) {
+    config.defaults = {};
+  }
+
+  if (themeId) {
+    config.defaults.colorTheme = themeId;
+  } else {
+    delete config.defaults.colorTheme;
+  }
+
+  saveWorkspaceConfig(rootPath, config);
+}
+
+// ============================================================
 // Local MCP Configuration
 // ============================================================
 
 /**
  * Check if local (stdio) MCP servers are enabled for a workspace.
- * Resolution order: ENV (CRAFT_LOCAL_MCP_ENABLED) > workspace config > default (true)
+ * Resolution order: ENV (SPROUTY_LOCAL_MCP_ENABLED) > workspace config > default (true)
  *
  * @param rootPath - Absolute path to workspace root folder
  * @returns true if local MCP servers should be enabled
  */
 export function isLocalMcpEnabled(rootPath: string): boolean {
   // 1. Environment variable override (highest priority)
-  const envValue = process.env.CRAFT_LOCAL_MCP_ENABLED;
+  const envValue = process.env.SPROUTY_LOCAL_MCP_ENABLED || process.env.CRAFT_LOCAL_MCP_ENABLED;
   if (envValue !== undefined) {
     return envValue.toLowerCase() === 'true';
   }
@@ -496,11 +589,73 @@ export function ensurePluginManifest(rootPath: string, workspaceName: string): v
 
   // Create minimal plugin manifest
   const manifest = {
-    name: `craft-workspace-${workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    name: 'sprouty-workspace',
     version: '1.0.0',
   };
 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+}
+
+/**
+ * Get the global plugin data path (~/.sprouty-ai/)
+ * Used for global plugins that are available across all workspaces.
+ */
+export function getGlobalPluginDataPath(): string {
+  return CONFIG_DIR;
+}
+
+/**
+ * Ensure global plugin manifest exists at ~/.sprouty-ai/.claude-plugin/plugin.json
+ * This allows global plugins to be loaded by the SDK alongside workspace plugins.
+ */
+export function ensureGlobalPluginManifest(): void {
+  const pluginDir = join(CONFIG_DIR, '.claude-plugin');
+  const manifestPath = join(pluginDir, 'plugin.json');
+  if (existsSync(manifestPath)) return;
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(manifestPath, JSON.stringify({ name: 'sprouty', version: '1.0.0' }, null, 2));
+}
+
+/**
+ * 迁移插件目录结构：.claude-plugin/{name}/ → plugins/{name}/
+ *
+ * 旧结构: {basePath}/.claude-plugin/{pluginName}/
+ * 新结构: {basePath}/plugins/{pluginName}/
+ *
+ * 自动将旧目录中的嵌套插件移动到新位置。
+ * .claude-plugin/plugin.json 保持不变（SDK 需要）。
+ *
+ * @param basePath - 插件基础路径（全局路径或工作区 .sprouty-ai 路径）
+ */
+export function migratePluginDir(basePath: string): void {
+  const oldDir = join(basePath, '.claude-plugin');
+  const newDir = join(basePath, 'plugins');
+
+  if (!existsSync(oldDir)) return;
+
+  try {
+    const entries = readdirSync(oldDir);
+    for (const entry of entries) {
+      // 跳过非目录文件（plugin.json, .DS_Store 等）
+      const oldPath = join(oldDir, entry);
+      try {
+        if (!statSync(oldPath).isDirectory()) continue;
+      } catch { continue; }
+
+      // 检查是否是一个插件（有 .claude-plugin/plugin.json）
+      if (!existsSync(join(oldPath, '.claude-plugin', 'plugin.json'))) continue;
+
+      const newPath = join(newDir, entry);
+      if (existsSync(newPath)) continue; // 已迁移，跳过
+
+      // 创建 plugins/ 目录并移动
+      mkdirSync(newDir, { recursive: true });
+      renameSync(oldPath, newPath);
+      console.error(`[migratePluginDir] 已迁移插件: ${entry} → plugins/${entry}`);
+    }
+  } catch {
+    // 静默忽略迁移错误
+  }
 }
 
 export { CONFIG_DIR, DEFAULT_WORKSPACES_DIR };

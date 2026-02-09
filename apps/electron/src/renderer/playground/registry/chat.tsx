@@ -2,7 +2,7 @@ import * as React from 'react'
 import type { ComponentEntry } from './types'
 import { AttachmentPreview } from '@/components/app-shell/AttachmentPreview'
 import { SetupAuthBanner } from '@/components/app-shell/SetupAuthBanner'
-import { TurnCard, type ActivityItem } from '@creator-flow/ui'
+import { TurnCard, type ActivityItem } from '@sprouty-ai/ui'
 import type { BackgroundTask } from '@/components/app-shell/ActiveTasksBar'
 import { ActiveOptionBadges } from '@/components/app-shell/ActiveOptionBadges'
 import { InputContainer } from '@/components/app-shell/input'
@@ -949,6 +949,7 @@ export const chatComponents: ComponentEntry[] = [
         control: {
           type: 'select',
           options: [
+            { label: 'Opus 4.6', value: 'claude-opus-4-6' },
             { label: 'Sonnet 4.5', value: 'claude-sonnet-4-5-20250929' },
             { label: 'Opus 4.5', value: 'claude-opus-4-5-20251101' },
             { label: 'Haiku 3.5', value: 'claude-3-5-haiku-20241022' },

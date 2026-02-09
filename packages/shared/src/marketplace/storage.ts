@@ -3,7 +3,7 @@
  *
  * Manages local cache and version tracking for marketplace items.
  * Handles:
- * - Marketplace metadata cache (~/.creator-flow/marketplace/cache/)
+ * - Marketplace metadata cache (~/.sprouty-ai/marketplace/cache/)
  * - Skill meta files ({workspace}/skills/{skill_id}/.skill-meta.json)
  * - Installed package tracking
  */
@@ -35,7 +35,7 @@ import type {
  * Get the root config directory
  */
 export function getConfigRoot(): string {
-  return join(homedir(), '.creator-flow');
+  return join(homedir(), '.sprouty-ai');
 }
 
 /**
@@ -90,7 +90,7 @@ function expandPath(path: string): string {
 // ============================================================
 
 const CACHE_FILE = 'meta.json';
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /**
  * Get cached marketplace data
@@ -215,7 +215,7 @@ export function markSkillModified(skillDir: string): void {
     // Increment local version
     const parts = meta.localVersion.split('-local.');
     const baseVersion = parts[0];
-    const localNum = parts.length > 1 ? parseInt(parts[1], 10) + 1 : 1;
+    const localNum = parts.length > 1 ? parseInt(parts[1]!, 10) + 1 : 1;
     
     meta.localVersion = `${baseVersion}-local.${localNum}`;
     meta.isModified = true;
@@ -235,7 +235,7 @@ export function getInstalledSkills(
   workspaceRoot: string
 ): InstalledSkillInfo[] {
   const expandedRoot = expandPath(workspaceRoot);
-  const skillsDir = join(expandedRoot, '.creator-flow', 'skills');
+  const skillsDir = join(expandedRoot, '.sprouty-ai', 'skills');
   if (!existsSync(skillsDir)) {
     return [];
   }
@@ -263,11 +263,11 @@ export function getInstalledSkills(
         const content = readFileSync(skillFile, 'utf-8');
         const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
         if (frontmatterMatch) {
-          const frontmatter = frontmatterMatch[1];
+          const frontmatter = frontmatterMatch[1]!;
           const nameMatch = frontmatter.match(/name:\s*(.+)/);
           const descMatch = frontmatter.match(/description:\s*(.+)/);
-          if (nameMatch) name = nameMatch[1].trim();
-          if (descMatch) description = descMatch[1].trim();
+          if (nameMatch) name = nameMatch[1]!.trim();
+          if (descMatch) description = descMatch[1]!.trim();
         }
       } catch {
         // Ignore parsing errors
@@ -281,7 +281,7 @@ export function getInstalledSkills(
           try {
             const configContent = readFileSync(configPath, 'utf-8');
             const versionMatch = configContent.match(/^version:\s*(.+)$/m);
-            if (versionMatch) version = versionMatch[1].trim();
+            if (versionMatch) version = versionMatch[1]!.trim();
           } catch {
             // Ignore parsing errors
           }
@@ -312,7 +312,7 @@ export function isSkillInstalled(
   workspaceRoot: string,
   skillId: string
 ): boolean {
-  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.sprouty-ai', 'skills', skillId);
   const skillFile = join(skillDir, 'SKILL.md');
   return existsSync(skillFile);
 }
@@ -324,7 +324,7 @@ export function getInstalledSkillVersion(
   workspaceRoot: string,
   skillId: string
 ): string | null {
-  const skillDir = join(workspaceRoot, '.creator-flow', 'skills', skillId);
+  const skillDir = join(workspaceRoot, '.sprouty-ai', 'skills', skillId);
   const meta = readSkillMeta(skillDir);
   return meta?.baseVersion || null;
 }

@@ -3,7 +3,8 @@ import * as Sentry from '@sentry/electron/main'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { rm, readFile } from 'fs/promises'
-import { CreatorFlowAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest } from '@creator-flow/shared/agent'
+import { SproutyAgent, type AgentEvent, setPermissionMode, type PermissionMode, unregisterSessionScopedToolCallbacks, AbortReason, type AuthRequest, type AuthResult, type CredentialAuthRequest, SDK_COMMAND_TRANSLATIONS, scanWorkspaceCommands, loadPluginTranslations } from '@sprouty-ai/shared/agent'
+import { getGlobalPluginDataPath } from '@sprouty-ai/shared/workspaces'
 import { sessionLog, isDebugMode, getLogFilePath } from './logger'
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import type { WindowManager } from './window-manager'
@@ -15,8 +16,8 @@ import {
   getAnthropicBaseUrl,
   resolveModelId,
   type Workspace,
-} from '@creator-flow/shared/config'
-import { loadWorkspaceConfig } from '@creator-flow/shared/workspaces'
+} from '@sprouty-ai/shared/config'
+import { loadWorkspaceConfig } from '@sprouty-ai/shared/workspaces'
 import {
   // Session persistence functions
   listSessions as listStoredSessions,
@@ -36,23 +37,23 @@ import {
   type StoredMessage,
   type SessionMetadata,
   type TodoState,
-} from '@creator-flow/shared/sessions'
-import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS } from '@creator-flow/shared/sources'
-import { ConfigWatcher, type ConfigWatcherCallbacks } from '@creator-flow/shared/config'
-import { getAuthState } from '@creator-flow/shared/auth'
-import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@creator-flow/shared/agent'
-import { getCredentialManager } from '@creator-flow/shared/credentials'
-import { CraftMcpClient } from '@creator-flow/shared/mcp'
+} from '@sprouty-ai/shared/sessions'
+import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS, TokenRefreshManager, createTokenGetter } from '@sprouty-ai/shared/sources'
+import { ConfigWatcher, type ConfigWatcherCallbacks } from '@sprouty-ai/shared/config'
+import { getAuthState } from '@sprouty-ai/shared/auth'
+import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@sprouty-ai/shared/agent'
+import { getCredentialManager } from '@sprouty-ai/shared/credentials'
+import { CraftMcpClient } from '@sprouty-ai/shared/mcp'
 import { type Session, type Message, type SessionEvent, type FileAttachment, type StoredAttachment, type SendMessageOptions, IPC_CHANNELS, generateMessageId } from '../shared/types'
-import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient, resolveToolIcon } from '@creator-flow/shared/utils'
-import { t } from '@creator-flow/shared/locale'
-import { loadWorkspaceSkills, type LoadedSkill } from '@creator-flow/shared/skills'
-import type { ToolDisplayMeta } from '@creator-flow/core/types'
-import { DEFAULT_MODEL, getToolIconsDir } from '@creator-flow/shared/config'
-import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@creator-flow/shared/agent/thinking-levels'
-import { evaluateAutoLabels } from '@creator-flow/shared/labels/auto'
-import { listLabels } from '@creator-flow/shared/labels/storage'
-import { extractLabelId } from '@creator-flow/shared/labels'
+import { generateSessionTitle, regenerateSessionTitle, formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrl, getEmojiIcon, resetSummarizationClient, resolveToolIcon } from '@sprouty-ai/shared/utils'
+import { t } from '@sprouty-ai/shared/locale'
+import { loadAllSkills, type LoadedSkill } from '@sprouty-ai/shared/skills'
+import type { ToolDisplayMeta } from '@sprouty-ai/core/types'
+import { DEFAULT_MODEL, getToolIconsDir } from '@sprouty-ai/shared/config'
+import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@sprouty-ai/shared/agent/thinking-levels'
+import { evaluateAutoLabels } from '@sprouty-ai/shared/labels/auto'
+import { listLabels } from '@sprouty-ai/shared/labels/storage'
+import { extractLabelId } from '@sprouty-ai/shared/labels'
 import { getDefaultBunPathResolver, type BunPathResolver } from './bun-path'
 
 /**
@@ -63,6 +64,10 @@ function sanitizeForTitle(content: string): string {
   return content
     .replace(/<edit_request>[\s\S]*?<\/edit_request>/g, '') // Strip entire edit_request blocks
     .replace(/<[^>]+>/g, '')     // Strip remaining XML/HTML tags
+    .replace(/\[skill:(?:[\w-]+:)?[\w-]+\]/g, '')   // Strip [skill:...] mentions
+    .replace(/\[source:[\w-]+\]/g, '')                // Strip [source:...] mentions
+    .replace(/\[file:[^\]]+\]/g, '')                  // Strip [file:...] mentions
+    .replace(/\[folder:[^\]]+\]/g, '')                // Strip [folder:...] mentions
     .replace(/\s+/g, ' ')        // Collapse whitespace
     .trim()
 }
@@ -82,8 +87,13 @@ export const AGENT_FLAGS = {
  *
  * @param sources - Sources to build servers for
  * @param sessionPath - Optional path to session folder for saving large API responses
+ * @param tokenRefreshManager - Optional TokenRefreshManager for OAuth token refresh
  */
-async function buildServersFromSources(sources: LoadedSource[], sessionPath?: string) {
+async function buildServersFromSources(
+  sources: LoadedSource[],
+  sessionPath?: string,
+  tokenRefreshManager?: TokenRefreshManager
+) {
   const span = perf.span('sources.buildServers', { count: sources.length })
   const credManager = getSourceCredentialManager()
   const serverBuilder = getSourceServerBuilder()
@@ -102,31 +112,15 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
   sessionLog.info(`构建 Source 服务器：为 ${sources.length} 个来源加载凭据耗时 ${credsMs}ms`)
 
   // Build token getter for OAuth sources (Google, Slack, Microsoft use OAuth)
-  // Automatically refreshes expired or expiring tokens before API calls
+  // Uses TokenRefreshManager for unified refresh logic (DRY principle)
   const getTokenForSource = (source: LoadedSource) => {
     const provider = source.config.provider
     if (isApiOAuthProvider(provider)) {
-      return async () => {
-        // Load credential with expiry info
-        const cred = await credManager.load(source)
-
-        // Refresh if expired or expiring soon (within 5 min)
-        if (!cred || credManager.isExpired(cred) || credManager.needsRefresh(cred)) {
-          sessionLog.debug(`[OAuth] Refreshing token for ${source.config.slug}`)
-          try {
-            const token = await credManager.refresh(source)
-            if (token) return token
-          } catch (err) {
-            sessionLog.warn(`[OAuth] Refresh failed for ${source.config.slug}: ${err}`)
-          }
-        }
-
-        // Use cached token if still valid
-        if (cred?.value) return cred.value
-
-        // No valid token after refresh attempt
-        throw new Error(`No token for ${source.config.slug}`)
-      }
+      // Use TokenRefreshManager if provided, otherwise create temporary one
+      const manager = tokenRefreshManager ?? new TokenRefreshManager(credManager, {
+        log: (msg) => sessionLog.debug(msg),
+      })
+      return createTokenGetter(manager, source)
     }
     return undefined
   }
@@ -154,6 +148,71 @@ async function buildServersFromSources(sources: LoadedSource[], sessionPath?: st
 
   span.end()
   return result
+}
+
+/**
+ * Result of MCP OAuth token refresh operation.
+ */
+interface McpTokenRefreshResult {
+  /** Whether any tokens were refreshed (configs were updated) */
+  tokensRefreshed: boolean
+  /** Sources that failed to refresh (for warning display) */
+  failedSources: Array<{ slug: string; reason: string }>
+}
+
+/**
+ * Refresh expired MCP OAuth tokens and rebuild server configs.
+ * Uses TokenRefreshManager for unified refresh logic (DRY/SOLID principles).
+ *
+ * This implements "lazy refresh at query time" - tokens are refreshed before
+ * each agent.chat() call, then server configs are rebuilt with fresh headers.
+ *
+ * @param agent - The agent to update server configs on
+ * @param sources - All loaded sources for the session
+ * @param sessionPath - Path to session folder for API response storage
+ * @param tokenRefreshManager - TokenRefreshManager instance for this session
+ */
+async function refreshMcpOAuthTokensIfNeeded(
+  agent: SproutyAgent,
+  sources: LoadedSource[],
+  sessionPath: string,
+  tokenRefreshManager: TokenRefreshManager
+): Promise<McpTokenRefreshResult> {
+  sessionLog.debug('[OAuth] Checking if any MCP OAuth tokens need refresh')
+
+  // Use TokenRefreshManager to find sources needing refresh (handles rate limiting)
+  const needRefresh = await tokenRefreshManager.getSourcesNeedingRefresh(sources)
+
+  if (needRefresh.length === 0) {
+    return { tokensRefreshed: false, failedSources: [] }
+  }
+
+  sessionLog.debug(`[OAuth] Found ${needRefresh.length} source(s) needing token refresh: ${needRefresh.map(s => s.config.slug).join(', ')}`)
+
+  // Use TokenRefreshManager to refresh all tokens (handles rate limiting and error tracking)
+  const { refreshed, failed } = await tokenRefreshManager.refreshSources(needRefresh)
+
+  // Convert failed results to the expected format
+  const failedSources = failed.map(({ source, reason }) => ({
+    slug: source.config.slug,
+    reason,
+  }))
+
+  if (refreshed.length > 0) {
+    // Rebuild server configs with fresh tokens
+    sessionLog.debug(`[OAuth] Rebuilding servers after ${refreshed.length} token refresh(es)`)
+    const enabledSources = sources.filter(s => s.config.enabled && s.config.isAuthenticated)
+    const { mcpServers, apiServers } = await buildServersFromSources(
+      enabledSources,
+      sessionPath,
+      tokenRefreshManager
+    )
+    const intendedSlugs = enabledSources.map(s => s.config.slug)
+    agent.setSourceServers(mcpServers, apiServers, intendedSlugs)
+    return { tokensRefreshed: true, failedSources }
+  }
+
+  return { tokensRefreshed: false, failedSources }
 }
 
 /**
@@ -203,7 +262,7 @@ function resolveToolDisplayMeta(
       if (skillSlug) {
         // Load skills and find the one being invoked
         try {
-          const skills = loadWorkspaceSkills(workspaceRootPath)
+          const skills = loadAllSkills(workspaceRootPath)
           const skill = skills.find(s => s.slug === skillSlug)
           if (skill) {
             // Try file-based icon first, fall back to emoji icon from metadata
@@ -227,7 +286,7 @@ function resolveToolDisplayMeta(
 
   // CLI tool icon resolution for Bash commands
   // Parses the command string to detect known tools (git, npm, docker, etc.)
-  // and resolves their brand icon from ~/.craft-agent/tool-icons/
+  // and resolves their brand icon from ~/.sprouty-ai/tool-icons/
   if (toolName === 'Bash' && toolInput?.command) {
     const toolIconsDir = getToolIconsDir()
     const match = resolveToolIcon(String(toolInput.command), toolIconsDir)
@@ -273,7 +332,7 @@ function resolveToolDisplayMeta(
 interface ManagedSession {
   id: string
   workspace: Workspace
-  agent: CreatorFlowAgent | null  // Lazy-loaded - null until first message
+  agent: SproutyAgent | null  // Lazy-loaded - null until first message
   messages: Message[]
   isProcessing: boolean
   lastMessageAt: number
@@ -282,7 +341,7 @@ interface ManagedSession {
   // Used to detect if a follow-up message has superseded the current one (stale-request guard).
   processingGeneration: number
   // NOTE: Parent-child tracking state (pendingTools, parentToolStack, toolToParentMap,
-  // pendingTextParent) has been removed. CraftAgent now provides parentToolUseId
+  // pendingTextParent) has been removed. CreatorFlow now provides parentToolUseId
   // directly on all events using the SDK's authoritative parent_tool_use_id field.
   // See: packages/shared/src/agent/tool-matching.ts
   // Session name (user-defined or AI-generated)
@@ -375,6 +434,8 @@ interface ManagedSession {
   authRetryInProgress?: boolean
   // Whether this session is hidden from session list (e.g., mini edit sessions)
   hidden?: boolean
+  // Token refresh manager for this session (handles OAuth token refresh with rate limiting)
+  tokenRefreshManager?: TokenRefreshManager
 }
 
 // Convert runtime Message to StoredMessage for persistence
@@ -620,8 +681,8 @@ export class SessionManager {
       onSkillChange: async (slug, skill) => {
         sessionLog.info(`Skill '${slug}' changed:`, skill ? 'updated' : 'deleted')
         // Broadcast updated list to UI
-        const { loadWorkspaceSkills } = await import('@creator-flow/shared/skills')
-        const skills = loadWorkspaceSkills(workspaceRootPath)
+        const { loadAllSkills } = await import('@sprouty-ai/shared/skills')
+        const skills = loadAllSkills(workspaceRootPath)
         this.broadcastSkillsChanged(skills)
       },
 
@@ -659,7 +720,7 @@ export class SessionManager {
         // Todo state
         if (managed.todoState !== header.todoState) {
           managed.todoState = header.todoState
-          this.sendEvent({ type: 'todo_state_changed', sessionId, todoState: header.todoState }, managed.workspace.id)
+          this.sendEvent({ type: 'todo_state_changed', sessionId, todoState: header.todoState ?? '' }, managed.workspace.id)
           changed = true
         }
 
@@ -711,7 +772,7 @@ export class SessionManager {
   /**
    * Broadcast app theme changed event to all windows
    */
-  private broadcastAppThemeChanged(theme: import('@creator-flow/shared/config').ThemeOverrides | null): void {
+  private broadcastAppThemeChanged(theme: import('@sprouty-ai/shared/config').ThemeOverrides | null): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting app theme changed`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.THEME_APP_CHANGED, theme)
@@ -720,7 +781,7 @@ export class SessionManager {
   /**
    * Broadcast skills changed event to all windows
    */
-  private broadcastSkillsChanged(skills: import('@creator-flow/shared/skills').LoadedSkill[]): void {
+  private broadcastSkillsChanged(skills: import('@sprouty-ai/shared/skills').LoadedSkill[]): void {
     if (!this.windowManager) return
     sessionLog.info(`Broadcasting skills changed (${skills.length} skills)`)
     this.windowManager.broadcastToAll(IPC_CHANNELS.SKILLS_CHANGED, skills)
@@ -728,7 +789,7 @@ export class SessionManager {
 
   /**
    * Broadcast default permissions changed event to all windows
-   * Triggered when ~/.craft-agent/permissions/default.json changes
+   * Triggered when ~/.sprouty-ai/permissions/default.json changes
    */
   private broadcastDefaultPermissionsChanged(): void {
     if (!this.windowManager) return
@@ -747,7 +808,7 @@ export class SessionManager {
     const workspaceRootPath = managed.workspace.rootPath
     sessionLog.info(`Reloading sources for session ${managed.id}`)
 
-    // Reload all sources from disk (craft-agents-docs is always available as MCP server)
+    // Reload all sources from disk (creator-flow-docs is always available as MCP server)
     const allSources = loadAllSources(workspaceRootPath)
     managed.agent.setAllSources(allSources)
 
@@ -773,7 +834,7 @@ export class SessionManager {
    * Bun's automatic .env loading is disabled in the subprocess (--env-file=/dev/null)
    * to prevent a user's project .env from injecting ANTHROPIC_API_KEY and overriding
    * OAuth auth — Claude Code prioritizes API key over OAuth token when both are set.
-   * See: https://github.com/lukilabs/craft-agents-oss/issues/39
+   * See: https://github.com/lukilabs/creator-flow-oss/issues/39
    */
   async reinitializeAuth(): Promise<void> {
     try {
@@ -884,26 +945,40 @@ export class SessionManager {
       sessionLog.info('Setting executable:', bunPath)
       setExecutable(bunPath)
 
-      // On Windows: Set CLAUDE_CODE_GIT_BASH_PATH to bundled bash.exe
-      // The SDK requires git-bash on Windows. We bundle it so users don't need to install Git.
-      // PortableGit has bash.exe in usr/bin/, MinGit would have it in bin/ (but MinGit doesn't include bash)
+      // On Windows: Set CLAUDE_CODE_GIT_BASH_PATH for the SDK
+      // The SDK requires git-bash on Windows. Users should install Git for Windows.
+      // We check for: 1) User-configured path, 2) System-installed Git
       if (process.platform === 'win32') {
-        const possiblePaths = [
-          join(process.resourcesPath, 'vendor', 'git', 'usr', 'bin', 'bash.exe'),
-          join(process.resourcesPath, 'vendor', 'git', 'bin', 'bash.exe'),
-        ]
         let bashPath: string | null = null
-        for (const path of possiblePaths) {
-          if (existsSync(path)) {
-            bashPath = path
-            break
+
+        // First, check if user has configured a custom path
+        const config = loadStoredConfig()
+        if (config?.gitBashPath && existsSync(config.gitBashPath)) {
+          bashPath = config.gitBashPath
+          sessionLog.info('[GitBash] Using user-configured path:', bashPath)
+        } else {
+          // Try common Git for Windows installation paths
+          const commonPaths = [
+            'C:\\Program Files\\Git\\bin\\bash.exe',
+            'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+            join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'bin', 'bash.exe'),
+            join(process.env.PROGRAMFILES || '', 'Git', 'bin', 'bash.exe'),
+          ]
+
+          for (const path of commonPaths) {
+            if (existsSync(path)) {
+              bashPath = path
+              sessionLog.info('[GitBash] Found system Git Bash:', bashPath)
+              break
+            }
           }
         }
+
         if (bashPath) {
           process.env.CLAUDE_CODE_GIT_BASH_PATH = bashPath
-          sessionLog.info('Setting CLAUDE_CODE_GIT_BASH_PATH:', bashPath)
+          sessionLog.info('[GitBash] Set CLAUDE_CODE_GIT_BASH_PATH:', bashPath)
         } else {
-          sessionLog.warn(`Bundled Git Bash not found. Tried: ${possiblePaths.join(', ')}. SDK shell commands may fail.`)
+          sessionLog.warn('[GitBash] Git Bash not found. SDK shell commands may fail. Please install Git for Windows.')
         }
       }
     }
@@ -969,6 +1044,10 @@ export class SessionManager {
             sharedUrl: meta.sharedUrl,
             sharedId: meta.sharedId,
             hidden: meta.hidden,
+            // Initialize TokenRefreshManager for this session
+            tokenRefreshManager: new TokenRefreshManager(getSourceCredentialManager(), {
+              log: (msg) => sessionLog.debug(msg),
+            }),
           }
 
           this.sessions.set(meta.id, managed)
@@ -1108,6 +1187,9 @@ export class SessionManager {
       const result = await credManager.authenticate(source, {
         onStatus: (msg) => sessionLog.info(`[OAuth ${request.sourceSlug}] ${msg}`),
         onError: (err) => sessionLog.error(`[OAuth ${request.sourceSlug}] ${err}`),
+      }, {
+        sessionId: managed.id,
+        deeplinkScheme: process.env.SPROUTY_DEEPLINK_SCHEME || process.env.CREATORFLOW_DEEPLINK_SCHEME || 'sproutyai',
       })
 
       if (result.success) {
@@ -1265,6 +1347,12 @@ export class SessionManager {
           { type: 'source_bearer', workspaceId: wsId, sourceId: request.sourceSlug },
           { value: response.value! }
         )
+      } else if (request.mode === 'multi-header') {
+        // Store multi-header credentials as JSON { "DD-API-KEY": "...", "DD-APPLICATION-KEY": "..." }
+        await credManager.set(
+          { type: 'source_apikey', workspaceId: wsId, sourceId: request.sourceSlug },
+          { value: JSON.stringify(response.headers) }
+        )
       } else {
         // header or query - both use API key storage
         await credManager.set(
@@ -1274,7 +1362,7 @@ export class SessionManager {
       }
 
       // Update source config to mark as authenticated
-      const { markSourceAuthenticated } = await import('@creator-flow/shared/sources')
+      const { markSourceAuthenticated } = await import('@sprouty-ai/shared/sources')
       markSourceAuthenticated(managed.workspace.rootPath, request.sourceSlug)
 
       // Mark source as unseen so fresh guide is injected on next message
@@ -1356,6 +1444,27 @@ export class SessionManager {
 
     // Lazy-load messages from disk if not yet loaded
     await this.ensureMessagesLoaded(m)
+
+    // Re-push SDK slash commands on session switch so the / menu stays populated.
+    // Always use scanWorkspaceCommands as the source of truth — it only scans commands/
+    // directories, excluding skills and MCP servers that SDK may include.
+    {
+      const { commands, translations } = scanWorkspaceCommands(m.workspace.rootPath, getGlobalPluginDataPath())
+      // Merge plugin translations from SDK plugins if agent is available
+      if (m.agent) {
+        const plugins = m.agent.getSdkPlugins()
+        const pluginTrans = loadPluginTranslations(plugins)
+        Object.assign(translations, pluginTrans)
+      }
+      if (commands.length > 0) {
+        this.sendEvent({
+          type: 'slash_commands_available',
+          sessionId: m.id,
+          commands,
+          translations,
+        }, m.workspace.id)
+      }
+    }
 
     return {
       id: m.id,
@@ -1481,6 +1590,9 @@ export class SessionManager {
       permissionMode: defaultPermissionMode,
       workingDirectory: resolvedWorkingDir,
       hidden: options?.hidden,
+      todoState: options?.todoState,
+      labels: options?.labels,
+      isFlagged: options?.isFlagged,
     })
 
     // Model priority: options.model > storedSession.model > workspace default
@@ -1500,7 +1612,9 @@ export class SessionManager {
       lastMessageAt: storedSession.lastMessageAt ?? storedSession.lastUsedAt,  // Fallback for sessions saved before lastMessageAt was persisted
       streamingText: '',
       processingGeneration: 0,
-      isFlagged: false,
+      isFlagged: options?.isFlagged ?? false,
+      todoState: options?.todoState,
+      labels: options?.labels,
       permissionMode: defaultPermissionMode,
       workingDirectory: resolvedWorkingDir,
       sdkCwd: storedSession.sdkCwd,
@@ -1513,9 +1627,24 @@ export class SessionManager {
       backgroundShellCommands: new Map(),
       messagesLoaded: true,  // New sessions don't need to load messages from disk
       hidden: options?.hidden,
+      // Initialize TokenRefreshManager for this session (handles OAuth token refresh with rate limiting)
+      tokenRefreshManager: new TokenRefreshManager(getSourceCredentialManager(), {
+        log: (msg) => sessionLog.debug(msg),
+      }),
     }
 
     this.sessions.set(storedSession.id, managed)
+
+    // Push slash commands immediately so the / menu is populated for new sessions
+    const { commands: slashCmds, translations: slashTranslations } = scanWorkspaceCommands(workspaceRootPath, getGlobalPluginDataPath())
+    if (slashCmds.length > 0) {
+      this.sendEvent({
+        type: 'slash_commands_available',
+        sessionId: storedSession.id,
+        commands: slashCmds,
+        translations: slashTranslations,
+      }, workspace.id)
+    }
 
     return {
       id: storedSession.id,
@@ -1524,9 +1653,10 @@ export class SessionManager {
       lastMessageAt: managed.lastMessageAt,
       messages: [],
       isProcessing: false,
-      isFlagged: false,
+      isFlagged: options?.isFlagged ?? false,
       permissionMode: defaultPermissionMode,
-      todoState: undefined,  // User-controlled, defaults to undefined (treated as 'todo')
+      todoState: options?.todoState,
+      labels: options?.labels,
       workingDirectory: resolvedWorkingDir,
       model: managed.model,
       thinkingLevel: defaultThinkingLevel,
@@ -1538,11 +1668,11 @@ export class SessionManager {
   /**
    * Get or create agent for a session (lazy loading)
    */
-  private async getOrCreateAgent(managed: ManagedSession): Promise<CreatorFlowAgent> {
+  private async getOrCreateAgent(managed: ManagedSession): Promise<SproutyAgent> {
     if (!managed.agent) {
       const end = perf.start('agent.create', { sessionId: managed.id })
       const config = loadStoredConfig()
-      managed.agent = new CreatorFlowAgent({
+      managed.agent = new SproutyAgent({
         workspace: managed.workspace,
         // Session model takes priority, fallback to global config, then resolve with customModel override
         model: resolveModelId(managed.model || config?.model || DEFAULT_MODEL),
@@ -1616,7 +1746,7 @@ export class SessionManager {
       }
 
       // Note: Credential requests now flow through onAuthRequest (unified auth flow)
-      // The legacy onCredentialRequest callback has been removed from CreatorFlowAgent
+      // The legacy onCredentialRequest callback has been removed from SproutyAgent
       // Auth refresh for mid-session token expiry is handled by the error handler in sendMessage
       // which destroys/recreates the agent to get fresh credentials
 
@@ -1630,6 +1760,37 @@ export class SessionManager {
           permissionMode: managed.permissionMode,
         }, managed.workspace.id)
       }
+
+      // Wire up onSlashCommandsAvailable to push SDK commands to renderer (for @ menu)
+      // When SDK init returns slash_commands + plugins, load translations from plugin paths
+      // and push enriched data to renderer.
+      // IMPORTANT: SDK slash_commands includes skills (not just commands), so we filter
+      // against our own scanWorkspaceCommands whitelist to only show actual commands.
+      managed.agent.onSlashCommandsAvailable = (commands, plugins) => {
+        const translations = loadPluginTranslations(plugins)
+        // Build whitelist of known commands (SDK built-in + plugin commands/ entries)
+        const { commands: knownCommands } = scanWorkspaceCommands(managed.workspace.rootPath, getGlobalPluginDataPath())
+        const knownNames = new Set(knownCommands.map(c => c.name))
+        // Filter SDK commands: only keep those in our whitelist
+        const filteredCommands = commands.filter(c => knownNames.has(c.name))
+        sessionLog.info(`SDK slash commands available for session ${managed.id}: ${filteredCommands.length}/${commands.length} (filtered from SDK)`)
+        this.sendEvent({
+          type: 'slash_commands_available',
+          sessionId: managed.id,
+          commands: filteredCommands,
+          translations,
+        }, managed.workspace.id)
+      }
+
+      // Scan workspace for all commands (SDK built-in + installed plugins) and send immediately
+      // so @ menu works before first message
+      const { commands: allCommands, translations: pluginTranslations } = scanWorkspaceCommands(managed.workspace.rootPath, getGlobalPluginDataPath())
+      this.sendEvent({
+        type: 'slash_commands_available',
+        sessionId: managed.id,
+        commands: allCommands,
+        translations: pluginTranslations,
+      }, managed.workspace.id)
 
       // Wire up onPlanSubmitted to add plan message to conversation
       managed.agent.onPlanSubmitted = async (planPath) => {
@@ -1700,7 +1861,9 @@ export class SessionManager {
             authDescription: request.description,
             authHint: request.hint,
             authHeaderName: request.headerName,
+            authHeaderNames: request.headerNames,
             authSourceUrl: request.sourceUrl,
+            authPasswordRequired: request.passwordRequired,
           }),
         }
 
@@ -1952,7 +2115,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2016,7 +2179,7 @@ export class SessionManager {
         return { success: false, error: 'Session file not found' }
       }
 
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(`${VIEWER_URL}/s/api/${managed.sharedId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2061,7 +2224,7 @@ export class SessionManager {
     this.sendEvent({ type: 'async_operation', sessionId, isOngoing: true }, managed.workspace.id)
 
     try {
-      const { VIEWER_URL } = await import('@creator-flow/shared/branding')
+      const { VIEWER_URL } = await import('@sprouty-ai/shared/branding')
       const response = await fetch(
         `${VIEWER_URL}/s/api/${managed.sharedId}`,
         { method: 'DELETE' }
@@ -2191,6 +2354,14 @@ export class SessionManager {
     } else {
       this.activeViewingSession.delete(workspaceId)
     }
+  }
+
+  /**
+   * Clear active viewing session for a workspace.
+   * Called when all windows leave a workspace to ensure read/unread state is correct.
+   */
+  clearActiveViewingSession(workspaceId: string): void {
+    this.activeViewingSession.delete(workspaceId)
   }
 
   /**
@@ -2535,8 +2706,18 @@ export class SessionManager {
       // AI generation will enhance it later, but we always have a title from the start
       const isFirstUserMessage = managed.messages.filter(m => m.role === 'user').length === 1
       if (isFirstUserMessage && !managed.name) {
-        // Sanitize message to remove XML blocks (e.g. <edit_request>) before using as title
-        const sanitized = sanitizeForTitle(message)
+        // Replace bracket mentions with their display labels (e.g. [skill:ws:commit] → "Commit")
+        // so titles show human-readable names instead of raw IDs
+        let titleSource = message
+        if (options?.badges) {
+          for (const badge of options.badges) {
+            if (badge.rawText && badge.label) {
+              titleSource = titleSource.replace(badge.rawText, badge.label)
+            }
+          }
+        }
+        // Sanitize: strip any remaining bracket mentions, XML blocks, tags
+        const sanitized = sanitizeForTitle(titleSource)
         const initialTitle = sanitized.slice(0, 50) + (sanitized.length > 50 ? '…' : '')
         managed.name = initialTitle
         this.persistSession(managed)
@@ -2549,7 +2730,7 @@ export class SessionManager {
         }, managed.workspace.id)
 
         // Generate AI title asynchronously (will update the initial title)
-        this.generateTitle(managed, message)
+        this.generateTitle(managed, sanitized)
       }
     }
 
@@ -2648,6 +2829,33 @@ export class SessionManager {
         sessionLog.info(`Applied ${mcpCount} MCP + ${apiCount} API sources to session ${sessionId} (${allSources.length} total)`)
       }
       sendSpan.mark('servers.applied')
+
+      // Refresh MCP OAuth tokens if needed (before chat uses them)
+      // This handles the case where tokens expired mid-session
+      // Ensure tokenRefreshManager exists (created at session initialization)
+      if (!managed.tokenRefreshManager) {
+        managed.tokenRefreshManager = new TokenRefreshManager(getSourceCredentialManager(), {
+          log: (msg) => sessionLog.debug(msg),
+        })
+      }
+      const refreshResult = await refreshMcpOAuthTokensIfNeeded(
+        agent,
+        sources,
+        sessionPath,
+        managed.tokenRefreshManager
+      )
+      if (refreshResult.tokensRefreshed) {
+        sendSpan.mark('oauth.tokens.refreshed')
+      }
+      // Emit warnings for any sources that failed to refresh
+      for (const failed of refreshResult.failedSources) {
+        this.sendEvent({
+          type: 'info',
+          sessionId,
+          message: `Token refresh failed for "${failed.slug}" - source may need re-authentication`,
+          level: 'warning'
+        }, managed.workspace.id)
+      }
     }
 
     try {
@@ -2672,7 +2880,7 @@ export class SessionManager {
 
       // Skills mentioned via @mentions are handled by the SDK's Skill tool.
       // The UI layer (extractBadges in mentions.ts) injects fully-qualified names
-      // in the rawText, and canUseTool in craft-agent.ts provides a fallback
+      // in the rawText, and canUseTool in sprouty-agent.ts provides a fallback
       // to qualify short names. No transformation needed here.
 
       sendSpan.mark('chat.starting')
@@ -3115,6 +3323,28 @@ To view this task's output:
   }
 
   /**
+   * Respond to a pending interactive UI request
+   * Returns true if the response was delivered, false if no pending request found
+   */
+  async respondToInteractive(sessionId: string, requestId: string, response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse): Promise<boolean> {
+    const managed = this.sessions.get(sessionId)
+    if (managed?.agent) {
+      sessionLog.info(`Interactive response for ${requestId}: type=${response.type}`)
+      // Send interactive_completed event to renderer
+      this.sendEvent({
+        type: 'interactive_completed',
+        sessionId,
+        requestId,
+        response,
+      }, managed.workspace.id)
+      return true
+    } else {
+      sessionLog.warn(`Cannot respond to interactive - no agent for session ${sessionId}`)
+      return false
+    }
+  }
+
+  /**
    * Set the permission mode for a session ('safe', 'ask', 'allow-all')
    */
   setSessionPermissionMode(sessionId: string, mode: PermissionMode): void {
@@ -3266,7 +3496,7 @@ To view this task's output:
         const existingStartMsg = managed.messages.find(m => m.toolUseId === event.toolUseId)
         const isDuplicateEvent = !!existingStartMsg
 
-        // Use parentToolUseId directly from the event — CreatorFlowAgent resolves this
+        // Use parentToolUseId directly from the event — SproutyAgent resolves this
         // from SDK's parent_tool_use_id (authoritative, handles parallel Tasks correctly).
         // No stack or map needed; the event carries the correct parent from the start.
         const parentToolUseId = event.parentToolUseId
@@ -3341,7 +3571,7 @@ To view this task's output:
       }
 
       case 'tool_result': {
-        // toolName comes directly from CraftAgent (resolved via ToolIndex)
+        // toolName comes directly from CreatorFlow (resolved via ToolIndex)
         const toolName = event.toolName || 'unknown'
 
         // Format absolute paths to relative paths for better readability
@@ -3354,7 +3584,7 @@ To view this task's output:
 
         sessionLog.info(`RESULT MATCH: toolUseId=${event.toolUseId}, found=${!!existingToolMsg}, toolName=${existingToolMsg?.toolName || toolName}, wasComplete=${wasAlreadyComplete}`)
 
-        // parentToolUseId comes from CraftAgent (SDK-authoritative) or existing message
+        // parentToolUseId comes from CreatorFlow (SDK-authoritative) or existing message
         const parentToolUseId = existingToolMsg?.parentToolUseId || event.parentToolUseId
 
         if (existingToolMsg) {
@@ -3679,7 +3909,7 @@ To view this task's output:
         break
 
       case 'complete':
-        // Complete event from CreatorFlowAgent - accumulate usage from this turn
+        // Complete event from SproutyAgent - accumulate usage from this turn
         // Actual 'complete' sent to renderer comes from the finally block in sendMessage
         if (event.usage) {
           // Initialize tokenUsage if not set

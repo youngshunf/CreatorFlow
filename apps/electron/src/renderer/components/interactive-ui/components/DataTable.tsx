@@ -7,7 +7,7 @@
 import * as React from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { DataTableProps, TableColumn, TableRow } from '@creator-flow/shared/interactive-ui'
+import type { DataTableProps, TableColumn, TableRow } from '@sprouty-ai/shared/interactive-ui'
 
 interface DataTableComponentProps {
   props: DataTableProps

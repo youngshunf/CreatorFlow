@@ -43,7 +43,7 @@ import type {
   MarketplaceAppVersion,
   InstallProgress,
   InstalledSkillInfo,
-} from '@creator-flow/shared/marketplace'
+} from '@sprouty-ai/shared/marketplace'
 
 export interface MarketplaceDetailDialogProps {
   open: boolean
@@ -146,6 +146,8 @@ export function MarketplaceDetailDialog({
           // Update installedInfo to reflect installed state
           setInstalledInfo({
             skillId: itemId!,
+            name: skill?.name || itemId!,
+            description: skill?.description || '',
             version: progress.skillId ? 'latest' : 'latest',
             path: '',
             hasUpdate: false,
@@ -203,7 +205,7 @@ export function MarketplaceDetailDialog({
   }
 
   const item = type === 'skill' ? skill : app
-  const versions = type === 'skill' ? skillVersions : appVersions
+  const versions: Array<{ version: string; changelog: string | null; is_latest: boolean; published_at: string }> = type === 'skill' ? skillVersions : appVersions
   const latestVersion = versions?.find(v => v.is_latest)
   // Use item.latest_version as fallback if no version found in versions array
   const displayVersion = latestVersion?.version || item?.latest_version
@@ -387,7 +389,7 @@ export function MarketplaceDetailDialog({
                     <div className="space-y-2">
                       {versions.slice(1, 5).map((version) => (
                         <div
-                          key={'version' in version ? version.version : version.version}
+                          key={version.version}
                           className="p-3 rounded-lg bg-foreground/[0.02] border border-foreground/5"
                         >
                           <div className="flex items-center justify-between">
@@ -495,12 +497,51 @@ export function MarketplaceDetailDialog({
               </div>
               <div className="flex items-center gap-3">
                 {isInstalling ? (
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-muted-foreground">
-                      {installProgress?.message || t('准备中...')}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">
+                        {installProgress?.stage === 'downloading' && t('正在下载...')}
+                        {installProgress?.stage === 'extracting' && t('正在解压...')}
+                        {installProgress?.stage === 'installing-skills' && t('正在安装技能...')}
+                        {installProgress?.stage === 'installing-app' && t('正在安装应用...')}
+                        {installProgress?.stage === 'finalizing' && t('正在完成...')}
+                        {!installProgress?.stage && t('准备中...')}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {Math.round(installProgress?.percent || 0)}%
+                      </div>
                     </div>
-                    <div className="w-32">
+
+                    {/* Skill installation details */}
+                    {installProgress?.stage === 'installing-skills' && (installProgress as any).currentSkill && (
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {t('技能')} {(installProgress as any).installedSkills + 1}/{(installProgress as any).totalSkills}
+                          </span>
+                          <span className="font-mono">{(installProgress as any).currentSkill}</span>
+                        </div>
+                        {(installProgress as any).skillProgress !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 bg-foreground/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-accent/50 transition-all duration-300"
+                                style={{ width: `${(installProgress as any).skillProgress}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] w-8 text-right">{Math.round((installProgress as any).skillProgress)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
                       <Progress value={installProgress?.percent || 0} className="h-2" />
+                      {installProgress?.message && (
+                        <div className="text-xs text-muted-foreground">
+                          {installProgress.message}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

@@ -22,6 +22,7 @@ export type DocFeature =
   | 'themes'
   | 'app-settings'
   | 'preferences'
+  | 'user-profile'
 
 export interface DocInfo {
   /** Path relative to DOC_BASE_URL */
@@ -97,13 +98,19 @@ export const DOCS: Record<DocFeature, DocInfo> = {
     path: '/reference/config/config-file',
     title: 'App Settings',
     summary:
-      'Configure global app settings like your default model, authentication method, and workspace list. Settings are stored in ~/.creator-flow/config.json.',
+      'Configure global app settings like your default model, authentication method, and workspace list. Settings are stored in ~/.sprouty-ai/config.json.',
   },
   preferences: {
     path: '/reference/config/preferences',
     title: 'Preferences',
     summary:
-      'Personal preferences like your name, timezone, and language that help the agent personalize responses. Stored in ~/.creator-flow/preferences.json.',
+      'Personal preferences like your name, timezone, and language that help the agent personalize responses. Stored in ~/.sprouty-ai/preferences.json.',
+  },
+  'user-profile': {
+    path: '/reference/user-profile',
+    title: 'User Profile',
+    summary:
+      'Manage your user profile information including display name, avatar, and account settings.',
   },
 }
 

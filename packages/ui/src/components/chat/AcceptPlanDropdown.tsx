@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as ReactDOM from 'react-dom'
 import { Check, ChevronDown } from 'lucide-react'
-import { t } from '@creator-flow/shared/locale'
+import { t } from '@sprouty-ai/shared/locale'
 import { cn } from '../../lib/utils'
 
 /**

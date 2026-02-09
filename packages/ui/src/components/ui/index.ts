@@ -1,5 +1,5 @@
 /**
- * UI primitives for @creator-flow/ui
+ * UI primitives for @sprouty-ai/ui
  */
 
 export { Spinner, type SpinnerProps, LoadingIndicator, type LoadingIndicatorProps } from './LoadingIndicator'

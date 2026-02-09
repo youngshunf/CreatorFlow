@@ -53,6 +53,7 @@ export interface CreateWindowOptions {
 export class WindowManager {
   private windows: Map<number, ManagedWindow> = new Map()  // webContents.id → ManagedWindow
   private focusedModeWindows: Set<number> = new Set()  // webContents.id of windows in focused mode
+  private pendingCloseTimeouts: Map<number, NodeJS.Timeout> = new Map()  // Fallback timeouts for window close
 
   /**
    * Create a new window for a workspace
@@ -81,8 +82,9 @@ export class WindowManager {
     }
 
     // Use smaller window size for focused mode (single session view)
-    const windowWidth = focused ? 900 : 1400
-    const windowHeight = focused ? 700 : 900
+    // Increased from 900x700 to 1200x800 to provide more space for content and floating UI elements
+    const windowWidth = focused ? 1200 : 1400
+    const windowHeight = focused ? 800 : 900
 
     // Platform-specific window options
     const isMac = process.platform === 'darwin'
@@ -243,7 +245,8 @@ export class WindowManager {
         import('./deep-link').then(({ parseDeepLink }) => {
           const target = parseDeepLink(initialDeepLink)
           if (target && (target.view || target.action)) {
-            // Wait a bit for React to mount and register IPC listeners
+            // Wait for React to mount and register IPC listeners
+            // Increased delay to 300ms to ensure reliable navigation on first load
             setTimeout(() => {
               if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
                 window.webContents.send(IPC_CHANNELS.DEEP_LINK_NAVIGATE, {
@@ -252,7 +255,7 @@ export class WindowManager {
                   actionParams: target.actionParams,
                 })
               }
-            }, 100)
+            }, 300)
           }
         })
       })
@@ -296,12 +299,30 @@ export class WindowManager {
         event.preventDefault()
         // Send close request to renderer - it will either close a modal or confirm close
         window.webContents.send(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED)
+
+        // Fallback timeout: if IPC fails (e.g., on Hyprland/Wayland), force close after 3s.
+        // Reset timeout on each attempt so active users closing modals aren't interrupted.
+        const wcId = window.webContents.id
+        const existingTimeout = this.pendingCloseTimeouts.get(wcId)
+        if (existingTimeout) clearTimeout(existingTimeout)
+
+        this.pendingCloseTimeouts.set(wcId, setTimeout(() => {
+          this.pendingCloseTimeouts.delete(wcId)
+          if (!window.isDestroyed()) window.destroy()
+        }, 3000))
       }
       // If renderer not ready, allow default close behavior
     })
 
     // Handle window closed - clean up theme listener and internal state
     window.on('closed', () => {
+      // Clean up any pending close timeout to prevent memory leaks
+      const timeout = this.pendingCloseTimeouts.get(webContentsId)
+      if (timeout) {
+        clearTimeout(timeout)
+        this.pendingCloseTimeouts.delete(webContentsId)
+      }
+
       nativeTheme.removeListener('updated', themeHandler)
       this.windows.delete(webContentsId)
       this.focusedModeWindows.delete(webContentsId)
@@ -366,6 +387,13 @@ export class WindowManager {
    * Used when renderer confirms the close action (no modals to close).
    */
   forceCloseWindow(webContentsId: number): void {
+    // Clear any pending close timeout since renderer confirmed
+    const timeout = this.pendingCloseTimeouts.get(webContentsId)
+    if (timeout) {
+      clearTimeout(timeout)
+      this.pendingCloseTimeouts.delete(webContentsId)
+    }
+
     const managed = this.windows.get(webContentsId)
     if (managed && !managed.window.isDestroyed()) {
       // Remove close listener temporarily to avoid infinite loop,
@@ -526,5 +554,19 @@ export class WindowManager {
         managed.window.setWindowButtonPosition({ x: 18, y: 18 })
       }
     }
+  }
+
+  /**
+   * 调整窗口宽度（正值=变宽，负值=变窄）。
+   * 保持左边缘不动，仅向右扩展/收缩。
+   * 尊重 minWidth(800) 和屏幕边界。
+   */
+  adjustWindowWidth(webContentsId: number, delta: number): void {
+    const managed = this.windows.get(webContentsId)
+    if (!managed || managed.window.isDestroyed()) return
+    const win = managed.window
+    const bounds = win.getBounds()
+    const newWidth = Math.max(800, bounds.width + delta)
+    win.setBounds({ ...bounds, width: newWidth })
   }
 }

@@ -18,6 +18,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.RESPOND_TO_PERMISSION, sessionId, requestId, allowed, alwaysAllow),
   respondToCredential: (sessionId: string, requestId: string, response: import('../shared/types').CredentialResponse) =>
     ipcRenderer.invoke(IPC_CHANNELS.RESPOND_TO_CREDENTIAL, sessionId, requestId, response),
+  respondToInteractive: (sessionId: string, requestId: string, response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse) =>
+    ipcRenderer.invoke(IPC_CHANNELS.RESPOND_TO_INTERACTIVE, sessionId, requestId, response),
 
   // Consolidated session command handler
   sessionCommand: (sessionId: string, command: import('../shared/types').SessionCommand) =>
@@ -31,6 +33,8 @@ const api: ElectronAPI = {
   getWorkspaces: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WORKSPACES),
   createWorkspace: (folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') =>
     ipcRenderer.invoke(IPC_CHANNELS.CREATE_WORKSPACE, folderPath, name, appId, appSource, installMode),
+  deleteWorkspace: (workspaceId: string, mode: 'delete' | 'backup') =>
+    ipcRenderer.invoke(IPC_CHANNELS.DELETE_WORKSPACE, workspaceId, mode),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
 
@@ -48,6 +52,7 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, handler)
   },
   setTrafficLightsVisible: (visible: boolean) => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_SET_TRAFFIC_LIGHTS, visible),
+  adjustWindowWidth: (delta: number) => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_ADJUST_WIDTH, delta),
 
   // Event listeners
   onSessionEvent: (callback: (event: SessionEvent) => void) => {
@@ -134,8 +139,18 @@ const api: ElectronAPI = {
     ipcRenderer.on(IPC_CHANNELS.MENU_KEYBOARD_SHORTCUTS, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.MENU_KEYBOARD_SHORTCUTS, handler)
   },
+  onMenuToggleFocusMode: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.MENU_TOGGLE_FOCUS_MODE, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MENU_TOGGLE_FOCUS_MODE, handler)
+  },
+  onMenuToggleSidebar: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.MENU_TOGGLE_SIDEBAR, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.MENU_TOGGLE_SIDEBAR, handler)
+  },
 
-  // Deep link navigation listener (for external craftagents:// URLs)
+  // Deep link navigation listener (for external sproutyai:// URLs)
   onDeepLinkNavigate: (callback: (nav: import('../shared/types').DeepLinkNavigation) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, nav: import('../shared/types').DeepLinkNavigation) => {
       callback(nav)
@@ -231,7 +246,7 @@ const api: ElectronAPI = {
 
   // Sources
   getSources: (workspaceId: string) => ipcRenderer.invoke(IPC_CHANNELS.SOURCES_GET, workspaceId),
-  createSource: (workspaceId: string, config: Partial<import('@creator-flow/shared/sources').FolderSourceConfig>) =>
+  createSource: (workspaceId: string, config: Partial<import('@sprouty-ai/shared/sources').FolderSourceConfig>) =>
     ipcRenderer.invoke(IPC_CHANNELS.SOURCES_CREATE, workspaceId, config),
   deleteSource: (workspaceId: string, sourceSlug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SOURCES_DELETE, workspaceId, sourceSlug),
@@ -273,8 +288,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_WRITE_IMAGE, workspaceId, relativePath, base64, mimeType),
 
   // Sources change listener (live updates when sources are added/removed)
-  onSourcesChanged: (callback: (sources: import('@creator-flow/shared/sources').LoadedSource[]) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, sources: import('@creator-flow/shared/sources').LoadedSource[]) => {
+  onSourcesChanged: (callback: (sources: import('@sprouty-ai/shared/sources').LoadedSource[]) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, sources: import('@sprouty-ai/shared/sources').LoadedSource[]) => {
       callback(sources)
     }
     ipcRenderer.on(IPC_CHANNELS.SOURCES_CHANGED, handler)
@@ -284,8 +299,8 @@ const api: ElectronAPI = {
   },
 
   // Skills
-  getSkills: (workspaceId: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GET, workspaceId),
+  getSkills: (workspaceId: string, workingDirectory?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GET, workspaceId, workingDirectory),
   getSkillFiles: (workspaceId: string, skillSlug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GET_FILES, workspaceId, skillSlug),
   deleteSkill: (workspaceId: string, skillSlug: string) =>
@@ -296,8 +311,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_OPEN_FINDER, workspaceId, skillSlug),
 
   // Skills change listener (live updates when skills are added/removed/modified)
-  onSkillsChanged: (callback: (skills: import('@creator-flow/shared/skills').LoadedSkill[]) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, skills: import('@creator-flow/shared/skills').LoadedSkill[]) => {
+  onSkillsChanged: (callback: (skills: import('@sprouty-ai/shared/skills').LoadedSkill[]) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, skills: import('@sprouty-ai/shared/skills').LoadedSkill[]) => {
       callback(skills)
     }
     ipcRenderer.on(IPC_CHANNELS.SKILLS_CHANGED, handler)
@@ -311,11 +326,11 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.APPS_LIST_BUNDLED),
 
   // Marketplace
-  marketplaceListSkills: (options?: import('@creator-flow/shared/marketplace').ListSkillsOptions) =>
+  marketplaceListSkills: (options?: import('@sprouty-ai/shared/marketplace').ListSkillsParams) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_SKILLS, options),
   marketplaceGetSkill: (skillId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_SKILL, skillId),
-  marketplaceListApps: (options?: import('@creator-flow/shared/marketplace').ListAppsOptions) =>
+  marketplaceListApps: (options?: import('@sprouty-ai/shared/marketplace').ListAppsParams) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_APPS, options),
   marketplaceGetApp: (appId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_APP, appId),
@@ -323,7 +338,7 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_APP_SKILLS, appId),
   marketplaceListCategories: () =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES),
-  marketplaceSearch: (query: string, options?: import('@creator-flow/shared/marketplace').SearchOptions) =>
+  marketplaceSearch: (query: string, options?: import('@sprouty-ai/shared/marketplace').SearchParams) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_SEARCH, query, options),
   marketplaceInstallSkill: (workspaceId: string, skillId: string, version?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_INSTALL_SKILL, workspaceId, skillId, version),
@@ -333,8 +348,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_CHECK_UPDATES, workspaceId),
   marketplaceGetInstalled: (workspaceId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MARKETPLACE_GET_INSTALLED, workspaceId),
-  onMarketplaceInstallProgress: (callback: (progress: import('@creator-flow/shared/marketplace').InstallProgress) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, progress: import('@creator-flow/shared/marketplace').InstallProgress) => {
+  onMarketplaceInstallProgress: (callback: (progress: import('@sprouty-ai/shared/marketplace').InstallProgress) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, progress: import('@sprouty-ai/shared/marketplace').InstallProgress) => {
       callback(progress)
     }
     ipcRenderer.on(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, handler)
@@ -382,21 +397,28 @@ const api: ElectronAPI = {
   // Tool icon mappings (for Appearance settings page)
   getToolIconMappings: () => ipcRenderer.invoke(IPC_CHANNELS.TOOL_ICONS_GET_MAPPINGS),
 
-  // Theme (app-level only)
+  // Theme (app-level default)
   getAppTheme: () => ipcRenderer.invoke(IPC_CHANNELS.THEME_GET_APP),
   // Preset themes (app-level)
   loadPresetThemes: () => ipcRenderer.invoke(IPC_CHANNELS.THEME_GET_PRESETS),
   loadPresetTheme: (themeId: string) => ipcRenderer.invoke(IPC_CHANNELS.THEME_LOAD_PRESET, themeId),
   getColorTheme: () => ipcRenderer.invoke(IPC_CHANNELS.THEME_GET_COLOR_THEME),
   setColorTheme: (themeId: string) => ipcRenderer.invoke(IPC_CHANNELS.THEME_SET_COLOR_THEME, themeId),
+  // Workspace-level theme overrides
+  getWorkspaceColorTheme: (workspaceId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.THEME_GET_WORKSPACE_COLOR_THEME, workspaceId),
+  setWorkspaceColorTheme: (workspaceId: string, themeId: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.THEME_SET_WORKSPACE_COLOR_THEME, workspaceId, themeId),
+  getAllWorkspaceThemes: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.THEME_GET_ALL_WORKSPACE_THEMES),
 
   // Logo URL resolution (uses Node.js filesystem cache for provider domains)
   getLogoUrl: (serviceUrl: string, provider?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.LOGO_GET_URL, serviceUrl, provider),
 
   // Theme change listeners (live updates when theme.json files change)
-  onAppThemeChange: (callback: (theme: import('@creator-flow/shared/config').ThemeOverrides | null) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, theme: import('@creator-flow/shared/config').ThemeOverrides | null) => {
+  onAppThemeChange: (callback: (theme: import('@sprouty-ai/shared/config').ThemeOverrides | null) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, theme: import('@sprouty-ai/shared/config').ThemeOverrides | null) => {
       callback(theme)
     }
     ipcRenderer.on(IPC_CHANNELS.THEME_APP_CHANGED, handler)
@@ -414,6 +436,19 @@ const api: ElectronAPI = {
     ipcRenderer.on(IPC_CHANNELS.THEME_PREFERENCES_CHANGED, handler)
     return () => {
       ipcRenderer.removeListener(IPC_CHANNELS.THEME_PREFERENCES_CHANGED, handler)
+    }
+  },
+
+  // Workspace theme sync across windows
+  broadcastWorkspaceThemeChange: (workspaceId: string, themeId: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.THEME_BROADCAST_WORKSPACE_THEME, workspaceId, themeId),
+  onWorkspaceThemeChange: (callback: (data: { workspaceId: string; themeId: string | null }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { workspaceId: string; themeId: string | null }) => {
+      callback(data)
+    }
+    ipcRenderer.on(IPC_CHANNELS.THEME_WORKSPACE_THEME_CHANGED, handler)
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.THEME_WORKSPACE_THEME_CHANGED, handler)
     }
   },
 
@@ -492,6 +527,7 @@ const api: ElectronAPI = {
     copy: (srcPaths: string[], destDir: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_COPY, srcPaths, destDir),
     getFileInfo: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_GET_FILE_INFO, path),
     readFileBase64: (path: string, maxSize?: number) => ipcRenderer.invoke(IPC_CHANNELS.FM_READ_FILE_BASE64, path, maxSize),
+    writeFile: (path: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.FM_WRITE_FILE, path, content),
     watchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_WATCH_DIRECTORY, path),
     unwatchDirectory: (path: string) => ipcRenderer.send(IPC_CHANNELS.FM_UNWATCH_DIRECTORY, path),
     onDirectoryChanged: (callback: (event: FMDirectoryChangeEvent) => void) => {

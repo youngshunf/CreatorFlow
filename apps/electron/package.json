@@ -1,6 +1,6 @@
 {
-  "name": "@creator-flow/electron",
-  "version": "0.3.1",
+  "name": "@sprouty-ai/electron",
+  "version": "0.3.5",
   "description": "Electron desktop app for CreatorFlow",
   "main": "dist/main.cjs",
   "private": true,
@@ -42,10 +42,10 @@
     "lint:fix": "eslint src/ --fix"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.2.26",
-    "@creator-flow/core": "workspace:*",
-    "@creator-flow/shared": "workspace:*",
-    "@creator-flow/ui": "workspace:*",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.34",
+    "@sprouty-ai/core": "workspace:*",
+    "@sprouty-ai/shared": "workspace:*",
+    "@sprouty-ai/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -60,10 +60,12 @@
     "@tanstack/react-table": "^8.21.3",
     "cmdk": "^1.1.1",
     "electron-log": "^5.4.3",
-    "electron-updater": "^6.7.3",
+    "electron-updater": "^6.8.0",
     "jotai-family": "^1.0.1",
+    "json-schema-to-ts": "3.1.1",
     "motion": "^12.23.26",
     "next-themes": "^0.4.6",
+    "pdfjs-dist": "5.4.296",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-image-crop": "^11.0.8",
@@ -73,6 +75,7 @@
     "sonner": "^2.0.7",
     "strip-markdown": "^6.0.0",
     "unist-util-visit": "^5.0.0",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "zod": "4.3.6"
   }
 }

@@ -27,7 +27,7 @@ export async function getLatestVersion(): Promise<string | null> {
             return null;
         }
         
-        const result = await response.json();
+        const result = await response.json() as { code: number; data?: string };
         if (result.code === 200 && result.data) {
             debug(`[manifest] Latest version: ${result.data}`);
             return result.data;
@@ -57,7 +57,7 @@ export async function getManifest(version: string): Promise<VersionManifest | nu
             return null;
         }
         
-        const result = await response.json();
+        const result = await response.json() as { code: number; data?: VersionManifest };
         if (result.code === 200 && result.data) {
             debug(`[manifest] Manifest fetched successfully for version ${version}`);
             return result.data as VersionManifest;

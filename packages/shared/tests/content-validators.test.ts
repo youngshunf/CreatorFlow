@@ -352,7 +352,7 @@ describe('validatePermissionsContent', () => {
 // ============================================================
 
 describe('detectConfigFileType', () => {
-  const workspaceRoot = '/Users/test/.creator-flow/workspaces/ws-123';
+  const workspaceRoot = '/Users/test/.sprouty-ai/workspaces/ws-123';
 
   it('detects source config files', () => {
     const result = detectConfigFileType(

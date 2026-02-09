@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Search, X } from 'lucide-react'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 
 /**
  * SessionSearchHeader - Presentational component for session list search UI.
@@ -82,8 +82,8 @@ export function SessionSearchHeader({
         )}
       </div>
 
-      {/* Search status row - shown when there's a query (1+ characters) */}
-      {searchQuery.length > 0 && (
+      {/* Search status row - shown when search mode is active (2+ characters) */}
+      {searchQuery.length >= 2 && (
         <div className="px-2 pt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
           {isSearching ? (
             <>

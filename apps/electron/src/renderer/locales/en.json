@@ -1,5 +1,9 @@
 [
   [
+    "，但本次操作需要",
+    ", but this operation requires "
+  ],
+  [
     ".NET 版本",
     ".NET version"
   ],
@@ -96,6 +100,10 @@
     "Report filesystem disk space usage"
   ],
   [
+    "备份后删除",
+    "Backup and Delete"
+  ],
+  [
     "备注",
     "Notes"
   ],
@@ -138,6 +146,10 @@
   [
     "编辑前提示",
     "Edit Prompt"
+  ],
+  [
+    "编辑前提示。",
+    "Prompts before making edits."
   ],
   [
     "编辑视图",
@@ -244,6 +256,10 @@
     "Rate Limit Exceeded"
   ],
   [
+    "彻底删除",
+    "Delete Permanently"
+  ],
+  [
     "撤销",
     "Undo"
   ],
@@ -282,6 +298,10 @@
   [
     "创建中...",
     "Creating..."
+  ],
+  [
+    "此操作将删除所有会话、配置和数据。不会影响您的项目文件。",
+    "This will delete all sessions, settings, and data. Your project files will not be affected."
   ],
   [
     "此操作无法撤销。",
@@ -540,8 +560,8 @@
     "Back"
   ],
   [
-    "返回市场",
-    "Back to Market"
+    "返回广场",
+    "Back to Plaza"
   ],
   [
     "防火墙或 VPN 可能正在阻止连接",
@@ -562,6 +582,10 @@
   [
     "飞速运转...",
     "Whizzing..."
+  ],
+  [
+    "分",
+    "m"
   ],
   [
     "分享",
@@ -772,6 +796,10 @@
     "Workspace info"
   ],
   [
+    "工作区已删除",
+    "Workspace deleted"
+  ],
+  [
     "工作区已有应用",
     "Application Already Exists in Workspace"
   ],
@@ -790,6 +818,10 @@
   [
     "构思中...",
     "Musing..."
+  ],
+  [
+    "购买积分包",
+    "Purchase Credits"
   ],
   [
     "估算文件/目录磁盘使用量",
@@ -838,6 +870,18 @@
   [
     "管理您的账号安全设置",
     "Manage your account security settings"
+  ],
+  [
+    "广场",
+    "Plaza"
+  ],
+  [
+    "广场应用",
+    "Plaza Apps"
+  ],
+  [
+    "广场暂无内容",
+    "No Content Available in Plaza"
   ],
   [
     "滚动中...",
@@ -904,6 +948,14 @@
     "Get Verification Code"
   ],
   [
+    "积分。请升级订阅或购买积分包以继续使用。",
+    " credits. Please upgrade your subscription or purchase credits to continue."
+  ],
+  [
+    "积分不足",
+    "Insufficient Credits"
+  ],
+  [
     "积分余额",
     "Points Balance"
   ],
@@ -948,12 +1000,12 @@
     "Revving..."
   ],
   [
-    "加载失败",
-    "Load Failed"
+    "加载广场应用...",
+    "Loading plaza apps..."
   ],
   [
-    "加载市场应用...",
-    "Loading marketplace apps..."
+    "加载失败",
+    "Load Failed"
   ],
   [
     "加载用户信息失败",
@@ -998,6 +1050,10 @@
   [
     "键盘快捷键参考",
     "Keyboard shortcuts reference"
+  ],
+  [
+    "将 .sprouty-ai 重命名为 .sprouty-ai-backup",
+    "Rename .sprouty-ai to .sprouty-ai-backup"
   ],
   [
     "交互式进程查看器",
@@ -1352,6 +1408,14 @@
     "Describe what you'd like to change..."
   ],
   [
+    "描述一下，剩下的交给我",
+    "Just describe it — I'll handle the rest"
+  ],
+  [
+    "秒",
+    "s"
+  ],
+  [
     "名称",
     "Name"
   ],
@@ -1448,12 +1512,20 @@
     "What would you like to connect?"
   ],
   [
+    "你想修改什么？",
+    "What would you like to change?"
+  ],
+  [
     "你想做什么？",
     "What would you like to do?"
   ],
   [
     "昵称",
     "Nickname"
+  ],
+  [
+    "年",
+    "y"
   ],
   [
     "您的 Anthropic API 密钥被拒绝，可能无效或已过期。",
@@ -1470,6 +1542,10 @@
   [
     "您的城市，用于本地信息和上下文",
     "Your city, for local information and context"
+  ],
+  [
+    "您的当前积分为",
+    "Your current credit balance is "
   ],
   [
     "您的登录用户名（不可更改）",
@@ -1494,6 +1570,10 @@
   [
     "您的国家，用于地区格式和上下文",
     "Your country, for regional format and context"
+  ],
+  [
+    "您的积分余额不足，无法完成本次操作。请升级订阅或购买积分包以继续使用。",
+    "Your credit balance is insufficient to complete this operation. Please upgrade your subscription or purchase credits to continue."
   ],
   [
     "您的基本个人信息",
@@ -1776,8 +1856,24 @@
     "Determine file type"
   ],
   [
+    "确定要删除",
+    "Are you sure you want to delete"
+  ],
+  [
+    "确定要删除工作区",
+    "Are you sure you want to delete workspace"
+  ],
+  [
     "确认",
     "Confirm"
+  ],
+  [
+    "确认删除工作区",
+    "Delete Workspace"
+  ],
+  [
+    "确认删除会话",
+    "Delete Conversation"
   ],
   [
     "确认新密码",
@@ -1830,6 +1926,14 @@
   [
     "删除标签",
     "Delete tag"
+  ],
+  [
+    "删除此工作区的所有数据",
+    "Delete all data for this workspace"
+  ],
+  [
+    "删除工作区",
+    "Delete Workspace"
   ],
   [
     "删除会话",
@@ -1908,8 +2012,16 @@
     "Dark"
   ],
   [
+    "升级订阅",
+    "Upgrade Subscription"
+  ],
+  [
     "生日",
     "Birthday"
+  ],
+  [
+    "时",
+    "h"
   ],
   [
     "时区",
@@ -1966,18 +2078,6 @@
   [
     "始终允许",
     "Always Allow"
-  ],
-  [
-    "市场",
-    "Marketplace"
-  ],
-  [
-    "市场应用",
-    "Marketplace Apps"
-  ],
-  [
-    "市场暂无内容",
-    "No Content Available in Marketplace"
   ],
   [
     "视图",
@@ -2208,6 +2308,14 @@
     "Socket statistics"
   ],
   [
+    "提及文件、技能和数据源",
+    "Mention files, skills and sources"
+  ],
+  [
+    "天",
+    "d"
+  ],
+  [
     "添加“过期”视图（7 天未活跃）",
     "Add a 'Stale' view for sessions inactive > 7 days"
   ],
@@ -2374,6 +2482,10 @@
   [
     "网络诊断工具",
     "Network diagnostic tool"
+  ],
+  [
+    "危险操作",
+    "Danger Zone"
   ],
   [
     "为智能体提供应有的用户体验。连接任何服务。组织您的会话。一切所需,尽在此处!",
@@ -2566,6 +2678,10 @@
   [
     "无法预览此音频",
     "Unable to preview this audio"
+  ],
+  [
+    "无结果",
+    "No results"
   ],
   [
     "无搜索结果",
@@ -2836,6 +2952,10 @@
     "Ask"
   ],
   [
+    "询问编辑",
+    "Ask to Edit"
+  ],
+  [
     "询问模式",
     "Ask Mode"
   ],
@@ -2988,6 +3108,10 @@
     "Delete Permanently"
   ],
   [
+    "永久删除所有工作区数据",
+    "Permanently delete all workspace data"
+  ],
+  [
     "用户名",
     "Username"
   ],
@@ -3032,6 +3156,10 @@
     "Raw error"
   ],
   [
+    "月",
+    "mo"
+  ],
+  [
     "允许",
     "Allow"
   ],
@@ -3052,8 +3180,8 @@
     "Brewing..."
   ],
   [
-    "在 .creator-flow 文件夹下",
-    "Under .creator-flow folder"
+    "在 .sprouty-ai 文件夹下",
+    "Under .sprouty-ai folder"
   ],
   [
     "在此处粘贴您的授权码",
@@ -3232,6 +3360,10 @@
     "Read-only, changes not allowed"
   ],
   [
+    "只读探索，阻止写入，不提示。",
+    "Read-only exploration. Blocks writes, never prompts."
+  ],
+  [
     "指令",
     "Instructions"
   ],
@@ -3332,6 +3464,10 @@
     "Redo"
   ],
   [
+    "周",
+    "w"
+  ],
+  [
     "主题模式",
     "Theme Mode"
   ],
@@ -3406,6 +3542,10 @@
   [
     "自动应用规则在消息匹配正则模式时自动分配标签。",
     "Auto-apply rules automatically assign tags when messages match regex patterns."
+  ],
+  [
+    "自动执行，不提示。",
+    "Automatic execution, no prompts."
   ],
   [
     "自由格式的上下文，帮助智小芽了解您的偏好",
@@ -3594,6 +3734,10 @@
   [
     "Kubernetes 读取操作：获取资源、描述、查看日志",
     "Kubernetes read operations: get resources, describe, view logs"
+  ],
+  [
+    "M月d日",
+    "MMM d"
   ],
   [
     "MCP 服务",

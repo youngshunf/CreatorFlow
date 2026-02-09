@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Loader2,
 } from 'lucide-react'
-import { Icon_Home, Icon_Folder } from '@creator-flow/ui'
+import { Icon_Home, Icon_Folder } from '@sprouty-ai/ui'
 
 import * as storage from '@/lib/local-storage'
 
@@ -19,22 +19,20 @@ import { Button } from '@/components/ui/button'
 import {
   InlineSlashCommand,
   useInlineSlashCommand,
-  type SlashCommandId,
 } from '@/components/ui/slash-command-menu'
 import {
   InlineMentionMenu,
   useInlineMention,
   type MentionItem,
-  type MentionItemType,
 } from '@/components/ui/mention-menu'
 import {
   InlineLabelMenu,
   useInlineLabelMenu,
 } from '@/components/ui/label-menu'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { parseMentions } from '@/lib/mentions'
 import { RichTextInput, type RichTextInputHandle } from '@/components/ui/rich-text-input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@creator-flow/ui'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@sprouty-ai/ui'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -50,7 +48,7 @@ import {
 } from '@/components/ui/styled-dropdown'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { PATH_SEP, getPathBasename } from '@/lib/platform'
+import { isMac, PATH_SEP, getPathBasename } from '@/lib/platform'
 import { applySmartTypography } from '@/lib/smart-typography'
 import { AttachmentPreview } from '../AttachmentPreview'
 import { MODELS as FALLBACK_MODELS, getModelShortName, getModelContextWindow, isClaudeModel } from '@config/models'
@@ -60,9 +58,9 @@ import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { FreeFormInputContextBadge } from './FreeFormInputContextBadge'
 import type { FileAttachment, LoadedSource, LoadedSkill } from '../../../../shared/types'
-import type { PermissionMode } from '@creator-flow/shared/agent/modes'
-import { PERMISSION_MODE_ORDER } from '@creator-flow/shared/agent/modes'
-import { type ThinkingLevel, THINKING_LEVELS, getThinkingLevelName } from '@creator-flow/shared/agent/thinking-levels'
+import type { PermissionMode } from '@sprouty-ai/shared/agent/modes'
+import { PERMISSION_MODE_ORDER } from '@sprouty-ai/shared/agent/modes'
+import { type ThinkingLevel, THINKING_LEVELS, getThinkingLevelName } from '@sprouty-ai/shared/agent/thinking-levels'
 import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
 import { hasOpenOverlay } from '@/lib/overlay-detection'
 import { EscapeInterruptOverlay } from './EscapeInterruptOverlay'
@@ -81,6 +79,9 @@ function formatTokenCount(tokens: number): string {
   return tokens.toString()
 }
 
+/** Platform-specific modifier key for keyboard shortcuts */
+const cmdKey = isMac ? '⌘' : 'Ctrl'
+
 /** Default rotating placeholders for onboarding/empty state */
 const DEFAULT_PLACEHOLDERS_ZH = [
   '你想做什么？',
@@ -96,6 +97,8 @@ const DEFAULT_PLACEHOLDERS_EN = [
   'Type @ to mention files, folders, or skills',
   'Type # to apply labels to this conversation',
   'Press Shift + Return to add a new line',
+  `Press ${cmdKey} + B to toggle the sidebar`,
+  `Press ${cmdKey} + . for focus mode`,
 ]
 
 /** Fisher-Yates shuffle — returns a new array in random order */
@@ -267,6 +270,14 @@ export function FreeFormInput({
     if (!appShellCtx || !workspaceId) return null
     return appShellCtx.workspaces.find(w => w.id === workspaceId)?.rootPath ?? null
   }, [appShellCtx, workspaceId])
+
+  // Compute workspace slug from rootPath for SDK skill qualification
+  // SDK expects "workspaceSlug:skillSlug" format, NOT UUID
+  const workspaceSlug = React.useMemo(() => {
+    if (!workspaceRootPath) return workspaceId // Fallback to ID if no path
+    const pathParts = workspaceRootPath.split('/').filter(Boolean)
+    return pathParts[pathParts.length - 1] || workspaceId
+  }, [workspaceRootPath, workspaceId])
 
   // Shuffle placeholder order once per mount so each session feels fresh
   const effectivePlaceholder = placeholder ?? defaultPlaceholders
@@ -646,53 +657,9 @@ export function FreeFormInput({
     return () => window.removeEventListener('craft:paste-files', handlePasteFiles as unknown as EventListener)
   }, [disabled, richInputRef])
 
-  // Build active commands list for slash command menu
-  const activeCommands = React.useMemo(() => {
-    const active: SlashCommandId[] = []
-    // Add the currently active permission mode
-    if (permissionMode === 'safe') active.push('safe')
-    else if (permissionMode === 'ask') active.push('ask')
-    else if (permissionMode === 'allow-all') active.push('allow-all')
-    if (ultrathinkEnabled) active.push('ultrathink')
-    return active
-  }, [permissionMode, ultrathinkEnabled])
-
-  // Handle slash command selection (mode/feature commands)
-  const handleSlashCommand = React.useCallback((commandId: SlashCommandId) => {
-    if (commandId === 'safe') onPermissionModeChange?.('safe')
-    else if (commandId === 'ask') onPermissionModeChange?.('ask')
-    else if (commandId === 'allow-all') onPermissionModeChange?.('allow-all')
-    else if (commandId === 'ultrathink') onUltrathinkChange?.(!ultrathinkEnabled)
-  }, [permissionMode, ultrathinkEnabled, onPermissionModeChange, onUltrathinkChange])
-
-  // Handle folder selection from slash command menu
-  const handleSlashFolderSelect = React.useCallback((path: string) => {
-    if (onWorkingDirectoryChange) {
-      addRecentDir(path)
-      setRecentFolders(getRecentDirs())
-      onWorkingDirectoryChange(path)
-    }
-  }, [onWorkingDirectoryChange])
-
-  // Get recent folders and home directory for slash menu and mention menu
-  const [recentFolders, setRecentFolders] = React.useState<string[]>([])
-  const [homeDir, setHomeDir] = React.useState<string>('')
-
-  React.useEffect(() => {
-    setRecentFolders(getRecentDirs())
-    window.electronAPI?.getHomeDir?.().then((dir: string) => {
-      if (dir) setHomeDir(dir)
-    })
-  }, [])
-
-  // Inline slash command hook (modes, features, and folders)
+  // Inline slash command hook (SDK + plugin commands)
   const inlineSlash = useInlineSlashCommand({
     inputRef: richInputRef,
-    onSelectCommand: handleSlashCommand,
-    onSelectFolder: handleSlashFolderSelect,
-    activeCommands,
-    recentFolders,
-    homeDir,
   })
 
   // Handle mention selection (sources, skills, files)
@@ -718,7 +685,8 @@ export function FreeFormInput({
     sources,
     basePath: workingDirectory,
     onSelect: handleMentionSelect,
-    workspaceId,
+    // Use workspace slug (not UUID) for SDK skill qualification
+    workspaceId: workspaceSlug,
   })
 
   // Inline label menu hook (for #labels)
@@ -1015,7 +983,7 @@ export function FreeFormInput({
     })
 
     return true
-  }, [input, attachments, disabled, disableSend, onInputChange, onSubmit, skills, sources, optimisticSourceSlugs, onSourcesChange, onWorkingDirectoryChange, homeDir])
+  }, [input, attachments, disabled, disableSend, onInputChange, onSubmit, skills, sources, optimisticSourceSlugs, onSourcesChange, onWorkingDirectoryChange])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1179,24 +1147,28 @@ export function FreeFormInput({
   }, [inlineSlash, inlineMention, inlineLabel, syncToParent, autoCapitalisation])
 
   // Handle inline slash command selection (removes the /command text)
-  const handleInlineSlashCommandSelect = React.useCallback((commandId: SlashCommandId) => {
-    const newValue = inlineSlash.handleSelectCommand(commandId)
-    setInput(newValue)
-    syncToParent(newValue)
-    richInputRef.current?.focus()
-  }, [inlineSlash, syncToParent])
-
-  // Handle inline slash folder selection (inserts [dir:/path] badge)
-  const handleInlineSlashFolderSelect = React.useCallback((path: string) => {
-    const newValue = inlineSlash.handleSelectFolder(path)
-    setInput(newValue)
-    syncToParent(newValue)
-    richInputRef.current?.focus()
-  }, [inlineSlash, syncToParent])
+  const handleInlineSlashCommandSelect = React.useCallback((commandName: string, hasArgs: boolean) => {
+    const { value: newValue, cursorPosition } = inlineSlash.handleSelectCommand(commandName, hasArgs)
+    if (!hasArgs) {
+      // No-args command: directly submit
+      onSubmit(`/${commandName}`, undefined)
+      setInput('')
+      syncToParent('')
+    } else {
+      // Has args: insert /{name} and let user type arguments
+      setInput(newValue)
+      syncToParent(newValue)
+      setTimeout(() => {
+        richInputRef.current?.focus()
+        richInputRef.current?.setSelectionRange(cursorPosition, cursorPosition)
+      }, 0)
+    }
+  }, [inlineSlash, syncToParent, onSubmit])
 
   // Handle inline mention selection (inserts appropriate mention text)
   const handleInlineMentionSelect = React.useCallback((item: MentionItem) => {
     const { value: newValue, cursorPosition } = inlineMention.handleSelect(item)
+
     setInput(newValue)
     syncToParent(newValue)
     // Focus input and restore cursor position after badge renders
@@ -1248,9 +1220,7 @@ export function FreeFormInput({
           open={inlineSlash.isOpen}
           onOpenChange={(open) => !open && inlineSlash.close()}
           sections={inlineSlash.sections}
-          activeCommands={activeCommands}
           onSelectCommand={handleInlineSlashCommandSelect}
-          onSelectFolder={handleInlineSlashFolderSelect}
           filter={inlineSlash.filter}
           position={inlineSlash.position}
         />
@@ -1297,7 +1267,7 @@ export function FreeFormInput({
             systemPromptPreset={addLabelEditConfig.systemPromptPreset}
             secondaryAction={workspaceRootPath ? {
               label: 'Edit File',
-              filePath: `${workspaceRootPath}/labels/config.json`,
+              onClick: () => window.electronAPI.openFile(`${workspaceRootPath}/labels/config.json`),
             } : undefined}
             side="top"
             align="start"

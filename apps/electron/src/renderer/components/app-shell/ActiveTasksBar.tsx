@@ -7,7 +7,7 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import { TaskActionMenu, type TerminalOverlayData } from './TaskActionMenu'
 
 export interface BackgroundTask {

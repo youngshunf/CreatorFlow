@@ -7,7 +7,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { ButtonGroupProps, ButtonProps } from '@creator-flow/shared/interactive-ui'
+import type { ButtonGroupProps, ButtonProps } from '@sprouty-ai/shared/interactive-ui'
 
 interface ButtonGroupComponentProps {
   props: ButtonGroupProps
@@ -22,6 +22,7 @@ export function ButtonGroup({ props, onAction }: ButtonGroupComponentProps) {
     center: 'justify-center',
     end: 'justify-end',
     between: 'justify-between',
+    stretch: 'justify-stretch',
   }
 
   return (

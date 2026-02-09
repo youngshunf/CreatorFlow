@@ -1,5 +1,5 @@
 /**
- * Generates index.html showcasing all @creator-flow/mermaid rendering capabilities.
+ * Generates index.html showcasing all @sprouty-ai/mermaid rendering capabilities.
  *
  * Usage: bun run packages/mermaid/index.ts
  *

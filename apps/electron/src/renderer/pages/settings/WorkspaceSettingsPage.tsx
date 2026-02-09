@@ -20,11 +20,11 @@ import { useAppShellContext } from '@/context/AppShellContext'
 import { useT } from '@/context/LocaleContext'
 import { cn } from '@/lib/utils'
 import { routes } from '@/lib/navigate'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import { RenameDialog } from '@/components/ui/rename-dialog'
+import { DeleteWorkspaceDialog } from '@/components/DeleteWorkspaceDialog'
 import type { PermissionMode, ThinkingLevel, WorkspaceSettings } from '../../../shared/types'
-import { PERMISSION_MODE_CONFIG } from '@creator-flow/shared/agent/mode-types'
-import { DEFAULT_THINKING_LEVEL, THINKING_LEVELS } from '@creator-flow/shared/agent/thinking-levels'
+import { DEFAULT_THINKING_LEVEL, THINKING_LEVELS } from '@sprouty-ai/shared/agent/thinking-levels'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 
 import {
@@ -34,6 +34,8 @@ import {
   SettingsToggle,
   SettingsMenuSelectRow,
 } from '@/components/settings'
+import { useCloudModels } from '@/hooks/useCloudModels'
+import { MODELS as FALLBACK_MODELS, type ModelDefinition } from '@config/models'
 
 export const meta: DetailsPageMeta = {
   navigator: 'settings',
@@ -51,7 +53,25 @@ export default function WorkspaceSettingsPage() {
   const onModelChange = appShellContext.onModelChange
   const activeWorkspaceId = appShellContext.activeWorkspaceId
   const onRefreshWorkspaces = appShellContext.onRefreshWorkspaces
+  const onSelectWorkspace = appShellContext.onSelectWorkspace
   const customModel = appShellContext.customModel
+
+  // Cloud models: dynamic list from backend, with local fallback
+  const { models: cloudModels, loading: modelsLoading } = useCloudModels()
+  const modelOptions = React.useMemo(() => {
+    if (cloudModels.length > 0) {
+      return cloudModels.map((m: ModelDefinition) => ({
+        value: m.id,
+        label: m.name,
+        description: m.description || '',
+      }))
+    }
+    return FALLBACK_MODELS.map(m => ({
+      value: m.id,
+      label: m.name,
+      description: m.description,
+    }))
+  }, [cloudModels])
 
   // Workspace settings state
   const [wsName, setWsName] = useState('')
@@ -69,6 +89,9 @@ export default function WorkspaceSettingsPage() {
   // Mode cycling state
   const [enabledModes, setEnabledModes] = useState<PermissionMode[]>(['safe', 'ask', 'allow-all'])
   const [modeCyclingError, setModeCyclingError] = useState<string | null>(null)
+
+  // Delete workspace state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Load workspace settings when active workspace changes
   useEffect(() => {
@@ -289,6 +312,25 @@ export default function WorkspaceSettingsPage() {
     [enabledModes, updateWorkspaceSetting]
   )
 
+  // Delete workspace handler
+  const handleDeleteWorkspace = useCallback(async (mode: 'delete' | 'backup') => {
+    if (!window.electronAPI || !activeWorkspaceId) return
+    setDeleteDialogOpen(false)
+
+    try {
+      const result = await window.electronAPI.deleteWorkspace(activeWorkspaceId, mode)
+      if (result.success) {
+        onRefreshWorkspaces?.()
+        // 自动切换到下一个可用工作区
+        if (result.newActiveWorkspaceId) {
+          onSelectWorkspace?.(result.newActiveWorkspaceId)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete workspace:', error)
+    }
+  }, [activeWorkspaceId, onRefreshWorkspaces, onSelectWorkspace])
+
   // Show empty state if no workspace is active
   if (!activeWorkspaceId) {
     return (
@@ -411,11 +453,7 @@ export default function WorkspaceSettingsPage() {
                     description={t('新聊天的 AI 模型')}
                     value={wsModel}
                     onValueChange={handleModelChange}
-                    options={[
-                      { value: 'claude-opus-4-5-20251101', label: 'Opus 4.5', description: t('最适合复杂工作') },
-                      { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5', description: t('最适合日常任务') },
-                      { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', description: t('最快的快速回答') },
-                    ]}
+                    options={modelOptions}
                   />
                 )}
                 <SettingsMenuSelectRow
@@ -441,9 +479,9 @@ export default function WorkspaceSettingsPage() {
                   value={permissionMode}
                   onValueChange={(v) => handlePermissionModeChange(v as PermissionMode)}
                   options={[
-                    { value: 'safe', label: PERMISSION_MODE_CONFIG['safe'].shortName, description: t('只读，不允许更改') },
-                    { value: 'ask', label: PERMISSION_MODE_CONFIG['ask'].shortName, description: t('编辑前提示') },
-                    { value: 'allow-all', label: PERMISSION_MODE_CONFIG['allow-all'].shortName, description: t('完全自主执行') },
+                    { value: 'safe', label: t('探索'), description: t('只读，不允许更改') },
+                    { value: 'ask', label: t('询问编辑'), description: t('编辑前提示') },
+                    { value: 'allow-all', label: t('执行'), description: t('完全自主执行') },
                   ]}
                 />
               </SettingsCard>
@@ -456,13 +494,22 @@ export default function WorkspaceSettingsPage() {
             >
               <SettingsCard>
                 {(['safe', 'ask', 'allow-all'] as const).map((m) => {
-                  const config = PERMISSION_MODE_CONFIG[m]
+                  const modeLabel: Record<PermissionMode, string> = {
+                    'safe': t('探索'),
+                    'ask': t('询问编辑'),
+                    'allow-all': t('执行'),
+                  }
+                  const modeDesc: Record<PermissionMode, string> = {
+                    'safe': t('只读探索，阻止写入，不提示。'),
+                    'ask': t('编辑前提示。'),
+                    'allow-all': t('自动执行，不提示。'),
+                  }
                   const isEnabled = enabledModes.includes(m)
                   return (
                     <SettingsToggle
                       key={m}
-                      label={config.displayName}
-                      description={config.description}
+                      label={modeLabel[m]}
+                      description={modeDesc[m]}
                       checked={isEnabled}
                       onCheckedChange={(checked) => handleModeToggle(m, checked)}
                     />
@@ -519,6 +566,32 @@ export default function WorkspaceSettingsPage() {
                 />
               </SettingsCard>
             </SettingsSection>
+
+            {/* Danger Zone */}
+            <SettingsSection title={t('危险操作')}>
+              <SettingsCard>
+                <SettingsRow
+                  label={t('删除工作区')}
+                  description={t('删除此工作区的所有数据')}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                    >
+                      {t('删除工作区')}
+                    </button>
+                  }
+                />
+              </SettingsCard>
+            </SettingsSection>
+
+            <DeleteWorkspaceDialog
+              open={deleteDialogOpen}
+              workspaceName={wsName}
+              onConfirm={handleDeleteWorkspace}
+              onCancel={() => setDeleteDialogOpen(false)}
+            />
 
           </div>
         </div>

@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
-import type { ToolDisplayMeta } from '@creator-flow/core'
-import { t } from '@creator-flow/shared/locale'
-import { normalizePath, pathStartsWith, stripPathPrefix } from '@creator-flow/core/utils'
+import type { ToolDisplayMeta } from '@sprouty-ai/core'
+import { t } from '@sprouty-ai/shared/locale'
+import { normalizePath, pathStartsWith, stripPathPrefix } from '@sprouty-ai/core/utils'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ChevronRight,
@@ -820,7 +820,7 @@ function ActivityRow({ activity, onOpenDetails, isLastChild, sessionFolderPath, 
   }
 
   // For non-MCP tools or informative mode, use the appropriate display name
-  const displayedName = isMcpOrApiTool ? sourceName : fullDisplayName
+  const displayedName: string = isMcpOrApiTool ? sourceName : fullDisplayName
 
   // Intent for MCP tools, description for Bash commands
   const intentOrDescription = activity.intent || (activity.toolInput?.description as string | undefined)
@@ -913,18 +913,18 @@ function ActivityRow({ activity, onOpenDetails, isLastChild, sessionFolderPath, 
               >{diffStats.additions}</span>
             )}
             {/* Filename badge */}
-            {activity.toolInput?.file_path && (
+            {typeof activity.toolInput?.file_path === 'string' && (
               <span className="px-1.5 py-0.5 bg-background shadow-minimal rounded-[4px] text-[11px] text-foreground/70">
-                {(activity.toolInput.file_path as string).split('/').pop()}
+                {activity.toolInput.file_path.split('/').pop()}
               </span>
             )}
           </span>
         )}
         {/* Filename badge for Read tool (no diff stats) */}
-        {!isMcpOrApiTool && !isBackgrounded && !diffStats && activity.toolName === 'Read' && activity.toolInput?.file_path && (
+        {!isMcpOrApiTool && !isBackgrounded && !diffStats && activity.toolName === 'Read' && typeof activity.toolInput?.file_path === 'string' && (
           <span className="flex items-center gap-1.5 text-[10px] shrink-0">
             <span className="px-1.5 py-0.5 bg-background shadow-minimal rounded-[4px] text-[11px] text-foreground/70">
-              {(activity.toolInput.file_path as string).split('/').pop()}
+              {activity.toolInput.file_path.split('/').pop()}
             </span>
           </span>
         )}
@@ -1369,45 +1369,13 @@ export function ResponseCard({
                 )}
                 onInteractiveResponse={(response, elements) => {
                   // Send response as user message to agent
-                  // Format with labels instead of IDs for better readability
-                  if (response.data && elements) {
-                    const data = response.data as Record<string, unknown>
-                    const parts: string[] = []
-                    
-                    // Build a map of element key -> options for label lookup
-                    const elementMap = new Map<string, { label: string; options?: Array<{ id: string; label: string }> }>()
-                    for (const el of elements) {
-                      const props = el.props as Record<string, unknown>
-                      elementMap.set(el.key, {
-                        label: (props.label as string) || el.key,
-                        options: props.options as Array<{ id: string; label: string }> | undefined,
-                      })
-                    }
-                    
-                    for (const [key, value] of Object.entries(data)) {
-                      const elementInfo = elementMap.get(key)
-                      const fieldLabel = elementInfo?.label || key
-                      const options = elementInfo?.options
-                      
-                      // Convert IDs to labels
-                      const getLabel = (id: string) => {
-                        const opt = options?.find(o => o.id === id)
-                        return opt?.label || id
-                      }
-                      
-                      if (Array.isArray(value)) {
-                        const labels = value.map(v => getLabel(String(v)))
-                        parts.push(`${fieldLabel}: ${labels.join(', ')}`)
-                      } else if (typeof value === 'boolean') {
-                        parts.push(`${fieldLabel}: ${value ? '是' : '否'}`)
-                      } else {
-                        parts.push(`${fieldLabel}: ${getLabel(String(value))}`)
-                      }
-                    }
-                    const formattedResponse = parts.join('\n')
+                  // Send structured JSON data for agent to parse
+                  if (response.data) {
+                    // Send JSON data to agent
+                    const jsonResponse = JSON.stringify(response.data, null, 2)
                     window.dispatchEvent(
                       new CustomEvent('craft:interactive-response', {
-                        detail: { text: formattedResponse },
+                        detail: { text: jsonResponse },
                       })
                     )
                   }
@@ -1682,6 +1650,9 @@ export const TurnCard = React.memo(function TurnCard({
   // Track if user has toggled expansion (skip animation on initial mount)
   const hasUserToggled = useRef(false)
 
+  // Ref for scrollable activities container (to scroll to bottom on expand)
+  const activitiesContainerRef = useRef<HTMLDivElement>(null)
+
   // Track if component has mounted (enable fade-in for new activities after mount)
   const hasMounted = useRef(false)
   useEffect(() => {
@@ -1705,6 +1676,21 @@ export const TurnCard = React.memo(function TurnCard({
       })
     }
   }, [turnId, isExpanded, onExpandedChange])
+
+  // Scroll to bottom of activities list when user manually expands
+  // This shows the most recent step instead of the oldest
+  useEffect(() => {
+    if (isExpanded && hasUserToggled.current && activitiesContainerRef.current) {
+      // Wait for expansion animation to complete (250ms) before scrolling
+      const timer = setTimeout(() => {
+        activitiesContainerRef.current?.scrollTo({
+          top: activitiesContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        })
+      }, 260)
+      return () => clearTimeout(timer)
+    }
+  }, [isExpanded])
 
   // Use local state for activity groups if no controlled state provided
   const [localExpandedActivityGroups, setLocalExpandedActivityGroups] = useState<Set<string>>(new Set())
@@ -1857,6 +1843,7 @@ export const TurnCard = React.memo(function TurnCard({
                 {/* Scrollable container when many activities - subtle background for scroll context */}
                 {/* ml-[15px] positions the border-l under the chevron */}
                 <div
+                  ref={activitiesContainerRef}
                   className={cn(
                     "pl-4 pr-2 py-0 space-y-0.5 border-l-2 border-muted ml-[13px]",
                     sortedActivities.length > SIZE_CONFIG.maxVisibleActivities && "rounded-r-md overflow-y-auto py-1.5"

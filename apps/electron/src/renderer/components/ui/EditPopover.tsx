@@ -15,7 +15,7 @@ import { Popover, PopoverTrigger, PopoverContent } from './popover'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
 import { useT } from '@/context/LocaleContext'
-import { usePlatform } from '@creator-flow/ui'
+import { usePlatform } from '@sprouty-ai/ui'
 import type { ContentBadge, Session, CreateSessionOptions } from '../../../shared/types'
 import { useActiveWorkspace, useAppShellContext, useSession } from '@/context/AppShellContext'
 import { useEscapeInterrupt } from '@/context/EscapeInterruptContext'
@@ -106,7 +106,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'workspace-permissions': (location) => ({
     context: {
       label: 'Permission Settings',
-      filePath: `${location}/permissions.json`,
+      filePath: `${location}/.sprouty-ai/permissions.json`,
       context:
         'The user is on the Settings Screen and pressed the edit button on Workspace Permission settings. ' +
         'Their intent is likely to update the setting immediately unless otherwise specified. ' +
@@ -126,7 +126,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       label: 'Default Permissions',
       filePath: location, // location is the full path for default permissions
       context:
-        'The user is editing app-level default permissions (~/.creator-flow/permissions/default.json). ' +
+        'The user is editing app-level default permissions (~/.sprouty-ai/permissions/default.json). ' +
         'This file configures Explore mode rules that apply to ALL workspaces. ' +
         'It can contain: allowedBashPatterns, allowedMcpPatterns, allowedApiEndpoints, blockedTools, and allowedWritePaths. ' +
         'Each pattern can be a string or an object with pattern and comment fields. ' +
@@ -252,7 +252,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       label: 'Preferences Notes',
       filePath: location, // location is the full path for preferences
       context:
-        'The user is editing the notes field in their preferences (~/.creator-flow/preferences.json). ' +
+        'The user is editing the notes field in their preferences (~/.sprouty-ai/preferences.json). ' +
         'This is a JSON file. Only modify the "notes" field unless explicitly asked otherwise. ' +
         'The notes field is free-form text that provides context about the user to the AI. ' +
         'After editing, call config_validate with target "preferences" to verify the changes. ' +
@@ -268,13 +268,13 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source': (location) => ({
     context: {
       label: 'Add Source',
-      filePath: `${location}/sources/`, // location is the workspace root path
+      filePath: `${location}/.sprouty-ai/sources/`, // location is the workspace root path
       context:
         'The user wants to add a new source to their workspace. ' +
         'Sources can be MCP servers (HTTP/SSE or stdio), REST APIs, or local filesystems. ' +
         'Ask clarifying questions if needed: What service? MCP or API? Auth type? ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接我的 Craft 空间',
@@ -285,14 +285,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-api': (location) => ({
     context: {
       label: 'Add API',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user is viewing API sources and wants to add a new REST API. ' +
         'Default to creating an API source (type: "api") unless they specify otherwise. ' +
         'APIs connect to REST endpoints with authentication (bearer, header, basic, or query). ' +
         'Ask about the API endpoint URL and auth type. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接 OpenAI API',
@@ -302,14 +302,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-mcp': (location) => ({
     context: {
       label: 'Add MCP Server',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user is viewing MCP sources and wants to add a new MCP server. ' +
         'Default to creating an MCP source (type: "mcp") unless they specify otherwise. ' +
         'MCP servers can use HTTP/SSE transport (remote) or stdio transport (local subprocess). ' +
         'Ask about the service they want to connect to and whether it\'s a remote URL or local command. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接 Linear',
@@ -319,15 +319,15 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-source-local': (location) => ({
     context: {
       label: 'Add Local Folder',
-      filePath: `${location}/sources/`,
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
         'The user wants to add a local folder source. ' +
-        'First, look up the guide: mcp__creator-flows-docs__SearchCreatorFlowAgents({ query: "filesystem" }). ' +
+        'First, look up the guide: mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" }). ' +
         'Local folders are bookmarks - use type: "local" with a local.path field. ' +
         'They use existing Read, Write, Glob, Grep tools - no MCP server needed. ' +
         'If unclear, ask about the folder path they want to connect. ' +
         'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/sources.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
         'After creating the source, call source_test with the source slug to verify the configuration.',
     },
     example: '连接我的 Obsidian 知识库',
@@ -337,13 +337,13 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-skill': (location) => ({
     context: {
       label: 'Add Skill',
-      filePath: `${location}/skills/`, // location is the workspace root path
+      filePath: `${location}/.sprouty-ai/skills/`, // location is the workspace root path
       context:
         'The user wants to add a new skill to their workspace. ' +
         'Skills are specialized instructions with a SKILL.md file containing YAML frontmatter (name, description) and markdown instructions. ' +
         'Ask clarifying questions if needed: What should the skill do? When should it trigger? ' +
         'Create the skill folder and SKILL.md in the workspace skills directory. ' +
-        'Follow the patterns in ~/.creator-flow/docs/skills.md. ' +
+        'Follow the patterns in ~/.sprouty-ai/docs/skills.md. ' +
         'After creating the skill, call skill_validate with the skill slug to verify the SKILL.md file.',
     },
     example: '按照代码规范审查 PR',
@@ -354,7 +354,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-statuses': (location) => ({
     context: {
       label: 'Status Configuration',
-      filePath: `${location}/statuses/config.json`,
+      filePath: `${location}/.sprouty-ai/statuses/config.json`,
       context:
         'The user wants to customize session statuses (workflow states). ' +
         'Statuses are stored in statuses/config.json with fields: id, label, icon, category (open/closed), order, isFixed, isDefault. ' +
@@ -374,7 +374,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-labels': (location) => ({
     context: {
       label: 'Label Configuration',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to customize session labels (tagging/categorization). ' +
         'Labels are stored in labels/config.json as a hierarchical tree. ' +
@@ -382,7 +382,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
         'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
         'Children form a recursive tree structure — array position determines display order. ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '添加"缺陷"标签（红色）',
@@ -395,14 +395,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-auto-rules': (location) => ({
     context: {
       label: 'Auto-Apply Rules',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to edit auto-apply rules (regex patterns that auto-tag sessions). ' +
         'Rules live inside the autoRules array on individual labels in labels/config.json. ' +
         'Each rule has: pattern (regex with capture groups), flags (default "gi"), valueTemplate ($1/$2 substitution), description. ' +
         'Multiple rules on the same label = multiple ways to trigger. The "g" flag is always enforced. ' +
         'Avoid catastrophic backtracking patterns (e.g., (a+)+). ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '添加检测 GitHub Issue 链接的规则',
@@ -415,14 +415,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'add-label': (location) => ({
     context: {
       label: 'Add Label',
-      filePath: `${location}/labels/config.json`,
+      filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
         'The user wants to create a new label from the # inline menu. ' +
         'Labels are stored in labels/config.json as a hierarchical tree. ' +
         'Each label has: id (slug, globally unique), name (display), color (optional EntityColor), children (sub-labels array). ' +
         'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
         'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
-        'Read ~/.creator-flow/docs/labels.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
         'Confirm clearly when done.',
     },
     example: '一个红色的"缺陷"标签',
@@ -436,7 +436,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'edit-views': (location) => ({
     context: {
       label: 'Views Configuration',
-      filePath: `${location}/views.json`,
+      filePath: `${location}/.sprouty-ai/views.json`,
       context:
         'The user wants to edit views (dynamic, expression-based filters). ' +
         'Views are stored in views.json at the workspace root under a "views" array. ' +
@@ -460,11 +460,11 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       filePath: location, // location is the full path to tool-icons.json
       context:
         'The user wants to edit CLI tool icon mappings. ' +
-        'The file is tool-icons.json in ~/.creator-flow/tool-icons/. Icon image files live in the same directory. ' +
+        'The file is tool-icons.json in ~/.sprouty-ai/tool-icons/. Icon image files live in the same directory. ' +
         'Schema: { version: 1, tools: [{ id, displayName, icon, commands }] }. ' +
         'Each tool has: id (unique slug), displayName (shown in UI), icon (filename like "git.ico"), commands (array of CLI command names). ' +
         'Supported icon formats: .png, .ico, .svg, .jpg. Icons display at 20x20px. ' +
-        'Read ~/.creator-flow/docs/tool-icons.md for full format reference. ' +
+        'Read ~/.sprouty-ai/docs/tool-icons.md for full format reference. ' +
         'After editing, call config_validate with target "tool-icons" to verify the changes are valid. ' +
         'Confirm clearly when done.',
     },
@@ -752,6 +752,7 @@ export function EditPopover({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
   const popoverRef = useRef<HTMLDivElement>(null)
 
   // Resize state for dynamic sizing
@@ -759,13 +760,80 @@ export function EditPopover({
   const [isResizing, setIsResizing] = useState(false)
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 })
 
+  // Dynamic max dimensions based on viewport space
+  const [maxDimensions, setMaxDimensions] = useState({
+    maxWidth: width || 400,
+    maxHeight: 480
+  })
+
+  // Calculate available space dynamically when popover opens
+  useEffect(() => {
+    if (!open) return
+
+    const calculateMaxDimensions = () => {
+      // Find the trigger element - use more specific selector
+      // Radix adds data-state to the trigger when popover is open
+      const triggerElement = document.querySelector('[data-slot="popover-trigger"][data-state="open"]')
+      if (!triggerElement) {
+        // Fallback: if we can't find the trigger, use generous defaults
+        setMaxDimensions({ maxWidth: 600, maxHeight: 600 })
+        return
+      }
+
+      const rect = triggerElement.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+
+      // Calculate available space in each direction (留 10px padding)
+      const availableRight = viewportWidth - rect.right - 10
+      const availableLeft = rect.left - 10
+      const availableBottom = viewportHeight - rect.bottom - 10
+      const availableTop = rect.top - 10
+
+      // Calculate max width based on align prop
+      let maxWidth: number
+      if (align === 'end') {
+        // 右对齐：从按钮右边缘向左延伸
+        maxWidth = Math.min(rect.right - 10, 600)
+      } else if (align === 'start') {
+        // 左对齐：从按钮左边缘向右延伸
+        maxWidth = Math.min(viewportWidth - rect.left - 10, 600)
+      } else {
+        // 居中：取两侧较大值
+        maxWidth = Math.min(Math.max(availableRight, availableLeft) * 2, 600)
+      }
+
+      // 确保最小宽度
+      maxWidth = Math.max(maxWidth, 320)
+
+      // Calculate max height based on side prop
+      const maxHeight = side === 'bottom'
+        ? Math.min(availableBottom, 600)
+        : Math.min(availableTop, 600)
+
+      setMaxDimensions({
+        maxWidth,
+        maxHeight: Math.max(maxHeight, 400)
+      })
+    }
+
+    // 延迟计算，确保 DOM 已渲染
+    const timer = setTimeout(calculateMaxDimensions, 0)
+    return () => clearTimeout(timer)
+  }, [open, side, align])
+
   // Reset drag position and size when popover opens
   useEffect(() => {
     if (open) {
+      dragOffsetRef.current = { x: 0, y: 0 }
       setDragOffset({ x: 0, y: 0 })
-      setContainerSize({ width: width || 400, height: 480 })
+      // 使用动态计算的最大尺寸
+      setContainerSize({
+        width: Math.min(width || 400, maxDimensions.maxWidth),
+        height: Math.min(480, maxDimensions.maxHeight)
+      })
     }
-  }, [open, width])
+  }, [open, width, maxDimensions])
 
   // Handle drag events
   const handleDragStart = useCallback((e: React.MouseEvent) => {
@@ -783,12 +851,23 @@ export function EditPopover({
     if (!isDragging) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - dragStartRef.current.x
-      const deltaY = e.clientY - dragStartRef.current.y
-      setDragOffset({
-        x: dragStartRef.current.offsetX + deltaX,
-        y: dragStartRef.current.offsetY + deltaY,
-      })
+      const rect = popoverRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const MARGIN = 20
+      const MARGIN_TOP = 50 // Keep below header (chevrons, menu button)
+      const curr = dragOffsetRef.current
+      const baseX = rect.left - curr.x
+      const baseY = rect.top - curr.y
+
+      const newX = dragStartRef.current.offsetX + e.clientX - dragStartRef.current.x
+      const newY = dragStartRef.current.offsetY + e.clientY - dragStartRef.current.y
+
+      const clampedX = Math.max(MARGIN - baseX, Math.min(window.innerWidth - MARGIN - rect.width - baseX, newX))
+      const clampedY = Math.max(MARGIN_TOP - baseY, Math.min(window.innerHeight - MARGIN - rect.height - baseY, newY))
+
+      dragOffsetRef.current = { x: clampedX, y: clampedY }
+      setDragOffset({ x: clampedX, y: clampedY })
     }
 
     const handleMouseUp = () => {
@@ -885,7 +964,7 @@ export function EditPopover({
     const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
     const systemPromptParam = systemPromptPreset ? `&systemPrompt=${encodeURIComponent(systemPromptPreset)}` : ''
     // Navigate in same window by omitting window=focused parameter
-    const url = `craftagents://action/new-chat?input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}${modelParam}${systemPromptParam}`
+    const url = `sproutyai://action/new-chat?input=${encodedInput}&send=true&mode=${permissionMode}&badges=${encodedBadges}${workdirParam}${modelParam}${systemPromptParam}`
 
     window.electronAPI.openUrl(url)
     setOpen(false)
@@ -913,18 +992,24 @@ export function EditPopover({
         <PopoverContent
             side={side}
             align={align}
-            className="p-0 overflow-visible"
-            style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+            className="p-0"
+            style={{
+              width: Math.min(containerSize.width, maxDimensions.maxWidth),
+              height: Math.min(containerSize.height, maxDimensions.maxHeight),
+              background: 'transparent',
+              border: 'none',
+              boxShadow: 'none',
+            }}
             onInteractOutside={handleInteractOutside}
             onEscapeKeyDown={handleEscapeKeyDown}
           >
-            {/* Container */}
+            {/* Container - size inherited from PopoverContent for Radix collision detection */}
             <div
               ref={popoverRef}
-              className="relative bg-foreground-2 overflow-hidden"
+              className="relative bg-foreground-2 overflow-hidden w-full h-full"
               style={{
-                width: containerSize.width,
-                height: containerSize.height,
+                width: '100%',
+                height: '100%',
                 transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
                 borderRadius: 16,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
@@ -934,7 +1019,7 @@ export function EditPopover({
               <div
                 onMouseDown={handleDragStart}
                 className={cn(
-                  "absolute top-0 left-1/2 -translate-x-1/2 z-50 px-4 py-2 cursor-grab rounded pointer-events-auto",
+                  "absolute top-0 left-1/2 -translate-x-1/2 z-50 px-4 py-2 cursor-grab rounded pointer-events-auto titlebar-no-drag",
                   isDragging && "cursor-grabbing"
                 )}
               >

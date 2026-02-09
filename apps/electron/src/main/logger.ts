@@ -11,7 +11,7 @@ import os from 'os'
 export const isDebugMode = !app.isPackaged || process.argv.includes('--debug')
 
 // Configure custom log path to use "智小芽" as the log directory name
-// This overrides the default behavior which uses package.json name (@creator-flow/electron)
+// This overrides the default behavior which uses package.json name (@sprouty-ai/electron)
 log.transports.file.resolvePathFn = () => {
   let logsDir: string
   

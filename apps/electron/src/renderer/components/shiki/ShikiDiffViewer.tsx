@@ -1,7 +1,7 @@
 /**
  * ShikiDiffViewer - Electron wrapper for the portable ShikiDiffViewer
  *
- * This thin wrapper imports the portable component from @creator-flow/ui
+ * This thin wrapper imports the portable component from @sprouty-ai/ui
  * and connects it to Electron's ThemeContext.
  *
  * Connects the base component to Electron's ThemeContext, passing the
@@ -11,7 +11,7 @@
  */
 
 import * as React from 'react'
-import { ShikiDiffViewer as BaseShikiDiffViewer, type ShikiDiffViewerProps as BaseProps } from '@creator-flow/ui'
+import { ShikiDiffViewer as BaseShikiDiffViewer, type ShikiDiffViewerProps as BaseProps } from '@sprouty-ai/ui'
 import { useTheme } from '@/hooks/useTheme'
 
 export interface ShikiDiffViewerProps extends Omit<BaseProps, 'theme' | 'shikiTheme'> {}

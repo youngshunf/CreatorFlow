@@ -78,7 +78,6 @@ Start-Sleep -Seconds 2
 # 1. Clean previous build artifacts (with retry for locked files)
 Write-Host "Cleaning previous builds..."
 $foldersToClean = @(
-    "$ElectronDir\vendor",
     "$ElectronDir\node_modules\@anthropic-ai",
     "$ElectronDir\packages",
     "$ElectronDir\release"
@@ -108,23 +107,29 @@ try {
     Pop-Location
 }
 
-# 3. Download Bun binary for Windows
+# 3. Download Bun binary for Windows (with caching)
 # Use baseline build - works on all x64 CPUs (no AVX2 requirement)
-Write-Host "Downloading Bun $BunVersion for Windows x64 (baseline)..."
-New-Item -ItemType Directory -Force -Path "$ElectronDir\vendor\bun" | Out-Null
+$BunExePath = "$ElectronDir\vendor\bun\bun.exe"
 
-$BunDownload = "bun-windows-x64-baseline"
-$TempDir = Join-Path $env:TEMP "bun-download-$(Get-Random)"
-New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
+# Check if Bun is already downloaded
+if (Test-Path $BunExePath) {
+    Write-Host "Bun $BunVersion already exists, skipping download..." -ForegroundColor Green
+} else {
+    Write-Host "Downloading Bun $BunVersion for Windows x64 (baseline)..."
+    New-Item -ItemType Directory -Force -Path "$ElectronDir\vendor\bun" | Out-Null
 
-try {
-    # Download binary and checksums
-    $ZipUrl = "https://github.com/oven-sh/bun/releases/download/$BunVersion/$BunDownload.zip"
-    $ChecksumUrl = "https://github.com/oven-sh/bun/releases/download/$BunVersion/SHASUMS256.txt"
+    $BunDownload = "bun-windows-x64-baseline"
+    $TempDir = Join-Path $env:TEMP "bun-download-$(Get-Random)"
+    New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 
-    Write-Host "Downloading from $ZipUrl..."
-    Invoke-WebRequest -Uri $ZipUrl -OutFile "$TempDir\$BunDownload.zip"
-    Invoke-WebRequest -Uri $ChecksumUrl -OutFile "$TempDir\SHASUMS256.txt"
+    try {
+        # Download binary and checksums
+        $ZipUrl = "https://github.com/oven-sh/bun/releases/download/$BunVersion/$BunDownload.zip"
+        $ChecksumUrl = "https://github.com/oven-sh/bun/releases/download/$BunVersion/SHASUMS256.txt"
+
+        Write-Host "Downloading from $ZipUrl..."
+        Invoke-WebRequest -Uri $ZipUrl -OutFile "$TempDir\$BunDownload.zip"
+        Invoke-WebRequest -Uri $ChecksumUrl -OutFile "$TempDir\SHASUMS256.txt"
 
     # Verify checksum
     Write-Host "Verifying checksum..."

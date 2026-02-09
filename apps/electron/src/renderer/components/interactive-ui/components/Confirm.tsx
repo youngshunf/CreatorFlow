@@ -8,7 +8,7 @@ import * as React from 'react'
 import { AlertCircle, Info, HelpCircle, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { ConfirmProps } from '@creator-flow/shared/interactive-ui'
+import type { ConfirmProps } from '@sprouty-ai/shared/interactive-ui'
 
 interface ConfirmComponentProps {
   props: ConfirmProps

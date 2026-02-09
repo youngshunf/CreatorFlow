@@ -12,8 +12,8 @@
  */
 
 import type { ReactNode } from 'react'
-import type { StoredAttachment, ContentBadge } from '@creator-flow/core'
-import { normalizePath } from '@creator-flow/core/utils'
+import type { StoredAttachment, ContentBadge } from '@sprouty-ai/core'
+import { normalizePath } from '@sprouty-ai/core/utils'
 import { cn } from '../../lib/utils'
 import { Markdown } from '../markdown'
 import { FileTypeIcon, getFileTypeLabel } from './attachment-helpers'
@@ -184,10 +184,10 @@ function InlineFileBadge({
   badge: ContentBadge
   onFileClick?: (path: string) => void
 }) {
-  // Strip .creator-flow workspace/session path prefix for cleaner tooltip display
+  // Strip .sprouty-ai workspace/session path prefix for cleaner tooltip display
   // e.g. "/Users/.../workspaces/{id}/sessions/{id}/plans/foo.md" → "plans/foo.md"
   const rawPath = badge.filePath || badge.label
-  const tooltipPath = normalizePath(rawPath).replace(/^.*\.creator-flow\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
+  const tooltipPath = normalizePath(rawPath).replace(/^.*\.sprouty-ai\/workspaces\/[^/]+\/(sessions\/[^/]+\/)?/, '')
   const isClickable = !!(onFileClick && badge.filePath)
 
   const badgeContent = (
@@ -244,7 +244,7 @@ function renderContentWithBadges(
         mode="minimal"
         onUrlClick={onUrlClick}
         onFileClick={onFileClick}
-        className="text-sm [&_a]:underline [&_code]:bg-foreground/10"
+        className="text-sm [&_a]:underline [&_code]:bg-foreground/10 [&_p]:whitespace-pre-wrap"
       >
         {content}
       </Markdown>
@@ -435,7 +435,7 @@ export function UserMessageBubble({
       <div
         className={cn(
           "max-w-[80%] bg-foreground/5 rounded-[16px] break-words min-w-0 select-text [&_p]:m-0",
-          compactMode ? "px-3 py-2" : "px-5 py-3.5",
+          compactMode ? "px-4 py-2" : "px-5 py-3.5",
           isPending && "animate-shimmer"
         )}
       >
@@ -446,7 +446,7 @@ export function UserMessageBubble({
               mode="minimal"
               onUrlClick={onUrlClick}
               onFileClick={onFileClick}
-              className="text-sm [&_a]:underline [&_code]:bg-foreground/10"
+              className="text-sm [&_a]:underline [&_code]:bg-foreground/10 [&_p]:whitespace-pre-wrap"
             >
               {displayContent}
             </Markdown>

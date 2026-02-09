@@ -56,6 +56,8 @@ export interface MarketplaceApp {
   icon_url: string | null;
   author_id: number | null;
   author_name: string | null;
+  category: string | null;
+  tags: string | null;
   pricing_type: 'free' | 'paid' | 'subscription';
   price: number;
   is_private: boolean;
@@ -203,7 +205,7 @@ export interface SkillMeta {
 
 /**
  * Cached marketplace metadata
- * Stored in ~/.creator-flow/marketplace/cache/meta.json
+ * Stored in ~/.sprouty-ai/marketplace/cache/meta.json
  */
 export interface MarketplaceCacheData {
   /** Cache timestamp */
@@ -248,14 +250,42 @@ export interface InstalledSkillInfo {
 export type InstallProgressCallback = (progress: InstallProgress) => void;
 
 /**
+ * App install progress callback
+ */
+export type AppInstallProgressCallback = (progress: AppInstallProgress) => void;
+
+/**
+ * Install stage types
+ */
+export type InstallStage =
+  | 'downloading'        // 下载中（0-30%）
+  | 'extracting'         // 解压中（30-35%）
+  | 'installing-skills'  // 安装技能（35-85%）
+  | 'installing-app'     // 安装应用（85-95%）
+  | 'finalizing'         // 完成中（95-100%）
+  | 'complete'           // 完成
+  | 'error';             // 错误
+
+/**
  * Install progress info
  */
 export interface InstallProgress {
-  stage: 'downloading' | 'extracting' | 'installing' | 'complete' | 'error';
+  stage: InstallStage;
   percent: number;
   message: string;
   skillId?: string;
   error?: string;
+}
+
+/**
+ * App install progress with skill-level details
+ */
+export interface AppInstallProgress extends InstallProgress {
+  appId?: string;
+  currentSkill?: string;        // 当前安装的技能
+  totalSkills?: number;         // 总技能数
+  installedSkills?: number;     // 已安装技能数
+  skillProgress?: number;       // 当前技能进度（0-100）
 }
 
 /**

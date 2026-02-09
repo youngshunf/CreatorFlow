@@ -22,7 +22,7 @@ export type CredentialType =
   | 'claude_oauth'       // Claude OAuth token (Max subscription)
   // Workspace credentials
   | 'workspace_oauth'    // Workspace MCP OAuth token
-  // Source credentials (stored at ~/.creator-flow/workspaces/{ws}/sources/{slug}/)
+  // Source credentials (stored at ~/.sprouty-ai/workspaces/{ws}/sources/{slug}/)
   | 'source_oauth'       // OAuth tokens for MCP/API sources
   | 'source_bearer'      // Bearer tokens
   | 'source_apikey'      // API keys
@@ -76,6 +76,8 @@ export interface StoredCredential {
   expiresAt?: number;
   /** OAuth client ID (needed for token refresh) */
   clientId?: string;
+  /** OAuth client secret (needed for Google token refresh - Google requires both ID and secret) */
+  clientSecret?: string;
   /** Token type (e.g., "Bearer") */
   tokenType?: string;
   /** Where the credential came from: 'native' (our OAuth), 'cli' (Claude CLI import) */

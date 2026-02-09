@@ -18,7 +18,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLocale, useT } from '@/context/LocaleContext'
 import { routes } from '@/lib/navigate'
 import { Monitor, Sun, Moon, X, Globe } from 'lucide-react'
-import { Spinner, FullscreenOverlayBase } from '@creator-flow/ui'
+import { Spinner, FullscreenOverlayBase } from '@sprouty-ai/ui'
 import { useSetAtom } from 'jotai'
 import { fullscreenOverlayOpenAtom } from '@/atoms/overlay'
 import type { AuthType } from '../../../shared/types'
@@ -36,6 +36,7 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { OnboardingWizard } from '@/components/onboarding'
 import { useAppShellContext } from '@/context/AppShellContext'
+import { subscriptionApi, type SubscriptionInfo } from '@/api/subscription'
 import type { PresetTheme } from '@config/theme'
 
 export const meta: DetailsPageMeta = {
@@ -69,6 +70,10 @@ export default function AppSettingsPage() {
   const updateChecker = useUpdateChecker()
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false)
 
+  // Subscription state — custom API connection requires ultra yearly
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+  const isUltraYearly = subscription?.tier === 'ultra' && subscription?.subscription_type === 'yearly'
+
   const handleCheckForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true)
     try {
@@ -82,13 +87,15 @@ export default function AppSettingsPage() {
   const loadConnectionInfo = useCallback(async () => {
     if (!window.electronAPI) return
     try {
-      const [billing, notificationsOn] = await Promise.all([
+      const [billing, notificationsOn, sub] = await Promise.all([
         window.electronAPI.getApiSetup(),
         window.electronAPI.getNotificationsEnabled(),
+        subscriptionApi.getInfo().catch(() => null),
       ])
       setAuthType(billing.authType)
       setHasCredential(billing.hasCredential)
       setNotificationsEnabled(notificationsOn)
+      if (sub) setSubscription(sub)
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
@@ -234,17 +241,20 @@ export default function AppSettingsPage() {
                 <SettingsRow
                   label={t('连接类型')}
                   description={
-                    authType === 'oauth_token' && hasCredential
-                      ? t('Claude Pro/Max — 使用您的 Claude 订阅')
-                      : authType === 'api_key' && hasCredential
-                        ? t('API Key — Anthropic、OpenRouter 或兼容 API')
-                        : t('未配置')
+                    !isUltraYearly
+                      ? t('需要旗舰版年度订阅才能使用自定义 API 连接')
+                      : authType === 'oauth_token' && hasCredential
+                        ? t('Claude Pro/Max — 使用您的 Claude 订阅')
+                        : authType === 'api_key' && hasCredential
+                          ? t('API Key — Anthropic、OpenRouter 或兼容 API')
+                          : t('未配置')
                   }
                 >
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={openApiSetup}
+                    disabled={!isUltraYearly}
                   >
                     {t('编辑')}
                   </Button>
@@ -294,7 +304,18 @@ export default function AppSettingsPage() {
                     <span className="text-muted-foreground">
                       {updateChecker.updateInfo?.currentVersion ?? t('加载中...')}
                     </span>
-                    {updateChecker.updateAvailable && updateChecker.updateInfo?.latestVersion && (
+                    {/* 下载进度指示器 */}
+                    {updateChecker.isDownloading && updateChecker.updateInfo?.latestVersion && (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <Spinner className="w-3 h-3" />
+                        {updateChecker.isIndeterminate ? (
+                          <span>{t('正在下载')} v{updateChecker.updateInfo.latestVersion}...</span>
+                        ) : (
+                          <span>{t('正在下载')} v{updateChecker.updateInfo.latestVersion} ({updateChecker.downloadProgress}%)</span>
+                        )}
+                      </div>
+                    )}
+                    {updateChecker.updateAvailable && !updateChecker.isDownloading && updateChecker.updateInfo?.latestVersion && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -322,13 +343,13 @@ export default function AppSettingsPage() {
                     )}
                   </Button>
                 </SettingsRow>
-                {updateChecker.isReadyToInstall && (
+                {updateChecker.isReadyToInstall && updateChecker.updateInfo?.latestVersion && (
                   <SettingsRow label={t('安装更新')}>
                     <Button
                       size="sm"
                       onClick={updateChecker.installUpdate}
                     >
-                      {t('重启并更新')}
+                      {t('重启并更新到')} v{updateChecker.updateInfo.latestVersion}
                     </Button>
                   </SettingsRow>
                 )}

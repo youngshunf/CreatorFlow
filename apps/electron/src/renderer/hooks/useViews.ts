@@ -11,8 +11,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { ViewConfig, CompiledView, ViewEvaluationContext } from '@creator-flow/shared/views'
-import { compileAllViews, evaluateViews, buildViewContext } from '@creator-flow/shared/views'
+import type { ViewConfig, CompiledView, ViewEvaluationContext } from '@sprouty-ai/shared/views'
+import { compileAllViews, evaluateViews, buildViewContext } from '@sprouty-ai/shared/views'
 import type { SessionMeta } from '../atoms/sessions'
 
 export interface UseViewsResult {

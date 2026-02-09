@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@creator-flow/ui"
+import { Spinner } from "@sprouty-ai/ui"
 import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
 import { StepFormLayout } from "./primitives"
 

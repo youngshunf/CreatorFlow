@@ -415,16 +415,64 @@ Grep pattern="." path="${logFilePath}" head_limit=50
 }
 
 /**
+ * Get platform-aware instructions for local web fetching.
+ * Windows users (non-technical) need PowerShell-native commands;
+ * macOS/Linux can use curl directly.
+ */
+function getLocalWebFetchInstructions(): string {
+  const isWindows = process.platform === 'win32';
+
+  if (isWindows) {
+    // Windows: PowerShell aliases 'curl' to Invoke-WebRequest, so we must use
+    // curl.exe (available since Win10 1803) or native PowerShell cmdlets.
+    // Target audience is non-technical users, so prefer the most reliable approach.
+    return `1. **PowerShell Invoke-WebRequest (recommended on Windows):**
+   \`\`\`powershell
+   Invoke-WebRequest -Uri "https://example.com" -UseBasicParsing -TimeoutSec 10 | Select-Object -ExpandProperty Content
+   \`\`\`
+   This is the most reliable method on Windows — no extra tools needed.
+
+2. **curl.exe (Windows 10+ built-in, note the .exe suffix):**
+   \`\`\`powershell
+   curl.exe -sL "https://example.com" -A "Mozilla/5.0" --connect-timeout 10
+   \`\`\`
+   ⚠️ On Windows, you MUST use \`curl.exe\` (not \`curl\`) — PowerShell aliases \`curl\` to \`Invoke-WebRequest\` which has different syntax.
+
+3. **Python (universal fallback):**
+   \`\`\`powershell
+   python -c "import urllib.request; print(urllib.request.urlopen('https://example.com').read().decode())"
+   \`\`\``;
+  }
+
+  // macOS / Linux
+  return `1. **curl (recommended):**
+   \`\`\`bash
+   curl -sL "https://example.com" -A "Mozilla/5.0" --connect-timeout 10
+   \`\`\`
+   This runs on the user's local machine and bypasses server-side domain restrictions.
+
+2. **wget as fallback:**
+   \`\`\`bash
+   wget -qO- "https://example.com" --timeout=10
+   \`\`\`
+
+3. **Python (universal fallback):**
+   \`\`\`bash
+   python3 -c "import urllib.request; print(urllib.request.urlopen('https://example.com').read().decode())"
+   \`\`\``;
+}
+
+/**
  * Get the CreatorFlow environment marker for SDK JSONL detection.
  * This marker is embedded in the system prompt and allows us to identify
  * CreatorFlow sessions when importing from Claude Code.
  */
-function getCreatorFlowAgentEnvironmentMarker(): string {
+function getSproutyAgentEnvironmentMarker(): string {
   const platform = process.platform; // 'darwin', 'win32', 'linux'
   const arch = process.arch; // 'arm64', 'x64'
   const osVersion = os.release(); // OS kernel version
 
-  return `<craft_agent_environment version="${APP_VERSION}" platform="${platform}" arch="${arch}" os_version="${osVersion}" />`;
+  return `<creator_flow_environment version="${APP_VERSION}" platform="${platform}" arch="${arch}" os_version="${osVersion}" />`;
 }
 
 /**
@@ -438,12 +486,12 @@ function getCraftAssistantPrompt(workspaceRootPath?: string): string {
   const workspacePath = workspaceRootPath || `${APP_ROOT}/workspaces/{id}`;
 
   // Extract workspaceId from path (last component of the path)
-  // Path format: ~/.creator-flow/workspaces/{workspaceId}
+  // Path format: ~/.sprouty-ai/workspaces/{workspaceId}
   const pathParts = workspacePath.split('/');
   const workspaceId = pathParts[pathParts.length - 1] || '{workspaceId}';
 
   // Environment marker for SDK JSONL detection
-  const environmentMarker = getCreatorFlowAgentEnvironmentMarker();
+  const environmentMarker = getSproutyAgentEnvironmentMarker();
 
   return `${environmentMarker}
 
@@ -460,14 +508,14 @@ Sources are external data connections. Each source has:
 - \`config.json\` - Connection settings and authentication
 - \`guide.md\` - Usage guidelines (read before first use!)
 
-**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/.creator-flow/sources/{slug}/guide.md\`.
+**Before using a source** for the first time, read its \`guide.md\` at \`${workspacePath}/.sprouty-ai/sources/{slug}/guide.md\`.
 
 **Before creating/modifying a source**, read \`${DOC_REFS.sources}\` for the setup workflow and verify current endpoints via web search.
 
 **Workspace structure:**
-- Sources: \`${workspacePath}/.creator-flow/sources/{slug}/\`
-- Skills: \`${workspacePath}/.creator-flow/skills/{slug}/\`
-- Theme: \`${workspacePath}/.creator-flow/theme.json\`
+- Sources: \`${workspacePath}/.sprouty-ai/sources/{slug}/\`
+- Skills: \`${workspacePath}/.sprouty-ai/skills/{slug}/\`
+- Theme: \`${workspacePath}/.sprouty-ai/theme.json\`
 
 **SDK Plugin:** This workspace is mounted as a Claude Code SDK plugin. When invoking skills via the Skill tool, use the fully-qualified format: \`${workspaceId}:skill-slug\`. For example, to invoke a skill named "commit", use \`${workspaceId}:commit\`.
 
@@ -528,6 +576,34 @@ Co-Authored-By: 智小芽 <agents-noreply@zhixiaoya.app>
 Current mode is in \`<session_state>\`. \`plansFolderPath\` shows where plans are stored.
 
 **${PERMISSION_MODE_CONFIG['safe'].displayName} mode:** Read, search, and explore freely. Use \`SubmitPlan\` when ready to implement - the user sees an "Accept Plan" button to transition to execution. 
+
+## Large File Writing
+
+**IMPORTANT:** The Write tool has a practical size limit for the \`content\` parameter. When writing files larger than ~30KB (e.g., full HTML pages, large configs), the content may be silently dropped, causing repeated failures with empty parameters.
+
+**For large files, use one of these approaches instead:**
+
+1. **Bash heredoc (recommended for single large files):**
+   \`\`\`bash
+   cat > "path/to/file.html" << 'EOF'
+   ...content here...
+   EOF
+   \`\`\`
+
+2. **Incremental writing (recommended for structured content):**
+   - Use Write to create a skeleton file with basic structure
+   - Use Edit to add content section by section
+
+3. **Python/script approach (for very large or binary-like content):**
+   \`\`\`bash
+   python3 -c "
+   content = '''...'''
+   with open('path/to/file', 'w') as f:
+       f.write(content)
+   "
+   \`\`\`
+
+**Never retry Write with the same large content if it fails with empty parameters — it will fail again.** Switch to Bash heredoc or incremental approach instead.
 Be decisive: when you have enough context, present your approach and ask "Ready for a plan?" or write it directly. This will help the user move forward.
 
 !!Important!! - Before executing a plan you need to present it to the user via SubmitPlan tool. 
@@ -535,6 +611,22 @@ When presenting a plan via SubmitPlan the system will interrupt your current run
 Never try to execute a plan without submitting it first - it will fail, especially if user is in ${PERMISSION_MODE_CONFIG['safe'].displayName} mode.
 
 **Full reference on what commands are enablled:** \`${DOC_REFS.permissions}\` (bash command lists, blocked constructs, planning workflow, customization). Read if unsure, or user has questions about permissions.
+
+## Web Access
+
+**IMPORTANT: Prefer local access over server-side tools for fetching web content.**
+
+The \`WebFetch\` tool runs on the Claude server side, which has domain safety verification restrictions. Many domains (especially Chinese domains like .cn, .com.cn) will fail with "Unable to verify if domain is safe to fetch". The \`WebSearch\` tool also runs server-side and may return empty results for Chinese content.
+
+**Preferred approach for accessing web pages — use Bash to run commands locally:**
+
+${getLocalWebFetchInstructions()}
+
+**Only use WebFetch/WebSearch as last resort** — when local commands are not available or when you specifically need the server-side search index.
+
+**When local fetch fails** (e.g., permission denied in ${PERMISSION_MODE_CONFIG['safe'].displayName} mode), ask the user to switch to ${PERMISSION_MODE_CONFIG['ask'].displayName} or ${PERMISSION_MODE_CONFIG['allow-all'].displayName} mode, or ask them to provide the content directly (screenshot, copy-paste).
+
+**Do NOT repeatedly retry WebFetch** if it fails with domain verification errors — switch to local commands immediately.
 
 ## Web Search
 

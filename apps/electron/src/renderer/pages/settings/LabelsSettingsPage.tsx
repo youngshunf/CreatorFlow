@@ -16,7 +16,7 @@ import { PanelHeader } from '@/components/app-shell/PanelHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { EditPopover, EditButton, getEditConfig } from '@/components/ui/EditPopover'
-import { getDocUrl } from '@creator-flow/shared/docs/doc-links'
+import { getDocUrl } from '@sprouty-ai/shared/docs/doc-links'
 import { Loader2 } from 'lucide-react'
 import { useT } from '@/context/LocaleContext'
 import { useAppShellContext, useActiveWorkspace } from '@/context/AppShellContext'
@@ -51,7 +51,7 @@ export default function LabelsSettingsPage() {
   // Secondary action: open the labels config file directly in system editor
   const editFileAction = rootPath ? {
     label: 'Edit File',
-    filePath: `${rootPath}/labels/config.json`,
+    onClick: () => window.electronAPI.openFile(`${rootPath}/labels/config.json`),
   } : undefined
 
   return (

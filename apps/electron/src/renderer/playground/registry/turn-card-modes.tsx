@@ -6,7 +6,7 @@ import {
   UserMessageBubble,
   type ActivityItem,
   type ResponseContent,
-} from '@creator-flow/ui'
+} from '@sprouty-ai/ui'
 
 // Import sample workflows
 import {

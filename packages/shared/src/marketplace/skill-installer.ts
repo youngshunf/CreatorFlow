@@ -19,7 +19,7 @@ import {
   rmSync,
   createWriteStream,
 } from 'fs';
-import { join, basename } from 'path';
+import { join, basename, dirname } from 'path';
 import { pipeline } from 'stream/promises';
 import { createHash } from 'crypto';
 import { Extract } from 'unzipper';
@@ -37,6 +37,42 @@ import {
   writeSkillMeta,
   getMarketplaceSkillsDir,
 } from './storage.ts';
+
+// ============================================================
+// File Search Utilities
+// ============================================================
+
+/**
+ * 递归查找文件
+ * @param dir - 搜索目录
+ * @param filename - 目标文件名
+ * @param maxDepth - 最大搜索深度
+ * @returns 文件路径或 null
+ */
+function findFileRecursive(dir: string, filename: string, maxDepth: number): string | null {
+  if (maxDepth <= 0) return null;
+
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+
+      if (entry.isFile() && entry.name === filename) {
+        return fullPath;
+      }
+
+      if (entry.isDirectory()) {
+        const found = findFileRecursive(fullPath, filename, maxDepth - 1);
+        if (found) return found;
+      }
+    }
+  } catch (error) {
+    // 忽略读取错误
+  }
+
+  return null;
+}
 
 // ============================================================
 // Download Utilities
@@ -258,23 +294,24 @@ export async function downloadSkillPackage(
   // Clean up zip file
   rmSync(zipPath);
 
-  // Validate extracted content
+  // Validate extracted content with recursive search
   const skillFile = join(versionDir, 'SKILL.md');
   if (!existsSync(skillFile)) {
-    // Check if content is in a subdirectory
-    const entries = readdirSync(versionDir, { withFileTypes: true });
-    const subDir = entries.find((e) => e.isDirectory());
-    if (subDir) {
-      const subDirPath = join(versionDir, subDir.name);
-      if (existsSync(join(subDirPath, 'SKILL.md'))) {
-        // Move contents up one level
-        const subEntries = readdirSync(subDirPath);
-        for (const entry of subEntries) {
-          const src = join(subDirPath, entry);
+    // Recursively search for SKILL.md (max 2 levels deep)
+    const found = findFileRecursive(versionDir, 'SKILL.md', 2);
+
+    if (found) {
+      // Move contents from nested directory to root
+      const parentDir = dirname(found);
+      if (parentDir !== versionDir) {
+        const entries = readdirSync(parentDir);
+        for (const entry of entries) {
+          const src = join(parentDir, entry);
           const dest = join(versionDir, entry);
           require('fs').renameSync(src, dest);
         }
-        rmSync(subDirPath, { recursive: true });
+        // Remove empty parent directory
+        rmSync(parentDir, { recursive: true, force: true });
       }
     }
   }
@@ -314,13 +351,13 @@ export async function installSkill(
 
     // Install to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-skills',
       percent: 85,
       message: '正在安装到工作区...',
       skillId,
     });
 
-    const skillsDir = join(workspaceRoot, '.creator-flow', 'skills');
+    const skillsDir = join(workspaceRoot, '.sprouty-ai', 'skills');
     const targetDir = join(skillsDir, skillId);
 
     // Ensure skills directory exists
@@ -430,5 +467,5 @@ export async function updateSkill(
  */
 function extractVersionFromUrl(url: string): string | null {
   const match = url.match(/\/(\d+\.\d+\.\d+)\.zip/);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }

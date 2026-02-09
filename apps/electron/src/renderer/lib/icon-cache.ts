@@ -20,8 +20,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react'
-import { isEmoji } from '@creator-flow/shared/utils/icon-constants'
-import type { ResolvedEntityIcon } from '@creator-flow/shared/icons'
+import { isEmoji } from '@sprouty-ai/shared/utils/icon-constants'
+import type { ResolvedEntityIcon } from '@sprouty-ai/shared/icons'
 
 // ============================================================================
 // Types
@@ -158,10 +158,13 @@ export const EMOJI_ICON_PREFIX = 'emoji:'
  *
  * Resolution priority (config.icon is the source of truth):
  * 1. Emoji in config.icon → Return emoji marker for caller to render as text
- * 2. Local path in config.icon (./icon.svg) → Load from .creator-flow/sources/{slug}/icon.svg
- * 3. URL in config.icon → Use URL directly (icon file may have been auto-downloaded)
- * 4. config.icon undefined → Auto-discover .creator-flow/sources/{slug}/icon.{svg,png}
+ * 2. Local path in config.icon (./icon.svg) → Load from sources/{slug}/icon.svg
+ * 3. URL in config.icon → Return URL directly for browser to load
+ * 4. config.icon undefined → Auto-discover sources/{slug}/icon.{svg,png}
  * 5. Fallback → Resolve favicon from service URL
+ *
+ * Config takes precedence over auto-discovered local files. If config.icon is set
+ * (emoji, local path, or URL), auto-discovery is skipped.
  *
  * @returns Promise resolving to icon URL, emoji marker (emoji:{emoji}), or null
  */
@@ -187,7 +190,7 @@ export async function loadSourceIcon(
   // Priority 2: Explicit local path in config.icon (e.g., "./icon.svg")
   if (icon?.startsWith('./')) {
     const iconFilename = icon.slice(2) // Remove './'
-    const relativePath = `.creator-flow/sources/${config.slug}/${iconFilename}`
+    const relativePath = `.sprouty-ai/sources/${config.slug}/${iconFilename}`
     const loaded = await loadWorkspaceIcon(workspaceId, relativePath)
     if (loaded) {
       sourceIconCache.set(cacheKey, loaded)
@@ -195,20 +198,27 @@ export async function loadSourceIcon(
     }
   }
 
-  // Priority 3 & 4: Try auto-discovered local icon files (icon.svg, icon.png)
-  // This handles both:
-  // - config.icon is a URL (icon may have been downloaded to local file)
-  // - config.icon is undefined (auto-discovery)
-  const localIconSvg = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.svg`)
-  if (localIconSvg) {
-    sourceIconCache.set(cacheKey, localIconSvg)
-    return localIconSvg
+  // Priority 3: URL in config.icon - return URL directly
+  // Config URL takes precedence over auto-discovered local files
+  if (icon && (icon.startsWith('http://') || icon.startsWith('https://'))) {
+    sourceIconCache.set(cacheKey, icon)
+    return icon
   }
 
-  const localIconPng = await loadWorkspaceIcon(workspaceId, `.creator-flow/sources/${config.slug}/icon.png`)
-  if (localIconPng) {
-    sourceIconCache.set(cacheKey, localIconPng)
-    return localIconPng
+  // Priority 4: Auto-discover local icon files (only when config.icon is undefined)
+  // This preserves backward compatibility for sources without explicit config.icon
+  if (!icon) {
+    const localIconSvg = await loadWorkspaceIcon(workspaceId, `.sprouty-ai/sources/${config.slug}/icon.svg`)
+    if (localIconSvg) {
+      sourceIconCache.set(cacheKey, localIconSvg)
+      return localIconSvg
+    }
+
+    const localIconPng = await loadWorkspaceIcon(workspaceId, `.sprouty-ai/sources/${config.slug}/icon.png`)
+    if (localIconPng) {
+      sourceIconCache.set(cacheKey, localIconPng)
+      return localIconPng
+    }
   }
 
   // Priority 5: Resolve favicon from service URL
@@ -297,11 +307,11 @@ export async function loadSkillIcon(
   if (cached) return cached
 
   // Extract relative path from absolute icon path
-  // iconPath is absolute, we need to get the .creator-flow/skills/slug/icon.ext part
-  const skillsMatch = iconPath.match(/\.creator-flow\/skills\/([^/]+)\/(.+)$/)
+  // iconPath is absolute, we need to get the .sprouty-ai/skills/slug/icon.ext part
+  const skillsMatch = iconPath.match(/\.sprouty-ai\/skills\/([^/]+)\/(.+)$/)
   if (!skillsMatch) return null
 
-  const relativePath = `.creator-flow/skills/${skillsMatch[1]}/${skillsMatch[2]}`
+  const relativePath = `.sprouty-ai/skills/${skillsMatch[1]}/${skillsMatch[2]}`
 
   try {
     const result = await window.electronAPI.readWorkspaceImage(workspaceId, relativePath)
@@ -429,10 +439,10 @@ const ICON_FILE_EXTENSIONS = ['.svg', '.png', '.jpg', '.jpeg']
 
 /**
  * Pre-compiled regex for extracting workspace-relative icon paths from absolute paths.
- * Matches any known entity directory prefix (.creator-flow/skills/, .creator-flow/sources/, .creator-flow/statuses/)
+ * Matches any known entity directory prefix (.sprouty-ai/skills/, .sprouty-ai/sources/, .sprouty-ai/statuses/)
  * followed by the rest of the path.
  */
-const ICON_PATH_PATTERN = /\.creator-flow\/(?:skills|sources|statuses)\/.+$/
+const ICON_PATH_PATTERN = /\.sprouty-ai\/(?:skills|sources|statuses)\/.+$/
 
 /**
  * Options for the useEntityIcon hook.
@@ -446,13 +456,13 @@ export interface UseEntityIconOptions {
   identifier: string
   /**
    * Known relative path to icon file (for entities with pre-resolved paths).
-   * e.g. '.creator-flow/skills/my-skill/icon.svg'
+   * e.g. '.sprouty-ai/skills/my-skill/icon.svg'
    * If provided, only this exact path is attempted (no auto-discovery).
    */
   iconPath?: string
   /**
    * Directory to auto-discover icon files in (relative to workspace).
-   * e.g. '.creator-flow/sources/linear' → tries .creator-flow/sources/linear/icon.svg, icon.png, etc.
+   * e.g. '.sprouty-ai/sources/linear' → tries .sprouty-ai/sources/linear/icon.svg, icon.png, etc.
    * Ignored if iconPath is provided.
    */
   iconDir?: string
@@ -477,10 +487,14 @@ export interface UseEntityIconOptions {
  * Handles cache lookup, IPC file loading, SVG theming, colorability detection,
  * and emoji detection. Returns a ResolvedEntityIcon ready for EntityIcon rendering.
  *
- * Resolution priority:
+ * Resolution priority (config iconValue is the source of truth):
  * 1. Emoji in iconValue → { kind: 'emoji', value: emoji, colorable: false }
- * 2. Local file (iconPath or auto-discovered in iconDir) → { kind: 'file', value: dataUrl, colorable }
- * 3. Fallback → { kind: 'fallback', colorable: false }
+ * 2. URL in iconValue → { kind: 'file', value: url, colorable: false }
+ * 3. Local file (iconPath) → { kind: 'file', value: dataUrl, colorable }
+ * 4. Auto-discover in iconDir (only when iconValue is undefined) → { kind: 'file', value: dataUrl, colorable }
+ * 5. Fallback → { kind: 'fallback', colorable: false }
+ *
+ * Config takes precedence over auto-discovered local files.
  *
  * Usage:
  *   const icon = useEntityIcon({ workspaceId, entityType: 'skill', identifier: slug, iconPath })
@@ -492,16 +506,25 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
   // Stable cache key for this entity's icon
   const cacheKey = `${entityType}:${workspaceId}:${identifier}`
 
-  // Check if iconValue is an emoji (synchronous, no loading needed)
-  const emojiValue = useMemo(() => {
-    if (iconValue && isEmoji(iconValue)) return iconValue
+  // Check if iconValue is an emoji or URL (synchronous, no loading needed)
+  const immediateValue = useMemo(() => {
+    // Guard against non-string values (can happen with malformed config data)
+    if (!iconValue || typeof iconValue !== 'string') return null
+    if (isEmoji(iconValue)) return { type: 'emoji' as const, value: iconValue }
+    if (iconValue.startsWith('http://') || iconValue.startsWith('https://')) {
+      return { type: 'url' as const, value: iconValue }
+    }
     return null
   }, [iconValue])
 
-  // Initial state: check cache synchronously or return emoji/fallback
+  // Initial state: check cache synchronously or return emoji/url/fallback
   const [resolved, setResolved] = useState<ResolvedEntityIcon>(() => {
-    if (emojiValue) {
-      return { kind: 'emoji', value: emojiValue, colorable: false }
+    if (immediateValue?.type === 'emoji') {
+      return { kind: 'emoji', value: immediateValue.value, colorable: false }
+    }
+    if (immediateValue?.type === 'url') {
+      // URLs are returned directly as 'file' kind (works in img src)
+      return { kind: 'file', value: immediateValue.value, colorable: false }
     }
     // Check unified cache for a previously loaded file icon
     const cached = iconCache.get(cacheKey)
@@ -519,8 +542,15 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
 
   useEffect(() => {
     // If emoji, no file loading needed - just update state
-    if (emojiValue) {
-      setResolved({ kind: 'emoji', value: emojiValue, colorable: false })
+    if (immediateValue?.type === 'emoji') {
+      setResolved({ kind: 'emoji', value: immediateValue.value, colorable: false })
+      return
+    }
+
+    // If URL from config, use it directly (no file loading needed)
+    // Config URL takes precedence over auto-discovered local files
+    if (immediateValue?.type === 'url') {
+      setResolved({ kind: 'file', value: immediateValue.value, colorable: false })
       return
     }
 
@@ -544,14 +574,12 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
       let result: { dataUrl: string; colorable: boolean; rawSvg?: string } | null = null
 
       if (iconPath) {
-        // Known path - extract relative portion and load directly
-        // iconPath may be absolute; extract the workspace-relative part
-        const relativeMatch = iconPath.match(ICON_PATH_PATTERN)
-        const relativePath = relativeMatch ? relativeMatch[0] : iconPath
-
-        result = await loadIconFile(workspaceId, relativePath)
-      } else if (iconDir) {
+        // iconPath is the full absolute path to the icon file
+        // Pass it directly to loadIconFile - IPC now supports absolute paths
+        result = await loadIconFile(workspaceId, iconPath)
+      } else if (iconDir && !iconValue) {
         // Auto-discover icon files in directory
+        // Only do auto-discovery when iconValue is undefined (config takes precedence)
         // iconFileName overrides the default 'icon' prefix (e.g. statuses use statusId)
         result = await discoverIconFile(workspaceId, iconDir, iconFileName)
       }
@@ -581,7 +609,7 @@ export function useEntityIcon(opts: UseEntityIconOptions): ResolvedEntityIcon {
     loadIcon()
 
     return () => { cancelled = true }
-  }, [workspaceId, entityType, identifier, iconPath, iconDir, iconFileName, emojiValue, cacheKey])
+  }, [workspaceId, entityType, identifier, iconPath, iconDir, iconFileName, immediateValue, cacheKey, iconValue])
 
   return resolved
 }

@@ -8,8 +8,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { LabelConfig } from '@creator-flow/shared/labels'
-import { flattenLabels } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
+import { flattenLabels } from '@sprouty-ai/shared/labels'
 
 export interface UseLabelsResult {
   /** Label tree (root-level nodes with nested children) */

@@ -6,7 +6,7 @@
  */
 
 import type { Session, Message, PermissionRequest, CredentialRequest, TypedError, PermissionMode, TodoState, AuthRequest, ToolDisplayMeta } from '../../shared/types'
-import type { InteractiveRequest } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveRequest } from '@sprouty-ai/shared/interactive-ui'
 
 /**
  * Streaming state for a session - replaces streamingTextRef
@@ -407,7 +407,7 @@ export interface InteractiveCompletedEvent {
   type: 'interactive_completed'
   sessionId: string
   requestId: string
-  response: import('@creator-flow/shared/interactive-ui').InteractiveResponse
+  response: import('@sprouty-ai/shared/interactive-ui').InteractiveResponse
 }
 
 /**

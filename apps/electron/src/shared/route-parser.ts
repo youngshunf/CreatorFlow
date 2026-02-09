@@ -108,7 +108,7 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
   // Settings navigator
   if (first === 'settings') {
     const subpage = (segments[1] || 'user-profile') as SettingsSubpage
-    const validSubpages: SettingsSubpage[] = ['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription']
+    const validSubpages: SettingsSubpage[] = ['app', 'appearance', 'input', 'workspace', 'sources', 'skills', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription']
     if (!validSubpages.includes(subpage)) return null
     return {
       navigator: 'settings',

@@ -1,10 +1,10 @@
 /**
- * @craft-agent/ui - Shared Tailwind CSS v4 theme
+ * @sprouty-ai/ui - Shared Tailwind CSS v4 theme
  *
- * This file provides the base theme configuration for all Craft Agent UIs.
+ * This file provides the base theme configuration for all Creator Flow UIs.
  * Import this in your app's main CSS file:
  *
- *   @import "@craft-agent/ui/styles";
+ *   @import "@sprouty-ai/ui/styles";
  *
  * The consuming app can then add its own source directive:
  *
@@ -346,6 +346,17 @@ html[data-font="inter"] {
       rgba(var(--shadow-color), var(--shadow-border-opacity)) 0px 1px 1px -0.5px,
       rgba(var(--shadow-color), var(--shadow-blur-opacity)) 0px 3px 3px -1.5px,
       rgba(var(--shadow-color), calc(var(--shadow-blur-opacity) * 0.67)) 0px 6px 6px -3px;
+  }
+
+  /* Dark mode: outline only, no blur glow, stronger border */
+  .dark .shadow-tinted {
+    box-shadow:
+      rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
+      rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
+      rgba(var(--shadow-color), calc(var(--shadow-border-opacity) * 3)) 0px 0px 0px 1px,
+      rgba(var(--shadow-color), 0) 0px 1px 1px -0.5px,
+      rgba(var(--shadow-color), 0) 0px 3px 3px -1.5px,
+      rgba(var(--shadow-color), 0) 0px 6px 6px -3px;
   }
 
   .shadow-strong {

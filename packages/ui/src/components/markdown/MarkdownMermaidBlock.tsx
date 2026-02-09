@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { renderMermaid } from '@creator-flow/mermaid'
+import { renderMermaid } from '@sprouty-ai/mermaid'
 import { Maximize2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { CodeBlock } from './CodeBlock'
@@ -8,7 +8,7 @@ import { MermaidPreviewOverlay } from '../overlay/MermaidPreviewOverlay'
 // ============================================================================
 // MarkdownMermaidBlock — renders mermaid code fences as SVG diagrams.
 //
-// Uses @creator-flow/mermaid to parse flowchart text and produce an SVG string.
+// Uses @sprouty-ai/mermaid to parse flowchart text and produce an SVG string.
 // Falls back to a plain code block if rendering fails (invalid syntax, etc).
 //
 // Theming: Colors are passed as CSS variable references (var(--background),

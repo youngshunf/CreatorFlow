@@ -1,6 +1,6 @@
 {
-  "name": "@creator-flow/viewer",
-  "version": "0.3.1",
+  "name": "@sprouty-ai/viewer",
+  "version": "0.3.5",
   "description": "Web viewer for CreatorFlow sessions - upload and share session transcripts",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@creator-flow/core": "workspace:*",
-    "@creator-flow/ui": "workspace:*",
+    "@sprouty-ai/core": "workspace:*",
+    "@sprouty-ai/ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

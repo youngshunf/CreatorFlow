@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/context/LocaleContext'
+import { toast } from 'sonner'
 import type { FMFileEntry } from '../../../shared/types'
 
 export interface FileTreePanelProps {
@@ -39,6 +40,8 @@ export interface FileTreePanelProps {
   /** Called when a directory is selected (for context, not preview) */
   onSelectDirectory?: (path: string) => void
   className?: string
+  /** 紧凑模式：隐藏 header，用于嵌入场景 */
+  compact?: boolean
 }
 
 interface TreeNode {
@@ -184,12 +187,14 @@ export function FileTreePanel({
   onSelectFile,
   onSelectDirectory,
   className,
+  compact,
 }: FileTreePanelProps) {
   const t = useT()
   const [rootNode, setRootNode] = useState<TreeNode | null>(null)
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set([rootPath]))
   const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Load directory contents
   const loadDirectory = useCallback(async (path: string): Promise<FMFileEntry[]> => {
@@ -317,8 +322,9 @@ export function FileTreePanel({
 
   // Refresh tree
   const handleRefresh = useCallback(async () => {
-    if (!rootPath) return
-    
+    if (!rootPath || isRefreshing) return
+
+    setIsRefreshing(true)
     try {
       setError(null)
       const entries = await loadDirectory(rootPath)
@@ -327,24 +333,28 @@ export function FileTreePanel({
         name: rootPath.split('/').pop() || t('工作区'),
         isDirectory: true,
       }
-      
+
       const children = entries.map(entry => ({
         entry,
         children: entry.isDirectory ? undefined : undefined,
       }))
-      
+
       setRootNode({
         entry: rootEntry,
         children,
         isExpanded: true,
       })
-      
+
       // Keep root expanded
       setExpandedPaths(new Set([rootPath]))
+      toast.success(t('刷新完成'))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      toast.error(t('刷新失败'))
+    } finally {
+      setIsRefreshing(false)
     }
-  }, [rootPath, loadDirectory, t])
+  }, [rootPath, isRefreshing, loadDirectory, t])
 
   // Merge loading state into tree
   const treeWithLoadingState = useMemo(() => {
@@ -387,18 +397,21 @@ export function FileTreePanel({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-        <span className="text-sm font-medium truncate">{treeWithLoadingState.entry.name}</span>
+      {!compact && (
+      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 relative z-panel">
+        <span className="text-sm font-medium truncate" title={rootPath}>{rootPath}</span>
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 titlebar-no-drag"
           onClick={handleRefresh}
+          disabled={isRefreshing}
           title={t('刷新')}
         >
-          <RefreshCw className="h-3.5 w-3.5" />
+          <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
         </Button>
       </div>
+      )}
       
       {/* Tree */}
       <ScrollArea className="flex-1">

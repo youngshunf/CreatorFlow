@@ -11,7 +11,7 @@
 
 import * as React from 'react'
 import type { ComponentEntry } from './types'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { LabelBadgeRow } from '@/components/ui/label-badge-row'
 
 // ============================================================================

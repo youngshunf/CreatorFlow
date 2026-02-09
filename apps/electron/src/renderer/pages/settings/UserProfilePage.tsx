@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { useT } from '@/context/LocaleContext'
 import { navigate, routes } from '@/lib/navigate'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 import { useAppShellContext } from '@/context/AppShellContext'
 
@@ -305,7 +305,7 @@ export default function UserProfilePage() {
 
       {/* 修改密码弹窗 */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t('修改密码')}</DialogTitle>
           </DialogHeader>

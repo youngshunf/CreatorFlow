@@ -1,5 +1,5 @@
 /**
- * Re-export all types from @creator-flow/core
+ * Re-export all types from @sprouty-ai/core
  */
 
 // Workspace and config types

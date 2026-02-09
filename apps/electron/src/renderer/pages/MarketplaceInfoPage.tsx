@@ -35,7 +35,7 @@ import type {
   MarketplaceAppVersion,
   InstallProgress,
   InstalledSkillInfo,
-} from '@creator-flow/shared/marketplace'
+} from '@sprouty-ai/shared/marketplace'
 
 export interface MarketplaceInfoPageProps {
   type: 'skill' | 'app'
@@ -169,7 +169,7 @@ export function MarketplaceInfoPage({
         </div>
         <Button variant="outline" onClick={() => navigate(routes.view.marketplace())}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('返回市场')}
+          {t('返回广场')}
         </Button>
       </div>
     )
@@ -186,14 +186,14 @@ export function MarketplaceInfoPage({
         </div>
         <Button variant="outline" onClick={() => navigate(routes.view.marketplace())}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('返回市场')}
+          {t('返回广场')}
         </Button>
       </div>
     )
   }
 
   const item = type === 'skill' ? skill! : app!
-  const versions = type === 'skill' ? skillVersions : appVersions
+  const versions: Array<{ version: string; changelog: string | null; is_latest: boolean; published_at: string }> = type === 'skill' ? skillVersions : appVersions
   const latestVersion = versions.find(v => v.is_latest)
   const isInstalled = installedInfo !== null
   const hasUpdate = isInstalled && installedInfo.hasUpdate
@@ -331,7 +331,7 @@ export function MarketplaceInfoPage({
             <div className="space-y-2">
               {versions.slice(1, 5).map((version) => (
                 <div
-                  key={'version' in version ? version.version : version.version}
+                  key={version.version}
                   className="p-3 rounded-lg bg-foreground/[0.02] border border-foreground/5"
                 >
                   <div className="flex items-center justify-between">

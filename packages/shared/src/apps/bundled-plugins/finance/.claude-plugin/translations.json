@@ -1,0 +1,10 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "income-statement": { "label": "利润表", "description": "生成包含同期对比和差异分析的利润表" },
+    "journal-entry": { "label": "记账凭证", "description": "编制包含借贷方和辅助明细的记账凭证" },
+    "reconciliation": { "label": "账务核对", "description": "将总账余额与明细账、银行或第三方余额进行核对" },
+    "sox-testing": { "label": "SOX 测试", "description": "生成 SOX 抽样选择、测试工作底稿和控制评估" },
+    "variance-analysis": { "label": "差异分析", "description": "将差异分解为驱动因素，附带叙述说明和瀑布图分析" }
+  }
+}

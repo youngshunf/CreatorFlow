@@ -17,10 +17,10 @@ import { join } from 'node:path';
 // Using string[][] instead of [string, string][] to match RequestInit.headers type
 type HeadersInitType = Headers | Record<string, string> | string[][];
 
-const DEBUG = process.argv.includes('--debug') || process.env.CRAFT_DEBUG === '1';
+const DEBUG = process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1';
 
 // Log file for debug output (avoids console spam)
-const LOG_DIR = join(homedir(), '.creator-flow', 'logs');
+const LOG_DIR = join(homedir(), '.sprouty-ai', 'logs');
 const LOG_FILE = join(LOG_DIR, 'interceptor.log');
 
 // Ensure log directory exists at module load
@@ -48,7 +48,7 @@ export interface LastApiError {
 }
 
 // File-based storage for cross-process sharing
-const ERROR_FILE = join(homedir(), '.creator-flow', 'api-error.json');
+const ERROR_FILE = join(homedir(), '.sprouty-ai', 'api-error.json');
 const MAX_ERROR_AGE_MS = 5 * 60 * 1000; // 5 minutes
 
 function getStoredError(): LastApiError | null {
@@ -276,6 +276,10 @@ function toCurl(url: string, init?: RequestInit): string {
 async function logResponse(response: Response, url: string, startTime: number): Promise<Response> {
   const duration = Date.now() - startTime;
 
+  // Always log LLM API response status (regardless of DEBUG mode)
+  if (isApiMessagesUrl(url)) {
+    console.error(`[LLM Response] ${response.status} ${response.statusText} ${url} (${duration}ms)`);
+  }
 
   // Capture API errors (runs regardless of DEBUG mode)
   if (shouldCaptureApiErrors(url) && response.status >= 400) {
@@ -369,6 +373,10 @@ async function interceptedFetch(
 
   const startTime = Date.now();
 
+  // Always log LLM API request URL (regardless of DEBUG mode) for troubleshooting
+  if (isApiMessagesUrl(url)) {
+    console.error(`[LLM Request] ${init?.method?.toUpperCase() || 'GET'} ${url}`);
+  }
 
   // Log all requests as cURL commands
   if (DEBUG) {

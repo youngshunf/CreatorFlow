@@ -1,5 +1,5 @@
 import type { PermissionRequest, CredentialRequest, CredentialResponse } from '../../../../../shared/types'
-import type { InteractiveRequest, InteractiveResponse } from '@creator-flow/shared/interactive-ui'
+import type { InteractiveRequest, InteractiveResponse } from '@sprouty-ai/shared/interactive-ui'
 
 /**
  * Input mode determines which component is rendered in InputContainer

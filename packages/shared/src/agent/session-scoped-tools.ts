@@ -14,7 +14,7 @@
  * - source_credential_prompt: Prompt user for API credentials
  *
  * Source and Skill CRUD is done via standard file editing tools (Read/Write/Edit).
- * See ~/.creator-flow/docs/ for config format documentation.
+ * See ~/.sprouty-ai/docs/ for config format documentation.
  */
 
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
@@ -57,9 +57,11 @@ import {
 import type { FolderSourceConfig, LoadedSource } from '../sources/types.ts';
 import { getSourceCredentialManager } from '../sources/index.ts';
 import { inferGoogleServiceFromUrl, inferSlackServiceFromUrl, inferMicrosoftServiceFromUrl, isApiOAuthProvider, type GoogleService, type SlackService, type MicrosoftService } from '../sources/types.ts';
+import { isGoogleOAuthConfigured } from '../auth/google-oauth.ts';
 import { buildAuthorizationHeader } from '../sources/api-tools.ts';
 import { DOC_REFS } from '../docs/index.ts';
-import { renderMermaid } from '@creator-flow/mermaid';
+import { renderMermaid } from '@sprouty-ai/mermaid';
+import { createLLMTool } from './llm-tool.ts';
 
 // ============================================================
 // Session-Scoped Tool Callbacks
@@ -68,7 +70,7 @@ import { renderMermaid } from '@creator-flow/mermaid';
 /**
  * Credential input modes for different auth types
  */
-export type CredentialInputMode = 'bearer' | 'basic' | 'header' | 'query';
+export type CredentialInputMode = 'bearer' | 'basic' | 'header' | 'query' | 'multi-header';
 
 /**
  * Auth request types
@@ -104,8 +106,12 @@ export interface CredentialAuthRequest extends BaseAuthRequest {
   description?: string;
   hint?: string;
   headerName?: string;
+  /** Header names for multi-header auth (e.g., ["DD-API-KEY", "DD-APPLICATION-KEY"]) */
+  headerNames?: string[];
   /** Source URL/domain for password manager credential matching (1Password, etc.) */
   sourceUrl?: string;
+  /** For basic auth: whether password is required. Default true for backward compatibility. */
+  passwordRequired?: boolean;
 }
 
 /**
@@ -163,6 +169,52 @@ export interface AuthResult {
   workspace?: string;  // For Slack OAuth
 }
 
+// ============================================================
+// Helper Functions (exported for testing)
+// ============================================================
+
+/**
+ * Detect the effective credential input mode based on source config and requested mode.
+ *
+ * Auto-upgrades to 'multi-header' when source has headerNames array, regardless of
+ * what mode was explicitly requested. This ensures Datadog-like sources (with
+ * headerNames: ["DD-API-KEY", "DD-APPLICATION-KEY"]) always use multi-header UI.
+ *
+ * @param source - Source configuration (may be null if source not found)
+ * @param requestedMode - Mode explicitly requested in tool call
+ * @param requestedHeaderNames - Header names explicitly provided in tool call
+ * @returns Effective mode to use
+ */
+export function detectCredentialMode(
+  source: { api?: { headerNames?: string[] } } | null,
+  requestedMode: CredentialInputMode,
+  requestedHeaderNames?: string[]
+): CredentialInputMode {
+  // Use provided headerNames or fall back to source config
+  const effectiveHeaderNames = requestedHeaderNames || source?.api?.headerNames;
+
+  // If we have headerNames, always use multi-header mode
+  if (effectiveHeaderNames && effectiveHeaderNames.length > 0) {
+    return 'multi-header';
+  }
+
+  return requestedMode;
+}
+
+/**
+ * Get effective header names from request args or source config.
+ *
+ * @param source - Source configuration
+ * @param requestedHeaderNames - Header names explicitly provided in tool call
+ * @returns Array of header names or undefined
+ */
+export function getEffectiveHeaderNames(
+  source: { api?: { headerNames?: string[] } } | null,
+  requestedHeaderNames?: string[]
+): string[] | undefined {
+  return requestedHeaderNames || source?.api?.headerNames;
+}
+
 /**
  * Callbacks for session-scoped tool operations.
  * These are registered per-session and invoked by tools.
@@ -189,7 +241,7 @@ const sessionScopedToolCallbackRegistry = new Map<string, SessionScopedToolCallb
 
 /**
  * Register callbacks for a session's tools.
- * Called by CreatorFlowAgent when initializing.
+ * Called by SproutyAgent when initializing.
  */
 export function registerSessionScopedToolCallbacks(
   sessionId: string,
@@ -201,7 +253,7 @@ export function registerSessionScopedToolCallbacks(
 
 /**
  * Unregister callbacks for a session.
- * Called by CreatorFlowAgent on dispose.
+ * Called by SproutyAgent on dispose.
  */
 export function unregisterSessionScopedToolCallbacks(sessionId: string): void {
   sessionScopedToolCallbackRegistry.delete(sessionId);
@@ -363,12 +415,12 @@ Use this after editing configuration files to check for errors before they take 
 Returns structured validation results with errors, warnings, and suggestions.
 
 **Targets:**
-- \`config\`: Validates ~/.creator-flow/config.json (workspaces, model, settings)
-- \`sources\`: Validates all sources in ~/.creator-flow/workspaces/{workspace}/sources/*/config.json
-- \`statuses\`: Validates ~/.creator-flow/workspaces/{workspace}/statuses/config.json (workflow states)
-- \`preferences\`: Validates ~/.creator-flow/preferences.json (user preferences)
+- \`config\`: Validates ~/.sprouty-ai/config.json (workspaces, model, settings)
+- \`sources\`: Validates all sources in ~/.sprouty-ai/workspaces/{workspace}/sources/*/config.json
+- \`statuses\`: Validates ~/.sprouty-ai/workspaces/{workspace}/statuses/config.json (workflow states)
+- \`preferences\`: Validates ~/.sprouty-ai/preferences.json (user preferences)
 - \`permissions\`: Validates permissions.json files (workspace, source, and app-level default)
-- \`tool-icons\`: Validates ~/.craft-agent/tool-icons/tool-icons.json (CLI tool icon mappings)
+- \`tool-icons\`: Validates ~/.sprouty-ai/tool-icons/tool-icons.json (CLI tool icon mappings)
 - \`all\`: Validates all configuration files
 
 **For specific source validation:** Use target='sources' with sourceSlug parameter.
@@ -775,7 +827,7 @@ After creating or editing a source's config.json, run this tool to:
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found.\n\nCreate the source folder at:\n\`~/.creator-flow/workspaces/{workspace}/sources/${args.sourceSlug}/config.json\`\n\nSee \`${DOC_REFS.sources}\` for config format.`,
+              text: `Source '${args.sourceSlug}' not found.\n\nCreate the source folder at:\n\`~/.sprouty-ai/workspaces/{workspace}/sources/${args.sourceSlug}/config.json\`\n\nSee \`${DOC_REFS.sources}\` for config format.`,
             }],
             isError: true,
           };
@@ -1287,7 +1339,7 @@ A browser window will open for the user to complete authentication.
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.sprouty-ai/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1417,7 +1469,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.sprouty-ai/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1432,6 +1484,47 @@ After successful authentication, the tokens are stored and the source is marked 
             content: [{
               type: 'text' as const,
               text: `Source '${args.sourceSlug}' is not configured as a Google API source. ${hint}\n\nCurrent config: ${JSON.stringify(source, null, 2)}`,
+            }],
+            isError: true,
+          };
+        }
+
+        // Check if Google OAuth credentials are configured (in source config or env vars)
+        const api = source.api;
+        if (!isGoogleOAuthConfigured(api?.googleOAuthClientId, api?.googleOAuthClientSecret)) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `Google OAuth credentials not configured for source '${args.sourceSlug}'.
+
+To authenticate with Google services, you need to provide your own OAuth credentials.
+
+**Option 1: Add credentials to source config**
+Edit the source's config.json and add:
+\`\`\`json
+{
+  "api": {
+    "googleOAuthClientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "googleOAuthClientSecret": "YOUR_CLIENT_SECRET"
+  }
+}
+\`\`\`
+
+**Option 2: Set environment variables**
+\`\`\`bash
+export GOOGLE_OAUTH_CLIENT_ID="YOUR_CLIENT_ID.apps.googleusercontent.com"
+export GOOGLE_OAUTH_CLIENT_SECRET="YOUR_CLIENT_SECRET"
+\`\`\`
+
+**How to get credentials:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project (or select existing)
+3. Enable the required API (Gmail API, Calendar API, etc.)
+4. Go to "APIs & Services" → "Credentials"
+5. Create OAuth 2.0 Client ID (Desktop app type)
+6. Copy the Client ID and Client Secret
+
+See the source's guide.md for detailed instructions.`,
             }],
             isError: true,
           };
@@ -1454,7 +1547,6 @@ After successful authentication, the tokens are stored and the source is marked 
 
         // Determine service from config for new pattern
         let service: GoogleService | undefined;
-        const api = source.api;
 
         if (api?.googleService) {
           service = api.googleService;
@@ -1557,7 +1649,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.sprouty-ai/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1712,7 +1804,7 @@ After successful authentication, the tokens are stored and the source is marked 
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.sprouty-ai/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1841,6 +1933,7 @@ The user will see a secure input UI with appropriate fields based on the auth mo
 - \`basic\`: Username and Password fields
 - \`header\`: API Key with custom header name shown
 - \`query\`: API Key for query parameter auth
+- \`multi-header\`: Multiple header fields (e.g., Datadog's DD-API-KEY + DD-APPLICATION-KEY)
 
 **IMPORTANT:** After calling this tool:
 - Execution will be **automatically paused** to show the credential input UI
@@ -1856,10 +1949,21 @@ source_credential_prompt({
   description: "Enter your API key from the dashboard",
   hint: "Find it at https://example.com/settings/api"
 })
+\`\`\`
+
+**Multi-header example (Datadog):**
+\`\`\`
+source_credential_prompt({
+  sourceSlug: "datadog",
+  mode: "multi-header",
+  headerNames: ["DD-API-KEY", "DD-APPLICATION-KEY"],
+  description: "Enter your Datadog API and Application keys",
+  hint: "Get keys from Organization Settings > API Keys and Application Keys"
+})
 \`\`\``,
     {
       sourceSlug: z.string().describe('The slug of the source to authenticate'),
-      mode: z.enum(['bearer', 'basic', 'header', 'query']).describe('Type of credential input'),
+      mode: z.enum(['bearer', 'basic', 'header', 'query', 'multi-header']).describe('Type of credential input'),
       labels: z.object({
         credential: z.string().optional().describe('Label for primary credential field'),
         username: z.string().optional().describe('Label for username field (basic auth)'),
@@ -1867,9 +1971,22 @@ source_credential_prompt({
       }).optional().describe('Custom field labels'),
       description: z.string().optional().describe('Description shown to user'),
       hint: z.string().optional().describe('Hint about where to find credentials'),
+      headerNames: z.array(z.string()).optional().describe('Header names for multi-header auth (e.g., ["DD-API-KEY", "DD-APPLICATION-KEY"])'),
+      passwordRequired: z.boolean().optional().describe('For basic auth: whether password field is required (default: true)'),
     },
     async (args) => {
       debug('[source_credential_prompt] Requesting credentials:', args.sourceSlug, args.mode);
+
+      // Validate that passwordRequired only applies to basic auth
+      if (args.passwordRequired !== undefined && args.mode !== 'basic') {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `Error: passwordRequired parameter only applies to basic auth mode. You specified mode="${args.mode}" with passwordRequired=${args.passwordRequired}.`,
+          }],
+          isError: true,
+        };
+      }
 
       try {
         // Load source to get name and validate
@@ -1878,7 +1995,7 @@ source_credential_prompt({
           return {
             content: [{
               type: 'text' as const,
-              text: `Source '${args.sourceSlug}' not found. Check ~/.creator-flow/workspaces/{workspace}/sources/ for available sources.`,
+              text: `Source '${args.sourceSlug}' not found. Check ~/.sprouty-ai/workspaces/{workspace}/sources/ for available sources.`,
             }],
             isError: true,
           };
@@ -1897,6 +2014,11 @@ source_credential_prompt({
           };
         }
 
+        // Auto-detect multi-header mode from source config
+        // If source has headerNames array, use multi-header mode regardless of what was passed
+        const effectiveHeaderNames = getEffectiveHeaderNames(source, args.headerNames);
+        const effectiveMode = detectCredentialMode(source, args.mode, args.headerNames);
+
         // Build auth request
         const authRequest: CredentialAuthRequest = {
           type: 'credential',
@@ -1904,13 +2026,16 @@ source_credential_prompt({
           sessionId,
           sourceSlug: args.sourceSlug,
           sourceName: source.name,
-          mode: args.mode,
+          mode: effectiveMode,
           labels: args.labels,
           description: args.description,
           hint: args.hint,
           headerName: source.api?.headerName,
+          // For multi-header auth: use provided headerNames or fall back to source config
+          headerNames: effectiveHeaderNames,
           // Pass source URL so password managers (1Password) can match stored credentials by domain
           sourceUrl: source.api?.baseUrl || source.mcp?.url,
+          passwordRequired: args.passwordRequired,
         };
 
         // Trigger auth request - this will cause the session manager to forceAbort
@@ -2013,7 +2138,7 @@ const sessionScopedToolsCache = new Map<string, ReturnType<typeof createSdkMcpSe
  * Creates and caches the provider if it doesn't exist.
  *
  * @param sessionId - Unique session identifier
- * @param workspaceRootPath - Absolute path to workspace folder (e.g., ~/.creator-flow/workspaces/xxx)
+ * @param workspaceRootPath - Absolute path to workspace folder (e.g., ~/.sprouty-ai/workspaces/xxx)
  */
 export function getSessionScopedTools(sessionId: string, workspaceRootPath: string): ReturnType<typeof createSdkMcpServer> {
   const cacheKey = `${sessionId}::${workspaceRootPath}`;
@@ -2021,7 +2146,7 @@ export function getSessionScopedTools(sessionId: string, workspaceRootPath: stri
   if (!cached) {
     // Create session-scoped tools that capture the sessionId and workspaceRootPath in their closures
     // Note: Source CRUD is done via standard file editing tools (Read/Write/Edit).
-    // See ~/.creator-flow/docs/ for config format documentation.
+    // See ~/.sprouty-ai/docs/ for config format documentation.
     cached = createSdkMcpServer({
       name: 'session',
       version: '1.0.0',
@@ -2040,6 +2165,8 @@ export function getSessionScopedTools(sessionId: string, workspaceRootPath: stri
         createSlackOAuthTriggerTool(sessionId, workspaceRootPath),
         createMicrosoftOAuthTriggerTool(sessionId, workspaceRootPath),
         createCredentialPromptTool(sessionId, workspaceRootPath),
+        // LLM tool - invoke secondary Claude calls for subtasks
+        createLLMTool({ sessionId }),
       ],
     });
     sessionScopedToolsCache.set(cacheKey, cached);

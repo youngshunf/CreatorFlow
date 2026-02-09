@@ -435,7 +435,7 @@ export function NavigationProvider({
               // No sessions in current workspace
               const stateWithoutDetails: NavigationState = {
                 ...newState,
-                details: undefined,
+                details: null,
               }
               setSession({ selected: null })
               setNavigationState(stateWithoutDetails)
@@ -730,38 +730,52 @@ export function NavigationProvider({
   // Track the previous workspace ID to detect workspace switches
   const prevWorkspaceIdRef = useRef<string | null>(null)
 
-  // Re-validate navigation state when workspace changes
-  // This handles the case where user switches workspaces and the current
-  // selected session doesn't belong to the new workspace
+  // Reset navigation state when workspace changes
+  // This prevents back/forward navigating to sessions from the wrong workspace
+  // and ensures sidebar doesn't show stale context
   useEffect(() => {
-    // Skip on initial render or if workspace is not set
-    if (!workspaceId || !isReady) return
+    if (!workspaceId) return
 
-    // Skip if this is the first workspace (not a switch)
-    if (prevWorkspaceIdRef.current === null) {
-      prevWorkspaceIdRef.current = workspaceId
-      return
+    // Skip on initial mount (no previous workspace)
+    if (prevWorkspaceIdRef.current !== null && prevWorkspaceIdRef.current !== workspaceId) {
+      console.log('[Navigation] Workspace changed from', prevWorkspaceIdRef.current, 'to', workspaceId)
+
+      // Clear history stack - old routes belong to previous workspace
+      historyStackRef.current = []
+      historyIndexRef.current = -1
+      setCanGoBack(false)
+      setCanGoForward(false)
+
+      // Close right sidebar - its context is workspace-specific
+      setNavigationState(prev => ({
+        ...prev,
+        rightSidebar: undefined,
+      }))
+
+      // Clear the URL route parameter — it belongs to the previous workspace
+      // and must not be restored by the initial route restoration effect.
+      const url = new URL(window.location.href)
+      url.searchParams.delete('route')
+      url.searchParams.delete('sidebar')
+      history.replaceState({}, '', url.toString())
+
+      // Clear the current session selection immediately.
+      // IMPORTANT: Use setNavigationState directly instead of applyNavigationState.
+      // applyNavigationState would call getFirstSessionId() which reads sessionMetas —
+      // but during workspace switch, sessionMetas may still contain stale data from the
+      // previous workspace (React hasn't re-rendered yet with the cleared atoms).
+      // This would cause it to auto-select a session from the old workspace.
+      // The correct session will be selected later when sessions finish reloading.
+      setNavigationState(prev => ({
+        ...prev,
+        details: null,
+        rightSidebar: undefined,
+      }))
+      setSession({ selected: null })
     }
 
-    // Skip if workspace hasn't actually changed
-    if (prevWorkspaceIdRef.current === workspaceId) return
-
-    console.log('[Navigation] Workspace changed from', prevWorkspaceIdRef.current, 'to', workspaceId)
     prevWorkspaceIdRef.current = workspaceId
-
-    // If currently in chats navigator, re-validate the selection
-    if (isChatsNavigation(navigationState)) {
-      // Always re-apply navigation state to trigger proper session selection
-      // for the new workspace. This will either:
-      // 1. Clear invalid session and auto-select first session in new workspace
-      // 2. Show empty state if new workspace has no sessions
-      const newState: NavigationState = {
-        ...navigationState,
-        details: undefined, // Clear any existing selection
-      }
-      applyNavigationState(newState)
-    }
-  }, [workspaceId, isReady, navigationState, applyNavigationState])
+  }, [workspaceId, isReady, setSession])
 
   // Initialize history stack on first load
   useEffect(() => {

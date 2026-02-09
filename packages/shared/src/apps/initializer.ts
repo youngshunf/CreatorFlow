@@ -25,7 +25,6 @@ import {
   loadWorkspaceConfig,
 } from '../workspaces/storage.ts';
 import { loadAppById, getAppPath } from './storage.ts';
-import { getBundledAppSourcePath } from './bundled-apps.ts';
 import { debug } from '../utils/debug.ts';
 import { resolveSourceConfigPaths } from './video-mcp-paths.ts';
 
@@ -231,18 +230,11 @@ export async function installSkillsFromCloud(
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithCustomLabels(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'labels', 'config.json'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'labels', 'config.json'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -251,18 +243,11 @@ function getAppPathWithCustomLabels(appId: string): string | null {
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithCustomStatuses(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'statuses', 'config.json'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'statuses', 'config.json'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -279,7 +264,7 @@ function copyAppLabelsToWorkspace(appPath: string, workspaceRoot: string): boole
     return false;
   }
   
-  const workspaceLabelsDir = join(workspaceRoot, '.creator-flow', 'labels');
+  const workspaceLabelsDir = join(workspaceRoot, '.sprouty-ai', 'labels');
   const workspaceLabelsConfig = join(workspaceLabelsDir, 'config.json');
   
   // Ensure workspace labels directory exists
@@ -307,7 +292,7 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
     return false;
   }
   
-  const workspaceStatusesDir = join(workspaceRoot, '.creator-flow', 'statuses');
+  const workspaceStatusesDir = join(workspaceRoot, '.sprouty-ai', 'statuses');
   const workspaceStatusesConfig = join(workspaceStatusesDir, 'config.json');
   const workspaceIconsDir = join(workspaceStatusesDir, 'icons');
   
@@ -339,19 +324,8 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
  * @param isPackaged - Whether the app is packaged (default: false)
  * @param resourcesPath - Resources path for packaged app
  */
-function copyAppDataToWorkspace(
-  appId: string,
-  workspaceRoot: string,
-  isPackaged: boolean = false,
-  resourcesPath?: string
-): void {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-
-  if (!appPath) {
-    // Fall back to installed app path
-    appPath = getAppPath(appId, false);
-  }
+function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
+  const appPath = getAppPath(appId);
 
   if (!existsSync(appPath)) {
     debug(`[copyAppDataToWorkspace] App path not found: ${appPath}`);
@@ -377,18 +351,11 @@ function copyAppDataToWorkspace(
  * Returns the app path if found, null otherwise.
  */
 function getAppPathWithSources(appId: string): string | null {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  if (appPath && existsSync(join(appPath, 'sources'))) {
-    return appPath;
-  }
-  
-  // Fall back to installed app path
-  appPath = getAppPath(appId, false);
+  const appPath = getAppPath(appId);
   if (existsSync(appPath) && existsSync(join(appPath, 'sources'))) {
     return appPath;
   }
-  
+
   return null;
 }
 
@@ -414,7 +381,7 @@ function copyAppSourcesToWorkspace(
     return false;
   }
 
-  const workspaceSourcesDir = join(workspaceRoot, '.creator-flow', 'sources');
+  const workspaceSourcesDir = join(workspaceRoot, '.sprouty-ai', 'sources');
 
   // Ensure workspace sources directory exists
   if (!existsSync(workspaceSourcesDir)) {
@@ -486,36 +453,30 @@ function copyAppSourcesToWorkspace(
 
 /**
  * Copy app manifest.json to workspace root for app info display.
- * The manifest is copied to .creator-flow/app-manifest.json.
+ * The manifest is copied to .sprouty-ai/app-manifest.json.
  */
 function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void {
-  // Try bundled app source path first
-  let appPath = getBundledAppSourcePath(appId);
-  
-  if (!appPath) {
-    // Fall back to installed app path
-    appPath = getAppPath(appId, false);
-  }
-  
+  const appPath = getAppPath(appId);
+
   if (!existsSync(appPath)) {
     debug(`[copyAppManifestToWorkspace] App path not found: ${appPath}`);
     return;
   }
-  
+
   const manifestSource = join(appPath, 'manifest.json');
   if (!existsSync(manifestSource)) {
     debug(`[copyAppManifestToWorkspace] No manifest.json found at ${manifestSource}`);
     return;
   }
-  
+
   const workspaceDataPath = getWorkspaceDataPath(workspaceRoot);
   const manifestTarget = join(workspaceDataPath, 'app-manifest.json');
-  
+
   // Ensure workspace data directory exists
   if (!existsSync(workspaceDataPath)) {
     mkdirSync(workspaceDataPath, { recursive: true });
   }
-  
+
   copyFileSync(manifestSource, manifestTarget);
   debug(`[copyAppManifestToWorkspace] Copied manifest to ${manifestTarget}`);
 }
@@ -527,41 +488,18 @@ function copyAppManifestToWorkspace(appId: string, workspaceRoot: string): void 
 /**
  * Copy AGENTS.md from app source directory to workspace data directory.
  * This provides workspace-specific AI agent guidance based on the app type.
- * 
- * The file is copied to .creator-flow/AGENTS.md in the workspace,
+ *
+ * The file is copied to .sprouty-ai/AGENTS.md in the workspace,
  * where it will be discovered by the agent's project context file mechanism.
  */
 function copyAppAgentsToWorkspace(appId: string, workspaceRoot: string): void {
-  // Try to find the source path for the bundled app
-  const sourcePath = getBundledAppSourcePath(appId);
-  
-  if (!sourcePath) {
-    // For non-bundled apps, check the installed app directory
-    const appPath = getAppPath(appId, false);
-    const agentsPath = join(appPath, 'AGENTS.md');
-    
-    if (existsSync(agentsPath)) {
-      copyAgentsFileToWorkspace(agentsPath, workspaceRoot);
-    } else {
-      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for app ${appId}`);
-    }
-    return;
-  }
-  
-  // Copy from bundled app source directory
-  const agentsSourcePath = join(sourcePath, 'AGENTS.md');
-  if (existsSync(agentsSourcePath)) {
-    copyAgentsFileToWorkspace(agentsSourcePath, workspaceRoot);
+  const appPath = getAppPath(appId);
+  const agentsPath = join(appPath, 'AGENTS.md');
+
+  if (existsSync(agentsPath)) {
+    copyAgentsFileToWorkspace(agentsPath, workspaceRoot);
   } else {
-    // Try the installed bundled app directory as fallback
-    const bundledAppPath = getAppPath(appId, true);
-    const bundledAgentsPath = join(bundledAppPath, 'AGENTS.md');
-    
-    if (existsSync(bundledAgentsPath)) {
-      copyAgentsFileToWorkspace(bundledAgentsPath, workspaceRoot);
-    } else {
-      debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for bundled app ${appId}`);
-    }
+    debug(`[copyAppAgentsToWorkspace] No AGENTS.md found for app ${appId}`);
   }
 }
 

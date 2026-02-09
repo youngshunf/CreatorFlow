@@ -1,7 +1,7 @@
 /**
  * Colors module - re-exports all color types, resolution, and validation.
  *
- * Import via: `import { EntityColor, resolveEntityColor } from '@creator-flow/shared/colors'`
+ * Import via: `import { EntityColor, resolveEntityColor } from '@sprouty-ai/shared/colors'`
  */
 export {
   type SystemColorName,

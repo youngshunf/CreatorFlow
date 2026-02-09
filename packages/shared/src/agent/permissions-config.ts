@@ -5,8 +5,8 @@
  * Users can create permissions.json files to extend the default rules.
  *
  * File locations:
- * - Workspace: ~/.creator-flow/workspaces/{slug}/permissions.json
- * - Per-source: ~/.creator-flow/workspaces/{slug}/sources/{sourceSlug}/permissions.json
+ * - Workspace: ~/.sprouty-ai/workspaces/{slug}/permissions.json
+ * - Per-source: ~/.sprouty-ai/workspaces/{slug}/sources/{sourceSlug}/permissions.json
  *
  * Rules are additive - custom configs extend the defaults (more permissive).
  */
@@ -38,7 +38,7 @@ let permissionsInitialized = false;
 
 /**
  * Get the app-level permissions directory.
- * Default permissions are stored at ~/.creator-flow/permissions/
+ * Default permissions are stored at ~/.sprouty-ai/permissions/
  */
 export function getAppPermissionsDir(): string {
   return APP_PERMISSIONS_DIR;
@@ -88,7 +88,7 @@ export function ensureDefaultPermissions(): void {
 }
 
 /**
- * Load default permissions from ~/.creator-flow/permissions/default.json
+ * Load default permissions from ~/.sprouty-ai/permissions/default.json
  * Returns null if file doesn't exist or is invalid.
  */
 export function loadDefaultPermissions(): PermissionsCustomConfig | null {
@@ -293,7 +293,7 @@ export function validatePermissionsConfig(config: PermissionsConfigFile): string
  * Get path to workspace permissions.json
  */
 export function getWorkspacePermissionsPath(workspaceRootPath: string): string {
-  return join(workspaceRootPath, '.creator-flow', 'permissions.json');
+  return join(workspaceRootPath, '.sprouty-ai', 'permissions.json');
 }
 
 /**
@@ -382,12 +382,12 @@ class PermissionsConfigCache {
   private sourceConfigs: Map<string, PermissionsCustomConfig | null> = new Map();
   private mergedConfigs: Map<string, MergedPermissionsConfig> = new Map();
 
-  // App-level default permissions (loaded from ~/.creator-flow/permissions/default.json)
+  // App-level default permissions (loaded from ~/.sprouty-ai/permissions/default.json)
   private defaultConfig: PermissionsCustomConfig | null | undefined = undefined; // undefined = not loaded yet
 
   /**
    * Get or load app-level default permissions
-   * These come from ~/.creator-flow/permissions/default.json
+   * These come from ~/.sprouty-ai/permissions/default.json
    */
   private getDefaultConfig(): PermissionsCustomConfig | null {
     if (this.defaultConfig === undefined) {

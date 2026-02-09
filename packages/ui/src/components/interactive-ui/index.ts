@@ -24,4 +24,4 @@ export type {
   SingleChoiceProps,
   MultiChoiceProps,
   ConfirmProps,
-} from '@creator-flow/shared/interactive-ui'
+} from '@sprouty-ai/shared/interactive-ui'

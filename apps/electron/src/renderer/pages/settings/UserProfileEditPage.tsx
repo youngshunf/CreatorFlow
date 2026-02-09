@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/context/LocaleContext'
 import { navigate, routes } from '@/lib/navigate'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 
 import {

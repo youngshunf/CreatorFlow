@@ -26,7 +26,9 @@ import { createHash } from 'crypto';
 import { Extract } from 'unzipper';
 import type {
   InstallProgress,
+  AppInstallProgress,
   InstallProgressCallback,
+  AppInstallProgressCallback,
   AppDownloadResponse,
   SkillDependencyDownload,
 } from './types.ts';
@@ -37,19 +39,11 @@ import {
   getMarketplaceAppsDir,
 } from './storage.ts';
 import { installSkill } from './skill-installer.ts';
+import { getGlobalSkillsDir } from '../skills/global-skills.ts';
 
 // ============================================================
 // Types
 // ============================================================
-
-export interface AppInstallProgress extends InstallProgress {
-  appId?: string;
-  currentSkill?: string;
-  totalSkills?: number;
-  installedSkills?: number;
-}
-
-export type AppInstallProgressCallback = (progress: AppInstallProgress) => void;
 
 export interface AppInstallResult {
   success: boolean;
@@ -228,7 +222,7 @@ function mergeDir(src: string, dest: string): void {
  * @returns InstalledAppInfo if app exists, null otherwise
  */
 export function checkInstalledApp(workspaceRoot: string): InstalledAppInfo | null {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
   const manifestPath = join(creatorFlowDir, 'app-manifest.json');
 
   if (!existsSync(manifestPath)) {
@@ -255,7 +249,7 @@ export function checkInstalledApp(workspaceRoot: string): InstalledAppInfo | nul
  * @returns Backup directory path
  */
 export function backupAppData(workspaceRoot: string): string | null {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
   
   if (!existsSync(creatorFlowDir)) {
     return null;
@@ -263,10 +257,10 @@ export function backupAppData(workspaceRoot: string): string | null {
 
   // Create backup directory with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = join(workspaceRoot, '.creator-flow-backup', timestamp);
+  const backupDir = join(workspaceRoot, '.sprouty-ai-backup', timestamp);
   
-  if (!existsSync(join(workspaceRoot, '.creator-flow-backup'))) {
-    mkdirSync(join(workspaceRoot, '.creator-flow-backup'), { recursive: true });
+  if (!existsSync(join(workspaceRoot, '.sprouty-ai-backup'))) {
+    mkdirSync(join(workspaceRoot, '.sprouty-ai-backup'), { recursive: true });
   }
 
   // Copy directories that might have user customizations
@@ -302,7 +296,7 @@ export function uninstallApp(
   workspaceRoot: string,
   options: AppUninstallOptions = {}
 ): { success: boolean; backupPath?: string; error?: string } {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
 
   // Check if app exists
   const installedApp = checkInstalledApp(workspaceRoot);
@@ -357,7 +351,7 @@ export function uninstallApp(
  * Restore app data from backup
  */
 export function restoreAppData(workspaceRoot: string, backupPath: string): boolean {
-  const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+  const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
 
   if (!existsSync(backupPath)) {
     return false;
@@ -541,34 +535,107 @@ async function installSkillDependencies(
   workspaceRoot: string,
   dependencies: SkillDependencyDownload[],
   onProgress?: AppInstallProgressCallback
-): Promise<Array<{ skillId: string; success: boolean; error?: string }>> {
-  const results: Array<{ skillId: string; success: boolean; error?: string }> = [];
+): Promise<Array<{ skillId: string; success: boolean; error?: string; skipped?: boolean }>> {
+  const results: Array<{ skillId: string; success: boolean; error?: string; skipped?: boolean }> = [];
   const total = dependencies.length;
 
-  for (const dep of dependencies) {
+  // 获取全局技能目录，用于检查是否已存在相同技能
+  const globalSkillsDir = getGlobalSkillsDir();
+
+  onProgress?.({
+    stage: 'installing-skills',
+    percent: 35,
+    message: `正在安装 ${total} 个技能依赖...`,
+    totalSkills: total,
+    installedSkills: 0,
+  });
+
+  for (let i = 0; i < dependencies.length; i++) {
+    const dep = dependencies[i];
+    if (!dep) continue;
+
+    // 检查全局技能目录中是否已存在相同ID的技能
+    const globalSkillPath = join(globalSkillsDir, dep.id);
+    const globalSkillFile = join(globalSkillPath, 'SKILL.md');
+    if (existsSync(globalSkillFile)) {
+      // 全局技能已存在，跳过安装
+      onProgress?.({
+        stage: 'installing-skills',
+        percent: 35 + Math.round(((i + 1) / total) * 50),
+        message: `技能 ${dep.id} 已存在于全局技能中，跳过安装`,
+        currentSkill: dep.id,
+        totalSkills: total,
+        installedSkills: i + 1,
+      });
+
+      results.push({
+        skillId: dep.id,
+        success: true,
+        skipped: true,
+      });
+      continue;
+    }
+
     onProgress?.({
-      stage: 'installing',
-      percent: 35 + Math.round(((results.length + 0.5) / total) * 50), // 35-85%
-      message: `正在安装技能: ${dep.id} (${results.length + 1}/${total})`,
+      stage: 'installing-skills',
+      percent: 35 + Math.round((i / total) * 50), // 35-85%
+      message: `正在安装技能 ${i + 1}/${total}`,
       currentSkill: dep.id,
       totalSkills: total,
-      installedSkills: results.length,
+      installedSkills: i,
     });
 
     try {
-      const result = await installSkill(workspaceRoot, dep.id, dep.version);
+      // Install skill with progress callback
+      await installSkill(
+        workspaceRoot,
+        dep.id,
+        dep.version,
+        (skillProgress) => {
+          onProgress?.({
+            stage: 'installing-skills',
+            percent: 35 + Math.round((i / total) * 50) + Math.round((skillProgress.percent / 100) * (50 / total)),
+            message: `正在安装技能 ${i + 1}/${total}: ${skillProgress.message}`,
+            currentSkill: dep.id,
+            totalSkills: total,
+            installedSkills: i,
+            skillProgress: skillProgress.percent,
+          });
+        }
+      );
+
       results.push({
         skillId: dep.id,
-        success: result.success,
-        error: result.error,
+        success: true,
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
       results.push({
         skillId: dep.id,
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: errorMessage,
       });
     }
+  }
+
+  // Check for failures and report
+  const failedSkills = results.filter((r) => !r.success);
+  if (failedSkills.length > 0) {
+    onProgress?.({
+      stage: 'installing-skills',
+      percent: 85,
+      message: `警告：${failedSkills.length} 个技能安装失败，应用可能无法正常工作`,
+      totalSkills: total,
+      installedSkills: results.filter(r => r.success).length,
+    });
+  } else {
+    onProgress?.({
+      stage: 'installing-skills',
+      percent: 85,
+      message: `所有技能安装完成 (${total}/${total})`,
+      totalSkills: total,
+      installedSkills: total,
+    });
   }
 
   return results;
@@ -608,7 +675,7 @@ export async function installApp(
       }
 
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 2,
         message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
         appId,
@@ -619,7 +686,7 @@ export async function installApp(
     let backupPath: string | undefined;
     if (existingApp && force && !merge && !skipBackup) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 5,
         message: '正在备份现有数据...',
         appId,
@@ -646,21 +713,39 @@ export async function installApp(
       // Check if any skills failed
       const failedSkills = skillResults.filter((r) => !r.success);
       if (failedSkills.length > 0) {
-        console.warn(
-          `部分技能安装失败: ${failedSkills.map((s) => s.skillId).join(', ')}`
-        );
+        const errorMsg = `部分技能安装失败: ${failedSkills.map((s) => s.skillId).join(', ')}`;
+        console.warn(errorMsg);
+
+        // 如果所有技能都失败，返回失败状态
+        if (failedSkills.length === skillDependencies.length) {
+          return {
+            success: false,
+            appId,
+            version: actualVersion,
+            error: `所有技能依赖安装失败，应用无法正常使用`,
+            skillResults,
+          };
+        }
+
+        // 部分失败，继续安装但标记警告
+        onProgress?.({
+          stage: 'installing-app',
+          percent: 85,
+          message: `警告：${failedSkills.length}/${skillDependencies.length} 个技能安装失败`,
+          appId,
+        });
       }
     }
 
     // Copy app package to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 90,
       message: '正在复制应用到工作区...',
       appId,
     });
 
-    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
     if (!existsSync(creatorFlowDir)) {
       mkdirSync(creatorFlowDir, { recursive: true });
     }
@@ -756,7 +841,7 @@ export async function installAppFromLocal(
       }
 
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 2,
         message: merge ? '检测到已有应用，正在准备合并安装...' : '检测到已有应用，正在准备覆盖安装...',
         appId,
@@ -767,7 +852,7 @@ export async function installAppFromLocal(
     let backupPath: string | undefined;
     if (existingApp && force && !merge && !skipBackup) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 5,
         message: '正在备份现有数据...',
         appId,
@@ -776,7 +861,7 @@ export async function installAppFromLocal(
     }
 
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 10,
       message: '正在解析应用配置...',
       appId,
@@ -788,7 +873,7 @@ export async function installAppFromLocal(
 
     if (skillDependencies.length > 0) {
       onProgress?.({
-        stage: 'installing',
+        stage: 'installing-app',
         percent: 20,
         message: `正在安装 ${skillDependencies.length} 个技能...`,
         appId,
@@ -801,7 +886,7 @@ export async function installAppFromLocal(
         const skillId = skillDependencies[i];
 
         onProgress?.({
-          stage: 'installing',
+          stage: 'installing-app',
           percent: 20 + Math.round(((i + 0.5) / total) * 60), // 20-80%
           message: `正在安装技能: ${skillId} (${i + 1}/${total})`,
           appId,
@@ -829,13 +914,13 @@ export async function installAppFromLocal(
 
     // Copy app package to workspace
     onProgress?.({
-      stage: 'installing',
+      stage: 'installing-app',
       percent: 85,
       message: '正在复制应用到工作区...',
       appId,
     });
 
-    const creatorFlowDir = join(workspaceRoot, '.creator-flow');
+    const creatorFlowDir = join(workspaceRoot, '.sprouty-ai');
     if (!existsSync(creatorFlowDir)) {
       mkdirSync(creatorFlowDir, { recursive: true });
     }

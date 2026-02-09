@@ -1,5 +1,5 @@
 /**
- * Utility functions for @creator-flow/ui
+ * Utility functions for @sprouty-ai/ui
  */
 
 import { type ClassValue, clsx } from 'clsx'

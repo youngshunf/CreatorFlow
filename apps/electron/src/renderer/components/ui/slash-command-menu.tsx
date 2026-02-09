@@ -1,9 +1,12 @@
 import * as React from 'react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Brain, Check } from 'lucide-react'
-import { Icon_Folder } from '@creator-flow/ui'
+import { Icon_Folder } from '@sprouty-ai/ui'
 import { cn } from '@/lib/utils'
-import { PERMISSION_MODE_CONFIG, PERMISSION_MODE_ORDER, type PermissionMode } from '@creator-flow/shared/agent/modes'
+import { PERMISSION_MODE_CONFIG, PERMISSION_MODE_ORDER, type PermissionMode } from '@sprouty-ai/shared/agent/modes'
+import { SDK_COMMAND_TRANSLATIONS, getCommandDisplay } from '@sprouty-ai/shared/agent/slash-command-data'
+import { sdkSlashCommandsAtom, commandTranslationsAtom } from '@/atoms/sdk-commands'
+import { useAtomValue } from 'jotai'
 import { useT } from '@/context/LocaleContext'
 
 // ============================================================================
@@ -363,28 +366,61 @@ export function SlashCommandMenu({
 }
 
 // ============================================================================
-// InlineSlashCommand - Autocomplete that follows cursor
+// InlineSlashCommand - Autocomplete that follows cursor (shows SDK + plugin slash commands)
 // ============================================================================
+
+/** Item type for the inline slash command menu */
+export interface SlashCommandItem {
+  id: string
+  label: string
+  description: string
+  hasArgs: boolean
+}
+
+/** Section for the inline slash command menu */
+export interface InlineSlashSection {
+  id: string
+  label: string
+  items: SlashCommandItem[]
+}
 
 export interface InlineSlashCommandProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  sections: SlashSection[]
-  activeCommands?: SlashCommandId[]
-  onSelectCommand: (commandId: SlashCommandId) => void
-  onSelectFolder: (path: string) => void
+  sections: InlineSlashSection[]
+  onSelectCommand: (commandName: string, hasArgs: boolean) => void
   filter?: string
   position: { x: number; y: number }
   className?: string
+}
+
+/** Filter inline slash sections by label/id/description */
+function filterInlineSections(sections: InlineSlashSection[], filter: string): InlineSlashSection[] {
+  if (!filter) return sections
+  const lowerFilter = filter.toLowerCase()
+
+  return sections
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item =>
+        item.label.toLowerCase().includes(lowerFilter) ||
+        item.id.toLowerCase().includes(lowerFilter) ||
+        item.description?.toLowerCase().includes(lowerFilter)
+      ),
+    }))
+    .filter(section => section.items.length > 0)
+}
+
+/** Flatten inline slash sections into a single array */
+function flattenInlineSections(sections: InlineSlashSection[]): SlashCommandItem[] {
+  return sections.flatMap(section => section.items)
 }
 
 export function InlineSlashCommand({
   open,
   onOpenChange,
   sections,
-  activeCommands = [],
   onSelectCommand,
-  onSelectFolder,
   filter = '',
   position,
   className,
@@ -393,8 +429,8 @@ export function InlineSlashCommand({
   const menuRef = React.useRef<HTMLDivElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
-  const filteredSections = filterSections(sections, filter)
-  const flatItems = flattenSections(filteredSections)
+  const filteredSections = filterInlineSections(sections, filter)
+  const flatItems = flattenInlineSections(filteredSections)
 
   // Reset selection when filter changes
   React.useEffect(() => {
@@ -411,17 +447,12 @@ export function InlineSlashCommand({
   }, [selectedIndex])
 
   // Handle item selection
-  const handleSelect = React.useCallback((item: SlashCommand | SlashFolderItem) => {
-    if (isFolder(item)) {
-      onSelectFolder(item.path)
-    } else {
-      onSelectCommand(item.id)
-    }
+  const handleSelect = React.useCallback((item: SlashCommandItem) => {
+    onSelectCommand(item.id, item.hasArgs)
     onOpenChange(false)
-  }, [onSelectCommand, onSelectFolder, onOpenChange])
+  }, [onSelectCommand, onOpenChange])
 
   // Keyboard navigation
-  // Don't attach listener when no items - allows Enter to propagate to input handler
   React.useEffect(() => {
     if (!open || flatItems.length === 0) return
 
@@ -482,91 +513,66 @@ export function InlineSlashCommand({
     <div
       ref={menuRef}
       className={cn('fixed z-dropdown', MENU_CONTAINER_STYLE, className)}
-      style={{ left: Math.round(position.x) - 10, bottom: bottomPosition, minWidth: 220, maxWidth: 260 }}
+      style={{ left: Math.round(position.x) - 10, bottom: bottomPosition, minWidth: 260, maxWidth: 380 }}
     >
+      {/* Menu header */}
+      <div className={MENU_SECTION_HEADER}>
+        {t('斜杠命令')}
+      </div>
+
       <div ref={listRef} className={MENU_LIST_STYLE}>
-        {filteredSections.map((section, sectionIndex) => (
+        {filteredSections.map((section) => (
           <React.Fragment key={section.id}>
-            {/* Section header */}
-            <div className={MENU_SECTION_HEADER}>
-              {translateSectionLabel(section.label, t)}
-            </div>
+            {/* Show section label only when there are multiple sections */}
+            {filteredSections.length > 1 && (
+              <div className="px-3 py-1 text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+                {section.label}
+              </div>
+            )}
 
             {/* Section items */}
             {section.items.map((item) => {
               const itemIndex = currentItemIndex++
               const isSelected = itemIndex === selectedIndex
 
-              if (isFolder(item)) {
-                // Folder item - single line with path
-                return (
-                  <div
-                    key={`${section.id}-${item.id}`}
-                    data-selected={isSelected}
-                    onClick={() => handleSelect(item)}
-                    onMouseEnter={() => setSelectedIndex(itemIndex)}
-                    className={cn(
-                      MENU_ITEM_STYLE,
-                      isSelected && MENU_ITEM_SELECTED
-                    )}
-                  >
-                    <div className="shrink-0 text-muted-foreground">
-                      <Icon_Folder className={MENU_ICON_SIZE} strokeWidth={1.75} />
-                    </div>
-                    <div className="flex-1 min-w-0 truncate">
-                      <span>{item.label}</span>
-                      <span className="text-muted-foreground ml-1.5">{item.description}</span>
-                    </div>
+              return (
+                <div
+                  key={item.id}
+                  data-selected={isSelected}
+                  onClick={() => handleSelect(item)}
+                  onMouseEnter={() => setSelectedIndex(itemIndex)}
+                  className={cn(
+                    MENU_ITEM_STYLE,
+                    'items-start py-1.5',
+                    isSelected && MENU_ITEM_SELECTED
+                  )}
+                >
+                  {/* Terminal icon */}
+                  <div className="shrink-0 text-muted-foreground mt-0.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="4 17 10 11 4 5" />
+                      <line x1="12" y1="19" x2="20" y2="19" />
+                    </svg>
                   </div>
-                )
-              } else {
-                // Command item
-                const isActive = activeCommands.includes(item.id)
-                return (
-                  <div
-                    key={item.id}
-                    data-selected={isSelected}
-                    onClick={() => handleSelect(item)}
-                    onMouseEnter={() => setSelectedIndex(itemIndex)}
-                    className={cn(
-                      MENU_ITEM_STYLE,
-                      isSelected && MENU_ITEM_SELECTED
+                  <div className="flex-1 min-w-0">
+                    <span className="truncate block">{item.label}</span>
+                    {item.description && (
+                      <span className="truncate block text-[11px] text-muted-foreground/60 leading-tight">{item.description}</span>
                     )}
-                  >
-                    <CommandItemContent command={item} isActive={isActive} />
                   </div>
-                )
-              }
+                  <span className="text-[11px] text-muted-foreground/50 shrink-0 mt-0.5">/{item.id}</span>
+                </div>
+              )
             })}
-
           </React.Fragment>
         ))}
-      </div>
-      {/* Always-visible footer hint for @ mentions */}
-      <div className="h-px bg-border/50 mx-2" />
-      <div className="px-3 py-2.5 select-none text-xs text-muted-foreground">
-        {t('使用 @ 来引用技能和文件')}
       </div>
     </div>
   )
 }
 
 // ============================================================================
-// Hook: Section label translations
-// ============================================================================
-
-const SECTION_LABEL_TRANSLATIONS: Record<string, string> = {
-  'Modes': '模式',
-  'Features': '功能',
-  'Recent Working Directories': '最近工作目录',
-}
-
-function translateSectionLabel(label: string, t: (text: string) => string): string {
-  return SECTION_LABEL_TRANSLATIONS[label] ? t(SECTION_LABEL_TRANSLATIONS[label]) : label
-}
-
-// ============================================================================
-// Hook for managing inline slash command state
+// Hook for managing inline slash command state (SDK + plugin commands)
 // ============================================================================
 
 /** Interface for elements that can be used with useInlineSlashCommand */
@@ -577,52 +583,23 @@ export interface SlashCommandInputElement {
   selectionStart: number
 }
 
-/**
- * Format path for display, shortening home directory
- */
-function formatPathForDisplay(path: string, homeDir?: string): string {
-  if (homeDir && path.startsWith(homeDir)) {
-    return '~' + path.slice(homeDir.length)
-  }
-  return path
-}
-
-/**
- * Get folder name from path
- */
-function getFolderName(path: string): string {
-  return path.split('/').pop() || path
-}
-
 export interface UseInlineSlashCommandOptions {
   /** Ref to input element (textarea or RichTextInput handle) */
   inputRef: React.RefObject<SlashCommandInputElement | null>
-  onSelectCommand: (commandId: SlashCommandId) => void
-  onSelectFolder: (path: string) => void
-  activeCommands?: SlashCommandId[]
-  recentFolders?: string[]
-  homeDir?: string
 }
 
 export interface UseInlineSlashCommandReturn {
   isOpen: boolean
   filter: string
   position: { x: number; y: number }
-  sections: SlashSection[]
+  sections: InlineSlashSection[]
   handleInputChange: (value: string, cursorPosition: number) => void
   close: () => void
-  activeCommands: SlashCommandId[]
-  handleSelectCommand: (commandId: SlashCommandId) => string
-  handleSelectFolder: (path: string) => string
+  handleSelectCommand: (commandName: string, hasArgs: boolean) => { value: string; cursorPosition: number }
 }
 
 export function useInlineSlashCommand({
   inputRef,
-  onSelectCommand,
-  onSelectFolder,
-  activeCommands = [],
-  recentFolders = [],
-  homeDir,
 }: UseInlineSlashCommandOptions): UseInlineSlashCommandReturn {
   const t = useT()
   const [isOpen, setIsOpen] = React.useState(false)
@@ -632,55 +609,64 @@ export function useInlineSlashCommand({
   // Store current input state for handleSelect
   const currentInputRef = React.useRef({ value: '', cursorPosition: 0 })
 
-  // Build sections from commands and folders with localized labels
-  const sections = React.useMemo((): SlashSection[] => {
-    const result: SlashSection[] = []
+  // Read SDK + plugin slash commands from atom
+  const sdkSlashCommands = useAtomValue(sdkSlashCommandsAtom)
+  const commandTranslations = useAtomValue(commandTranslationsAtom)
 
-    // Modes section - use localized commands
-    result.push({
-      id: 'modes',
-      label: 'Modes', // Will be translated in InlineSlashCommand via translateSectionLabel
-      items: getPermissionModeCommands(t),
-    })
+  // Build sections from SDK built-in commands + plugin commands
+  const sections = React.useMemo((): InlineSlashSection[] => {
+    const builtinNames = new Set(Object.keys(SDK_COMMAND_TRANSLATIONS))
 
-    // Features section - use localized command
-    result.push({
-      id: 'features',
-      label: 'Features', // Will be translated in InlineSlashCommand via translateSectionLabel
-      items: [getUltrathinkCommand(t)],
-    })
+    // SDK built-in commands (always available)
+    const builtinItems: SlashCommandItem[] = Object.entries(SDK_COMMAND_TRANSLATIONS).map(([name, trans]) => ({
+      id: name,
+      label: t(trans.label),
+      description: t(trans.description),
+      hasArgs: false,
+    }))
 
-    // Recent folders section - sorted alphabetically by folder name, show all
-    if (recentFolders.length > 0) {
-      const sortedFolders = [...recentFolders]
-        .sort((a, b) => {
-          const nameA = getFolderName(a).toLowerCase()
-          const nameB = getFolderName(b).toLowerCase()
-          return nameA.localeCompare(nameB)
-        })
+    // Plugin commands from atom (available after IPC event)
+    const pluginItems: SlashCommandItem[] = sdkSlashCommands
+      .filter(cmd => !builtinNames.has(cmd.name))
+      .map(cmd => {
+        const display = getCommandDisplay(cmd, commandTranslations)
+        return {
+          id: cmd.name,
+          label: t(display.label),
+          description: t(display.description),
+          hasArgs: display.hasArgs,
+        }
+      })
 
+    const result: InlineSlashSection[] = []
+
+    // Built-in commands section
+    if (builtinItems.length > 0) {
       result.push({
-        id: 'folders',
-        label: 'Recent Working Directories', // Will be translated in InlineSlashCommand via translateSectionLabel
-        items: sortedFolders.map(path => ({
-          id: path,
-          type: 'folder' as const,
-          label: getFolderName(path),
-          description: formatPathForDisplay(path, homeDir),
-          path,
-        })),
+        id: 'builtin',
+        label: t('内置命令'),
+        items: builtinItems.sort((a, b) => a.label.localeCompare(b.label)),
+      })
+    }
+
+    // Plugin commands section
+    if (pluginItems.length > 0) {
+      result.push({
+        id: 'plugins',
+        label: t('插件命令'),
+        items: pluginItems.sort((a, b) => a.label.localeCompare(b.label)),
       })
     }
 
     return result
-  }, [recentFolders, homeDir, t])
+  }, [sdkSlashCommands, commandTranslations, t])
 
   const handleInputChange = React.useCallback((value: string, cursorPosition: number) => {
     // Store current state for handleSelect
     currentInputRef.current = { value, cursorPosition }
 
     const textBeforeCursor = value.slice(0, cursorPosition)
-    const slashMatch = textBeforeCursor.match(/(?:^|\s)\/(\w*)$/)
+    const slashMatch = textBeforeCursor.match(/(?:^|\s)\/(\w[\w\-:]*)?$/)
 
     // Only show menu if we have sections with items
     const hasItems = sections.some(s => s.items.length > 0)
@@ -688,12 +674,10 @@ export function useInlineSlashCommand({
     if (slashMatch && hasItems) {
       const filterText = slashMatch[1] || ''
       // Check if there are any filtered results before opening menu
-      // This ensures Enter key works normally when no matches exist
-      const filteredSections = filterSections(sections, filterText)
-      const hasFilteredItems = filteredSections.some(s => s.items.length > 0)
+      const filtered = filterInlineSections(sections, filterText)
+      const hasFilteredItems = filtered.some(s => s.items.length > 0)
 
       if (!hasFilteredItems) {
-        // No results after filtering - close menu to allow normal Enter handling
         setIsOpen(false)
         setFilter('')
         setSlashStart(-1)
@@ -705,17 +689,14 @@ export function useInlineSlashCommand({
       setFilter(filterText)
 
       if (inputRef.current) {
-        // Try to get actual caret position from the input element
         const caretRect = inputRef.current.getCaretRect?.()
 
         if (caretRect && caretRect.x > 0) {
-          // Use actual caret position
           setPosition({
             x: caretRect.x,
             y: caretRect.y,
           })
         } else {
-          // Fallback: position at input element's left edge
           const rect = inputRef.current.getBoundingClientRect()
           const lineHeight = 20
           const linesBeforeCursor = textBeforeCursor.split('\n').length - 1
@@ -734,41 +715,30 @@ export function useInlineSlashCommand({
     }
   }, [inputRef, sections])
 
-  const handleSelectCommand = React.useCallback((commandId: SlashCommandId): string => {
-    // Capture values BEFORE any state changes to avoid race conditions
+  const handleSelectCommand = React.useCallback((commandName: string, hasArgs: boolean): { value: string; cursorPosition: number } => {
     let result = ''
+    let newCursorPosition = 0
+
     if (slashStart >= 0) {
       const { value: currentValue, cursorPosition } = currentInputRef.current
       const before = currentValue.slice(0, slashStart)
       const after = currentValue.slice(cursorPosition)
-      result = (before + after).trim()
+
+      if (hasArgs) {
+        // Has args: insert /{name} and let user type arguments
+        const commandText = `/${commandName} `
+        result = before + commandText + after
+        newCursorPosition = before.length + commandText.length
+      } else {
+        // No args: replace with /{name} for direct execution
+        result = `/${commandName}`
+        newCursorPosition = result.length
+      }
     }
 
-    // Now safe to trigger state changes
-    onSelectCommand(commandId)
     setIsOpen(false)
-
-    return result
-  }, [onSelectCommand, slashStart])
-
-  const handleSelectFolder = React.useCallback((path: string): string => {
-    // Capture values BEFORE any state changes to avoid race conditions
-    // Folder selection directly changes working directory, doesn't insert text
-    let result = ''
-    if (slashStart >= 0) {
-      const { value: currentValue, cursorPosition } = currentInputRef.current
-      const before = currentValue.slice(0, slashStart)
-      const after = currentValue.slice(cursorPosition)
-      // Just remove the /command text, no badge insertion
-      result = (before + after).trim()
-    }
-
-    // Trigger working directory change
-    onSelectFolder(path)
-    setIsOpen(false)
-
-    return result
-  }, [onSelectFolder, slashStart])
+    return { value: result, cursorPosition: newCursorPosition }
+  }, [slashStart])
 
   const close = React.useCallback(() => {
     setIsOpen(false)
@@ -783,8 +753,6 @@ export function useInlineSlashCommand({
     sections,
     handleInputChange,
     close,
-    activeCommands,
     handleSelectCommand,
-    handleSelectFolder,
   }
 }

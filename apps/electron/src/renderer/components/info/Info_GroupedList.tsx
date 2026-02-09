@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import { cva } from 'class-variance-authority'
-import { Spinner } from '@creator-flow/ui'
+import { Spinner } from '@sprouty-ai/ui'
 import { cn } from '@/lib/utils'
 
 const groupHeaderVariants = cva(

@@ -15,8 +15,8 @@
 import * as React from 'react'
 import { LabelBadge } from './label-badge'
 import { LabelValuePopover } from './label-value-popover'
-import { parseLabelEntry, formatLabelEntry, extractLabelId } from '@creator-flow/shared/labels'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import { parseLabelEntry, formatLabelEntry, extractLabelId } from '@sprouty-ai/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { cn } from '@/lib/utils'
 
 export interface LabelBadgeRowProps {

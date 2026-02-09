@@ -21,6 +21,9 @@ export const KEYS = {
   expandedFolders: 'expanded-folders',
   collapsedSidebarItems: 'collapsed-sidebar-items',
 
+  // Focus mode
+  focusModeEnabled: 'focus-mode-enabled',
+
   // Right sidebar (chat page)
   rightSidebarVisible: 'right-sidebar-visible',
   rightSidebarWidth: 'right-sidebar-width',
@@ -41,6 +44,14 @@ export const KEYS = {
 
   // TurnCard expansion state (persisted across session switches)
   turnCardExpansion: 'turncard-expansion',
+
+  // Settings navigator expanded folders
+  settingsExpandedFolders: 'settings-expanded-folders',
+
+  // 会话列表内嵌文件树
+  fileTreeCollapsed: 'file-tree-collapsed',
+  fileTreeHeight: 'file-tree-height',
+  filePreviewRatio: 'file-preview-ratio',
 } as const
 
 export type StorageKey = typeof KEYS[keyof typeof KEYS]

@@ -4,8 +4,8 @@
  * 自动加载所有语言包并注册到 locale 服务
  */
 
-import { loadLocale, initLocale } from '@creator-flow/shared/locale';
-import type { LocaleMessages } from '@creator-flow/shared/locale';
+import { loadLocale, initLocale } from '@sprouty-ai/shared/locale';
+import type { LocaleMessages } from '@sprouty-ai/shared/locale';
 
 // 导入语言包
 import zhCN from './zh-cn.json';

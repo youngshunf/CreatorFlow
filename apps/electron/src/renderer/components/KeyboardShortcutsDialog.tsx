@@ -36,9 +36,11 @@ function useSections(t: (text: string) => string): ShortcutSection[] {
         { keys: [cmdKey, '3'], description: t('聚焦聊天输入框') },
         { keys: [cmdKey, 'N'], description: t('新建聊天') },
         { keys: [cmdKey, 'Shift', 'N'], description: t('新建窗口') },
-        { keys: [cmdKey, '\\'], description: t('切换侧边栏') },
+        { keys: [cmdKey, 'B'], description: t('切换侧边栏') },
+        { keys: [cmdKey, '.'], description: t('切换专注模式') },
         { keys: [cmdKey, ','], description: t('打开设置') },
         { keys: [cmdKey, '/'], description: t('显示此对话框') },
+        { keys: [cmdKey, 'Shift', 'A'], description: t('切换亮色/暗色模式') },
       ],
     },
     {
@@ -97,7 +99,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcut
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{t('键盘快捷键')}</DialogTitle>
         </DialogHeader>

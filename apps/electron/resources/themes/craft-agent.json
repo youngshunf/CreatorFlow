@@ -1,7 +1,7 @@
 {
-  "name": "Craft Agent",
+  "name": "Creator Flow",
   "description": "Clean purple-tinted neutral theme",
-  "author": "Craft Agent",
+  "author": "Creator Flow",
   "license": "MIT",
   "supportedModes": ["light", "dark"],
   "shikiTheme": {

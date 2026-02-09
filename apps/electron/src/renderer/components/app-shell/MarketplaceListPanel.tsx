@@ -29,7 +29,7 @@ import type {
   MarketplaceApp, 
   MarketplaceCategory,
   InstalledSkillInfo,
-} from '@creator-flow/shared/marketplace'
+} from '@sprouty-ai/shared/marketplace'
 
 export interface MarketplaceListPanelProps {
   filter: MarketplaceFilter
@@ -62,14 +62,19 @@ export function MarketplaceListPanel({
   const [error, setError] = useState<string | null>(null)
 
   // Load marketplace data
-  const loadMarketplaceData = useCallback(async () => {
+  const loadMarketplaceData = useCallback(async (category?: string) => {
     if (!workspaceId) return
     setIsLoading(true)
     setError(null)
     try {
+      const skillParams: Record<string, any> = {}
+      if (category) skillParams.category = category
+      const appParams: Record<string, any> = {}
+      if (category) appParams.category = category
+
       const [skillsResult, appsResult, categoriesResult, installedResult] = await Promise.all([
-        window.electronAPI.marketplaceListSkills(),
-        window.electronAPI.marketplaceListApps(),
+        window.electronAPI.marketplaceListSkills(skillParams),
+        window.electronAPI.marketplaceListApps(appParams),
         window.electronAPI.marketplaceListCategories(),
         window.electronAPI.marketplaceGetInstalled(workspaceId),
       ])
@@ -85,14 +90,18 @@ export function MarketplaceListPanel({
     }
   }, [workspaceId])
 
+  const currentCategory = filter.kind === 'category' ? filter.categoryId : undefined
+
   useEffect(() => {
-    loadMarketplaceData()
-  }, [loadMarketplaceData])
+    if (!searchQuery.trim()) {
+      loadMarketplaceData(currentCategory)
+    }
+  }, [loadMarketplaceData, currentCategory])
 
   // Search handler
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      loadMarketplaceData()
+      loadMarketplaceData(currentCategory)
       return
     }
     setIsLoading(true)
@@ -105,21 +114,20 @@ export function MarketplaceListPanel({
     } finally {
       setIsLoading(false)
     }
-  }, [loadMarketplaceData])
+  }, [loadMarketplaceData, currentCategory])
 
   // Filter items based on current filter
   const filteredSkills = React.useMemo(() => {
+    if (searchQuery.trim()) return skills
     if (filter.kind === 'apps') return []
-    if (filter.kind === 'category' && filter.categoryId) {
-      return skills.filter(s => s.category === filter.categoryId)
-    }
     return skills
-  }, [skills, filter])
+  }, [skills, filter, searchQuery])
 
   const filteredApps = React.useMemo(() => {
+    if (searchQuery.trim()) return apps
     if (filter.kind === 'skills') return []
     return apps
-  }, [apps, filter])
+  }, [apps, filter, searchQuery])
 
   // Check if a skill is installed
   const isSkillInstalled = useCallback((skillId: string) => {
@@ -169,7 +177,7 @@ export function MarketplaceListPanel({
           <EmptyMedia variant="icon">
             <Package />
           </EmptyMedia>
-          <EmptyTitle>{t('市场暂无内容')}</EmptyTitle>
+          <EmptyTitle>{t('广场暂无内容')}</EmptyTitle>
           <EmptyDescription>
             {t('探索并安装技能和应用以增强您的智能体能力。')}
           </EmptyDescription>
@@ -216,7 +224,7 @@ export function MarketplaceListPanel({
       </div>
 
       {/* Category chips */}
-      {categories.length > 0 && filter.kind !== 'apps' && (
+      {categories.length > 0 && (
         <div className="px-3 pb-2 flex flex-wrap gap-1.5">
           <button
             className={cn(
@@ -234,11 +242,11 @@ export function MarketplaceListPanel({
               key={cat.id}
               className={cn(
                 "inline-flex items-center h-6 px-2 text-xs rounded-full transition-colors",
-                filter.kind === 'category' && filter.categoryId === cat.slug
+                filter.kind === 'category' && filter.categoryId === cat.name
                   ? "bg-accent text-accent-foreground"
                   : "bg-foreground/5 hover:bg-foreground/10"
               )}
-              onClick={() => onFilterChange({ kind: 'category', categoryId: cat.slug })}
+              onClick={() => onFilterChange({ kind: 'category', categoryId: cat.name })}
             >
               <Tag className="h-3 w-3 mr-1" />
               {cat.name}
@@ -255,7 +263,7 @@ export function MarketplaceListPanel({
           {/* Skills section */}
           {filteredSkills.length > 0 && (
             <div className="pt-1">
-              {filter.kind === 'all' && (
+              {(filter.kind === 'all' || filter.kind === 'category' || searchQuery.trim()) && (
                 <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Zap className="h-3 w-3" />
                   {t('技能')}
@@ -279,7 +287,7 @@ export function MarketplaceListPanel({
           {/* Apps section */}
           {filteredApps.length > 0 && (
             <div className={cn("pt-1", filteredSkills.length > 0 && "mt-2")}>
-              {filter.kind === 'all' && (
+              {(filter.kind === 'all' || filter.kind === 'category' || searchQuery.trim()) && (
                 <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Package className="h-3 w-3" />
                   {t('应用')}

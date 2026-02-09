@@ -28,7 +28,7 @@ export interface WindowState {
   lastFocusedWorkspaceId?: string
 }
 
-const CONFIG_DIR = join(homedir(), '.creator-flow')
+const CONFIG_DIR = join(homedir(), '.sprouty-ai')
 const WINDOW_STATE_FILE = join(CONFIG_DIR, 'window-state.json')
 
 /**

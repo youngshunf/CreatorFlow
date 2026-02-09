@@ -19,7 +19,7 @@ apps/electron/
 │   │   ├── index.ts       # Window creation, app lifecycle
 │   │   ├── ipc.ts         # IPC handler registration
 │   │   ├── menu.ts        # Application menu (File, Edit, View, Help)
-│   │   ├── sessions.ts    # Session management, CraftAgent integration
+│   │   ├── sessions.ts    # Session management, CreatorFlowAgent integration
 │   │   ├── deep-link.ts   # Deep link URL parsing and handling
 │   │   ├── agent-service.ts # Agent listing, caching, auth checking
 │   │   └── sources-service.ts # Source and authentication service
@@ -88,7 +88,7 @@ if (billing.type === 'oauth_token' && billing.claudeOAuthToken) {
 
 ### 3. AgentEvent Type Mismatches
 
-The `AgentEvent` types from `CraftAgent` use different property names than you might expect:
+The `AgentEvent` types from `CreatorFlowAgent` use different property names than you might expect:
 
 | Event Type | Wrong | Correct |
 |------------|-------|---------|
@@ -111,16 +111,16 @@ const toolName = managed.pendingTools.get(event.toolUseId) || 'unknown'
 managed.pendingTools.delete(event.toolUseId)
 ```
 
-### 4. CraftAgent Constructor
+### 4. CreatorFlowAgent Constructor
 
-`CraftAgent` expects the full `Workspace` object, not just the ID:
+`CreatorFlowAgent` expects the full `Workspace` object, not just the ID:
 
 ```typescript
 // Wrong:
-new CraftAgent({ workspaceId: workspace.id, model })
+new CreatorFlowAgent({ workspaceId: workspace.id, model })
 
 // Correct:
-new CraftAgent({ workspace, model })
+new CreatorFlowAgent({ workspace, model })
 ```
 
 ### 5. esbuild Configuration
@@ -156,7 +156,7 @@ bun run sync-secrets
 **That's it!** Now `bun run electron:dev` and `bun run electron:start` work without prompts.
 
 **How it works:**
-- `.env.1password` contains `op://` references to the `Dev_Craft_Agents` vault
+- `.env.1password` contains `op://` references to the `Dev_Creator_Flow` vault
 - `bun run sync-secrets` resolves references → writes `.env` (gitignored)
 - Secrets are baked into the build at compile time via esbuild `--define` flags
 
@@ -248,14 +248,14 @@ navigate(routes.sidebar.flagged())        // Show flagged
 
 ### Deep Links
 
-External apps can navigate using `craftagents://` URLs:
+External apps can navigate using `creatorflow://` URLs:
 
 ```
-craftagents://settings
-craftagents://allChats/chat/session123
-craftagents://sources/source/github
-craftagents://action/new-chat
-craftagents://workspace/{id}/allChats/chat/abc123
+creatorflow://settings
+creatorflow://allChats/chat/session123
+creatorflow://sources/source/github
+creatorflow://action/new-chat
+creatorflow://workspace/{id}/allChats/chat/abc123
 ```
 
 See `CLAUDE.md` for complete route reference.
@@ -265,7 +265,7 @@ See `CLAUDE.md` for complete route reference.
 | File | Purpose |
 |------|---------|
 | `main/index.ts` | App entry, window creation |
-| `main/sessions.ts` | CraftAgent wrapper, event processing, source integration |
+| `main/sessions.ts` | CreatorFlowAgent wrapper, event processing, source integration |
 | `main/ipc.ts` | IPC channel handlers (sessions, files, shell) |
 | `main/menu.ts` | Application menu (File, Edit, View, Help) |
 | `main/deep-link.ts` | Deep link URL parsing and handling |

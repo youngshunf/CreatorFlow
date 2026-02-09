@@ -1,0 +1,11 @@
+{
+  "locale": "zh-CN",
+  "commands": {
+    "analyze": { "label": "数据分析", "description": "回答数据问题——从快速查询到完整分析" },
+    "build-dashboard": { "label": "构建仪表盘", "description": "构建包含图表、筛选器和表格的交互式 HTML 仪表盘" },
+    "create-viz": { "label": "创建可视化", "description": "使用 Python 创建出版级质量的数据可视化" },
+    "explore-data": { "label": "探索数据", "description": "分析数据集的结构、质量和模式" },
+    "validate": { "label": "验证分析", "description": "在分享前对分析进行质量检查——方法论、准确性和偏差检查" },
+    "write-query": { "label": "编写查询", "description": "按照最佳实践为你的数据库方言编写优化的 SQL" }
+  }
+}

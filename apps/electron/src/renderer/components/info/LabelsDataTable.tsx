@@ -12,10 +12,10 @@ import type { ColumnDef, Row } from '@tanstack/react-table'
 import { ChevronRight, Maximize2 } from 'lucide-react'
 import { Info_DataTable, SortableHeader } from './Info_DataTable'
 import { Info_Badge } from './Info_Badge'
-import { DataTableOverlay } from '@creator-flow/ui'
+import { DataTableOverlay } from '@sprouty-ai/ui'
 import { LabelIcon } from '@/components/ui/label-icon'
 import { cn } from '@/lib/utils'
-import type { LabelConfig } from '@creator-flow/shared/labels'
+import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { useT } from '@/context/LocaleContext'
 
 interface LabelsDataTableProps {

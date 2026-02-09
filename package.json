@@ -1,6 +1,6 @@
 {
-  "name": "creator-flow",
-  "version": "0.3.1",
+  "name": "sprouty-ai",
+  "version": "0.3.5",
   "description": "AI创作操作系统 - 面向自媒体创作者的智能创作平台",
   "type": "module",
   "private": true,
@@ -31,7 +31,7 @@
     "electron:dev:terminal": "bun run scripts/electron-dev.ts --terminal",
     "electron:dev:win": "bun run electron:clean:vite:win && bun run electron:build:resources:win && concurrently -k \"bun run electron:dev:vite\" \"bun run electron:dev:main:win\" \"bun run electron:dev:preload\" \"bun run electron:dev:electron:win\"",
     "electron:dev:menu": "bash scripts/electron-dev.sh",
-    "electron:dev:logs": "pgrep -f 'tail -f.*Craft Agents/main.log' > /dev/null || osascript -e \"tell application \\\"Terminal\\\" to do script \\\"$PWD/scripts/tail-electron-logs.sh\\\"\"",
+    "electron:dev:logs": "pgrep -f 'tail -f.*Creator Flow/main.log' > /dev/null || osascript -e \"tell application \\\"Terminal\\\" to do script \\\"$PWD/scripts/tail-electron-logs.sh\\\"\"",
     "sync-secrets": "bash scripts/sync-secrets.sh",
     "fresh-start": "bun run scripts/fresh-start.ts",
     "fresh-start:token": "bun run scripts/fresh-start.ts --token-only",
@@ -77,7 +77,8 @@
     "mcp-video:start": "cd apps/mcp-video && bun run start",
     "mcp-video:start:http": "cd apps/mcp-video && bun run start:http",
     "mcp-video:test": "cd apps/mcp-video && bun run test",
-    "mcp-video:typecheck": "cd apps/mcp-video && bun run typecheck"
+    "mcp-video:typecheck": "cd apps/mcp-video && bun run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.947.0",
@@ -106,6 +107,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
     "postcss": "^8.5.6",
     "react-devtools-core": "^6.1.1",
     "tailwindcss": "^4.1.18",
@@ -114,7 +116,7 @@
     "vite": "^6.2.4"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.2.26",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.34",
     "@anthropic-ai/sdk": "^0.71.1",
     "@isaacs/ttlcache": "^2.1.4",
     "@modelcontextprotocol/sdk": "^1.24.3",
@@ -137,13 +139,14 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "filtrex": "^3.1.0",
-    "glob": "^13.0.0",
+    "glob": "^11.0.0",
     "gray-matter": "^4.0.3",
     "incr-regex-package": "^1.0.4",
     "jotai": "^2.16.0",
     "js-yaml": "^4.1.1",
     "linkify-it": "^5.0.0",
     "lucide-react": "^0.561.0",
+    "mammoth": "^1.11.0",
     "marked": "^17.0.1",
     "markitdown-js": "^0.0.14",
     "open": "^11.0.0",
@@ -161,6 +164,7 @@
     "shiki": "^3.19.0",
     "tailwind-merge": "^3.4.0",
     "unzipper": "^0.12.3",
-    "zod": "^4.0.0"
+    "xlsx": "^0.18.5",
+    "zod": "4.3.6"
   }
 }

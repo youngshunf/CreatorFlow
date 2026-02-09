@@ -33,6 +33,8 @@ export type {
   // Installation
   InstallProgress,
   InstallProgressCallback,
+  AppInstallProgress,
+  AppInstallProgressCallback,
   InstallResult,
 } from './types.ts';
 
@@ -103,8 +105,6 @@ export {
   uninstallApp,
   restoreAppData,
   // Types
-  type AppInstallProgress,
-  type AppInstallProgressCallback,
   type AppInstallResult,
   type InstalledAppInfo,
   type AppInstallOptions,

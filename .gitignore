@@ -49,8 +49,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Lock files from other package managers
 pnpm-lock.yaml
 
-# Craft Agent local data (sessions, credentials, config)
-.craft-agent/
+# Sprouty AI local data (sessions, credentials, config)
+.sprouty-ai/
 
 # SSH keys and secrets
 *.pem
@@ -62,3 +62,5 @@ id_ed25519*
 # Credentials files
 credentials.enc
 *.credentials
+download-bun-windows.sh
+debug

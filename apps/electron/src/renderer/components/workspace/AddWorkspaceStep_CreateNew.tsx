@@ -23,7 +23,7 @@ interface AddWorkspaceStep_CreateNewProps {
  *
  * Fields:
  * - Workspace name (required)
- * - Location: Default (~/.creator-flow/workspaces/) or Custom
+ * - Location: Default (~/.sprouty-ai/workspaces/) or Custom
  */
 export function AddWorkspaceStep_CreateNew({
   onBack,
@@ -46,7 +46,7 @@ export function AddWorkspaceStep_CreateNew({
   }, [])
 
   const slug = slugify(name)
-  const defaultBasePath = homeDir ? `${homeDir}/.creator-flow/workspaces` : '~/.creator-flow/workspaces'
+  const defaultBasePath = homeDir ? `${homeDir}/.sprouty-ai/workspaces` : '~/.sprouty-ai/workspaces'
   const finalPath = locationOption === 'default'
     ? `${defaultBasePath}/${slug}`
     : customPath
@@ -150,7 +150,7 @@ export function AddWorkspaceStep_CreateNew({
             onChange={() => setLocationOption('default')}
             disabled={isCreating}
             title={t('默认位置')}
-            subtitle={t('在 .creator-flow 文件夹下')}
+            subtitle={t('在 .sprouty-ai 文件夹下')}
           />
 
           {/* Custom location option */}

@@ -9,7 +9,7 @@
 
 import * as React from 'react'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import type { StoredSession } from '@creator-flow/core'
+import type { StoredSession } from '@sprouty-ai/core'
 import { Upload, FileJson, AlertCircle } from 'lucide-react'
 
 interface SessionUploadProps {
