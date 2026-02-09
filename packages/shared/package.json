@@ -59,7 +59,17 @@
     "./marketplace": "./src/marketplace/index.ts",
     "./search": "./src/search/index.ts",
     "./plugins": "./src/plugins/index.ts",
-    "./plugins/global-plugins": "./src/plugins/global-plugins.ts"
+    "./plugins/global-plugins": "./src/plugins/global-plugins.ts",
+    "./db": "./src/db/index.ts",
+    "./db/types": "./src/db/types.ts",
+    "./db/repositories/projects": "./src/db/repositories/projects.ts",
+    "./db/repositories/profiles": "./src/db/repositories/profiles.ts",
+    "./db/repositories/platform-accounts": "./src/db/repositories/platform-accounts.ts",
+    "./db/repositories/competitors": "./src/db/repositories/competitors.ts",
+    "./db/repositories/contents": "./src/db/repositories/contents.ts",
+    "./db/repositories/topic-cache": "./src/db/repositories/topic-cache.ts",
+    "./db/repositories/publish-records": "./src/db/repositories/publish-records.ts",
+    "./db/repositories/viral-patterns": "./src/db/repositories/viral-patterns.ts"
   },
   "dependencies": {
     "@sprouty-ai/core": "workspace:*",

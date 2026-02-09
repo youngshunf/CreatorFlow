@@ -167,7 +167,7 @@ async function runEsbuild(
       platform: "node",
       format: "cjs",
       outfile: join(ROOT_DIR, outfile),
-      external: ["electron"],
+      external: ["electron", "better-sqlite3"],
       define: defines,
       logLevel: "warning",
     });
@@ -348,7 +348,7 @@ async function main(): Promise<void> {
     platform: "node",
     format: "cjs",
     outfile: join(ROOT_DIR, "apps/electron/dist/main.cjs"),
-    external: ["electron"],
+    external: ["electron", "better-sqlite3"],
     define: oauthDefines,
     logLevel: "info",
   });
@@ -363,7 +363,7 @@ async function main(): Promise<void> {
     platform: "node",
     format: "cjs",
     outfile: join(ROOT_DIR, "apps/electron/dist/preload.cjs"),
-    external: ["electron"],
+    external: ["electron", "better-sqlite3"],
     logLevel: "info",
   });
   await preloadContext.watch();

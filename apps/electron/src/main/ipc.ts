@@ -10,6 +10,7 @@ import { ipcLog, windowLog, searchLog } from './logger'
 import { WindowManager } from './window-manager'
 import { registerOnboardingHandlers } from './onboarding'
 import { registerFileManagerIpc } from './file-manager'
+import { registerCreatorMediaIpc } from './creator-media-ipc'
 import { IPC_CHANNELS, type FileAttachment, type StoredAttachment, type AuthType, type ApiSetupInfo, type SendMessageOptions } from '../shared/types'
 import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@sprouty-ai/shared/utils'
 import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, resolveModelId, type Workspace, SUMMARIZATION_MODEL } from '@sprouty-ai/shared/config'
@@ -203,6 +204,18 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     // Make it active
     setActiveWorkspace(workspace.id)
     ipcLog.info(`Created workspace "${name}" at ${rootPath}`)
+
+    // 自媒体创作 APP: 初始化 SQLite 数据库
+    if (appId === 'app.creator-media') {
+      try {
+        const { initCreatorMediaDB } = await import('./creator-media-db')
+        initCreatorMediaDB(rootPath)
+        ipcLog.info(`[creator-media] 已初始化数据库: ${rootPath}`)
+      } catch (error) {
+        ipcLog.error(`[creator-media] 数据库初始化失败:`, error)
+      }
+    }
+
     return { workspace, appInstallError, existingApp }
   })
 
@@ -2500,6 +2513,9 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Register file manager handlers
   registerFileManagerIpc()
+
+  // Register creator media handlers (自媒体创作 APP v2.0)
+  registerCreatorMediaIpc(windowManager)
 
   // ============================================================
   // Theme (app-level only)

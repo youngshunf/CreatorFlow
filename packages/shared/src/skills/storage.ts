@@ -25,6 +25,7 @@ import {
   isIconUrl,
 } from '../utils/icon.ts';
 import { loadGlobalSkills } from './global-skills.ts';
+import { getGlobalPluginsDir } from '../plugins/global-plugins.ts';
 
 // ============================================================
 // Agent Skills Paths (Issue #171)
@@ -167,9 +168,33 @@ export function loadWorkspaceSkills(workspaceRoot: string): LoadedSkill[] {
 }
 
 /**
- * Load all skills from all sources (global, workspace, project)
+ * Load skills from all installed plugins
+ * Scans ~/.sprouty-ai/plugins/{name}/skills/ directories
+ */
+function loadPluginSkills(): LoadedSkill[] {
+  const pluginsDir = getGlobalPluginsDir();
+  if (!existsSync(pluginsDir)) return [];
+
+  const skills: LoadedSkill[] = [];
+  try {
+    const pluginEntries = readdirSync(pluginsDir, { withFileTypes: true });
+    for (const pluginEntry of pluginEntries) {
+      if (!pluginEntry.isDirectory() || pluginEntry.name.startsWith('.')) continue;
+      const skillsDir = join(pluginsDir, pluginEntry.name, 'skills');
+      for (const skill of loadSkillsFromDir(skillsDir, 'plugin')) {
+        skills.push(skill);
+      }
+    }
+  } catch {
+    // Ignore errors reading plugin directories
+  }
+  return skills;
+}
+
+/**
+ * Load all skills from all sources (global, plugin, workspace, project)
  * Skills with the same slug are overridden by higher-priority sources.
- * Priority: global (lowest) < workspace < project (highest)
+ * Priority: global (lowest) < plugin < workspace < project (highest)
  *
  * @param workspaceRoot - Absolute path to workspace root
  * @param projectRoot - Optional project root (working directory) for project-level skills
@@ -182,12 +207,17 @@ export function loadAllSkills(workspaceRoot: string, projectRoot?: string): Load
     skillsBySlug.set(skill.slug, skill);
   }
 
-  // 2. Workspace skills (medium priority)
+  // 2. Plugin skills: ~/.sprouty-ai/plugins/*/skills/
+  for (const skill of loadPluginSkills()) {
+    skillsBySlug.set(skill.slug, skill);
+  }
+
+  // 3. Workspace skills (medium priority)
   for (const skill of loadWorkspaceSkills(workspaceRoot)) {
     skillsBySlug.set(skill.slug, skill);
   }
 
-  // 3. Project skills (highest priority): {projectRoot}/.agents/skills/
+  // 4. Project skills (highest priority): {projectRoot}/.agents/skills/
   if (projectRoot) {
     const projectSkillsDir = join(projectRoot, PROJECT_AGENT_SKILLS_DIR);
     for (const skill of loadSkillsFromDir(projectSkillsDir, 'project')) {

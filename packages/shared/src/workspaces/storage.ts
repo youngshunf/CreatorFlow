@@ -658,4 +658,13 @@ export function migratePluginDir(basePath: string): void {
   }
 }
 
+/**
+ * Get path to workspace database file for creator-media app
+ * @param rootPath - Absolute path to workspace root folder
+ * @returns Path to .sprouty-ai/db/creator.db
+ */
+export function getWorkspaceDbPath(rootPath: string): string {
+  return join(rootPath, WORKSPACE_DATA_DIR, 'db', 'creator.db');
+}
+
 export { CONFIG_DIR, DEFAULT_WORKSPACES_DIR };

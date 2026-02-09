@@ -28,7 +28,8 @@ import {
   isFilesNavigation,
   routes,
 } from '@/contexts/NavigationContext'
-import { isMarketplaceNavigation } from '../../../shared/types'
+import { isMarketplaceNavigation, isAppViewNavigation } from '../../../shared/types'
+import { APP_VIEW_REGISTRY } from '../../pages/creator-media/registry'
 import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage, SourcesSettingsPage, SkillsSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
@@ -261,6 +262,28 @@ export function MainContentPanel({
           workspaceId={activeWorkspaceId || undefined}
           onUseMarketplaceApp={onUseMarketplaceApp}
         />
+      </Panel>
+    )
+  }
+
+  // APP 视图 — 从注册表动态加载视图组件
+  if (isAppViewNavigation(navState)) {
+    const appViews = APP_VIEW_REGISTRY[navState.appId]
+    const ViewComponent = appViews?.[navState.viewId]
+    if (ViewComponent) {
+      return wrapWithStoplight(
+        <Panel variant="grow" className={className}>
+          <React.Suspense fallback={<div className="flex items-center justify-center h-full"><div className="text-sm text-muted-foreground">{t('加载中...')}</div></div>}>
+            <ViewComponent />
+          </React.Suspense>
+        </Panel>
+      )
+    }
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">{t('未知视图')}</p>
+        </div>
       </Panel>
     )
   }

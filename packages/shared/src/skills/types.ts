@@ -31,7 +31,7 @@ export interface SkillMetadata {
 }
 
 /** Source of a loaded skill */
-export type SkillSource = 'global' | 'workspace' | 'project';
+export type SkillSource = 'global' | 'workspace' | 'project' | 'plugin';
 
 /**
  * A loaded skill with parsed content

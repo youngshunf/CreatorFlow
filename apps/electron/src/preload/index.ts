@@ -555,6 +555,60 @@ const api: ElectronAPI = {
   menuCopy: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_COPY),
   menuPaste: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_PASTE),
   menuSelectAll: () => ipcRenderer.invoke(IPC_CHANNELS.MENU_SELECT_ALL),
+
+  // Creator Media (自媒体创作 APP v2.0)
+  creatorMedia: {
+    projects: {
+      list: (workspaceId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_LIST, workspaceId),
+      get: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_GET, workspaceId, projectId),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_CREATE, workspaceId, data),
+      update: (workspaceId: string, projectId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_UPDATE, workspaceId, projectId, data),
+      delete: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_DELETE, workspaceId, projectId),
+      setActive: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_SET_ACTIVE, workspaceId, projectId),
+      getActive: (workspaceId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROJECTS_GET_ACTIVE, workspaceId),
+    },
+    profiles: {
+      get: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROFILES_GET, workspaceId, projectId),
+      upsert: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PROFILES_UPSERT, workspaceId, data),
+    },
+    platformAccounts: {
+      list: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PLATFORM_ACCOUNTS_LIST, workspaceId, projectId),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PLATFORM_ACCOUNTS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PLATFORM_ACCOUNTS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PLATFORM_ACCOUNTS_DELETE, workspaceId, id),
+    },
+    competitors: {
+      list: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_COMPETITORS_LIST, workspaceId, projectId),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_COMPETITORS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_COMPETITORS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_COMPETITORS_DELETE, workspaceId, id),
+    },
+    contents: {
+      list: (workspaceId: string, projectId: string, filters?: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_LIST, workspaceId, projectId, filters),
+      get: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_GET, workspaceId, contentId),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_CREATE, workspaceId, data),
+      update: (workspaceId: string, contentId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_UPDATE, workspaceId, contentId, data),
+      updateStatus: (workspaceId: string, contentId: string, status: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_UPDATE_STATUS, workspaceId, contentId, status),
+      delete: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_DELETE, workspaceId, contentId),
+    },
+    publishRecords: {
+      list: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_LIST, workspaceId, contentId),
+      get: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_DELETE, workspaceId, id),
+    },
+    viralPatterns: {
+      list: (workspaceId: string, filters?: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_VIRAL_PATTERNS_LIST, workspaceId, filters),
+      get: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_VIRAL_PATTERNS_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_VIRAL_PATTERNS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_VIRAL_PATTERNS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_VIRAL_PATTERNS_DELETE, workspaceId, id),
+    },
+    context: {
+      get: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTEXT_GET, workspaceId, projectId),
+    },
+  },
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

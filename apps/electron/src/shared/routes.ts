@@ -190,6 +190,10 @@ export const routes = {
       subpage && subpage !== 'user-profile'
         ? `settings/${subpage}` as const
         : 'settings' as const,
+
+    /** APP 自定义视图 */
+    appView: (appId: string, viewId: string) =>
+      `app/${appId}/${viewId}` as const,
   },
 } as const
 

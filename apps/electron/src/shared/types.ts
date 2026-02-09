@@ -870,6 +870,46 @@ export const IPC_CHANNELS = {
   MENU_COPY: 'menu:copy',
   MENU_PASTE: 'menu:paste',
   MENU_SELECT_ALL: 'menu:selectAll',
+
+  // Creator Media (自媒体创作 APP v2.0)
+  CREATOR_MEDIA_PROJECTS_LIST: 'creatorMedia:projects:list',
+  CREATOR_MEDIA_PROJECTS_GET: 'creatorMedia:projects:get',
+  CREATOR_MEDIA_PROJECTS_CREATE: 'creatorMedia:projects:create',
+  CREATOR_MEDIA_PROJECTS_UPDATE: 'creatorMedia:projects:update',
+  CREATOR_MEDIA_PROJECTS_DELETE: 'creatorMedia:projects:delete',
+  CREATOR_MEDIA_PROJECTS_SET_ACTIVE: 'creatorMedia:projects:setActive',
+  CREATOR_MEDIA_PROJECTS_GET_ACTIVE: 'creatorMedia:projects:getActive',
+  CREATOR_MEDIA_PROFILES_GET: 'creatorMedia:profiles:get',
+  CREATOR_MEDIA_PROFILES_UPSERT: 'creatorMedia:profiles:upsert',
+  CREATOR_MEDIA_PLATFORM_ACCOUNTS_LIST: 'creatorMedia:platformAccounts:list',
+  CREATOR_MEDIA_PLATFORM_ACCOUNTS_CREATE: 'creatorMedia:platformAccounts:create',
+  CREATOR_MEDIA_PLATFORM_ACCOUNTS_UPDATE: 'creatorMedia:platformAccounts:update',
+  CREATOR_MEDIA_PLATFORM_ACCOUNTS_DELETE: 'creatorMedia:platformAccounts:delete',
+  CREATOR_MEDIA_COMPETITORS_LIST: 'creatorMedia:competitors:list',
+  CREATOR_MEDIA_COMPETITORS_CREATE: 'creatorMedia:competitors:create',
+  CREATOR_MEDIA_COMPETITORS_UPDATE: 'creatorMedia:competitors:update',
+  CREATOR_MEDIA_COMPETITORS_DELETE: 'creatorMedia:competitors:delete',
+  CREATOR_MEDIA_CONTENTS_LIST: 'creatorMedia:contents:list',
+  CREATOR_MEDIA_CONTENTS_GET: 'creatorMedia:contents:get',
+  CREATOR_MEDIA_CONTENTS_CREATE: 'creatorMedia:contents:create',
+  CREATOR_MEDIA_CONTENTS_UPDATE: 'creatorMedia:contents:update',
+  CREATOR_MEDIA_CONTENTS_UPDATE_STATUS: 'creatorMedia:contents:updateStatus',
+  CREATOR_MEDIA_CONTENTS_DELETE: 'creatorMedia:contents:delete',
+  // 发布记录
+  CREATOR_MEDIA_PUBLISH_RECORDS_LIST: 'creatorMedia:publishRecords:list',
+  CREATOR_MEDIA_PUBLISH_RECORDS_GET: 'creatorMedia:publishRecords:get',
+  CREATOR_MEDIA_PUBLISH_RECORDS_CREATE: 'creatorMedia:publishRecords:create',
+  CREATOR_MEDIA_PUBLISH_RECORDS_UPDATE: 'creatorMedia:publishRecords:update',
+  CREATOR_MEDIA_PUBLISH_RECORDS_DELETE: 'creatorMedia:publishRecords:delete',
+
+  // 爆款模式
+  CREATOR_MEDIA_VIRAL_PATTERNS_LIST: 'creatorMedia:viralPatterns:list',
+  CREATOR_MEDIA_VIRAL_PATTERNS_GET: 'creatorMedia:viralPatterns:get',
+  CREATOR_MEDIA_VIRAL_PATTERNS_CREATE: 'creatorMedia:viralPatterns:create',
+  CREATOR_MEDIA_VIRAL_PATTERNS_UPDATE: 'creatorMedia:viralPatterns:update',
+  CREATOR_MEDIA_VIRAL_PATTERNS_DELETE: 'creatorMedia:viralPatterns:delete',
+
+  CREATOR_MEDIA_CONTEXT_GET: 'creatorMedia:context:get',
 } as const
 
 /**
@@ -1221,6 +1261,60 @@ export interface ElectronAPI {
   menuCopy(): Promise<void>
   menuPaste(): Promise<void>
   menuSelectAll(): Promise<void>
+
+  // Creator Media (自媒体创作 APP v2.0)
+  creatorMedia: {
+    projects: {
+      list(workspaceId: string): Promise<import('@sprouty-ai/shared/db/types').Project[]>
+      get(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').Project | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateProject): Promise<import('@sprouty-ai/shared/db/types').Project>
+      update(workspaceId: string, projectId: string, data: import('@sprouty-ai/shared/db/types').UpdateProject): Promise<import('@sprouty-ai/shared/db/types').Project | null>
+      delete(workspaceId: string, projectId: string): Promise<boolean>
+      setActive(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').Project | null>
+      getActive(workspaceId: string): Promise<import('@sprouty-ai/shared/db/types').Project | null>
+    }
+    profiles: {
+      get(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').AccountProfile | null>
+      upsert(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateAccountProfile): Promise<import('@sprouty-ai/shared/db/types').AccountProfile>
+    }
+    platformAccounts: {
+      list(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').PlatformAccount[]>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreatePlatformAccount): Promise<import('@sprouty-ai/shared/db/types').PlatformAccount>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdatePlatformAccount): Promise<import('@sprouty-ai/shared/db/types').PlatformAccount | null>
+      delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    competitors: {
+      list(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').Competitor[]>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateCompetitor): Promise<import('@sprouty-ai/shared/db/types').Competitor>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdateCompetitor): Promise<import('@sprouty-ai/shared/db/types').Competitor | null>
+      delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    contents: {
+      list(workspaceId: string, projectId: string, filters?: unknown): Promise<import('@sprouty-ai/shared/db/types').Content[]>
+      get(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').Content | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateContent): Promise<import('@sprouty-ai/shared/db/types').Content>
+      update(workspaceId: string, contentId: string, data: import('@sprouty-ai/shared/db/types').UpdateContent): Promise<import('@sprouty-ai/shared/db/types').Content | null>
+      updateStatus(workspaceId: string, contentId: string, status: string): Promise<import('@sprouty-ai/shared/db/types').Content | null>
+      delete(workspaceId: string, contentId: string): Promise<boolean>
+    }
+    publishRecords: {
+      list(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').PublishRecord[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').PublishRecord | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreatePublishRecord): Promise<import('@sprouty-ai/shared/db/types').PublishRecord>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdatePublishRecord): Promise<import('@sprouty-ai/shared/db/types').PublishRecord | null>
+      delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    viralPatterns: {
+      list(workspaceId: string, filters?: unknown): Promise<import('@sprouty-ai/shared/db/types').ViralPattern[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').ViralPattern | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateViralPattern): Promise<import('@sprouty-ai/shared/db/types').ViralPattern>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdateViralPattern): Promise<import('@sprouty-ai/shared/db/types').ViralPattern | null>
+      delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    context: {
+      get(workspaceId: string, projectId: string): Promise<string>
+    }
+  }
 }
 
 /**
@@ -1417,6 +1511,17 @@ export interface MarketplaceNavigationState {
 }
 
 /**
+ * APP 自定义视图导航状态
+ */
+export interface AppViewNavigationState {
+  navigator: 'appView'
+  appId: string
+  viewId: string
+  /** 可选右侧边栏面板状态 */
+  rightSidebar?: RightSidebarPanel
+}
+
+/**
  * Unified navigation state - single source of truth for all 3 panels
  *
  * From this state we can derive:
@@ -1431,6 +1536,7 @@ export type NavigationState =
   | SkillsNavigationState
   | FilesNavigationState
   | MarketplaceNavigationState
+  | AppViewNavigationState
 
 /**
  * Type guard to check if state is chats navigation
@@ -1475,6 +1581,13 @@ export const isMarketplaceNavigation = (
 ): state is MarketplaceNavigationState => state.navigator === 'marketplace'
 
 /**
+ * Type guard to check if state is app view navigation
+ */
+export const isAppViewNavigation = (
+  state: NavigationState
+): state is AppViewNavigationState => state.navigator === 'appView'
+
+/**
  * Default navigation state - allChats with no selection
  */
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
@@ -1510,6 +1623,9 @@ export const getNavigationStateKey = (state: NavigationState): string => {
       return `marketplace/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
     }
     return 'marketplace'
+  }
+  if (state.navigator === 'appView') {
+    return `app/${state.appId}/${state.viewId}`
   }
   // Chats
   const f = state.filter
@@ -1555,6 +1671,14 @@ export const parseNavigationStateKey = (key: string): NavigationState | null => 
     const subpage = key.slice(9) as SettingsSubpage
     if (['app', 'appearance', 'input', 'workspace', 'permissions', 'labels', 'shortcuts', 'preferences', 'user-profile', 'user-profile-edit', 'subscription', 'sources', 'skills'].includes(subpage)) {
       return { navigator: 'settings', subpage }
+    }
+  }
+
+  // Handle app views
+  if (key.startsWith('app/')) {
+    const parts = key.split('/')
+    if (parts.length >= 3) {
+      return { navigator: 'appView', appId: parts[1], viewId: parts[2] }
     }
   }
 

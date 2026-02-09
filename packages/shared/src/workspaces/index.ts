@@ -41,6 +41,8 @@ export {
   // Global plugin support
   getGlobalPluginDataPath,
   ensureGlobalPluginManifest,
+  // Database
+  getWorkspaceDbPath,
   // Constants
   CONFIG_DIR,
   DEFAULT_WORKSPACES_DIR,

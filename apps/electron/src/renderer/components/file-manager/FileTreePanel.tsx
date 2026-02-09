@@ -22,10 +22,19 @@ import {
   FileCode,
   Image,
   RefreshCw,
+  FolderSearch,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  StyledContextMenuContent,
+  StyledContextMenuItem,
+  StyledContextMenuSeparator,
+} from '@/components/ui/styled-context-menu'
 import { useT } from '@/context/LocaleContext'
 import { toast } from 'sonner'
 import type { FMFileEntry } from '../../../shared/types'
@@ -42,6 +51,8 @@ export interface FileTreePanelProps {
   className?: string
   /** 紧凑模式：隐藏 header，用于嵌入场景 */
   compact?: boolean
+  /** Increment to trigger a refresh from outside */
+  refreshTrigger?: number
 }
 
 interface TreeNode {
@@ -103,6 +114,7 @@ function TreeItem({
   onSelectFile?: (file: FMFileEntry) => void
   onSelectDirectory?: (path: string) => void
 }) {
+  const t = useT()
   const isExpanded = expandedPaths.has(node.entry.path)
   const isSelected = selectedPath === node.entry.path
   const isDirectory = node.entry.isDirectory
@@ -118,36 +130,54 @@ function TreeItem({
 
   return (
     <div>
-      <button
-        onClick={handleClick}
-        className={cn(
-          "w-full flex items-center gap-1 py-1 px-2 text-sm text-left rounded-md transition-colors",
-          "hover:bg-muted/50",
-          isSelected && "bg-primary text-primary-foreground hover:bg-primary/90"
-        )}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
-      >
-        {/* Expand/collapse indicator for directories */}
-        {isDirectory ? (
-          <span className="w-4 h-4 flex items-center justify-center shrink-0">
-            {node.isLoading ? (
-              <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
-            ) : isExpanded ? (
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      <ContextMenu modal={true}>
+        <ContextMenuTrigger asChild>
+          <button
+            onClick={handleClick}
+            className={cn(
+              "w-full flex items-center gap-1 py-1 px-2 text-sm text-left rounded-md transition-colors",
+              "hover:bg-muted/50",
+              isSelected && "bg-muted text-foreground"
             )}
-          </span>
-        ) : (
-          <span className="w-4 h-4 shrink-0" />
-        )}
-        
-        {/* File/folder icon */}
-        {getFileIcon(node.entry, isExpanded)}
-        
-        {/* Name */}
-        <span className="truncate flex-1">{node.entry.name}</span>
-      </button>
+            style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          >
+            {/* Expand/collapse indicator for directories */}
+            {isDirectory ? (
+              <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                {node.isLoading ? (
+                  <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                ) : isExpanded ? (
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                )}
+              </span>
+            ) : (
+              <span className="w-4 h-4 shrink-0" />
+            )}
+
+            {/* File/folder icon */}
+            {getFileIcon(node.entry, isExpanded)}
+
+            {/* Name */}
+            <span className="truncate flex-1">{node.entry.name}</span>
+          </button>
+        </ContextMenuTrigger>
+        <StyledContextMenuContent>
+          <StyledContextMenuItem onClick={() => {
+            const ref = isDirectory ? `[folder:${node.entry.path}]` : `[file:${node.entry.path}]`
+            window.dispatchEvent(new CustomEvent('craft:insert-text', { detail: { text: ref + ' ' } }))
+          }}>
+            <Sparkles />
+            <span className="flex-1">{t('AI 编辑')}</span>
+          </StyledContextMenuItem>
+          <StyledContextMenuSeparator />
+          <StyledContextMenuItem onClick={() => window.electronAPI.showInFolder(node.entry.path)}>
+            <FolderSearch />
+            <span className="flex-1">{t('在访达中显示')}</span>
+          </StyledContextMenuItem>
+        </StyledContextMenuContent>
+      </ContextMenu>
 
       {/* Children (if expanded) */}
       <AnimatePresence initial={false}>
@@ -188,6 +218,7 @@ export function FileTreePanel({
   onSelectDirectory,
   className,
   compact,
+  refreshTrigger,
 }: FileTreePanelProps) {
   const t = useT()
   const [rootNode, setRootNode] = useState<TreeNode | null>(null)
@@ -355,6 +386,14 @@ export function FileTreePanel({
       setIsRefreshing(false)
     }
   }, [rootPath, isRefreshing, loadDirectory, t])
+
+  // External refresh trigger
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      handleRefresh()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger])
 
   // Merge loading state into tree
   const treeWithLoadingState = useMemo(() => {

@@ -36,7 +36,7 @@ export interface ParsedRoute {
 // Compound Route Types (new format)
 // =============================================================================
 
-export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files' | 'marketplace'
+export type NavigatorType = 'chats' | 'sources' | 'skills' | 'settings' | 'files' | 'marketplace' | 'appView'
 
 export interface ParsedCompoundRoute {
   /** The navigator type */
@@ -47,6 +47,8 @@ export interface ParsedCompoundRoute {
   sourceFilter?: SourceFilter
   /** Marketplace filter (only for marketplace navigator) */
   marketplaceFilter?: MarketplaceFilter
+  /** APP ID (only for appView navigator) */
+  appId?: string
   /** Details page info (null for empty state) */
   details: {
     type: string
@@ -62,7 +64,7 @@ export interface ParsedCompoundRoute {
  * Known prefixes that indicate a compound route
  */
 const COMPOUND_ROUTE_PREFIXES = [
-  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files', 'marketplace'
+  'home', 'allChats', 'flagged', 'state', 'label', 'view', 'sources', 'skills', 'settings', 'files', 'marketplace', 'app'
 ]
 
 /**
@@ -243,6 +245,18 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
       }
     }
 
+    return null
+  }
+
+  // APP 视图导航: app/{appId}/{viewId}
+  if (first === 'app') {
+    if (segments.length >= 3) {
+      return {
+        navigator: 'appView',
+        appId: segments[1],
+        details: { type: 'view', id: segments[2] },
+      }
+    }
     return null
   }
 
@@ -604,6 +618,15 @@ function convertCompoundToNavigationState(compound: ParsedCompoundRoute): Naviga
     return { navigator: 'marketplace', filter, details: null }
   }
 
+  // APP 视图
+  if (compound.navigator === 'appView') {
+    return {
+      navigator: 'appView',
+      appId: compound.appId || '',
+      viewId: compound.details?.id || 'dashboard',
+    }
+  }
+
   // Chats
   const filter = compound.chatFilter || { kind: 'allChats' as const }
   if (compound.details) {
@@ -810,6 +833,11 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
       return `${base}/${state.details.type}/${state.details.type === 'skill' ? state.details.skillId : state.details.appId}`
     }
     return base
+  }
+
+  // APP 视图
+  if (state.navigator === 'appView') {
+    return `app/${state.appId}/${state.viewId}`
   }
 
   // Chats
