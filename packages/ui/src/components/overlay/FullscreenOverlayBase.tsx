@@ -143,6 +143,7 @@ export function FullscreenOverlayBase({
           )}
           style={{ zIndex: Z_FULLSCREEN }}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          aria-describedby={undefined}
         >
           {/* Visually hidden title for accessibility - required by Radix Dialog */}
           <Dialog.Title className="sr-only">{accessibleTitle}</Dialog.Title>

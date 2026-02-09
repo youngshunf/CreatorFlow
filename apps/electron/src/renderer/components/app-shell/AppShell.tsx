@@ -3521,6 +3521,21 @@ function AppShellContent({
           onRefreshWorkspaces?.()
           onSelectWorkspace(workspace.id)
         }}
+        onDeleteWorkspace={async (workspaceId, mode) => {
+          if (!window.electronAPI) return
+          try {
+            const result = await window.electronAPI.deleteWorkspace(workspaceId, mode)
+            console.log('[deleteWorkspace] result:', result)
+            // Always refresh the workspace list after a delete attempt
+            await onRefreshWorkspaces?.()
+            if (result.success && workspaceId === activeWorkspaceId && result.newActiveWorkspaceId) {
+              onSelectWorkspace(result.newActiveWorkspaceId)
+              setShowWorkspaceManager(false)
+            }
+          } catch (error) {
+            console.error('Failed to delete workspace:', error)
+          }
+        }}
         initialMarketplaceApp={pendingMarketplaceApp}
         onClearInitialApp={() => setPendingMarketplaceApp(undefined)}
       />

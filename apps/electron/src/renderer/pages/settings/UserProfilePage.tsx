@@ -305,7 +305,7 @@ export default function UserProfilePage() {
 
       {/* 修改密码弹窗 */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t('修改密码')}</DialogTitle>
           </DialogHeader>

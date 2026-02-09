@@ -53,6 +53,7 @@ export default function WorkspaceSettingsPage() {
   const onModelChange = appShellContext.onModelChange
   const activeWorkspaceId = appShellContext.activeWorkspaceId
   const onRefreshWorkspaces = appShellContext.onRefreshWorkspaces
+  const onSelectWorkspace = appShellContext.onSelectWorkspace
   const customModel = appShellContext.customModel
 
   // Cloud models: dynamic list from backend, with local fallback
@@ -317,15 +318,18 @@ export default function WorkspaceSettingsPage() {
     setDeleteDialogOpen(false)
 
     try {
-      const success = await window.electronAPI.deleteWorkspace(activeWorkspaceId, mode)
-      if (success) {
-        // 刷新工作区列表，切换到其他工作区
+      const result = await window.electronAPI.deleteWorkspace(activeWorkspaceId, mode)
+      if (result.success) {
         onRefreshWorkspaces?.()
+        // 自动切换到下一个可用工作区
+        if (result.newActiveWorkspaceId) {
+          onSelectWorkspace?.(result.newActiveWorkspaceId)
+        }
       }
     } catch (error) {
       console.error('Failed to delete workspace:', error)
     }
-  }, [activeWorkspaceId, onRefreshWorkspaces])
+  }, [activeWorkspaceId, onRefreshWorkspaces, onSelectWorkspace])
 
   // Show empty state if no workspace is active
   if (!activeWorkspaceId) {

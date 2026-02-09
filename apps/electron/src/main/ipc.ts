@@ -219,12 +219,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) {
       ipcLog.error(`[deleteWorkspace] Workspace not found: ${workspaceId}`)
-      return false
+      return { success: false }
     }
 
     try {
       const { deleteWorkspaceFolder, backupWorkspaceFolder } = await import('@sprouty-ai/shared/workspaces')
-      const { removeWorkspace } = await import('@sprouty-ai/shared/config')
+      const { removeWorkspace, loadStoredConfig } = await import('@sprouty-ai/shared/config')
 
       // 根据模式删除或备份工作区数据文件夹
       const folderResult = mode === 'backup'
@@ -232,27 +232,21 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         : deleteWorkspaceFolder(workspace.rootPath)
 
       if (!folderResult) {
-        ipcLog.error(`[deleteWorkspace] Failed to ${mode} workspace folder at ${workspace.rootPath}`)
-        return false
+        ipcLog.warn(`[deleteWorkspace] Folder ${mode} failed at ${workspace.rootPath}, proceeding with config removal`)
       }
 
-      // 从全局配置中移除工作区记录并清理凭证
+      // 从全局配置中移除工作区记录并清理凭证（无论文件夹操作是否成功）
       await removeWorkspace(workspaceId)
 
-      // 关闭该工作区的所有窗口
-      const allWindows = BrowserWindow.getAllWindows()
-      for (const win of allWindows) {
-        const winWorkspaceId = windowManager.getWorkspaceForWindow(win.webContents.id)
-        if (winWorkspaceId === workspaceId) {
-          win.close()
-        }
-      }
+      // 获取删除后的新活跃工作区 ID（removeWorkspace 已自动切换）
+      const config = loadStoredConfig()
+      const newActiveWorkspaceId = config?.activeWorkspaceId || null
 
-      ipcLog.info(`[deleteWorkspace] Workspace "${workspace.name}" ${mode === 'backup' ? 'backed up' : 'deleted'} successfully`)
-      return true
+      ipcLog.info(`[deleteWorkspace] Workspace "${workspace.name}" removed (folder ${mode}: ${folderResult ? 'ok' : 'skipped'}), new active: ${newActiveWorkspaceId}`)
+      return { success: true, newActiveWorkspaceId }
     } catch (error) {
       ipcLog.error(`[deleteWorkspace] Error:`, error)
-      return false
+      return { success: false }
     }
   })
 

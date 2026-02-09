@@ -99,7 +99,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcut
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{t('键盘快捷键')}</DialogTitle>
         </DialogHeader>

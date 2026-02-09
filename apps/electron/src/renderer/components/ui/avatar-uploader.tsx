@@ -256,7 +256,7 @@ export function AvatarUploader({
 
       {/* 裁剪对话框 */}
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t('裁剪头像')}</DialogTitle>
           </DialogHeader>

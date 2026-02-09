@@ -929,7 +929,7 @@ export interface ElectronAPI {
   getWorkspaces(): Promise<Workspace[]>
   /** @param installMode - 'force' to overwrite with backup, 'merge' to merge files */
   createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge'): Promise<CreateWorkspaceResult>
-  deleteWorkspace(workspaceId: string, mode: 'delete' | 'backup'): Promise<boolean>
+  deleteWorkspace(workspaceId: string, mode: 'delete' | 'backup'): Promise<{ success: boolean; newActiveWorkspaceId?: string | null }>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
 
   // Window management
