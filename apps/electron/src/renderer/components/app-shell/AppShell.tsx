@@ -28,6 +28,11 @@ import {
   Home,
   Files,
   Store,
+  LayoutDashboard,
+  PenTool,
+  TrendingUp,
+  Calendar,
+  BarChart3,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -110,7 +115,7 @@ import {
   type NavigationState,
   type ChatFilter,
 } from "@/contexts/NavigationContext"
-import { isMarketplaceNavigation } from "../../../shared/types"
+import { isMarketplaceNavigation, isAppViewNavigation } from "../../../shared/types"
 import type { SettingsSubpage } from "../../../shared/types"
 import { SourcesListPanel } from "./SourcesListPanel"
 import { SkillsListPanel } from "./SkillsListPanel"
@@ -930,6 +935,7 @@ function AppShellContent({
   const [fileTreeHeightRatio, setFileTreeHeightRatio] = React.useState(() =>
     storage.get(storage.KEYS.fileTreeHeight, 0.5)
   )
+  const [fileTreeRefreshTrigger, setFileTreeRefreshTrigger] = React.useState(0)
 
   // 文件预览面板状态
   const [isFilePreviewVisible, setIsFilePreviewVisible] = React.useState(false)
@@ -1887,6 +1893,10 @@ function AppShellContent({
     // 0. Home section: explicit workspace home view
     result.push({ id: 'nav:home', type: 'nav', action: handleHomeClick })
 
+    // 0.5 APP 视图: 创作面板、创作工作台
+    result.push({ id: 'nav:appView:dashboard', type: 'nav', action: () => navigate(routes.view.appView('app.creator-media', 'dashboard')) })
+    result.push({ id: 'nav:appView:workspace', type: 'nav', action: () => navigate(routes.view.appView('app.creator-media', 'workspace')) })
+
     // 1. Chats section: All Chats, Flagged, States header, States items
     result.push({ id: 'nav:allChats', type: 'nav', action: handleAllChatsClick })
     result.push({ id: 'nav:flagged', type: 'nav', action: handleFlaggedClick })
@@ -2237,6 +2247,42 @@ function AppShellContent({
                       variant: activeRoute === 'home' ? "default" : "ghost",
                       onClick: handleHomeClick,
                     },
+                    // --- APP 视图（创作面板、创作工作台）---
+                    {
+                      id: "nav:appView:dashboard",
+                      title: t('创作面板'),
+                      icon: LayoutDashboard,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'dashboard' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'dashboard')),
+                    },
+                    {
+                      id: "nav:appView:workspace",
+                      title: t('创作工作台'),
+                      icon: PenTool,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'workspace' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'workspace')),
+                    },
+                    {
+                      id: "nav:appView:hot-topics",
+                      title: t('热点看板'),
+                      icon: TrendingUp,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'hot-topics' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'hot-topics')),
+                    },
+                    {
+                      id: "nav:appView:calendar",
+                      title: t('内容日历'),
+                      icon: Calendar,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'calendar' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'calendar')),
+                    },
+                    {
+                      id: "nav:appView:analytics",
+                      title: t('数据复盘'),
+                      icon: BarChart3,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'analytics' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'analytics')),
+                    },
                     // --- Chats Section (with Flagged, States, Labels as sub-items) ---
                     {
                       id: "nav:allChats",
@@ -2499,7 +2545,7 @@ function AppShellContent({
               Animated width with spring physics for smooth 60-120fps transitions.
               Outer motion.div animates width (clipping mask), inner div maintains fixed width
               so content doesn't reflow during animation - same pattern as left sidebar. */}
-          {!isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !(isSettingsNavigation(navState) && navState.subpage === 'subscription') && (
+          {!isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && !(isSettingsNavigation(navState) && navState.subpage === 'subscription') && (
           <motion.div
             initial={false}
             animate={{
@@ -3188,7 +3234,17 @@ function AppShellContent({
                 >
                   <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium text-muted-foreground">{t('文件')}</span>
-                  <ChevronDown className={cn("h-3 w-3 text-muted-foreground ml-auto transition-transform", isFileTreeCollapsed && "rotate-180")} />
+                  {!isFileTreeCollapsed && (
+                    <button
+                      type="button"
+                      className="ml-auto p-0.5 rounded hover:bg-muted/80 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setFileTreeRefreshTrigger(prev => prev + 1) }}
+                      title={t('刷新')}
+                    >
+                      <RotateCw className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  )}
+                  <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", isFileTreeCollapsed && "rotate-180", !isFileTreeCollapsed && "ml-0")} />
                 </div>
 
                 {/* 文件树面板 — 展开时从底部向上占据空间 */}
@@ -3200,6 +3256,7 @@ function AppShellContent({
                         rootPath={activeWorkspace.rootPath}
                         selectedPath={selectedFile?.path}
                         onSelectFile={handleFileTreeSelect}
+                        refreshTrigger={fileTreeRefreshTrigger}
                       />
                     )}
                   </div>
@@ -3211,7 +3268,7 @@ function AppShellContent({
           )}
 
           {/* Session List Resize Handle (hidden in focused mode, home view, files navigation, and marketplace navigation) */}
-          {!effectiveFocusMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && (
+          {!effectiveFocusMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && (
           <div
             ref={sessionListHandleRef}
             onMouseDown={(e) => { e.preventDefault(); setIsResizing('session-list') }}
