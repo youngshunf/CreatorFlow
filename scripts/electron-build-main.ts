@@ -140,6 +140,15 @@ async function main(): Promise<void> {
       "--outfile=apps/electron/dist/main.cjs",
       "--external:electron",
       "--external:better-sqlite3",
+      // Remotion packages use dynamic imports and require.resolve() at runtime
+      // They should not be bundled - they will be loaded from node_modules
+      "--external:@remotion/bundler",
+      "--external:@remotion/renderer",
+      "--external:@remotion/cli",
+      "--external:remotion",
+      // Remotion's internal dependencies that use require.resolve()
+      "--external:esbuild",
+      "--external:source-map",
       ...buildDefines,
     ],
     cwd: ROOT_DIR,

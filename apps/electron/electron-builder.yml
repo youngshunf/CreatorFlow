@@ -26,7 +26,18 @@ files:
   - packages/shared/src/network-interceptor.ts
   # Include bundled Bun runtime (platform-specific, set by build script)
   - vendor/bun/**/*
-  # Exclude everything from node_modules (will use extraResources for SDK)
+  # Include video package with MCP Server for video rendering (Bun can run TypeScript directly)
+  - packages/video/src/**/*
+  - packages/video/package.json
+  - packages/video/remotion.config.ts
+  # Include Remotion dependencies for video rendering
+  - node_modules/@remotion/**/*
+  - node_modules/remotion/**/*
+  # Include fastmcp for MCP Video Server
+  - node_modules/fastmcp/**/*
+  # Include nanoid for MCP Video Server
+  - node_modules/nanoid/**/*
+  # Exclude everything else from node_modules
   - "!node_modules/**/*"
 
 # Include SDK as extraResources to bypass node_modules auto-exclusion

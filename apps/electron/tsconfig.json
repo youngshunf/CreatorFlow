@@ -24,7 +24,9 @@
       "@/*": ["src/renderer/*"],
       "@config/*": ["../../packages/shared/src/config/*"],
       "@sprouty-ai/shared": ["../../packages/shared/src/index.ts"],
-      "@sprouty-ai/shared/*": ["../../packages/shared/src/*"]
+      "@sprouty-ai/shared/*": ["../../packages/shared/src/*"],
+      "@sprouty-ai/video": ["../../packages/video/src/index.ts"],
+      "@sprouty-ai/video/*": ["../../packages/video/src/*"]
     }
   },
   "include": ["src/**/*", "../../packages/shared/src/**/*.d.ts"],

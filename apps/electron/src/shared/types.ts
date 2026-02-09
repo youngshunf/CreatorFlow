@@ -1315,6 +1315,13 @@ export interface ElectronAPI {
       get(workspaceId: string, projectId: string): Promise<string>
     }
   }
+
+  // Video API (Remotion video creation)
+  video: import('../preload/video-api').VideoAPI
+
+  // Video Service API (service lifecycle management)
+  // @requirements 5.1
+  videoService: import('../preload/video-api').VideoServiceAPI
 }
 
 /**
@@ -1522,6 +1529,17 @@ export interface AppViewNavigationState {
 }
 
 /**
+ * Video navigation state - shows VideoEditor in main content
+ */
+export interface VideoNavigationState {
+  navigator: 'video'
+  /** Selected video project ID, or null for project list */
+  projectId?: string
+  /** Optional right sidebar panel state */
+  rightSidebar?: RightSidebarPanel
+}
+
+/**
  * Unified navigation state - single source of truth for all 3 panels
  *
  * From this state we can derive:
@@ -1537,6 +1555,7 @@ export type NavigationState =
   | FilesNavigationState
   | MarketplaceNavigationState
   | AppViewNavigationState
+  | VideoNavigationState
 
 /**
  * Type guard to check if state is chats navigation
@@ -1586,6 +1605,13 @@ export const isMarketplaceNavigation = (
 export const isAppViewNavigation = (
   state: NavigationState
 ): state is AppViewNavigationState => state.navigator === 'appView'
+
+/**
+ * Type guard to check if state is video navigation
+ */
+export const isVideoNavigation = (
+  state: NavigationState
+): state is VideoNavigationState => state.navigator === 'video'
 
 /**
  * Default navigation state - allChats with no selection

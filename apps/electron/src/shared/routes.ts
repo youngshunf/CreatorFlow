@@ -194,6 +194,12 @@ export const routes = {
     /** APP 自定义视图 */
     appView: (appId: string, viewId: string) =>
       `app/${appId}/${viewId}` as const,
+
+    /** Video editor view */
+    video: (projectId?: string) =>
+      projectId
+        ? `video/project/${projectId}` as const
+        : 'video' as const,
   },
 } as const
 

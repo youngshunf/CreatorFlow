@@ -10,6 +10,8 @@ import {
   mkdirSync,
   copyFileSync,
   readdirSync,
+  readFileSync,
+  writeFileSync,
 } from 'fs';
 import { join } from 'path';
 import type { DirectoryStructure } from './types.ts';
@@ -24,6 +26,7 @@ import {
 } from '../workspaces/storage.ts';
 import { loadAppById, getAppPath } from './storage.ts';
 import { debug } from '../utils/debug.ts';
+import { resolveSourceConfigPaths } from './video-mcp-paths.ts';
 
 // ============================================================
 // Directory Structure Creation
@@ -315,6 +318,11 @@ function copyAppStatusesToWorkspace(appPath: string, workspaceRoot: string): boo
 /**
  * Copy app-specific labels, statuses, and sources to workspace.
  * This is the simplified approach: directly copy directory contents.
+ *
+ * @param appId - Application ID
+ * @param workspaceRoot - Workspace root path
+ * @param isPackaged - Whether the app is packaged (default: false)
+ * @param resourcesPath - Resources path for packaged app
  */
 function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
   const appPath = getAppPath(appId);
@@ -331,7 +339,7 @@ function copyAppDataToWorkspace(appId: string, workspaceRoot: string): void {
   copyAppStatusesToWorkspace(appPath, workspaceRoot);
 
   // Copy sources (if app has preset sources)
-  copyAppSourcesToWorkspace(appPath, workspaceRoot);
+  copyAppSourcesToWorkspace(appPath, workspaceRoot, isPackaged, resourcesPath);
 }
 
 // ============================================================
@@ -355,45 +363,86 @@ function getAppPathWithSources(appId: string): string | null {
  * Copy sources directory from app to workspace.
  * Each source is a subdirectory with config.json and optionally guide.md.
  * Existing sources in the workspace are NOT overwritten.
+ *
+ * Path placeholders in config.json are resolved:
+ * - {{BUN_PATH}} -> Bun executable path
+ * - {{VIDEO_MCP_SERVER_PATH}} -> Video MCP server entry file path
  */
-function copyAppSourcesToWorkspace(appPath: string, workspaceRoot: string): boolean {
+function copyAppSourcesToWorkspace(
+  appPath: string,
+  workspaceRoot: string,
+  isPackaged: boolean = false,
+  resourcesPath?: string
+): boolean {
   const appSourcesDir = join(appPath, 'sources');
-  
+
   if (!existsSync(appSourcesDir)) {
     debug(`[copyAppSourcesToWorkspace] No sources directory in app`);
     return false;
   }
-  
+
   const workspaceSourcesDir = join(workspaceRoot, '.sprouty-ai', 'sources');
-  
+
   // Ensure workspace sources directory exists
   if (!existsSync(workspaceSourcesDir)) {
     mkdirSync(workspaceSourcesDir, { recursive: true });
   }
-  
+
   // Iterate over each source subdirectory
   const sourceEntries = readdirSync(appSourcesDir, { withFileTypes: true });
   let copiedCount = 0;
-  
+
   for (const entry of sourceEntries) {
     if (!entry.isDirectory()) continue;
-    
+
     const sourceSlug = entry.name;
     const sourceDir = join(appSourcesDir, sourceSlug);
     const targetDir = join(workspaceSourcesDir, sourceSlug);
-    
+
     // Skip if source already exists in workspace
     if (existsSync(targetDir)) {
       debug(`[copyAppSourcesToWorkspace] Source ${sourceSlug} already exists, skipping`);
       continue;
     }
-    
-    // Copy the entire source directory
-    copyDirectory(sourceDir, targetDir);
+
+    // Create target directory
+    mkdirSync(targetDir, { recursive: true });
+
+    // Copy files and resolve path placeholders in config.json
+    const files = readdirSync(sourceDir, { withFileTypes: true });
+    for (const file of files) {
+      if (!file.isFile()) continue;
+
+      const sourcePath = join(sourceDir, file.name);
+      const targetPath = join(targetDir, file.name);
+
+      if (file.name === 'config.json') {
+        // Read, resolve paths, and write config.json
+        try {
+          const configContent = readFileSync(sourcePath, 'utf-8');
+          const config = JSON.parse(configContent);
+
+          // Resolve path placeholders
+          const resolvedConfig = resolveSourceConfigPaths(config, isPackaged, resourcesPath);
+
+          // Write resolved config
+          writeFileSync(targetPath, JSON.stringify(resolvedConfig, null, 2), 'utf-8');
+          debug(`[copyAppSourcesToWorkspace] Resolved paths in ${sourceSlug}/config.json`);
+        } catch (error) {
+          debug(`[copyAppSourcesToWorkspace] Failed to resolve paths in ${sourceSlug}/config.json:`, error);
+          // Fall back to direct copy
+          copyFileSync(sourcePath, targetPath);
+        }
+      } else {
+        // Copy other files directly
+        copyFileSync(sourcePath, targetPath);
+      }
+    }
+
     copiedCount++;
     debug(`[copyAppSourcesToWorkspace] Copied source ${sourceSlug} to workspace`);
   }
-  
+
   debug(`[copyAppSourcesToWorkspace] Copied ${copiedCount} sources to workspace`);
   return copiedCount > 0;
 }
@@ -504,6 +553,10 @@ export interface InitializeWorkspaceOptions {
   skipDirectoryStructure?: boolean;
   /** Skip preset data */
   skipPresetData?: boolean;
+  /** Whether the app is packaged (for path resolution) */
+  isPackaged?: boolean;
+  /** Resources path for packaged app (app.getPath('resources')) */
+  resourcesPath?: string;
 }
 
 /**
@@ -621,7 +674,12 @@ export function initializeWorkspaceFromApp(
   // Copy app-specific labels and statuses (direct directory copy)
   if (!options.skipPresetData) {
     try {
-      copyAppDataToWorkspace(options.appId, workspaceRoot);
+      copyAppDataToWorkspace(
+        options.appId,
+        workspaceRoot,
+        options.isPackaged || false,
+        options.resourcesPath
+      );
     } catch (error) {
       errors.push(`Failed to copy app data: ${error}`);
     }

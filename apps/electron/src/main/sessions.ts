@@ -54,6 +54,7 @@ import { type ThinkingLevel, DEFAULT_THINKING_LEVEL } from '@sprouty-ai/shared/a
 import { evaluateAutoLabels } from '@sprouty-ai/shared/labels/auto'
 import { listLabels } from '@sprouty-ai/shared/labels/storage'
 import { extractLabelId } from '@sprouty-ai/shared/labels'
+import { getDefaultBunPathResolver, type BunPathResolver } from './bun-path'
 
 /**
  * Sanitize message content for use as session title.
@@ -937,28 +938,10 @@ export class SessionManager {
     // In packaged app: use bundled Bun binary
     // In development: use system 'bun' command
     if (app.isPackaged) {
-      // Use platform-specific binary name (bun.exe on Windows, bun on macOS/Linux)
-      const bunBinary = process.platform === 'win32' ? 'bun.exe' : 'bun'
-      // On Windows, bun.exe is in extraResources (process.resourcesPath) to avoid EBUSY errors.
-      // On macOS/Linux, bun is in the app files (basePath). See electron-builder.yml for details.
-
-      // Debug logging for path resolution
-      sessionLog.info('[Bun Path Debug] process.platform:', process.platform)
-      sessionLog.info('[Bun Path Debug] process.resourcesPath:', process.resourcesPath)
-      sessionLog.info('[Bun Path Debug] basePath:', basePath)
-      sessionLog.info('[Bun Path Debug] app.getAppPath():', app.getAppPath())
-
-      const bunBasePath = process.platform === 'win32' ? (process.resourcesPath || basePath) : basePath
-      sessionLog.info('[Bun Path Debug] bunBasePath:', bunBasePath)
-
-      const bunPath = join(bunBasePath, 'vendor', 'bun', bunBinary)
-      sessionLog.info('[Bun Path Debug] bunPath:', bunPath)
-
-      if (!existsSync(bunPath)) {
-        const error = `Bundled Bun runtime not found at ${bunPath}. The app package may be corrupted.`
-        sessionLog.error(error)
-        throw new Error(error)
-      }
+      // Use BunPathResolver to get the Bun executable path
+      // This handles platform-specific paths and validation
+      const bunResolver = getDefaultBunPathResolver()
+      const bunPath = bunResolver.getBunPath()
       sessionLog.info('Setting executable:', bunPath)
       setExecutable(bunPath)
 

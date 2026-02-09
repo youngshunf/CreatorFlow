@@ -1291,11 +1291,12 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
                   )}
                   {turns.map((turn, index) => {
                     // Compute turn key and check if it's a search match
+                    // Include index to ensure uniqueness in case of duplicate turnIds
                     const getTurnKey = () => {
-                      if (turn.type === 'user') return `user-${turn.message.id}`
-                      if (turn.type === 'system') return `system-${turn.message.id}`
-                      if (turn.type === 'auth-request') return `auth-${turn.message.id}`
-                      return `turn-${turn.turnId}`
+                      if (turn.type === 'user') return `user-${turn.message.id}-${index}`
+                      if (turn.type === 'system') return `system-${turn.message.id}-${index}`
+                      if (turn.type === 'auth-request') return `auth-${turn.message.id}-${index}`
+                      return `turn-${turn.turnId}-${index}`
                     }
                     const turnKey = getTurnKey()
                     const isCurrentMatch = isSearchActive && matchingTurnIds[currentMatchIndex] === turnKey

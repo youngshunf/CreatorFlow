@@ -19,6 +19,7 @@ import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@spr
 import { isValidThinkingLevel } from '@sprouty-ai/shared/agent/thinking-levels'
 import { getCredentialManager } from '@sprouty-ai/shared/credentials'
 import { MarkItDown } from 'markitdown-js'
+import { registerVideoIpcHandlers } from './video'
 
 /**
  * Sanitizes a filename to prevent path traversal and filesystem issues.
@@ -2862,4 +2863,6 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return getSkillsWithUpdateStatus(workspace.rootPath)
   })
 
+  // Register video IPC handlers (Remotion video creation)
+  registerVideoIpcHandlers()
 }

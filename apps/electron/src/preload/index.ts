@@ -2,6 +2,7 @@
 import '@sentry/electron/preload'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, type SessionEvent, type ElectronAPI, type FileAttachment, type AuthType, type FMDirectoryChangeEvent } from '../shared/types'
+import { videoAPI, videoServiceAPI } from './video-api'
 
 const api: ElectronAPI = {
   // Session management
@@ -609,6 +610,13 @@ const api: ElectronAPI = {
       get: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTEXT_GET, workspaceId, projectId),
     },
   },
+
+  // Video API (Remotion video creation)
+  video: videoAPI,
+
+  // Video Service API (service lifecycle management)
+  // @requirements 5.1
+  videoService: videoServiceAPI,
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

@@ -73,6 +73,11 @@
     "server:db:push": "cd apps/server && bun run db:push",
     "server:db:studio": "cd apps/server && bun run db:studio",
     "server:typecheck": "cd apps/server && bun run typecheck",
+    "mcp-video:dev": "cd apps/mcp-video && bun run dev",
+    "mcp-video:start": "cd apps/mcp-video && bun run start",
+    "mcp-video:start:http": "cd apps/mcp-video && bun run start:http",
+    "mcp-video:test": "cd apps/mcp-video && bun run test",
+    "mcp-video:typecheck": "cd apps/mcp-video && bun run typecheck",
     "prepare": "husky"
   },
   "devDependencies": {
