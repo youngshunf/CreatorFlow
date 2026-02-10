@@ -16,7 +16,22 @@ import { Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/context/LocaleContext';
 import type { VideoProject } from '@creator-flow/video';
-import { RemotionRoot } from '@creator-flow/video';
+import {
+  TitleAnimation,
+  Slideshow,
+  DataVisualization,
+  ProductShowcase,
+} from '@creator-flow/video';
+
+/**
+ * Map composition IDs to actual React components
+ */
+const COMPOSITION_MAP: Record<string, React.FC<any>> = {
+  TitleAnimation,
+  Slideshow,
+  DataVisualization,
+  ProductShowcase,
+};
 
 export interface VideoPreviewProps {
   /** Current video project */
@@ -61,6 +76,12 @@ export function VideoPreview({
     return project.compositions[0];
   }, [project]);
 
+  // Resolve the actual React component for the composition
+  const CompositionComponent = useMemo(() => {
+    const id = composition?.id || 'TitleAnimation';
+    return COMPOSITION_MAP[id] || TitleAnimation;
+  }, [composition]);
+
   // Calculate player dimensions to fit container while maintaining aspect ratio
   const playerStyle = useMemo(() => {
     if (!project) return {};
@@ -94,9 +115,8 @@ export function VideoPreview({
         >
           <Player
             ref={playerRef}
-            component={RemotionRoot}
+            component={CompositionComponent}
             inputProps={{
-              compositionId: composition?.id || 'TitleAnimation',
               ...composition?.props,
             }}
             durationInFrames={project.config.durationInFrames}
@@ -107,6 +127,7 @@ export function VideoPreview({
               width: '100%',
               height: '100%',
             }}
+            acknowledgeRemotionLicense
             controls
             autoPlay={false}
             loop

@@ -706,9 +706,9 @@ export default Tips;
  */
 export const stepByStepTemplate: VideoTemplate = {
   id: 'tutorial-steps',
-  name: 'Step-by-Step Tutorial',
+  name: '分步教程',
   description:
-    'Tutorial template with clear step progression. Perfect for how-to guides, walkthroughs, and instructional content.',
+    '带有清晰步骤进度的教程模板。适用于操作指南、演练和教学内容。',
   category: 'tutorial',
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -717,28 +717,28 @@ export const stepByStepTemplate: VideoTemplate = {
     durationInFrames: 450, // 15 seconds
   },
   defaultProps: {
-    title: 'How To Guide',
-    subtitle: 'Follow these simple steps',
+    title: '操作指南',
+    subtitle: '跟着这些简单步骤操作',
     colors: DEFAULT_COLOR_SCHEMES.nature,
     items: [
       {
-        title: 'Prepare Your Workspace',
-        description: 'Gather all necessary materials and set up your environment',
+        title: '准备工作环境',
+        description: '收集所有必要材料并搭建环境',
         icon: '1️⃣',
       },
       {
-        title: 'Follow the Process',
-        description: 'Execute each step carefully and methodically',
+        title: '按步骤执行',
+        description: '仔细且有条理地执行每个步骤',
         icon: '2️⃣',
       },
       {
-        title: 'Review and Refine',
-        description: 'Check your work and make any necessary adjustments',
+        title: '检查与优化',
+        description: '检查成果并进行必要的调整',
         icon: '3️⃣',
       },
       {
-        title: 'Complete and Share',
-        description: 'Finalize your project and share your results',
+        title: '完成与分享',
+        description: '完善项目并分享你的成果',
         icon: '4️⃣',
       },
     ],
@@ -746,13 +746,13 @@ export const stepByStepTemplate: VideoTemplate = {
   },
   compositionCode: STEP_BY_STEP_CODE,
   aspectRatio: '16:9',
-  tags: ['tutorial', 'how-to', 'steps', 'guide', 'educational', 'instructions'],
+  tags: ['教程', '操作指南', '步骤', '指导', '教学', '说明'],
   useCases: [
-    'How-to guides',
-    'Software tutorials',
-    'DIY instructions',
-    'Process walkthroughs',
-    'Training videos',
+    '操作指南',
+    '软件教程',
+    'DIY 手工教学',
+    '流程演示',
+    '培训视频',
   ],
 };
 
@@ -762,9 +762,9 @@ export const stepByStepTemplate: VideoTemplate = {
  */
 export const explainerTemplate: VideoTemplate = {
   id: 'tutorial-explainer',
-  name: 'Explainer',
+  name: '概念讲解',
   description:
-    'Clean explainer template for educational content. Great for breaking down complex topics into digestible points.',
+    '简洁的讲解模板，适用于教育内容。将复杂主题拆解为易懂的要点。',
   category: 'tutorial',
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -773,23 +773,23 @@ export const explainerTemplate: VideoTemplate = {
     durationInFrames: 300, // 10 seconds
   },
   defaultProps: {
-    title: 'Understanding the Concept',
-    subtitle: 'A simple explanation',
+    title: '概念解析',
+    subtitle: '简单易懂的讲解',
     colors: DEFAULT_COLOR_SCHEMES.minimal,
     items: [
       {
-        title: 'Key Point One',
-        description: 'The fundamental concept you need to understand',
+        title: '核心要点一',
+        description: '你需要理解的基础概念',
         icon: '💡',
       },
       {
-        title: 'Key Point Two',
-        description: 'Building on the basics with more detail',
+        title: '核心要点二',
+        description: '在基础上深入了解更多细节',
         icon: '📊',
       },
       {
-        title: 'Key Point Three',
-        description: 'The practical application and takeaway',
+        title: '核心要点三',
+        description: '实际应用与关键收获',
         icon: '🎯',
       },
     ],
@@ -797,13 +797,13 @@ export const explainerTemplate: VideoTemplate = {
   },
   compositionCode: EXPLAINER_CODE,
   aspectRatio: '16:9',
-  tags: ['explainer', 'educational', 'concept', 'learning', 'presentation'],
+  tags: ['讲解', '教育', '概念', '学习', '演示'],
   useCases: [
-    'Concept explanations',
-    'Educational content',
-    'Course materials',
-    'Presentations',
-    'Knowledge sharing',
+    '概念讲解',
+    '教育内容',
+    '课程素材',
+    '演示文稿',
+    '知识分享',
   ],
 };
 
@@ -813,9 +813,9 @@ export const explainerTemplate: VideoTemplate = {
  */
 export const tipsTemplate: VideoTemplate = {
   id: 'tutorial-tips',
-  name: 'Tips & Listicle',
+  name: '技巧清单',
   description:
-    'Quick tips template perfect for listicle-style content. Engaging format for sharing multiple insights.',
+    '快速技巧模板，适用于清单式内容。以引人入胜的格式分享多个见解。',
   category: 'tutorial',
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -824,27 +824,27 @@ export const tipsTemplate: VideoTemplate = {
     durationInFrames: 240, // 8 seconds
   },
   defaultProps: {
-    title: '5 Quick Tips',
-    subtitle: 'Boost your productivity today',
+    title: '5 个实用技巧',
+    subtitle: '今天就提升你的效率',
     colors: DEFAULT_COLOR_SCHEMES.cinematic,
     items: [
-      { title: 'Start Early', description: 'Begin your day with intention' },
-      { title: 'Stay Focused', description: 'Eliminate distractions' },
-      { title: 'Take Breaks', description: 'Rest to maintain energy' },
-      { title: 'Review Progress', description: 'Track your achievements' },
-      { title: 'Keep Learning', description: 'Never stop growing' },
+      { title: '早起行动', description: '带着目标开始新的一天' },
+      { title: '保持专注', description: '排除干扰，集中精力' },
+      { title: '适当休息', description: '休息是为了保持充沛精力' },
+      { title: '回顾进展', description: '追踪你的成就和进步' },
+      { title: '持续学习', description: '永远不要停止成长' },
     ],
     animationStyle: 'spring',
   },
   compositionCode: TIPS_CODE,
   aspectRatio: '16:9',
-  tags: ['tips', 'listicle', 'quick', 'advice', 'productivity'],
+  tags: ['技巧', '清单', '快速', '建议', '效率'],
   useCases: [
-    'Quick tips videos',
-    'Listicle content',
-    'Advice compilations',
-    'Best practices',
-    'Life hacks',
+    '快速技巧视频',
+    '清单类内容',
+    '经验汇总',
+    '最佳实践',
+    '生活妙招',
   ],
 };
 
@@ -854,9 +854,9 @@ export const tipsTemplate: VideoTemplate = {
 export const tutorialTemplate: VideoTemplateWithVariants = {
   ...stepByStepTemplate,
   id: 'tutorial',
-  name: 'Tutorial',
+  name: '教程',
   description:
-    'Educational templates for tutorials, explainers, and instructional content. Clear, professional designs for effective learning.',
+    '教育类模板，适用于教程、讲解和教学内容。清晰专业的设计，提升学习效果。',
   variants: [
     {
       id: 'steps',

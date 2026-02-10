@@ -11,7 +11,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Film, Trash2, MoreVertical, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,8 @@ export interface VideoProjectListProps {
   selected?: string;
   /** Callback when project is selected */
   onSelect: (project: VideoProject) => void;
+  /** Extra projects created locally (e.g. from templates) */
+  extraProjects?: VideoProject[];
   /** Optional class name */
   className?: string;
 }
@@ -150,24 +152,38 @@ export function VideoProjectList({
   workspaceId,
   selected,
   onSelect,
+  extraProjects = [],
   className,
 }: VideoProjectListProps) {
   const t = useT();
-  const [projects, setProjects] = useState<VideoProject[]>([]);
+  const [remoteProjects, setRemoteProjects] = useState<VideoProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load projects
+  // Merge remote projects with extra (locally created) projects, sorted by updatedAt
+  const projects = useMemo(() => {
+    const merged = [...remoteProjects];
+    for (const ep of extraProjects) {
+      if (!merged.some((p) => p.id === ep.id)) {
+        merged.push(ep);
+      }
+    }
+    return merged.sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [remoteProjects, extraProjects]);
+
+  // Load projects from backend
   const loadProjects = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
+      if (!window.electronAPI?.video?.listProjects) {
+        setRemoteProjects([]);
+        return;
+      }
       const list = await window.electronAPI.video.listProjects(workspaceId);
-      // Sort by updated date, newest first
-      const sorted = [...list].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-      setProjects(sorted);
+      setRemoteProjects(list);
     } catch (err) {
       console.error('Failed to load projects:', err);
       setError(err instanceof Error ? err.message : String(err));
@@ -185,8 +201,9 @@ export function VideoProjectList({
   const handleDelete = useCallback(
     async (projectId: string) => {
       try {
+        if (!window.electronAPI?.video?.deleteProject) return;
         await window.electronAPI.video.deleteProject(projectId);
-        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        setRemoteProjects((prev) => prev.filter((p) => p.id !== projectId));
       } catch (err) {
         console.error('Failed to delete project:', err);
       }

@@ -11,7 +11,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Download, Film, Settings, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -83,18 +83,16 @@ export function VideoExport({
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState<RenderProgress | null>(null);
 
-  // Subscribe to render progress
+  // Subscribe to real render progress from backend
   useEffect(() => {
-    const unsubscribe = window.electronAPI.video.onRenderProgress((progress) => {
+    if (!window.electronAPI?.video?.onRenderProgress) return;
+    const unsubscribe = window.electronAPI.video.onRenderProgress((progress: RenderProgress) => {
       setRenderProgress(progress);
       if (progress.status === 'completed' || progress.status === 'failed') {
         setIsRendering(false);
       }
     });
-
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   // Handle export
@@ -107,7 +105,9 @@ export function VideoExport({
 
   // Handle cancel render
   const handleCancelRender = useCallback(() => {
-    window.electronAPI.video.cancelRender();
+    if (window.electronAPI?.video?.cancelRender) {
+      window.electronAPI.video.cancelRender();
+    }
     setIsRendering(false);
     setRenderProgress(null);
   }, []);
@@ -173,8 +173,10 @@ export function VideoExport({
           {(Object.keys(FORMAT_INFO) as OutputFormat[]).map((format) => (
             <button
               key={format}
+              disabled={isRendering}
               className={cn(
                 'p-2 rounded-lg border text-center transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
                 outputFormat === format
                   ? 'border-primary bg-primary/10'
                   : 'border-border hover:border-primary/50'
@@ -199,8 +201,10 @@ export function VideoExport({
           {(Object.keys(QUALITY_INFO) as QualityPreset[]).map((q) => (
             <button
               key={q}
+              disabled={isRendering}
               className={cn(
                 'p-2 rounded-lg border text-center transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
                 quality === q
                   ? 'border-primary bg-primary/10'
                   : 'border-border hover:border-primary/50'

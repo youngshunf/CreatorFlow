@@ -12,6 +12,7 @@
 import * as React from 'react';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Film, Settings, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import type { PlayerRef } from '@remotion/player';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { VideoProperties } from './VideoProperties';
 import { VideoProjectList } from './VideoProjectList';
 import { VideoTemplates } from './VideoTemplates';
 import { VideoExport } from './VideoExport';
+import { CreateVideoProjectDialog } from './CreateVideoProjectDialog';
 
 export interface VideoEditorProps {
   /** Workspace ID for project management */
@@ -32,6 +34,19 @@ export interface VideoEditorProps {
   /** Optional class name */
   className?: string;
 }
+
+/**
+ * Map template IDs to composition component IDs
+ */
+const TEMPLATE_COMPOSITION_MAP: Record<string, string> = {
+  'social-media-vertical': 'TitleAnimation',
+  'social-media-square': 'TitleAnimation',
+  'marketing-product': 'ProductShowcase',
+  'marketing-promo': 'TitleAnimation',
+  'tutorial-steps': 'Slideshow',
+  'tutorial-explainer': 'ProductShowcase',
+  'tutorial-tips': 'Slideshow',
+};
 
 /**
  * VideoEditor component
@@ -42,11 +57,16 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
 
   // State
   const [currentProject, setCurrentProject] = useState<VideoProject | null>(null);
+  const [localProjects, setLocalProjects] = useState<VideoProject[]>([]);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [leftTab, setLeftTab] = useState<'projects' | 'templates'>('projects');
   const [rightTab, setRightTab] = useState<'properties' | 'export'>('properties');
+
+  // Dialog state for creating project from template
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<VideoTemplate | null>(null);
 
   // Handle project selection
   const handleProjectSelect = useCallback((project: VideoProject) => {
@@ -55,34 +75,83 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     setIsPlaying(false);
   }, []);
 
-  // Handle template selection - create new project from template
-  const handleTemplateSelect = useCallback(async (template: VideoTemplate) => {
-    try {
-      const project = await window.electronAPI.video.createProject({
-        name: `${template.name} - ${new Date().toLocaleDateString()}`,
-        workspaceId,
-        template: template.id,
-        config: template.defaultConfig,
-      });
-      setCurrentProject(project);
-      setLeftTab('projects');
-    } catch (error) {
-      console.error('Failed to create project from template:', error);
-    }
-  }, [workspaceId]);
+  // Handle template selection - preview only (not added to project list)
+  const handleTemplateSelect = useCallback((template: VideoTemplate) => {
+    const now = new Date().toISOString();
+    const compositionId = TEMPLATE_COMPOSITION_MAP[template.id] || 'TitleAnimation';
+    const project: VideoProject = {
+      id: `proj-${Date.now()}`,
+      name: `${template.name} - ${new Date().toLocaleDateString()}`,
+      createdAt: now,
+      updatedAt: now,
+      config: {
+        width: template.defaultConfig.width,
+        height: template.defaultConfig.height,
+        fps: template.defaultConfig.fps,
+        durationInFrames: template.defaultConfig.durationInFrames,
+      },
+      compositions: [
+        {
+          id: compositionId,
+          name: template.name,
+          code: template.compositionCode || '',
+          props: template.defaultProps || {},
+        },
+      ],
+      assets: [],
+      renders: [],
+    };
+    setCurrentProject(project);
+  }, []);
+
+  // Handle template create - open dialog to fill project info
+  const handleTemplateCreate = useCallback((template: VideoTemplate) => {
+    setPendingTemplate(template);
+    setCreateDialogOpen(true);
+  }, []);
+
+  // Handle confirm from create dialog
+  const handleCreateFromTemplate = useCallback((data: { name: string; description: string }) => {
+    if (!pendingTemplate) return;
+    const now = new Date().toISOString();
+    const compositionId = TEMPLATE_COMPOSITION_MAP[pendingTemplate.id] || 'TitleAnimation';
+    const project: VideoProject = {
+      id: `proj-${Date.now()}`,
+      name: data.name,
+      description: data.description || undefined,
+      createdAt: now,
+      updatedAt: now,
+      config: {
+        width: pendingTemplate.defaultConfig.width,
+        height: pendingTemplate.defaultConfig.height,
+        fps: pendingTemplate.defaultConfig.fps,
+        durationInFrames: pendingTemplate.defaultConfig.durationInFrames,
+      },
+      compositions: [
+        {
+          id: compositionId,
+          name: pendingTemplate.name,
+          code: pendingTemplate.compositionCode || '',
+          props: pendingTemplate.defaultProps || {},
+        },
+      ],
+      assets: [],
+      renders: [],
+    };
+    setLocalProjects(prev => [...prev, project]);
+    setCurrentProject(project);
+    setLeftTab('projects');
+    setPendingTemplate(null);
+  }, [pendingTemplate]);
 
   // Handle project update
-  const handleProjectUpdate = useCallback(async (updates: Partial<VideoProject>) => {
+  const handleProjectUpdate = useCallback((updates: Partial<VideoProject>) => {
     if (!currentProject) return;
-    try {
-      const updated = await window.electronAPI.video.updateProject(
-        currentProject.id,
-        updates
-      );
-      setCurrentProject(updated);
-    } catch (error) {
-      console.error('Failed to update project:', error);
-    }
+    setCurrentProject({
+      ...currentProject,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
   }, [currentProject]);
 
   // Handle frame change
@@ -105,7 +174,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     }
   }, [isPlaying]);
 
-  // Handle render
+  // Handle render - connect to real export API
   const handleRender = useCallback(async (options: {
     compositionId: string;
     outputFormat: 'mp4' | 'webm' | 'gif';
@@ -113,34 +182,63 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
   }) => {
     if (!currentProject) return;
     try {
-      await window.electronAPI.video.render({
+      if (!window.electronAPI?.video?.render) {
+        toast.info(t('视频导出功能需要完整的 Electron 环境'));
+        return;
+      }
+      const outputPath = await window.electronAPI.video.render({
         projectId: currentProject.id,
-        ...options,
+        compositionId: options.compositionId,
+        outputFormat: options.outputFormat,
+        quality: options.quality,
       });
-      setShowExport(false);
+      if (outputPath) {
+        toast.success(t('视频导出成功'), { description: outputPath });
+      }
     } catch (error) {
-      console.error('Failed to render:', error);
+      toast.error(t('视频导出失败'), {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
-  }, [currentProject]);
+  }, [currentProject, t]);
 
   // Create new project
-  const handleCreateProject = useCallback(async () => {
-    try {
-      const project = await window.electronAPI.video.createProject({
-        name: t('新视频项目'),
-        workspaceId,
-        config: {
-          width: 1920,
-          height: 1080,
-          fps: 30,
-          durationInFrames: 300,
+  const handleCreateProject = useCallback(() => {
+    const now = new Date().toISOString();
+    const project: VideoProject = {
+      id: `proj-${Date.now()}`,
+      name: t('新视频项目'),
+      createdAt: now,
+      updatedAt: now,
+      config: {
+        width: 1920,
+        height: 1080,
+        fps: 30,
+        durationInFrames: 300,
+      },
+      compositions: [
+        {
+          id: 'TitleAnimation',
+          name: t('标题动画'),
+          code: '',
+          props: {
+            title: t('欢迎'),
+            subtitle: t('在此输入副标题'),
+            colors: {
+              primary: '#6366f1',
+              secondary: '#8b5cf6',
+              background: '#1a1a2e',
+              text: '#ffffff',
+            },
+            animationStyle: 'spring',
+          },
         },
-      });
-      setCurrentProject(project);
-    } catch (error) {
-      console.error('Failed to create project:', error);
-    }
-  }, [workspaceId, t]);
+      ],
+      assets: [],
+      renders: [],
+    };
+    setCurrentProject(project);
+  }, [t]);
 
   // Sync player state
   useEffect(() => {
@@ -168,7 +266,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     <div className={cn('flex h-full', className)}>
       {/* Left Panel - Projects & Templates */}
       <div className="w-64 border-r flex flex-col shrink-0">
-        <div className="p-2 border-b flex items-center justify-between">
+        <div className="p-2 border-b flex items-center justify-between titlebar-no-drag relative z-panel h-[40px]">
           <Tabs value={leftTab} onValueChange={(v) => setLeftTab(v as 'projects' | 'templates')}>
             <TabsList className="h-8">
               <TabsTrigger value="projects" className="text-xs px-2">
@@ -197,9 +295,10 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
               workspaceId={workspaceId}
               selected={currentProject?.id}
               onSelect={handleProjectSelect}
+              extraProjects={localProjects}
             />
           ) : (
-            <VideoTemplates onSelect={handleTemplateSelect} />
+            <VideoTemplates onSelect={handleTemplateSelect} onCreate={handleTemplateCreate} />
           )}
         </ScrollArea>
       </div>
@@ -229,7 +328,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
 
       {/* Right Panel - Properties & Export */}
       <div className="w-72 border-l flex flex-col shrink-0">
-        <div className="p-2 border-b">
+        <div className="p-2 border-b titlebar-no-drag relative z-panel h-[40px]">
           <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as 'properties' | 'export')}>
             <TabsList className="h-8 w-full">
               <TabsTrigger value="properties" className="text-xs flex-1">
@@ -264,6 +363,14 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
           )}
         </ScrollArea>
       </div>
+
+      {/* Create project from template dialog */}
+      <CreateVideoProjectDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        template={pendingTemplate}
+        onConfirm={handleCreateFromTemplate}
+      />
     </div>
   );
 }

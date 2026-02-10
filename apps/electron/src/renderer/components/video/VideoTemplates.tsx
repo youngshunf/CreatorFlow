@@ -11,6 +11,7 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
+import { Player } from '@remotion/player';
 import { Film, Smartphone, Megaphone, GraduationCap, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,13 +21,42 @@ import { useT } from '@/context/LocaleContext';
 import {
   ALL_TEMPLATES,
   TEMPLATES_BY_CATEGORY,
+  TitleAnimation,
+  Slideshow,
+  DataVisualization,
+  ProductShowcase,
   type VideoTemplate,
   type TemplateCategory,
 } from '@creator-flow/video';
 
+/**
+ * Map composition IDs to actual React components
+ */
+const COMPOSITION_MAP: Record<string, React.FC<any>> = {
+  TitleAnimation,
+  Slideshow,
+  DataVisualization,
+  ProductShowcase,
+};
+
+/**
+ * Map template IDs to composition component IDs
+ */
+const TEMPLATE_COMPOSITION_MAP: Record<string, string> = {
+  'social-media-vertical': 'TitleAnimation',
+  'social-media-square': 'TitleAnimation',
+  'marketing-product': 'ProductShowcase',
+  'marketing-promo': 'TitleAnimation',
+  'tutorial-steps': 'Slideshow',
+  'tutorial-explainer': 'ProductShowcase',
+  'tutorial-tips': 'Slideshow',
+};
+
 export interface VideoTemplatesProps {
-  /** Callback when template is selected */
+  /** Callback when template is selected for preview */
   onSelect: (template: VideoTemplate) => void;
+  /** Callback when user wants to create a project from template */
+  onCreate?: (template: VideoTemplate) => void;
   /** Optional class name */
   className?: string;
 }
@@ -55,12 +85,20 @@ const CATEGORY_LABELS: Record<TemplateCategory, string> = {
 function TemplateCard({
   template,
   onSelect,
+  onCreate,
 }: {
   template: VideoTemplate;
   onSelect: () => void;
+  onCreate?: () => void;
 }) {
   const t = useT();
   const CategoryIcon = CATEGORY_ICONS[template.category];
+
+  // Resolve the composition component for thumbnail
+  const CompositionComponent = useMemo(() => {
+    const compositionId = TEMPLATE_COMPOSITION_MAP[template.id] || 'TitleAnimation';
+    return COMPOSITION_MAP[compositionId] || TitleAnimation;
+  }, [template.id]);
 
   return (
     <div
@@ -70,15 +108,28 @@ function TemplateCard({
       )}
       onClick={onSelect}
     >
-      {/* Preview area */}
+      {/* Thumbnail preview */}
       <div
-        className="relative bg-muted/50 flex items-center justify-center"
+        className="relative bg-black overflow-hidden flex items-center justify-center"
         style={{
-          aspectRatio: `${template.defaultConfig.width} / ${template.defaultConfig.height}`,
-          maxHeight: '120px',
+          height: '160px',
         }}
       >
-        <Film className="h-8 w-8 text-muted-foreground/30" />
+        <Player
+          component={CompositionComponent}
+          inputProps={template.defaultProps || {}}
+          durationInFrames={template.defaultConfig.durationInFrames}
+          fps={template.defaultConfig.fps}
+          compositionWidth={template.defaultConfig.width}
+          compositionHeight={template.defaultConfig.height}
+          style={{
+            height: '100%',
+            aspectRatio: `${template.defaultConfig.width} / ${template.defaultConfig.height}`,
+          }}
+          acknowledgeRemotionLicense
+          autoPlay={false}
+          controls={false}
+        />
         {/* Aspect ratio badge */}
         {template.aspectRatio && (
           <Badge
@@ -131,10 +182,17 @@ function TemplateCard({
       <div
         className={cn(
           'absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100',
-          'flex items-center justify-center transition-opacity'
+          'flex items-center justify-center transition-opacity pointer-events-none'
         )}
       >
-        <Button size="sm" className="shadow-lg">
+        <Button
+          size="sm"
+          className="shadow-lg pointer-events-auto"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreate?.();
+          }}
+        >
           <Check className="h-4 w-4 mr-1" />
           {t('使用模板')}
         </Button>
@@ -146,7 +204,7 @@ function TemplateCard({
 /**
  * VideoTemplates component
  */
-export function VideoTemplates({ onSelect, className }: VideoTemplatesProps) {
+export function VideoTemplates({ onSelect, onCreate, className }: VideoTemplatesProps) {
   const t = useT();
   const [category, setCategory] = useState<'all' | TemplateCategory>('all');
 
@@ -192,6 +250,7 @@ export function VideoTemplates({ onSelect, className }: VideoTemplatesProps) {
             key={template.id}
             template={template}
             onSelect={() => onSelect(template)}
+            onCreate={() => onCreate?.(template)}
           />
         ))}
       </div>

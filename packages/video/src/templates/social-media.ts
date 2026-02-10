@@ -366,9 +366,9 @@ export default SocialMediaSquare;
  */
 export const socialMediaVerticalTemplate: VideoTemplate = {
   id: 'social-media-vertical',
-  name: 'Social Media Vertical',
+  name: '社交媒体竖版',
   description:
-    'Vertical video template optimized for TikTok, Instagram Reels, and YouTube Shorts. Features eye-catching animations and mobile-first design.',
+    '竖版视频模板，适用于抖音、Instagram Reels 和 YouTube Shorts。包含吸睛动画和移动端优先设计。',
   category: 'social-media',
   defaultConfig: {
     width: ASPECT_RATIOS.VERTICAL.width,
@@ -377,23 +377,23 @@ export const socialMediaVerticalTemplate: VideoTemplate = {
     durationInFrames: 150, // 5 seconds
   },
   defaultProps: {
-    title: 'Your Amazing Title',
-    subtitle: 'Swipe up to learn more',
+    title: '你的精彩标题',
+    subtitle: '上滑了解更多',
     colors: DEFAULT_COLOR_SCHEMES.vibrant,
     animationStyle: 'spring',
     cta: {
-      text: 'Learn More',
+      text: '了解更多',
     },
   },
   compositionCode: VERTICAL_COMPOSITION_CODE,
   aspectRatio: '9:16',
-  tags: ['tiktok', 'reels', 'shorts', 'vertical', 'mobile', 'social'],
+  tags: ['抖音', '快手', '短视频', '竖屏', '移动端', '社交'],
   useCases: [
-    'TikTok videos',
-    'Instagram Reels',
-    'YouTube Shorts',
-    'Snapchat Stories',
-    'Mobile-first content',
+    '抖音短视频',
+    '快手短视频',
+    '微信视频号',
+    'B站竖屏视频',
+    '移动端优先内容',
   ],
 };
 
@@ -403,9 +403,9 @@ export const socialMediaVerticalTemplate: VideoTemplate = {
  */
 export const socialMediaSquareTemplate: VideoTemplate = {
   id: 'social-media-square',
-  name: 'Social Media Square',
+  name: '社交媒体方形',
   description:
-    'Square video template perfect for Instagram feed posts and Facebook. Clean design with centered content.',
+    '方形视频模板，适用于 Instagram 动态和 Facebook。简洁设计，内容居中展示。',
   category: 'social-media',
   defaultConfig: {
     width: ASPECT_RATIOS.SQUARE.width,
@@ -414,22 +414,22 @@ export const socialMediaSquareTemplate: VideoTemplate = {
     durationInFrames: 150, // 5 seconds
   },
   defaultProps: {
-    title: 'Your Amazing Title',
-    subtitle: 'Double tap to like',
+    title: '你的精彩标题',
+    subtitle: '双击点赞',
     colors: DEFAULT_COLOR_SCHEMES.vibrant,
     animationStyle: 'spring',
     cta: {
-      text: 'Shop Now',
+      text: '立即购买',
     },
   },
   compositionCode: SQUARE_COMPOSITION_CODE,
   aspectRatio: '1:1',
-  tags: ['instagram', 'facebook', 'square', 'feed', 'social'],
+  tags: ['小红书', '微信', '方形', '动态', '社交'],
   useCases: [
-    'Instagram feed posts',
-    'Facebook posts',
-    'LinkedIn posts',
-    'Twitter/X posts',
+    '小红书图文动态',
+    '微信朋友圈',
+    '微博动态',
+    'B站动态',
   ],
 };
 
@@ -440,9 +440,9 @@ export const socialMediaSquareTemplate: VideoTemplate = {
 export const socialMediaTemplate: VideoTemplateWithVariants = {
   ...socialMediaVerticalTemplate,
   id: 'social-media',
-  name: 'Social Media',
+  name: '社交媒体',
   description:
-    'Versatile social media template with multiple aspect ratio options. Perfect for cross-platform content creation.',
+    '多比例社交媒体模板，适用于跨平台内容创作。',
   variants: [
     {
       id: 'vertical',

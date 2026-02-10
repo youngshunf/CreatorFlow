@@ -548,9 +548,9 @@ export default PromoAd;
  */
 export const productMarketingTemplate: VideoTemplate = {
   id: 'marketing-product',
-  name: 'Product Marketing',
+  name: '产品营销',
   description:
-    'Professional product marketing video with feature highlights. Perfect for product launches, demos, and promotional content.',
+    '专业产品营销视频，突出功能亮点。适用于产品发布、演示和推广内容。',
   category: 'marketing',
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -559,40 +559,40 @@ export const productMarketingTemplate: VideoTemplate = {
     durationInFrames: 300, // 10 seconds
   },
   defaultProps: {
-    title: 'Introducing Our Product',
-    subtitle: 'The future of innovation',
+    title: '全新产品发布',
+    subtitle: '创新引领未来',
     colors: DEFAULT_COLOR_SCHEMES.corporate,
     items: [
       {
-        title: 'Lightning Fast',
-        description: 'Blazing performance for all your needs',
+        title: '极速性能',
+        description: '满足你所有需求的极致性能',
         icon: '⚡',
       },
       {
-        title: 'Smart Design',
-        description: 'Intuitive interface that just works',
+        title: '智能设计',
+        description: '直觉式交互，开箱即用',
         icon: '🎯',
       },
       {
-        title: 'Secure & Reliable',
-        description: 'Enterprise-grade security built-in',
+        title: '安全可靠',
+        description: '企业级安全防护，内置保障',
         icon: '🔒',
       },
     ],
     cta: {
-      text: 'Get Started',
+      text: '立即体验',
     },
     animationStyle: 'spring',
   },
   compositionCode: PRODUCT_MARKETING_CODE,
   aspectRatio: '16:9',
-  tags: ['product', 'marketing', 'professional', 'business', 'launch'],
+  tags: ['产品', '营销', '专业', '商务', '发布'],
   useCases: [
-    'Product launches',
-    'Feature demonstrations',
-    'Company presentations',
-    'YouTube ads',
-    'Website hero videos',
+    '产品发布',
+    '功能演示',
+    '企业宣传',
+    '信息流广告',
+    '官网首页视频',
   ],
 };
 
@@ -602,9 +602,9 @@ export const productMarketingTemplate: VideoTemplate = {
  */
 export const promoAdTemplate: VideoTemplate = {
   id: 'marketing-promo',
-  name: 'Promotional Ad',
+  name: '促销广告',
   description:
-    'Eye-catching promotional video for sales, discounts, and special offers. Bold design that grabs attention.',
+    '醒目的促销视频，适用于打折、特卖和限时优惠。大胆设计，吸引眼球。',
   category: 'marketing',
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -613,23 +613,23 @@ export const promoAdTemplate: VideoTemplate = {
     durationInFrames: 150, // 5 seconds
   },
   defaultProps: {
-    title: 'MEGA SALE',
-    subtitle: 'Limited time offer - Don\'t miss out!',
+    title: '超级大促',
+    subtitle: '限时优惠，不容错过！',
     colors: DEFAULT_COLOR_SCHEMES.playful,
     cta: {
-      text: 'Shop Now',
+      text: '立即抢购',
     },
     animationStyle: 'spring',
   },
   compositionCode: PROMO_AD_CODE,
   aspectRatio: '16:9',
-  tags: ['promo', 'sale', 'discount', 'ad', 'marketing', 'bold'],
+  tags: ['促销', '打折', '优惠', '广告', '营销', '醒目'],
   useCases: [
-    'Sales promotions',
-    'Discount announcements',
-    'Flash sales',
-    'Holiday campaigns',
-    'Social media ads',
+    '促销活动',
+    '折扣公告',
+    '限时秒杀',
+    '节日营销',
+    '社交媒体广告',
   ],
 };
 
@@ -639,9 +639,9 @@ export const promoAdTemplate: VideoTemplate = {
 export const marketingTemplate: VideoTemplateWithVariants = {
   ...productMarketingTemplate,
   id: 'marketing',
-  name: 'Marketing',
+  name: '营销推广',
   description:
-    'Professional marketing templates for product showcases, promotions, and business presentations.',
+    '专业营销模板，适用于产品展示、促销和商务演示。',
   variants: [
     {
       id: 'product',
