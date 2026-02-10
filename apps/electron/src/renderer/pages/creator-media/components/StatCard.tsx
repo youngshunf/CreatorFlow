@@ -1,4 +1,5 @@
 import { useT } from '@/context/LocaleContext'
+import { Video, CheckCircle } from 'lucide-react'
 import type { ContentStats } from '../types'
 
 interface StatCardProps {
@@ -24,12 +25,14 @@ function StatCard({ label, value, icon, color = 'text-foreground' }: StatCardPro
 
 interface StatCardsProps {
   stats: ContentStats
+  videoCreating?: number
+  videoCompleted?: number
 }
 
-export function StatCards({ stats }: StatCardsProps) {
+export function StatCards({ stats, videoCreating, videoCompleted }: StatCardsProps) {
   const t = useT()
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <StatCard
         label={t('选题')}
         value={stats.idea + stats.researching}
@@ -54,6 +57,22 @@ export function StatCards({ stats }: StatCardsProps) {
         icon={<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 12 2 2 4-4"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/></svg>}
         color="text-green-500"
       />
+      {videoCreating != null && (
+        <StatCard
+          label={t('视频制作中')}
+          value={videoCreating}
+          icon={<Video className="h-4 w-4" />}
+          color="text-orange-500"
+        />
+      )}
+      {videoCompleted != null && (
+        <StatCard
+          label={t('视频已完成')}
+          value={videoCompleted}
+          icon={<CheckCircle className="h-4 w-4" />}
+          color="text-emerald-500"
+        />
+      )}
     </div>
   )
 }

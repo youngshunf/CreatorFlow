@@ -1,10 +1,28 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useT } from '@/context/LocaleContext'
+import { useNavigation, routes } from '@/contexts/NavigationContext'
 import { useCreatorMedia } from './hooks/useCreatorMedia'
 import { EmptyPipelineProgress } from './components/PipelineProgress'
 import { ProjectSwitcher } from './components/ProjectSwitcher'
 import { ContentTable } from './components/ContentTable'
 import { CreateContentDialog } from './components/CreateContentDialog'
+import { VersionHistoryDialog } from './components/VersionHistoryDialog'
+import { VideoPreviewDialog } from './components/VideoPreviewDialog'
+import type { Content } from '@sprouty-ai/shared/db/types'
+
+/** 判断是否为视频类型内容 */
+const isVideoType = (c: Content) => c.content_type === 'video' || c.content_type === 'short-video'
+
+/** 从 metadata JSON 中提取视频输出路径 */
+function getVideoOutputPath(content: Content): string {
+  if (!content.metadata) return ''
+  try {
+    const meta = JSON.parse(content.metadata)
+    return meta.video_output_path || ''
+  } catch {
+    return ''
+  }
+}
 
 /**
  * 创作工作台 — 流水线驱动的创作视图
@@ -12,17 +30,30 @@ import { CreateContentDialog } from './components/CreateContentDialog'
  */
 export default function CreationWorkspace() {
   const t = useT()
+  const { navigate } = useNavigation()
   const {
     projects, activeProject, contents, loading,
     switchProject, createContent, deleteContent, updateContentStatus,
+    listContentVersions, rollbackContentVersion,
   } = useCreatorMedia()
 
   const [showCreateContent, setShowCreateContent] = useState(false)
+  const [versionHistoryContent, setVersionHistoryContent] = useState<Content | null>(null)
+  const [previewContent, setPreviewContent] = useState<Content | null>(null)
 
   // 筛选进行中的内容（非 published/archived）
   const activeContents = contents.filter(
     (c) => !['published', 'archived'].includes(c.status)
   )
+
+  /** 点击内容行：视频制作中跳转工作台，审核中打开预览 */
+  const handleContentRowClick = useCallback((content: Content) => {
+    if (isVideoType(content) && content.status === 'creating') {
+      navigate(routes.view.appView('app.creator-media', 'video-studio'))
+    } else if (isVideoType(content) && content.status === 'reviewing') {
+      setPreviewContent(content)
+    }
+  }, [navigate])
 
   if (loading) {
     return (
@@ -73,8 +104,11 @@ export default function CreationWorkspace() {
           <ContentTable
             contents={activeContents}
             maxItems={10}
+            onRowClick={handleContentRowClick}
+            onOpenVideoStudio={() => navigate(routes.view.appView('app.creator-media', 'video-studio'))}
             onStatusChange={updateContentStatus}
             onDelete={deleteContent}
+            onVersionHistory={setVersionHistoryContent}
           />
         </div>
       </div>
@@ -87,6 +121,34 @@ export default function CreationWorkspace() {
           onCreateContent={createContent}
         />
       )}
+
+      <VersionHistoryDialog
+        open={versionHistoryContent !== null}
+        onOpenChange={(open) => { if (!open) setVersionHistoryContent(null) }}
+        contentId={versionHistoryContent?.id || ''}
+        contentTitle={versionHistoryContent?.title || null}
+        listContentVersions={listContentVersions}
+        rollbackContentVersion={rollbackContentVersion}
+      />
+
+      <VideoPreviewDialog
+        open={previewContent !== null}
+        onOpenChange={(open) => { if (!open) setPreviewContent(null) }}
+        videoOutputPath={previewContent ? getVideoOutputPath(previewContent) : ''}
+        contentTitle={previewContent?.title || ''}
+        onApprove={async () => {
+          if (previewContent) {
+            await updateContentStatus(previewContent.id, 'scheduled')
+            setPreviewContent(null)
+          }
+        }}
+        onReject={async () => {
+          if (previewContent) {
+            await updateContentStatus(previewContent.id, 'creating')
+            setPreviewContent(null)
+          }
+        }}
+      />
     </div>
   )
 }

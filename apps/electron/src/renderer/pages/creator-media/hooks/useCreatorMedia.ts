@@ -3,9 +3,16 @@ import { useActiveWorkspace } from '@/context/AppShellContext'
 import type { ContentStats, PublishStats } from '../types'
 import type {
   Project, AccountProfile, Content, PublishRecord, ViralPattern, Competitor,
+  PlatformAccount,
   CreateProject, UpdateProject, CreateAccountProfile, CreateContent,
   CreateViralPattern, UpdateViralPattern,
+  CreatePlatformAccount, UpdatePlatformAccount,
+  ReviewTask, CreateReviewTask, UpdateReviewTask,
+  ContentVersion, CreateContentVersionInput,
+  PublishQueueItem, CreatePublishQueueInput,
+  Platform,
 } from '@sprouty-ai/shared/db/types'
+import type { BrowserFingerprint } from '@sprouty-ai/shared/services/browser-profile-manager'
 
 /**
  * 创作面板数据 Hook — 封装 window.electronAPI.creatorMedia.* IPC 调用
@@ -21,6 +28,7 @@ export function useCreatorMedia() {
   const [publishRecords, setPublishRecords] = useState<PublishRecord[]>([])
   const [viralPatterns, setViralPatterns] = useState<ViralPattern[]>([])
   const [competitors, setCompetitors] = useState<Competitor[]>([])
+  const [platformAccounts, setPlatformAccounts] = useState<PlatformAccount[]>([])
   const [loading, setLoading] = useState(true)
 
   /** 加载项目列表和活跃项目 */
@@ -103,6 +111,42 @@ export function useCreatorMedia() {
       setCompetitors([])
     }
   }, [workspaceId])
+
+  /** 加载平台账号 */
+  const loadPlatformAccounts = useCallback(async (projectId: string) => {
+    if (!workspaceId) return
+    try {
+      const result = await window.electronAPI.creatorMedia.platformAccounts.list(workspaceId, projectId)
+      setPlatformAccounts(result)
+    } catch {
+      setPlatformAccounts([])
+    }
+  }, [workspaceId])
+
+  /** 创建平台账号 */
+  const createPlatformAccount = useCallback(async (data: Omit<CreatePlatformAccount, 'id'>) => {
+    if (!workspaceId || !activeProject) return null
+    const id = crypto.randomUUID()
+    const result = await window.electronAPI.creatorMedia.platformAccounts.create(workspaceId, { ...data, id })
+    await loadPlatformAccounts(activeProject.id)
+    return result
+  }, [workspaceId, activeProject, loadPlatformAccounts])
+
+  /** 更新平台账号 */
+  const updatePlatformAccount = useCallback(async (id: string, data: UpdatePlatformAccount) => {
+    if (!workspaceId || !activeProject) return null
+    const result = await window.electronAPI.creatorMedia.platformAccounts.update(workspaceId, id, data)
+    await loadPlatformAccounts(activeProject.id)
+    return result
+  }, [workspaceId, activeProject, loadPlatformAccounts])
+
+  /** 删除平台账号 */
+  const deletePlatformAccount = useCallback(async (id: string) => {
+    if (!workspaceId || !activeProject) return false
+    const ok = await window.electronAPI.creatorMedia.platformAccounts.delete(workspaceId, id)
+    if (ok) await loadPlatformAccounts(activeProject.id)
+    return ok
+  }, [workspaceId, activeProject, loadPlatformAccounts])
 
   /** 创建爆款模式 */
   const createViralPattern = useCallback(async (data: Omit<CreateViralPattern, 'id'>) => {
@@ -280,14 +324,155 @@ export function useCreatorMedia() {
       loadPublishRecords(activeProject.id)
       loadViralPatterns({ projectId: activeProject.id })
       loadCompetitors(activeProject.id)
+      loadPlatformAccounts(activeProject.id)
     } else {
       setContents([])
       setProfile(null)
       setPublishRecords([])
       setViralPatterns([])
       setCompetitors([])
+      setPlatformAccounts([])
     }
-  }, [activeProject, loadContents, loadProfile, loadPublishRecords, loadViralPatterns, loadCompetitors])
+  }, [activeProject, loadContents, loadProfile, loadPublishRecords, loadViralPatterns, loadCompetitors, loadPlatformAccounts])
+
+  // ============================================================
+  // 采集调度任务
+  // ============================================================
+
+  /** 获取发布记录的采集任务列表 */
+  const listReviewTasks = useCallback(async (publishRecordId: string): Promise<ReviewTask[]> => {
+    if (!workspaceId) return []
+    try {
+      return await window.electronAPI.creatorMedia.reviewTasks.list(workspaceId, publishRecordId)
+    } catch {
+      return []
+    }
+  }, [workspaceId])
+
+  /** 创建采集任务 */
+  const createReviewTask = useCallback(async (data: CreateReviewTask): Promise<ReviewTask | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.reviewTasks.create(workspaceId, data)
+  }, [workspaceId])
+
+  /** 更新采集任务 */
+  const updateReviewTask = useCallback(async (id: string, data: UpdateReviewTask): Promise<ReviewTask | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.reviewTasks.update(workspaceId, id, data)
+  }, [workspaceId])
+
+  /** 取消某发布记录的所有待执行采集任务 */
+  const cancelReviewTasks = useCallback(async (publishRecordId: string): Promise<number> => {
+    if (!workspaceId) return 0
+    return await window.electronAPI.creatorMedia.reviewTasks.cancel(workspaceId, publishRecordId)
+  }, [workspaceId])
+
+  // ============================================================
+  // 内容版本管理
+  // ============================================================
+
+  /** 获取内容的版本列表 */
+  const listContentVersions = useCallback(async (contentId: string): Promise<ContentVersion[]> => {
+    if (!workspaceId) return []
+    try {
+      return await window.electronAPI.creatorMedia.contentVersions.list(workspaceId, contentId)
+    } catch {
+      return []
+    }
+  }, [workspaceId])
+
+  /** 获取单个版本 */
+  const getContentVersion = useCallback(async (id: string): Promise<ContentVersion | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.contentVersions.get(workspaceId, id)
+  }, [workspaceId])
+
+  /** 创建版本快照 */
+  const createContentVersion = useCallback(async (data: CreateContentVersionInput): Promise<ContentVersion | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.contentVersions.create(workspaceId, data)
+  }, [workspaceId])
+
+  /** 回滚到指定版本 */
+  const rollbackContentVersion = useCallback(async (contentId: string, versionNumber: number): Promise<ContentVersion | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.contentVersions.rollback(workspaceId, contentId, versionNumber)
+  }, [workspaceId])
+
+  // ============================================================
+  // 发布队列
+  // ============================================================
+
+  /** 获取内容的发布队列列表 */
+  const listPublishQueue = useCallback(async (contentId: string): Promise<PublishQueueItem[]> => {
+    if (!workspaceId) return []
+    try {
+      return await window.electronAPI.creatorMedia.publishQueue.list(workspaceId, contentId)
+    } catch {
+      return []
+    }
+  }, [workspaceId])
+
+  /** 入队 */
+  const enqueuePublish = useCallback(async (data: CreatePublishQueueInput): Promise<PublishQueueItem | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.publishQueue.enqueue(workspaceId, data)
+  }, [workspaceId])
+
+  /** 取消某内容的所有待处理发布任务 */
+  const cancelPublishQueue = useCallback(async (contentId: string): Promise<number> => {
+    if (!workspaceId) return 0
+    return await window.electronAPI.creatorMedia.publishQueue.cancel(workspaceId, contentId)
+  }, [workspaceId])
+
+  /** 获取某平台账号的下一个待处理发布任务 */
+  const getNextPublishQueueItem = useCallback(async (platformAccountId: string): Promise<PublishQueueItem | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.publishQueue.getNext(workspaceId, platformAccountId)
+  }, [workspaceId])
+
+  // ============================================================
+  // 采集调度服务状态
+  // ============================================================
+
+  /** 获取采集调度服务状态 */
+  const getReviewSchedulerStatus = useCallback(async (): Promise<{ running: boolean }> => {
+    return await window.electronAPI.creatorMedia.reviewScheduler.status()
+  }, [])
+
+  // ============================================================
+  // 浏览器 Profile 管理
+  // ============================================================
+
+  /** 启动登录浏览器（有头模式） */
+  const launchBrowserLogin = useCallback(async (platformAccountId: string, platform: Platform): Promise<{ success: boolean; error?: string }> => {
+    if (!workspaceId) return { success: false, error: 'No workspace' }
+    return await window.electronAPI.creatorMedia.browser.launchLogin(workspaceId, platformAccountId, platform)
+  }, [workspaceId])
+
+  /** 检查登录态 */
+  const checkBrowserAuth = useCallback(async (platformAccountId: string): Promise<{ loggedIn: boolean; error?: string }> => {
+    if (!workspaceId) return { loggedIn: false, error: 'No workspace' }
+    return await window.electronAPI.creatorMedia.browser.checkAuth(workspaceId, platformAccountId)
+  }, [workspaceId])
+
+  /** 检查 Profile 是否存在 */
+  const browserProfileExists = useCallback(async (platformAccountId: string): Promise<boolean> => {
+    if (!workspaceId) return false
+    return await window.electronAPI.creatorMedia.browser.profileExists(workspaceId, platformAccountId)
+  }, [workspaceId])
+
+  /** 删除 Profile */
+  const deleteBrowserProfile = useCallback(async (platformAccountId: string): Promise<boolean> => {
+    if (!workspaceId) return false
+    return await window.electronAPI.creatorMedia.browser.deleteProfile(workspaceId, platformAccountId)
+  }, [workspaceId])
+
+  /** 生成并保存指纹 */
+  const generateBrowserFingerprint = useCallback(async (platformAccountId: string): Promise<BrowserFingerprint | null> => {
+    if (!workspaceId) return null
+    return await window.electronAPI.creatorMedia.browser.generateFingerprint(workspaceId, platformAccountId)
+  }, [workspaceId])
 
   return {
     projects,
@@ -312,5 +497,34 @@ export function useCreatorMedia() {
     createViralPattern,
     updateViralPattern,
     deleteViralPattern,
+    // 平台账号
+    platformAccounts,
+    createPlatformAccount,
+    updatePlatformAccount,
+    deletePlatformAccount,
+    refreshPlatformAccounts: loadPlatformAccounts,
+    // 采集调度任务
+    listReviewTasks,
+    createReviewTask,
+    updateReviewTask,
+    cancelReviewTasks,
+    // 内容版本管理
+    listContentVersions,
+    getContentVersion,
+    createContentVersion,
+    rollbackContentVersion,
+    // 发布队列
+    listPublishQueue,
+    enqueuePublish,
+    cancelPublishQueue,
+    getNextPublishQueueItem,
+    // 采集调度服务
+    getReviewSchedulerStatus,
+    // 浏览器 Profile 管理
+    launchBrowserLogin,
+    checkBrowserAuth,
+    browserProfileExists,
+    deleteBrowserProfile,
+    generateBrowserFingerprint,
   }
 }

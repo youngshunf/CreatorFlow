@@ -33,6 +33,9 @@ import {
   TrendingUp,
   Calendar,
   BarChart3,
+  Film,
+  Users,
+  Clapperboard,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -115,7 +118,7 @@ import {
   type NavigationState,
   type ChatFilter,
 } from "@/contexts/NavigationContext"
-import { isMarketplaceNavigation, isAppViewNavigation } from "../../../shared/types"
+import { isMarketplaceNavigation, isAppViewNavigation, isVideoNavigation } from "../../../shared/types"
 import type { SettingsSubpage } from "../../../shared/types"
 import { SourcesListPanel } from "./SourcesListPanel"
 import { SkillsListPanel } from "./SkillsListPanel"
@@ -1918,7 +1921,8 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Files, Marketplace, Subscription, Settings
+    // 3. Video, Files, Marketplace, Subscription, Settings
+    result.push({ id: 'nav:video', type: 'nav', action: () => navigate(routes.view.video()) })
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
     result.push({ id: 'nav:subscription', type: 'nav', action: handleSubscriptionClick })
@@ -2270,6 +2274,13 @@ function AppShellContent({
                       onClick: () => navigate(routes.view.appView('app.creator-media', 'hot-topics')),
                     },
                     {
+                      id: "nav:appView:video-studio",
+                      title: t('视频工作台'),
+                      icon: Clapperboard,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'video-studio' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'video-studio')),
+                    },
+                    {
                       id: "nav:appView:calendar",
                       title: t('内容日历'),
                       icon: Calendar,
@@ -2282,6 +2293,13 @@ function AppShellContent({
                       icon: BarChart3,
                       variant: isAppViewNavigation(navState) && navState.viewId === 'analytics' ? "default" : "ghost",
                       onClick: () => navigate(routes.view.appView('app.creator-media', 'analytics')),
+                    },
+                    {
+                      id: "nav:appView:accounts",
+                      title: t('平台账号'),
+                      icon: Users,
+                      variant: isAppViewNavigation(navState) && navState.viewId === 'accounts' ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.appView('app.creator-media', 'accounts')),
                     },
                     // --- Chats Section (with Flagged, States, Labels as sub-items) ---
                     {
@@ -2356,6 +2374,14 @@ function AppShellContent({
                           items: buildLabelSidebarItems(labelTree),
                         },
                       ],
+                    },
+                    // --- Video ---
+                    {
+                      id: "nav:video",
+                      title: t('视频创作'),
+                      icon: Film,
+                      variant: isVideoNavigation(navState) ? "default" : "ghost",
+                      onClick: () => navigate(routes.view.video()),
                     },
                     // --- Files ---
                     {
@@ -2545,7 +2571,7 @@ function AppShellContent({
               Animated width with spring physics for smooth 60-120fps transitions.
               Outer motion.div animates width (clipping mask), inner div maintains fixed width
               so content doesn't reflow during animation - same pattern as left sidebar. */}
-          {!isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && !(isSettingsNavigation(navState) && navState.subpage === 'subscription') && (
+          {!isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && !isVideoNavigation(navState) && !(isSettingsNavigation(navState) && navState.subpage === 'subscription') && (
           <motion.div
             initial={false}
             animate={{
@@ -3268,7 +3294,7 @@ function AppShellContent({
           )}
 
           {/* Session List Resize Handle (hidden in focused mode, home view, files navigation, and marketplace navigation) */}
-          {!effectiveFocusMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && (
+          {!effectiveFocusMode && activeRoute !== 'home' && !isFilesNavigation(navState) && !isMarketplaceNavigation(navState) && !isAppViewNavigation(navState) && !isVideoNavigation(navState) && (
           <div
             ref={sessionListHandleRef}
             onMouseDown={(e) => { e.preventDefault(); setIsResizing('session-list') }}

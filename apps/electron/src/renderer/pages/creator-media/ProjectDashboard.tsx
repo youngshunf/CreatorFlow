@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useT } from '@/context/LocaleContext'
 import { useCreatorMedia } from './hooks/useCreatorMedia'
 import { StatCards } from './components/StatCard'
@@ -8,6 +8,8 @@ import { CreateProjectDialog } from './components/CreateProjectDialog'
 import { ProjectSettingsDialog } from './components/ProjectSettingsDialog'
 import { ProfileEditDialog } from './components/ProfileEditDialog'
 import { CreateContentDialog } from './components/CreateContentDialog'
+import { VersionHistoryDialog } from './components/VersionHistoryDialog'
+import type { Content } from '@sprouty-ai/shared/db/types'
 
 /**
  * 创作面板 — 项目仪表盘视图
@@ -19,12 +21,30 @@ export default function ProjectDashboard() {
     projects, activeProject, contents, profile, stats, loading,
     switchProject, createProject, updateProject, deleteProject,
     upsertProfile, createContent, deleteContent, updateContentStatus,
+    listContentVersions, rollbackContentVersion,
   } = useCreatorMedia()
 
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [showProjectSettings, setShowProjectSettings] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showCreateContent, setShowCreateContent] = useState(false)
+  const [versionHistoryContent, setVersionHistoryContent] = useState<Content | null>(null)
+
+  // 视频相关统计
+  const videoStats = useMemo(() => {
+    const videoContents = contents.filter(c => c.content_type === 'video' || c.content_type === 'short-video')
+    const creating = videoContents.filter(c => c.status === 'creating').length
+    let completed = 0
+    for (const c of videoContents) {
+      if (c.metadata) {
+        try {
+          const meta = JSON.parse(c.metadata)
+          if (meta.video_render_status === 'completed') completed++
+        } catch { /* ignore */ }
+      }
+    }
+    return { creating, completed }
+  }, [contents])
 
   if (loading) {
     return (
@@ -113,7 +133,7 @@ export default function ProjectDashboard() {
       {/* 内容区 */}
       <div className="flex-1 overflow-auto px-6 py-6 space-y-6">
         {/* 统计卡片 */}
-        <StatCards stats={stats} />
+        <StatCards stats={stats} videoCreating={videoStats.creating} videoCompleted={videoStats.completed} />
 
         {/* 最近内容 */}
         <div>
@@ -135,6 +155,7 @@ export default function ProjectDashboard() {
             maxItems={10}
             onStatusChange={updateContentStatus}
             onDelete={deleteContent}
+            onVersionHistory={setVersionHistoryContent}
           />
         </div>
 
@@ -232,6 +253,16 @@ export default function ProjectDashboard() {
             open={showCreateContent}
             onOpenChange={setShowCreateContent}
             onCreateContent={createContent}
+          />
+
+          <VersionHistoryDialog
+            open={versionHistoryContent !== null}
+            onOpenChange={(open) => { if (!open) setVersionHistoryContent(null) }}
+            contentId={versionHistoryContent?.id || ''}
+            contentTitle={versionHistoryContent?.title || null}
+            onRollback={() => updateContentStatus(versionHistoryContent!.id, versionHistoryContent!.status)}
+            listContentVersions={listContentVersions}
+            rollbackContentVersion={rollbackContentVersion}
           />
         </>
       )}

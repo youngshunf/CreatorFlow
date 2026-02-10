@@ -28,12 +28,13 @@ import {
   isFilesNavigation,
   routes,
 } from '@/contexts/NavigationContext'
-import { isMarketplaceNavigation, isAppViewNavigation } from '../../../shared/types'
+import { isMarketplaceNavigation, isAppViewNavigation, isVideoNavigation } from '../../../shared/types'
 import { APP_VIEW_REGISTRY } from '../../pages/creator-media/registry'
 import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage, SourcesSettingsPage, SkillsSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
 import { FileManager } from '@/components/file-manager'
+import { VideoEditor } from '@/components/video'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { toast } from 'sonner'
 import type { LoadedSkill } from '../../../shared/types'
@@ -284,6 +285,18 @@ export function MainContentPanel({
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <p className="text-sm">{t('未知视图')}</p>
         </div>
+      </Panel>
+    )
+  }
+
+  // Video navigator - show VideoEditor
+  if (isVideoNavigation(navState)) {
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <VideoEditor
+          workspaceId={activeWorkspaceId || ''}
+          className="h-full"
+        />
       </Panel>
     )
   }

@@ -3,8 +3,10 @@ import React from 'react'
 const ProjectDashboard = React.lazy(() => import('./ProjectDashboard'))
 const CreationWorkspace = React.lazy(() => import('./CreationWorkspace'))
 const HotTopicsBoard = React.lazy(() => import('./HotTopicsBoard'))
+const VideoStudio = React.lazy(() => import('./VideoStudio'))
 const ContentCalendar = React.lazy(() => import('./ContentCalendar'))
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard'))
+const PlatformAccountsView = React.lazy(() => import('./PlatformAccountsView'))
 
 /**
  * APP 视图注册表
@@ -15,7 +17,9 @@ export const APP_VIEW_REGISTRY: Record<string, Record<string, React.LazyExoticCo
     dashboard: ProjectDashboard,
     workspace: CreationWorkspace,
     'hot-topics': HotTopicsBoard,
+    'video-studio': VideoStudio,
     calendar: ContentCalendar,
     analytics: AnalyticsDashboard,
+    accounts: PlatformAccountsView,
   },
 }
