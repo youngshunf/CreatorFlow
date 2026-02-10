@@ -71,10 +71,10 @@ export default defineConfig({
       'react': resolve(__dirname, '../../node_modules/react'),
       'react-dom': resolve(__dirname, '../../node_modules/react-dom'),
     },
-    dedupe: ['react', 'react-dom']
+    dedupe: ['react', 'react-dom', 'remotion']
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'jotai', 'filtrex', 'pdfjs-dist'],
+    include: ['react', 'react-dom', 'jotai', 'filtrex', 'pdfjs-dist', 'remotion'],
     exclude: ['@sprouty-ai/ui'],
     esbuildOptions: {
       supported: { 'top-level-await': true },

@@ -517,6 +517,8 @@ html[data-font="inter"] {
   }
 
   .shadow-middle {
+    position: relative;
+    z-index: var(--z-panel);
     box-shadow:
       rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px,
@@ -551,6 +553,8 @@ html[data-font="inter"] {
   }
 
   .shadow-strong {
+    position: relative;
+    z-index: var(--z-panel);
     box-shadow:
       rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px,
@@ -616,10 +620,6 @@ html[data-font="inter"] {
   html[data-scenic] .shadow-strong {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  position: relative;
-  /* Ensure panels are above the titlebar drag region (z-titlebar: 40) so header buttons are clickable.
-     Without this, the position:relative creates a stacking context at z-index:auto which is below the fixed titlebar. */
-  z-index: var(--z-panel);
 }
 
 /* Scenic mode: Input field gets more transparency to show background through

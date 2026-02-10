@@ -42,6 +42,10 @@ export function isDebugEnabled(): boolean {
  * Safely stringify an object, handling circular references.
  */
 function safeStringify(obj: unknown): string {
+  // Error 对象的属性不可枚举，JSON.stringify 会输出 {}
+  if (obj instanceof Error) {
+    return JSON.stringify({ message: obj.message, name: obj.name, stack: obj.stack });
+  }
   try {
     return JSON.stringify(obj);
   } catch {

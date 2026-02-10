@@ -142,6 +142,7 @@
     "glob": "^11.0.0",
     "gray-matter": "^4.0.3",
     "incr-regex-package": "^1.0.4",
+    "is-plain-object": "^5.0.0",
     "jotai": "^2.16.0",
     "js-yaml": "^4.1.1",
     "linkify-it": "^5.0.0",
@@ -166,5 +167,23 @@
     "unzipper": "^0.12.3",
     "xlsx": "^0.18.5",
     "zod": "4.3.6"
+  },
+  "overrides": {
+    "remotion": "4.0.417",
+    "@remotion/bundler": "4.0.417",
+    "@remotion/cli": "4.0.417",
+    "@remotion/player": "4.0.417",
+    "@remotion/renderer": "4.0.417",
+    "@remotion/media-utils": "4.0.417",
+    "@remotion/studio": "4.0.417",
+    "@remotion/studio-server": "4.0.417",
+    "@remotion/studio-shared": "4.0.417",
+    "@remotion/streaming": "4.0.417",
+    "@remotion/zod-types": "4.0.417",
+    "@remotion/licensing": "4.0.417",
+    "@remotion/web-renderer": "4.0.417",
+    "@remotion/webcodecs": "4.0.417",
+    "@remotion/media-parser": "4.0.417",
+    "@remotion/compositor-darwin-arm64": "4.0.417"
   }
 }

@@ -1,0 +1,3 @@
+[install]
+# Skip SSL certificate verification for registry access
+tls_reject_unauthorized = false

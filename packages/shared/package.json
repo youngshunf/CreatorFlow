@@ -69,17 +69,25 @@
     "./db/repositories/contents": "./src/db/repositories/contents.ts",
     "./db/repositories/topic-cache": "./src/db/repositories/topic-cache.ts",
     "./db/repositories/publish-records": "./src/db/repositories/publish-records.ts",
-    "./db/repositories/viral-patterns": "./src/db/repositories/viral-patterns.ts"
+    "./db/repositories/viral-patterns": "./src/db/repositories/viral-patterns.ts",
+    "./db/repositories/review-tasks": "./src/db/repositories/review-tasks.ts",
+    "./db/repositories/content-versions": "./src/db/repositories/content-versions.ts",
+    "./db/repositories/publish-queue": "./src/db/repositories/publish-queue.ts",
+    "./services/review-scheduler": "./src/services/review-scheduler.ts",
+    "./services/browser-profile-manager": "./src/services/browser-profile-manager.ts",
+    "./services/fingerprint-generator": "./src/services/fingerprint-generator.ts",
+    "./services/anti-detect-browser": "./src/services/anti-detect-browser.ts"
   },
   "dependencies": {
+    "@isaacs/ttlcache": "^2.1.4",
+    "@leeoniya/ufuzzy": "^1.0.19",
     "@sprouty-ai/core": "workspace:*",
     "@sprouty-ai/mermaid": "workspace:*",
-    "@isaacs/ttlcache": "^2.1.4",
-    "glob": "^11.0.0",
-    "@leeoniya/ufuzzy": "^1.0.19",
     "bash-parser": "^0.5.0",
     "filtrex": "^3.1.0",
+    "glob": "^11.0.0",
     "incr-regex-package": "^1.0.4",
+    "playwright-core": "^1.50.0",
     "shell-quote": "^1.8.3"
   },
   "peerDependencies": {

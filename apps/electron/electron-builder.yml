@@ -37,6 +37,8 @@ files:
   - node_modules/fastmcp/**/*
   # Include nanoid for MCP Video Server
   - node_modules/nanoid/**/*
+  # Include playwright-core for anti-detect browser (JS driver only, no bundled browsers)
+  - node_modules/playwright-core/**/*
   # Exclude everything else from node_modules
   - "!node_modules/**/*"
 

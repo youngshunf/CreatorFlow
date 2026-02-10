@@ -154,6 +154,20 @@ function getElectronEnv(): Record<string, string> {
   };
 }
 
+// Shared external dependencies — must match package.json build:main externals
+const ESBUILD_EXTERNALS = [
+  "electron",
+  "better-sqlite3",
+  "@remotion/bundler",
+  "@remotion/renderer",
+  "@remotion/cli",
+  "remotion",
+  "esbuild",
+  "source-map",
+  "playwright",
+  "playwright-core",
+];
+
 // Run a one-shot esbuild using the JavaScript API
 async function runEsbuild(
   entryPoint: string,
@@ -167,7 +181,7 @@ async function runEsbuild(
       platform: "node",
       format: "cjs",
       outfile: join(ROOT_DIR, outfile),
-      external: ["electron", "better-sqlite3"],
+      external: ESBUILD_EXTERNALS,
       define: defines,
       logLevel: "warning",
     });
@@ -348,7 +362,7 @@ async function main(): Promise<void> {
     platform: "node",
     format: "cjs",
     outfile: join(ROOT_DIR, "apps/electron/dist/main.cjs"),
-    external: ["electron", "better-sqlite3"],
+    external: ESBUILD_EXTERNALS,
     define: oauthDefines,
     logLevel: "info",
   });
@@ -363,7 +377,7 @@ async function main(): Promise<void> {
     platform: "node",
     format: "cjs",
     outfile: join(ROOT_DIR, "apps/electron/dist/preload.cjs"),
-    external: ["electron", "better-sqlite3"],
+    external: ["electron"],
     logLevel: "info",
   });
   await preloadContext.watch();

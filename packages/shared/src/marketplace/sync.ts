@@ -154,8 +154,13 @@ export async function syncMarketplaceMetadata(): Promise<void> {
     // 获取分类列表（通常不多，一次获取）
     const categoriesResponse = await listCategories();
 
+    // 兼容分类接口返回数组或分页格式
+    const categoriesList = Array.isArray(categoriesResponse)
+      ? categoriesResponse
+      : categoriesResponse.items;
+
     // 验证数据有效性
-    if (!allSkills || !allApps || !categoriesResponse.items) {
+    if (!allSkills || !allApps || !categoriesList) {
       throw new Error('同步响应数据格式无效');
     }
 
@@ -163,7 +168,7 @@ export async function syncMarketplaceMetadata(): Promise<void> {
     saveMarketplaceCache({
       skills: allSkills,
       apps: allApps,
-      categories: categoriesResponse.items,
+      categories: categoriesList,
     });
 
     // 更新同步时间（只在成功时更新）
@@ -171,7 +176,7 @@ export async function syncMarketplaceMetadata(): Promise<void> {
 
     debug(
       `[syncMarketplaceMetadata] 同步完成: ${allSkills.length} 个技能, ` +
-      `${allApps.length} 个应用, ${categoriesResponse.items.length} 个分类`
+      `${allApps.length} 个应用, ${categoriesList.length} 个分类`
     );
   } catch (error) {
     debug('[syncMarketplaceMetadata] 同步失败:', error);
@@ -223,11 +228,16 @@ export async function forceSyncMarketplaceMetadata(): Promise<void> {
     // 获取分类列表
     const categoriesResponse = await listCategories();
 
+    // 兼容分类接口返回数组或分页格式
+    const categoriesList = Array.isArray(categoriesResponse)
+      ? categoriesResponse
+      : categoriesResponse.items;
+
     // 保存到缓存
     saveMarketplaceCache({
       skills: allSkills,
       apps: allApps,
-      categories: categoriesResponse.items,
+      categories: categoriesList,
     });
 
     // 更新同步时间
@@ -235,7 +245,7 @@ export async function forceSyncMarketplaceMetadata(): Promise<void> {
 
     debug(
       `[forceSyncMarketplaceMetadata] 同步完成: ${allSkills.length} 个技能, ` +
-      `${allApps.length} 个应用, ${categoriesResponse.items.length} 个分类`
+      `${allApps.length} 个应用, ${categoriesList.length} 个分类`
     );
   } catch (error) {
     debug('[forceSyncMarketplaceMetadata] 同步失败:', error);
