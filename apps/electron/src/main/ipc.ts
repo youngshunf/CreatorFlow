@@ -2745,8 +2745,19 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Marketplace (cloud skill/app market)
   // ============================================================
 
-  // List skills from marketplace
+  // List skills from marketplace (优先使用本地缓存)
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_SKILLS, async (_event, params?: { page?: number; size?: number; category?: string }) => {
+    // 无筛选条件且请求第一页时，优先使用缓存
+    if (!params?.category && (!params?.page || params.page === 1)) {
+      try {
+        const { getMarketplaceCache } = await import('@sprouty-ai/shared/marketplace')
+        const cache = getMarketplaceCache()
+        if (cache?.skills?.length) {
+          const size = params?.size || 200
+          return { items: cache.skills.slice(0, size), total: cache.skills.length }
+        }
+      } catch { /* 缓存读取失败，回退到 API */ }
+    }
     const { listSkills } = await import('@sprouty-ai/shared/marketplace')
     return listSkills(params || {})
   })
@@ -2761,8 +2772,19 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return { skill, versions: versionsResult.items || [] }
   })
 
-  // List apps from marketplace
+  // List apps from marketplace (优先使用本地缓存)
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_APPS, async (_event, params?: { page?: number; size?: number }) => {
+    // 请求第一页时，优先使用缓存
+    if (!params?.page || params.page === 1) {
+      try {
+        const { getMarketplaceCache } = await import('@sprouty-ai/shared/marketplace')
+        const cache = getMarketplaceCache()
+        if (cache?.apps?.length) {
+          const size = params?.size || 200
+          return { items: cache.apps.slice(0, size), total: cache.apps.length }
+        }
+      } catch { /* 缓存读取失败，回退到 API */ }
+    }
     const { listApps } = await import('@sprouty-ai/shared/marketplace')
     return listApps(params || {})
   })
@@ -2783,10 +2805,19 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     return getAppSkills(appId)
   })
 
-  // List categories
+  // List categories (优先使用本地缓存)
   ipcMain.handle(IPC_CHANNELS.MARKETPLACE_LIST_CATEGORIES, async () => {
+    try {
+      const { getMarketplaceCache } = await import('@sprouty-ai/shared/marketplace')
+      const cache = getMarketplaceCache()
+      if (cache?.categories?.length) {
+        return cache.categories
+      }
+    } catch { /* 缓存读取失败，回退到 API */ }
     const { listCategories } = await import('@sprouty-ai/shared/marketplace')
-    return listCategories()
+    const result = await listCategories()
+    // 兼容返回数组或分页格式
+    return Array.isArray(result) ? result : result.items
   })
 
   // Search marketplace

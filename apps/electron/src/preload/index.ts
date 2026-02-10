@@ -609,6 +609,39 @@ const api: ElectronAPI = {
     context: {
       get: (workspaceId: string, projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTEXT_GET, workspaceId, projectId),
     },
+    reviewTasks: {
+      list: (workspaceId: string, publishRecordId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_LIST, workspaceId, publishRecordId),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_UPDATE, workspaceId, id, data),
+      cancel: (workspaceId: string, publishRecordId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_CANCEL, workspaceId, publishRecordId),
+    },
+    contentVersions: {
+      list: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_LIST, workspaceId, contentId),
+      get: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_CREATE, workspaceId, data),
+      rollback: (workspaceId: string, contentId: string, versionNumber: number) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_ROLLBACK, workspaceId, contentId, versionNumber),
+    },
+    publishQueue: {
+      list: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_QUEUE_LIST, workspaceId, contentId),
+      enqueue: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_QUEUE_ENQUEUE, workspaceId, data),
+      cancel: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_QUEUE_CANCEL, workspaceId, contentId),
+      getNext: (workspaceId: string, platformAccountId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_QUEUE_GET_NEXT, workspaceId, platformAccountId),
+    },
+    reviewScheduler: {
+      status: () => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_SCHEDULER_STATUS),
+    },
+    browser: {
+      launchLogin: (workspaceId: string, platformAccountId: string, platform: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_LAUNCH_LOGIN, workspaceId, platformAccountId, platform),
+      checkAuth: (workspaceId: string, platformAccountId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_CHECK_AUTH, workspaceId, platformAccountId),
+      profileExists: (workspaceId: string, platformAccountId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_PROFILE_EXISTS, workspaceId, platformAccountId),
+      deleteProfile: (workspaceId: string, platformAccountId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_DELETE_PROFILE, workspaceId, platformAccountId),
+      generateFingerprint: (workspaceId: string, platformAccountId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_GENERATE_FINGERPRINT, workspaceId, platformAccountId),
+    },
   },
 
   // Video API (Remotion video creation)

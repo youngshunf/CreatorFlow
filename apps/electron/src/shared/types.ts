@@ -910,6 +910,36 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_VIRAL_PATTERNS_DELETE: 'creatorMedia:viralPatterns:delete',
 
   CREATOR_MEDIA_CONTEXT_GET: 'creatorMedia:context:get',
+
+  // 采集调度任务
+  CREATOR_MEDIA_REVIEW_TASKS_LIST: 'creatorMedia:reviewTasks:list',
+  CREATOR_MEDIA_REVIEW_TASKS_CREATE: 'creatorMedia:reviewTasks:create',
+  CREATOR_MEDIA_REVIEW_TASKS_UPDATE: 'creatorMedia:reviewTasks:update',
+  CREATOR_MEDIA_REVIEW_TASKS_CANCEL: 'creatorMedia:reviewTasks:cancel',
+
+  // 内容版本管理
+  CREATOR_MEDIA_CONTENT_VERSIONS_LIST: 'creatorMedia:contentVersions:list',
+  CREATOR_MEDIA_CONTENT_VERSIONS_GET: 'creatorMedia:contentVersions:get',
+  CREATOR_MEDIA_CONTENT_VERSIONS_CREATE: 'creatorMedia:contentVersions:create',
+  CREATOR_MEDIA_CONTENT_VERSIONS_ROLLBACK: 'creatorMedia:contentVersions:rollback',
+
+  // 发布队列
+  CREATOR_MEDIA_PUBLISH_QUEUE_LIST: 'creatorMedia:publishQueue:list',
+  CREATOR_MEDIA_PUBLISH_QUEUE_ENQUEUE: 'creatorMedia:publishQueue:enqueue',
+  CREATOR_MEDIA_PUBLISH_QUEUE_CANCEL: 'creatorMedia:publishQueue:cancel',
+  CREATOR_MEDIA_PUBLISH_QUEUE_GET_NEXT: 'creatorMedia:publishQueue:getNext',
+
+  // 采集调度服务
+  CREATOR_MEDIA_REVIEW_SCHEDULER_START: 'creatorMedia:reviewScheduler:start',
+  CREATOR_MEDIA_REVIEW_SCHEDULER_STOP: 'creatorMedia:reviewScheduler:stop',
+  CREATOR_MEDIA_REVIEW_SCHEDULER_STATUS: 'creatorMedia:reviewScheduler:status',
+
+  // 浏览器 Profile 管理
+  CREATOR_MEDIA_BROWSER_LAUNCH_LOGIN: 'creatorMedia:browser:launchLogin',
+  CREATOR_MEDIA_BROWSER_CHECK_AUTH: 'creatorMedia:browser:checkAuth',
+  CREATOR_MEDIA_BROWSER_PROFILE_EXISTS: 'creatorMedia:browser:profileExists',
+  CREATOR_MEDIA_BROWSER_DELETE_PROFILE: 'creatorMedia:browser:deleteProfile',
+  CREATOR_MEDIA_BROWSER_GENERATE_FINGERPRINT: 'creatorMedia:browser:generateFingerprint',
 } as const
 
 /**
@@ -1314,6 +1344,34 @@ export interface ElectronAPI {
     context: {
       get(workspaceId: string, projectId: string): Promise<string>
     }
+    reviewTasks: {
+      list(workspaceId: string, publishRecordId: string): Promise<import('@sprouty-ai/shared/db/types').ReviewTask[]>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateReviewTask): Promise<import('@sprouty-ai/shared/db/types').ReviewTask>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdateReviewTask): Promise<import('@sprouty-ai/shared/db/types').ReviewTask | null>
+      cancel(workspaceId: string, publishRecordId: string): Promise<number>
+    }
+    contentVersions: {
+      list(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').ContentVersion[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').ContentVersion | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateContentVersionInput): Promise<import('@sprouty-ai/shared/db/types').ContentVersion>
+      rollback(workspaceId: string, contentId: string, versionNumber: number): Promise<import('@sprouty-ai/shared/db/types').Content | null>
+    }
+    publishQueue: {
+      list(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').PublishQueueItem[]>
+      enqueue(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreatePublishQueueInput): Promise<import('@sprouty-ai/shared/db/types').PublishQueueItem>
+      cancel(workspaceId: string, contentId: string): Promise<number>
+      getNext(workspaceId: string, platformAccountId: string): Promise<import('@sprouty-ai/shared/db/types').PublishQueueItem | null>
+    }
+    reviewScheduler: {
+      status(): Promise<{ running: boolean }>
+    }
+    browser: {
+      launchLogin(workspaceId: string, platformAccountId: string, platform: string): Promise<{ success: boolean; error?: string }>
+      checkAuth(workspaceId: string, platformAccountId: string): Promise<{ loggedIn: boolean; error?: string }>
+      profileExists(workspaceId: string, platformAccountId: string): Promise<boolean>
+      deleteProfile(workspaceId: string, platformAccountId: string): Promise<boolean>
+      generateFingerprint(workspaceId: string, platformAccountId: string): Promise<import('@sprouty-ai/shared/services/browser-profile-manager').BrowserFingerprint>
+    }
   }
 
   // Video API (Remotion video creation)
@@ -1653,6 +1711,12 @@ export const getNavigationStateKey = (state: NavigationState): string => {
   if (state.navigator === 'appView') {
     return `app/${state.appId}/${state.viewId}`
   }
+  if (state.navigator === 'video') {
+    if (state.projectId) {
+      return `video/project/${state.projectId}`
+    }
+    return 'video'
+  }
   // Chats
   const f = state.filter
   let base: string
@@ -1706,6 +1770,16 @@ export const parseNavigationStateKey = (key: string): NavigationState | null => 
     if (parts.length >= 3) {
       return { navigator: 'appView', appId: parts[1], viewId: parts[2] }
     }
+  }
+
+  // Handle video
+  if (key === 'video') return { navigator: 'video' }
+  if (key.startsWith('video/project/')) {
+    const projectId = key.slice(14)
+    if (projectId) {
+      return { navigator: 'video', projectId }
+    }
+    return { navigator: 'video' }
   }
 
   // Handle chats - parse filter and optional session
