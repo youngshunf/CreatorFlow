@@ -3,7 +3,7 @@
  */
 
 import type { CreatorMediaDB } from '../connection.ts';
-import type { Content, CreateContent, UpdateContent, ContentStatus } from '../types.ts';
+import type { Content, CreateContent, UpdateContent, ContentStatus, ContentVideoMetadata } from '../types.ts';
 
 /** 内容列表过滤条件 */
 export interface ContentFilters {
@@ -97,4 +97,55 @@ export function updateContentStatus(db: CreatorMediaDB, id: string, status: Cont
 export function deleteContent(db: CreatorMediaDB, id: string): boolean {
   const result = db.prepare('DELETE FROM contents WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+// ============================================================
+// 视频内容辅助函数
+// ============================================================
+
+/** 解析内容的 metadata JSON */
+export function parseContentMetadata(content: Content): Record<string, unknown> | null {
+  if (!content.metadata) return null;
+  try {
+    return JSON.parse(content.metadata) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/** 获取内容的视频元数据 */
+export function getContentVideoMetadata(content: Content): ContentVideoMetadata | null {
+  const metadata = parseContentMetadata(content);
+  if (!metadata) return null;
+  return {
+    video_project_id: metadata.video_project_id as string | undefined,
+    video_project_name: metadata.video_project_name as string | undefined,
+    video_template_id: metadata.video_template_id as string | undefined,
+    video_render_status: metadata.video_render_status as ContentVideoMetadata['video_render_status'],
+    video_output_path: metadata.video_output_path as string | undefined,
+    video_duration: metadata.video_duration as number | undefined,
+    video_resolution: metadata.video_resolution as ContentVideoMetadata['video_resolution'],
+  };
+}
+
+/** 合并更新内容的视频元数据 */
+export function updateContentVideoMetadata(
+  db: CreatorMediaDB,
+  contentId: string,
+  videoMeta: Partial<ContentVideoMetadata>
+): Content | undefined {
+  const content = getContent(db, contentId);
+  if (!content) return undefined;
+
+  const existingMeta = parseContentMetadata(content) || {};
+  const mergedMeta = { ...existingMeta, ...videoMeta };
+  const metadataJson = JSON.stringify(mergedMeta);
+
+  db.prepare('UPDATE contents SET metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(metadataJson, contentId);
+  return getContent(db, contentId);
+}
+
+/** 判断是否为视频类型内容 */
+export function isVideoContent(content: Content): boolean {
+  return content.content_type === 'video' || content.content_type === 'short-video';
 }

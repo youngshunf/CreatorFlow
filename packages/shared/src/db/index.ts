@@ -66,4 +66,19 @@ export type {
   CreateViralPattern,
   UpdateViralPattern,
   CreateTopicCache,
+  ReviewTaskStatus,
+  ReviewType,
+  ReviewTask,
+  CreateReviewTask,
+  UpdateReviewTask,
+  VersionStage,
+  ChangeSource,
+  ContentVersion,
+  CreateContentVersionInput,
+  PublishQueueStatus,
+  PublishQueueItem,
+  CreatePublishQueueInput,
+  UpdatePublishQueueInput,
 } from './types.ts';
+
+export { QueuePriority } from './types.ts';

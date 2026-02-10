@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS account_profiles (
   best_posting_time TEXT,
   style_references  TEXT,
   taboo_topics      TEXT,
+  pillar_weights    TEXT,
+  pillar_weights_updated_at DATETIME,
   created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,6 +81,9 @@ CREATE TABLE IF NOT EXISTS platform_accounts (
   last_login_check DATETIME,
   is_primary      BOOLEAN DEFAULT 0,
   notes           TEXT,
+  profile_path    TEXT,
+  fingerprint_id  TEXT,
+  login_check_interval INTEGER DEFAULT 3600,
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -127,6 +132,7 @@ CREATE TABLE IF NOT EXISTS contents (
   scheduled_at    DATETIME,
   files           TEXT,
   metadata        TEXT,
+  review_summary  TEXT,
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -153,6 +159,10 @@ CREATE TABLE IF NOT EXISTS publish_records (
   favorites     INTEGER DEFAULT 0,
   metrics_json  TEXT,
   metrics_updated_at DATETIME,
+  next_review_at  DATETIME,
+  review_count    INTEGER DEFAULT 0,
+  review_schedule TEXT,
+  feedback_processed BOOLEAN DEFAULT 0,
   created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -195,6 +205,8 @@ CREATE TABLE IF NOT EXISTS topic_cache (
   category      TEXT,
   keywords      TEXT,
   status        TEXT DEFAULT 'new',
+  historical_score REAL,
+  locked_by_content_id TEXT,
   fetched_at    DATETIME NOT NULL,
   expires_at    DATETIME,
   created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -203,6 +215,62 @@ CREATE TABLE IF NOT EXISTS topic_cache (
 CREATE INDEX IF NOT EXISTS idx_topic_source ON topic_cache(source, source_id);
 CREATE INDEX IF NOT EXISTS idx_topic_status ON topic_cache(status);
 CREATE INDEX IF NOT EXISTS idx_topic_relevance ON topic_cache(relevance_score DESC);
+
+-- 采集调度任务表
+CREATE TABLE IF NOT EXISTS review_tasks (
+  id                TEXT PRIMARY KEY,
+  publish_record_id TEXT NOT NULL REFERENCES publish_records(id) ON DELETE CASCADE,
+  scheduled_at      DATETIME NOT NULL,
+  executed_at       DATETIME,
+  status            TEXT DEFAULT 'pending',
+  review_type       TEXT NOT NULL,
+  result_snapshot   TEXT,
+  error_message     TEXT,
+  retry_count       INTEGER DEFAULT 0,
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_scheduled ON review_tasks(scheduled_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_review_publish ON review_tasks(publish_record_id);
+
+-- 内容版本管理表
+CREATE TABLE IF NOT EXISTS content_versions (
+  id                 TEXT PRIMARY KEY,
+  content_id         TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  version_number     INTEGER NOT NULL,
+  stage              TEXT NOT NULL,
+  title              TEXT,
+  content_snapshot   TEXT NOT NULL,
+  files_snapshot     TEXT,
+  change_source      TEXT,
+  change_description TEXT,
+  created_by         TEXT DEFAULT 'system',
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_version_content ON content_versions(content_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_version_number ON content_versions(content_id, version_number);
+
+-- 发布队列表
+CREATE TABLE IF NOT EXISTS publish_queue (
+  id                  TEXT PRIMARY KEY,
+  content_id          TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  platform_account_id TEXT NOT NULL REFERENCES platform_accounts(id),
+  priority            INTEGER DEFAULT 0,
+  status              TEXT DEFAULT 'queued',
+  scheduled_at        DATETIME,
+  started_at          DATETIME,
+  completed_at        DATETIME,
+  error_message       TEXT,
+  retry_count         INTEGER DEFAULT 0,
+  max_retries         INTEGER DEFAULT 3,
+  created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_queue_status ON publish_queue(status, priority DESC, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_queue_platform ON publish_queue(platform_account_id, status);
 `;
 
 /** 初始版本记录 SQL */

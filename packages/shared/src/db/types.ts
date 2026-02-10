@@ -71,10 +71,16 @@ export type TopicCacheSource = 'newsnow' | 'trendradar';
 export type AuthStatus = 'not_logged_in' | 'logged_in' | 'expired' | 'error';
 
 /** 平台账号登录方式 */
-export type AuthMethod = 'cookie' | 'oauth' | 'api_key';
+export type AuthMethod = 'cookie' | 'oauth' | 'api_key' | 'browser_profile';
 
 /** 发布频率 */
 export type PostingFrequency = 'daily' | '3_per_week' | 'weekly' | 'biweekly' | 'monthly';
+
+/** 采集任务状态 */
+export type ReviewTaskStatus = 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
+
+/** 采集时间点类型 */
+export type ReviewType = '1h' | '6h' | '24h' | '72h' | '168h';
 
 // ============================================================
 // 表接口
@@ -116,6 +122,8 @@ export interface AccountProfile {
   best_posting_time: string | null; // JSON: Record<string, string>
   style_references: string | null;  // JSON: string[]
   taboo_topics: string | null;     // JSON: string[]
+  pillar_weights: string | null;   // JSON: Record<string, number> 内容支柱动态权重
+  pillar_weights_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -146,6 +154,9 @@ export interface PlatformAccount {
   last_login_check: string | null;
   is_primary: number;              // SQLite boolean: 0 | 1
   notes: string | null;
+  profile_path: string | null;     // 浏览器 Profile 目录路径
+  fingerprint_id: string | null;   // 关联的指纹配置 ID
+  login_check_interval: number;    // 登录检查间隔秒数，默认 3600
   created_at: string;
   updated_at: string;
 }
@@ -187,6 +198,7 @@ export interface Content {
   scheduled_at: string | null;
   files: string | null;             // JSON: string[]
   metadata: string | null;          // JSON: 扩展元数据
+  review_summary: string | null;    // JSON: 复盘摘要
   created_at: string;
   updated_at: string;
 }
@@ -209,6 +221,10 @@ export interface PublishRecord {
   favorites: number;
   metrics_json: string | null;      // JSON: 完整指标快照
   metrics_updated_at: string | null;
+  next_review_at: string | null;     // 下次采集时间
+  review_count: number;              // 已完成采集次数
+  review_schedule: string | null;    // JSON: 采集计划
+  feedback_processed: number;        // SQLite boolean: 0 | 1，反馈是否已回写
   created_at: string;
   updated_at: string;
 }
@@ -243,9 +259,26 @@ export interface TopicCache {
   category: string | null;
   keywords: string | null;          // JSON: string[]
   status: TopicCacheStatus;
+  historical_score: number | null;   // 同类选题历史成功率
+  locked_by_content_id: string | null; // 并行冲突控制，锁定选题
   fetched_at: string;
   expires_at: string | null;
   created_at: string;
+}
+
+/** review_tasks — 采集调度任务表 */
+export interface ReviewTask {
+  id: string;
+  publish_record_id: string;
+  scheduled_at: string;
+  executed_at: string | null;
+  status: ReviewTaskStatus;
+  review_type: ReviewType;
+  result_snapshot: string | null;  // JSON: 采集结果快照
+  error_message: string | null;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================
@@ -274,3 +307,95 @@ export type CreateViralPattern = Omit<ViralPattern, 'created_at' | 'updated_at'>
 export type UpdateViralPattern = Partial<Omit<ViralPattern, 'id' | 'created_at'>> & { updated_at?: string };
 
 export type CreateTopicCache = Omit<TopicCache, 'created_at'>;
+
+export type CreateReviewTask = Omit<ReviewTask, 'created_at' | 'updated_at'>;
+export type UpdateReviewTask = Partial<Omit<ReviewTask, 'id' | 'publish_record_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
+// 内容版本管理
+// ============================================================
+
+/** 版本阶段 */
+export type VersionStage = 'script' | 'content' | 'adapted';
+
+/** 变更来源 */
+export type ChangeSource = 'auto' | 'user_edit' | 'rollback';
+
+/** content_versions — 内容版本管理表 */
+export interface ContentVersion {
+  id: string;
+  content_id: string;
+  version_number: number;
+  stage: VersionStage;
+  title: string | null;
+  content_snapshot: string;          // JSON: 内容快照
+  files_snapshot: string | null;     // JSON: 文件列表快照
+  change_source: ChangeSource | null;
+  change_description: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export type CreateContentVersionInput = Omit<ContentVersion, 'created_at'>;
+
+// ============================================================
+// 发布队列
+// ============================================================
+
+/** 发布队列状态 */
+export type PublishQueueStatus = 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+/** 队列优先级常量 */
+export const QueuePriority = {
+  /** 热点内容 */
+  HOT: 10,
+  /** 计划发布 */
+  SCHEDULED: 5,
+  /** 常青内容 */
+  EVERGREEN: 1,
+} as const;
+
+/** publish_queue — 发布队列表 */
+export interface PublishQueueItem {
+  id: string;
+  content_id: string;
+  platform_account_id: string;
+  priority: number;
+  status: PublishQueueStatus;
+  scheduled_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  error_message: string | null;
+  retry_count: number;
+  max_retries: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreatePublishQueueInput = Omit<PublishQueueItem, 'created_at' | 'updated_at'>;
+export type UpdatePublishQueueInput = Partial<Omit<PublishQueueItem, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
+// 视频内容元数据（存储在 contents.metadata JSON 字段）
+// ============================================================
+
+/** 视频渲染状态 */
+export type VideoRenderStatus = 'not_started' | 'rendering' | 'completed' | 'failed';
+
+/** 视频内容元数据 — 存储在 contents.metadata JSON 字段 */
+export interface ContentVideoMetadata {
+  /** 关联的 VideoProject.id */
+  video_project_id?: string;
+  /** 冗余存储项目名称，列表展示用 */
+  video_project_name?: string;
+  /** 使用的模板 ID */
+  video_template_id?: string;
+  /** 渲染状态 */
+  video_render_status?: VideoRenderStatus;
+  /** 最终渲染输出路径 */
+  video_output_path?: string;
+  /** 视频时长（秒） */
+  video_duration?: number;
+  /** 视频分辨率 */
+  video_resolution?: { width: number; height: number };
+}
