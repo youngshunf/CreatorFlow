@@ -57,6 +57,10 @@
     "./skills": "./src/skills/index.ts",
     "./skills/types": "./src/skills/types.ts",
     "./marketplace": "./src/marketplace/index.ts",
+    "./utils/workspace": "./src/utils/workspace.ts",
+    "./tools": "./src/tools/index.ts",
+    "./codex": "./src/codex/index.ts",
+    "./mentions": "./src/mentions/index.ts",
     "./search": "./src/search/index.ts",
     "./plugins": "./src/plugins/index.ts",
     "./plugins/global-plugins": "./src/plugins/global-plugins.ts",
@@ -78,7 +82,11 @@
     "./services/review-scheduler": "./src/services/review-scheduler.ts",
     "./services/browser-profile-manager": "./src/services/browser-profile-manager.ts",
     "./services/fingerprint-generator": "./src/services/fingerprint-generator.ts",
-    "./services/anti-detect-browser": "./src/services/anti-detect-browser.ts"
+    "./services/anti-detect-browser": "./src/services/anti-detect-browser.ts",
+    "./services/hot-topic-service": "./src/services/hot-topic-service.ts",
+    "./services/topic-recommend-service": "./src/services/topic-recommend-service.ts",
+    "./db/repositories/hot-topics": "./src/db/repositories/hot-topics.ts",
+    "./db/repositories/recommended-topics": "./src/db/repositories/recommended-topics.ts"
   },
   "dependencies": {
     "@isaacs/ttlcache": "^2.1.4",

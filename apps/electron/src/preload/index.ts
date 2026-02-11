@@ -697,6 +697,32 @@ const api: ElectronAPI = {
       delete: (workspaceId: string, id: string) =>
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_DELETE, workspaceId, id),
     },
+    hotTopics: {
+      fetch: (workspaceId: string, platforms?: string[]) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_FETCH, workspaceId, platforms),
+      list: (workspaceId: string, filters?: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_LIST, workspaceId, filters),
+      getLatestBatch: (workspaceId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_GET_LATEST_BATCH, workspaceId),
+    },
+    topics: {
+      list: (workspaceId: string, projectId: string, filters?: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_LIST, workspaceId, projectId, filters),
+      get: (workspaceId: string, topicId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_GET, workspaceId, topicId),
+      adopt: (workspaceId: string, topicId: string, projectId: string, pipelineMode?: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_ADOPT, workspaceId, topicId, projectId, pipelineMode),
+      ignore: (workspaceId: string, topicId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_IGNORE, workspaceId, topicId),
+      batchIgnore: (workspaceId: string, topicIds: string[]) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_BATCH_IGNORE, workspaceId, topicIds),
+    },
+    topicSchedule: {
+      get: (workspaceId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_GET, workspaceId),
+      update: (workspaceId: string, config: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE, workspaceId, config),
+    },
   },
 
   // Video API (Remotion video creation)

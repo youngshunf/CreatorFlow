@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -308,9 +308,62 @@ CREATE TABLE IF NOT EXISTS media_files (
 
 CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id);
 CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type);
+
+-- 热榜快照表
+CREATE TABLE IF NOT EXISTS hot_topics (
+  id            TEXT PRIMARY KEY,
+  platform_id   TEXT NOT NULL,
+  platform_name TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  url           TEXT,
+  rank          INTEGER,
+  heat_score    REAL,
+  fetch_source  TEXT NOT NULL,
+  fetched_at    TEXT NOT NULL,
+  batch_date    TEXT NOT NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_hot_topics_platform ON hot_topics(platform_id);
+CREATE INDEX IF NOT EXISTS idx_hot_topics_batch ON hot_topics(batch_date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hot_topics_dedup ON hot_topics(platform_id, url, batch_date);
+
+-- 选题推荐表
+CREATE TABLE IF NOT EXISTS recommended_topics (
+  id                TEXT PRIMARY KEY,
+  project_id        TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title             TEXT NOT NULL,
+  industry_id       INTEGER,
+  potential_score   REAL NOT NULL,
+  heat_index        REAL NOT NULL,
+  reason            TEXT,
+  keywords          TEXT,
+  platform_heat     TEXT,
+  heat_sources      TEXT,
+  trend             TEXT,
+  industry_tags     TEXT,
+  target_audience   TEXT,
+  creative_angles   TEXT,
+  content_outline   TEXT,
+  format_suggestions TEXT,
+  material_clues    TEXT,
+  risk_notes        TEXT,
+  source_info       TEXT,
+  batch_date        TEXT,
+  source_uid        TEXT,
+  status            INTEGER NOT NULL DEFAULT 0,
+  content_id        TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_rec_topics_project ON recommended_topics(project_id);
+CREATE INDEX IF NOT EXISTS idx_rec_topics_status ON recommended_topics(status);
+CREATE INDEX IF NOT EXISTS idx_rec_topics_batch ON recommended_topics(batch_date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rec_topics_dedup ON recommended_topics(source_uid);
 `;
 
 /** 初始版本记录 SQL */
 export const INITIAL_VERSION_SQL = `
-INSERT OR IGNORE INTO schema_version (version, description) VALUES (${CURRENT_SCHEMA_VERSION}, '初始版本 v2.0');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (7, '新增热榜快照表与选题推荐表');
 `;

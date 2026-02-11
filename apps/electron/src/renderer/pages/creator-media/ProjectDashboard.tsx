@@ -9,6 +9,8 @@ import { ProjectSettingsDialog } from './components/ProjectSettingsDialog'
 import { ProfileEditDialog } from './components/ProfileEditDialog'
 import { CreateContentDialog } from './components/CreateContentDialog'
 import { VersionHistoryDialog } from './components/VersionHistoryDialog'
+import { HotTopicsPanel } from './components/HotTopicsPanel'
+import { TopicRecommendPanel } from './components/TopicRecommendPanel'
 import type { Content } from '@sprouty-ai/shared/db/types'
 import { POSTING_FREQUENCY_LIST } from '@sprouty-ai/shared/db/types'
 
@@ -137,7 +139,7 @@ export default function ProjectDashboard() {
         <StatCards stats={stats} videoCreating={videoStats.creating} videoCompleted={videoStats.completed} />
 
         {/* 最近内容 + 账号画像：大屏左右，小屏上下 */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* 最近内容 */}
           <div className="min-w-0">
             <div className="flex items-center justify-between mb-3">
@@ -309,6 +311,14 @@ export default function ProjectDashboard() {
             )}
           </div>
         </div>
+
+        {/* 热榜 + 选题推荐：大屏左右，小屏上下 */}
+        {activeProject && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <HotTopicsPanel />
+            <TopicRecommendPanel projectId={activeProject.id} />
+          </div>
+        )}
       </div>
 
       {/* 对话框 */}

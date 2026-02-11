@@ -465,6 +465,69 @@ export interface MediaFile {
 export type CreateMediaFile = Omit<MediaFile, 'created_at'>;
 
 // ============================================================
+// 热榜快照
+// ============================================================
+
+/** 热榜数据来源 */
+export type HotTopicFetchSource = 'newsnow' | 'self-hosted';
+
+/** hot_topics — 热榜快照表 */
+export interface HotTopic {
+  id: string;
+  platform_id: string;
+  platform_name: string;
+  title: string;
+  url: string | null;
+  rank: number | null;
+  heat_score: number | null;
+  fetch_source: HotTopicFetchSource;
+  fetched_at: string;
+  batch_date: string;
+  created_at: string;
+}
+
+export type CreateHotTopic = Omit<HotTopic, 'created_at'>;
+
+// ============================================================
+// 选题推荐
+// ============================================================
+
+/** 选题推荐状态: 0=待选 1=已采纳 2=已忽略 */
+export type TopicRecommendStatus = 0 | 1 | 2;
+
+/** recommended_topics — 选题推荐表 */
+export interface RecommendedTopic {
+  id: string;
+  project_id: string;
+  title: string;
+  industry_id: number | null;
+  potential_score: number;
+  heat_index: number;
+  reason: string | null;
+  keywords: string | null;          // JSON
+  platform_heat: string | null;     // JSON
+  heat_sources: string | null;      // JSON
+  trend: string | null;             // JSON
+  industry_tags: string | null;     // JSON
+  target_audience: string | null;   // JSON
+  creative_angles: string | null;   // JSON
+  content_outline: string | null;   // JSON
+  format_suggestions: string | null; // JSON
+  material_clues: string | null;    // JSON
+  risk_notes: string | null;        // JSON
+  source_info: string | null;       // JSON
+  batch_date: string | null;
+  source_uid: string | null;
+  status: TopicRecommendStatus;
+  content_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export type CreateRecommendedTopic = Omit<RecommendedTopic, 'created_at' | 'updated_at'>;
+export type UpdateRecommendedTopic = Partial<Omit<RecommendedTopic, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
 // 视频内容元数据（存储在 contents.metadata JSON 字段）
 // ============================================================
 

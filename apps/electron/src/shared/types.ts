@@ -629,7 +629,7 @@ export type SessionCommand =
 
 /**
  * Session family information (parent + siblings)
- * Uses SharedSessionMetadata from @craft-agent/shared (not core SessionMetadata)
+ * Uses SharedSessionMetadata from @sprouty-ai/shared (not core SessionMetadata)
  */
 export interface SessionFamily {
   parent: SharedSessionMetadata
@@ -1064,6 +1064,22 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_MEDIA_FILES_GET: 'creatorMedia:mediaFiles:get',
   CREATOR_MEDIA_MEDIA_FILES_CREATE: 'creatorMedia:mediaFiles:create',
   CREATOR_MEDIA_MEDIA_FILES_DELETE: 'creatorMedia:mediaFiles:delete',
+
+  // 热榜
+  CREATOR_MEDIA_HOT_TOPICS_FETCH: 'creatorMedia:hotTopics:fetch',
+  CREATOR_MEDIA_HOT_TOPICS_LIST: 'creatorMedia:hotTopics:list',
+  CREATOR_MEDIA_HOT_TOPICS_GET_LATEST_BATCH: 'creatorMedia:hotTopics:getLatestBatch',
+
+  // 选题推荐
+  CREATOR_MEDIA_TOPICS_LIST: 'creatorMedia:topics:list',
+  CREATOR_MEDIA_TOPICS_GET: 'creatorMedia:topics:get',
+  CREATOR_MEDIA_TOPICS_ADOPT: 'creatorMedia:topics:adopt',
+  CREATOR_MEDIA_TOPICS_IGNORE: 'creatorMedia:topics:ignore',
+  CREATOR_MEDIA_TOPICS_BATCH_IGNORE: 'creatorMedia:topics:batchIgnore',
+
+  // 选题调度配置
+  CREATOR_MEDIA_TOPIC_SCHEDULE_GET: 'creatorMedia:topicSchedule:get',
+  CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE: 'creatorMedia:topicSchedule:update',
 } as const
 
 /**
@@ -1529,6 +1545,22 @@ export interface ElectronAPI {
       get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').MediaFile | undefined>
       create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateMediaFile): Promise<import('@sprouty-ai/shared/db/types').MediaFile>
       delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    hotTopics: {
+      fetch(workspaceId: string, platforms?: string[]): Promise<{ count: number; source: import('@sprouty-ai/shared/db/types').HotTopicFetchSource }>
+      list(workspaceId: string, filters?: { platformId?: string; batchDate?: string; limit?: number }): Promise<import('@sprouty-ai/shared/db/types').HotTopic[]>
+      getLatestBatch(workspaceId: string): Promise<{ batchDate: string; fetchedAt: string; count: number } | null>
+    }
+    topics: {
+      list(workspaceId: string, projectId: string, filters?: { status?: number; batchDate?: string; limit?: number }): Promise<import('@sprouty-ai/shared/db/types').RecommendedTopic[]>
+      get(workspaceId: string, topicId: string): Promise<import('@sprouty-ai/shared/db/types').RecommendedTopic | null>
+      adopt(workspaceId: string, topicId: string, projectId: string, pipelineMode?: string): Promise<{ topic: import('@sprouty-ai/shared/db/types').RecommendedTopic; content: import('@sprouty-ai/shared/db/types').Content } | null>
+      ignore(workspaceId: string, topicId: string): Promise<boolean>
+      batchIgnore(workspaceId: string, topicIds: string[]): Promise<number>
+    }
+    topicSchedule: {
+      get(workspaceId: string): Promise<{ hours: number[]; autoGenerate: boolean }>
+      update(workspaceId: string, config: { hours?: number[]; autoGenerate?: boolean }): Promise<void>
     }
   }
 

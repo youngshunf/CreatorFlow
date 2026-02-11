@@ -24,6 +24,9 @@ import * as contentVersionsRepo from '@sprouty-ai/shared/db/repositories/content
 import * as publishQueueRepo from '@sprouty-ai/shared/db/repositories/publish-queue';
 import * as draftsRepo from '@sprouty-ai/shared/db/repositories/drafts';
 import * as mediaFilesRepo from '@sprouty-ai/shared/db/repositories/media-files';
+import * as hotTopicsRepo from '@sprouty-ai/shared/db/repositories/hot-topics';
+import { HotTopicService } from '@sprouty-ai/shared/services/hot-topic-service';
+import { TopicRecommendService } from '@sprouty-ai/shared/services/topic-recommend-service';
 import { generateProjectContext } from '@sprouty-ai/shared/db';
 import { createBrowserProfileManager } from '@sprouty-ai/shared/services/browser-profile-manager';
 import { createFingerprintGenerator } from '@sprouty-ai/shared/services/fingerprint-generator';
@@ -560,6 +563,93 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
     const ws = getWorkspaceOrThrow(workspaceId);
     const db = getCreatorMediaDB(ws.rootPath);
     return mediaFilesRepo.deleteMediaFile(db, id);
+  });
+
+  // ============================================================
+  // 热榜
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_FETCH, async (_event, workspaceId: string, platforms?: string[]) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new HotTopicService(db);
+    return await service.fetchHotTopics(platforms);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_LIST, async (_event, workspaceId: string, filters?: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new HotTopicService(db);
+    return service.getHotTopics(filters as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOT_TOPICS_GET_LATEST_BATCH, async (_event, workspaceId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new HotTopicService(db);
+    return service.getLatestBatch() ?? null;
+  });
+
+  // ============================================================
+  // 选题推荐
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_LIST, async (_event, workspaceId: string, projectId: string, filters?: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new TopicRecommendService(db);
+    return service.getTopics(projectId, filters as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_GET, async (_event, workspaceId: string, topicId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new TopicRecommendService(db);
+    return service.getTopic(topicId) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_ADOPT, async (_event, workspaceId: string, topicId: string, projectId: string, pipelineMode?: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new TopicRecommendService(db);
+    return service.adoptTopic(topicId, projectId, (pipelineMode as any) ?? 'semi-auto');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_IGNORE, async (_event, workspaceId: string, topicId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new TopicRecommendService(db);
+    return service.ignoreTopic(topicId);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_BATCH_IGNORE, async (_event, workspaceId: string, topicIds: string[]) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    const service = new TopicRecommendService(db);
+    return service.batchIgnore(topicIds);
+  });
+
+  // ============================================================
+  // 选题调度配置
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_GET, async (_event, workspaceId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    // 从项目设置读取调度配置，默认早中晚三次
+    const config = db.prepare<{ value: string }>(
+      "SELECT value FROM settings WHERE key = 'topic_schedule'"
+    ).get();
+    if (config) return JSON.parse(config.value);
+    return { hours: [8, 12, 20], autoGenerate: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE, async (_event, workspaceId: string, config: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    db.prepare(
+      "INSERT OR REPLACE INTO settings (key, value) VALUES ('topic_schedule', ?)"
+    ).run(JSON.stringify(config));
   });
 
   ipcLog.info('[creator-media-ipc] 已注册所有 creatorMedia IPC 通道');
