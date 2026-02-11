@@ -71,6 +71,7 @@
 :root {
   /* === 6 BASE COLORS === */
   --background: oklch(0.98 0.003 265);
+  --background-opaque: oklch(0.98 0.003 265);
   --foreground: oklch(0.185 0.01 270);
   --foreground-rgb: 38, 36, 42;             /* RGB for shadow borders */
   --accent: oklch(0.62 0.13 293);           /* purple - brand, Auto mode */
@@ -209,6 +210,7 @@
 .dark {
   /* === 6 BASE COLORS === */
   --background: oklch(0.2 0.005 270);
+  --background-opaque: oklch(0.2 0.005 270);
   --foreground: oklch(0.92 0.005 270);
   --foreground-rgb: 227, 226, 229;           /* RGB for shadow borders */
   --accent: oklch(0.68 0.13 293);            /* brighter purple in dark */
@@ -663,6 +665,14 @@ html[data-scenic] .shadow-strong > * {
   z-index: 2;
 }
 
+
+/* Scenic mode: Panels that need opaque backgrounds for content readability.
+   Without this, the semi-transparent --background bleeds through bg-foreground-2,
+   making content appear washed out (white mask effect).
+   Uses --background-opaque which is never overridden by scenic mode. */
+html[data-scenic] .scenic-opaque {
+  background: var(--background-opaque);
+}
 
 /* Scenic mode: Popovers get glass effect too */
 html[data-scenic] .popover-styled {

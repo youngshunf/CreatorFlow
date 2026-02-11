@@ -1155,7 +1155,7 @@ export function FilePreviewPanel({
   // Empty state
   if (!file) {
     return (
-      <div className={cn("flex flex-col h-full", className)}>
+      <div className={cn("flex flex-col h-full scenic-opaque", className)}>
         <div className="flex items-center justify-center h-full text-center p-4">
           <div>
             <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
@@ -1169,7 +1169,7 @@ export function FilePreviewPanel({
   // Directory selected (shouldn't happen but handle gracefully)
   if (file.isDirectory) {
     return (
-      <div className={cn("flex flex-col h-full", className)}>
+      <div className={cn("flex flex-col h-full scenic-opaque", className)}>
         <div className="flex items-center justify-center h-full text-center p-4">
           <div>
             <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
@@ -1183,7 +1183,7 @@ export function FilePreviewPanel({
   const fileType = getFileType(file)
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full scenic-opaque", className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 relative z-panel">
         <div className="flex items-center gap-2 min-w-0 flex-1">

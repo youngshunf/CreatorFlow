@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "motion/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { extractBadges } from "@/lib/mentions"
 import { Markdown, CollapsibleMarkdownProvider, StreamingMarkdown, type RenderMode } from "@/components/markdown"
 import { InteractiveUIParser, hasInteractiveUI } from "../interactive-ui/InteractiveUIParser"
 import type { InteractiveResponse } from "@sprouty-ai/shared/interactive-ui"
@@ -1332,6 +1333,17 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
                     // User turns - render with MemoizedMessageBubble
                     // Extra padding creates visual separation from AI responses
                     if (turn.type === 'user') {
+                      // Recompute badges for messages loaded from disk that may have
+                      // been saved with broken/empty badges (e.g. before Unicode regex fix)
+                      const msg = turn.message
+                      const needsBadgeRecompute = msg.role === 'user'
+                        && (!msg.badges || msg.badges.length === 0)
+                        && /\[(skill|source|file|folder):/.test(msg.content)
+                        && skills?.length && sources && workspaceId
+                      const enrichedMessage = needsBadgeRecompute
+                        ? { ...msg, badges: extractBadges(msg.content, skills!, sources!, workspaceId!) }
+                        : msg
+
                       return (
                         <div
                           key={turnKey}
@@ -1344,7 +1356,7 @@ export const ChatDisplay = React.forwardRef<ChatDisplayHandle, ChatDisplayProps>
                           )}
                         >
                           <MemoizedMessageBubble
-                            message={turn.message}
+                            message={enrichedMessage}
                             onOpenFile={onOpenFile}
                             onOpenUrl={onOpenUrl}
                             compactMode={compactMode}
@@ -2053,6 +2065,7 @@ const MemoizedMessageBubble = React.memo(MessageBubble, (prev, next) => {
     prev.message.id === next.message.id &&
     prev.message.content === next.message.content &&
     prev.message.role === next.message.role &&
+    prev.message.badges?.length === next.message.badges?.length &&
     prev.compactMode === next.compactMode
   )
 })

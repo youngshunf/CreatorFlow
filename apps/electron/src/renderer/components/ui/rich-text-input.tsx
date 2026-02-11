@@ -700,20 +700,27 @@ export const RichTextInput = React.forwardRef<RichTextInputHandle, RichTextInput
         const badges = divRef.current.querySelectorAll('.mention-badge') as NodeListOf<HTMLElement>
 
         badges.forEach((badge) => {
-          // Check if badge is within selection range
-          const badgeRange = document.createRange()
-          badgeRange.selectNode(badge)
+          try {
+            // Ensure badge belongs to the same document as the selection range
+            if (badge.ownerDocument !== range.startContainer.ownerDocument) return
 
-          const isSelected =
-            range.compareBoundaryPoints(Range.START_TO_END, badgeRange) > 0 &&
-            range.compareBoundaryPoints(Range.END_TO_START, badgeRange) < 0
+            // Check if badge is within selection range
+            const badgeRange = document.createRange()
+            badgeRange.selectNode(badge)
 
-          if (isSelected) {
-            badge.style.backgroundColor = getSelectionColor()
-            badge.classList.remove('bg-background')
-          } else {
-            badge.style.backgroundColor = ''
-            badge.classList.add('bg-background')
+            const isSelected =
+              range.compareBoundaryPoints(Range.START_TO_END, badgeRange) > 0 &&
+              range.compareBoundaryPoints(Range.END_TO_START, badgeRange) < 0
+
+            if (isSelected) {
+              badge.style.backgroundColor = getSelectionColor()
+              badge.classList.remove('bg-background')
+            } else {
+              badge.style.backgroundColor = ''
+              badge.classList.add('bg-background')
+            }
+          } catch {
+            // Ignore cross-document range comparison errors
           }
         })
       }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useT } from '@/context/LocaleContext'
 import { useActiveWorkspace } from '@/context/AppShellContext'
+import { navigate, routes } from '@/lib/navigate'
 import type { RecommendedTopic } from '@sprouty-ai/shared/db/types'
 
 /** 状态标签 */
@@ -69,8 +70,22 @@ export function TopicRecommendPanel({ projectId }: { projectId: string }) {
       {/* 头部 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <h2 className="text-sm font-medium text-foreground">{t('选题推荐')}</h2>
-        {/* 筛选 tab */}
-        <div className="flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate(routes.action.newSession({
+              input: `[skill:${workspaceId}:topic-generator] 为当前活跃项目生成选题推荐`,
+              send: true,
+            }))}
+            className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+            </svg>
+            {t('AI 生成')}
+          </button>
+          {/* 筛选 tab */}
+          <div className="flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.label}
@@ -85,6 +100,7 @@ export function TopicRecommendPanel({ projectId }: { projectId: string }) {
               {t(tab.label)}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

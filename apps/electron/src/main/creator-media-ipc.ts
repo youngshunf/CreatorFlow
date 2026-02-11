@@ -25,6 +25,7 @@ import * as publishQueueRepo from '@sprouty-ai/shared/db/repositories/publish-qu
 import * as draftsRepo from '@sprouty-ai/shared/db/repositories/drafts';
 import * as mediaFilesRepo from '@sprouty-ai/shared/db/repositories/media-files';
 import * as hotTopicsRepo from '@sprouty-ai/shared/db/repositories/hot-topics';
+import * as scheduledTasksRepo from '@sprouty-ai/shared/db/repositories/scheduled-tasks';
 import { HotTopicService } from '@sprouty-ai/shared/services/hot-topic-service';
 import { TopicRecommendService } from '@sprouty-ai/shared/services/topic-recommend-service';
 import { generateProjectContext } from '@sprouty-ai/shared/db';
@@ -650,6 +651,53 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
     db.prepare(
       "INSERT OR REPLACE INTO settings (key, value) VALUES ('topic_schedule', ?)"
     ).run(JSON.stringify(config));
+  });
+
+  // ============================================================
+  // 定时任务
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_LIST, async (_event, workspaceId: string, filter?: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.listScheduledTasks(db, filter as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_GET, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.getScheduledTask(db, id) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_CREATE, async (_event, workspaceId: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.createScheduledTask(db, data as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE, async (_event, workspaceId: string, id: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.updateScheduledTask(db, id, data as any) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_DELETE, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.deleteScheduledTask(db, id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE, async (_event, workspaceId: string, id: string, enabled: boolean) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return scheduledTasksRepo.toggleEnabled(db, id, enabled) ?? null;
+  });
+
+  // 采集调度任务 — 全量只读查看（定时任务视图用）
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_LIST_ALL, async (_event, workspaceId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return db.prepare('SELECT * FROM review_tasks ORDER BY scheduled_at DESC').all();
   });
 
   ipcLog.info('[creator-media-ipc] 已注册所有 creatorMedia IPC 通道');

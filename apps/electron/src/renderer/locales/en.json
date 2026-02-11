@@ -508,6 +508,18 @@
     "Locate binary, source, manual for command"
   ],
   [
+    "定时任务",
+    "Scheduled Tasks"
+  ],
+  [
+    "定时发布",
+    "Scheduled Publish"
+  ],
+  [
+    "定时采集",
+    "Scheduled Collect"
+  ],
+  [
     "读取",
     "Read"
   ],
@@ -870,6 +882,10 @@
   [
     "管理您的账号安全设置",
     "Manage your account security settings"
+  ],
+  [
+    "管理定时发布、采集和自定义任务",
+    "Manage scheduled publishing, collection and custom tasks"
   ],
   [
     "广场",
@@ -3868,6 +3884,14 @@
     "New Project"
   ],
   [
+    "新建任务",
+    "New Task"
+  ],
+  [
+    "新建定时任务",
+    "New Scheduled Task"
+  ],
+  [
     "新视频项目",
     "New Video Project"
   ],
@@ -4138,5 +4162,1093 @@
   [
     "没有可用的工具",
     "No tools available"
+  ],
+  [
+    "(JSON，可选)",
+    "(JSON, optional)"
+  ],
+  [
+    "AI 编辑",
+    "AI Edit"
+  ],
+  [
+    "AI 创建",
+    "AI Create"
+  ],
+  [
+    "AI 更新",
+    "AI Update"
+  ],
+  [
+    "AI 生成",
+    "AI Generate"
+  ],
+  [
+    "AI 新建",
+    "AI New"
+  ],
+  [
+    "AI 智能编辑",
+    "AI Smart Edit"
+  ],
+  [
+    "Cron 表达式",
+    "Cron Expression"
+  ],
+  [
+    "hours",
+    "hours"
+  ],
+  [
+    "minutes",
+    "minutes"
+  ],
+  [
+    "seconds",
+    "seconds"
+  ],
+  [
+    "保存",
+    "Save"
+  ],
+  [
+    "保存 API Key",
+    "Save API Key"
+  ],
+  [
+    "保存 API Key 失败",
+    "Failed to save API Key"
+  ],
+  [
+    "保存 Cookie",
+    "Save Cookie"
+  ],
+  [
+    "保存 Cookie 失败",
+    "Failed to save Cookie"
+  ],
+  [
+    "保存草稿",
+    "Save Draft"
+  ],
+  [
+    "保存中...",
+    "Saving..."
+  ],
+  [
+    "爆款模式库",
+    "Viral Patterns Library"
+  ],
+  [
+    "编辑爆款模式",
+    "Edit Viral Pattern"
+  ],
+  [
+    "编辑定时任务",
+    "Edit Scheduled Task"
+  ],
+  [
+    "编辑画像",
+    "Edit Profile"
+  ],
+  [
+    "编辑项目信息或删除项目",
+    "Edit project info or delete project"
+  ],
+  [
+    "编辑账号画像",
+    "Edit Account Profile"
+  ],
+  [
+    "标题",
+    "Title"
+  ],
+  [
+    "采纳",
+    "Accept"
+  ],
+  [
+    "采纳中...",
+    "Accepting..."
+  ],
+  [
+    "操作",
+    "Actions"
+  ],
+  [
+    "草稿箱为空",
+    "Drafts box is empty"
+  ],
+  [
+    "成功率",
+    "Success Rate"
+  ],
+  [
+    "创建第一个项目，开始管理你的自媒体内容",
+    "Create your first project to manage your content"
+  ],
+  [
+    "创建定时任务来自动执行发布、采集等操作",
+    "Create scheduled tasks to automate publishing, collection, etc."
+  ],
+  [
+    "创建项目",
+    "Create Project"
+  ],
+  [
+    "创建新的内容选题",
+    "Create new content topic"
+  ],
+  [
+    "创作工作台",
+    "Creation Workspace"
+  ],
+  [
+    "创作计划与发布记录",
+    "Creation plans & publish history"
+  ],
+  [
+    "创作面板",
+    "Creation Panel"
+  ],
+  [
+    "次",
+    "times"
+  ],
+  [
+    "从浏览器开发者工具复制 Cookie 字符串...",
+    "Copy Cookie string from browser DevTools..."
+  ],
+  [
+    "打开浏览器开发者工具 (F12) > Application > Cookies，复制所有 Cookie",
+    "Open browser DevTools (F12) > Application > Cookies, copy all Cookies"
+  ],
+  [
+    "待发布",
+    "Pending"
+  ],
+  [
+    "待发布内容",
+    "Pending Content"
+  ],
+  [
+    "当前",
+    "Current"
+  ],
+  [
+    "当前项目未关联内容",
+    "No content linked to current project"
+  ],
+  [
+    "当日暂无内容",
+    "No content for today"
+  ],
+  [
+    "的内容",
+    "'s content"
+  ],
+  [
+    "登录成功后将自动检测，剩余时间：",
+    "Will auto-detect after login, remaining time:"
+  ],
+  [
+    "登录失败",
+    "Login Failed"
+  ],
+  [
+    "登录失败，请重试",
+    "Login failed, please retry"
+  ],
+  [
+    "等待确认...",
+    "Waiting for confirmation..."
+  ],
+  [
+    "点击\"开始创作\"启动流水线",
+    "Click \"Start Creating\" to launch pipeline"
+  ],
+  [
+    "点击上传头像",
+    "Click to upload avatar"
+  ],
+  [
+    "点击刷新按钮拉取最新热榜",
+    "Click refresh to fetch latest trending"
+  ],
+  [
+    "点击下方按钮启动反检测浏览器",
+    "Click the button below to launch anti-detect browser"
+  ],
+  [
+    "点赞",
+    "Likes"
+  ],
+  [
+    "调度",
+    "Schedule"
+  ],
+  [
+    "调度模式",
+    "Schedule Mode"
+  ],
+  [
+    "调性",
+    "Tone"
+  ],
+  [
+    "逗号分隔",
+    "Comma separated"
+  ],
+  [
+    "逗号分隔，例如：产品测评,成分科普,护肤教程",
+    "Comma separated, e.g.: product review, ingredient guide, skincare tutorial"
+  ],
+  [
+    "逗号分隔，例如：护肤,成分,测评",
+    "Comma separated, e.g.: skincare, ingredients, reviews"
+  ],
+  [
+    "对比当前",
+    "Compare with Current"
+  ],
+  [
+    "多个关键词用逗号分隔",
+    "Separate multiple keywords with commas"
+  ],
+  [
+    "多个内容支柱用逗号分隔",
+    "Separate multiple content pillars with commas"
+  ],
+  [
+    "多平台分发",
+    "Multi-platform Distribution"
+  ],
+  [
+    "发布",
+    "Publish"
+  ],
+  [
+    "发布队列为空",
+    "Publish queue is empty"
+  ],
+  [
+    "发布工作台",
+    "Publish Workbench"
+  ],
+  [
+    "发布记录排行",
+    "Publish History Ranking"
+  ],
+  [
+    "发布频率",
+    "Publish Frequency"
+  ],
+  [
+    "发布时间",
+    "Publish Time"
+  ],
+  [
+    "发布数据与爆款模式",
+    "Publish data & viral patterns"
+  ],
+  [
+    "分类",
+    "Category"
+  ],
+  [
+    "粉丝",
+    "Followers"
+  ],
+  [
+    "风格参考",
+    "Style Reference"
+  ],
+  [
+    "高级配置",
+    "Advanced Settings"
+  ],
+  [
+    "格式：分 时 日 月 周，例如 \"0 */6 * * *\" 表示每6小时执行",
+    "Format: min hour day month week, e.g. \"0 */6 * * *\" means every 6 hours"
+  ],
+  [
+    "个账号已登录",
+    " accounts logged in"
+  ],
+  [
+    "更新时间",
+    "Updated At"
+  ],
+  [
+    "更新于",
+    "Updated at"
+  ],
+  [
+    "共 {count} 个版本",
+    "{count} versions total"
+  ],
+  [
+    "关键词",
+    "Keywords"
+  ],
+  [
+    "归档",
+    "Archived"
+  ],
+  [
+    "还没有定时任务",
+    "No scheduled tasks yet"
+  ],
+  [
+    "还没有添加平台账号",
+    "No platform accounts added yet"
+  ],
+  [
+    "忽略",
+    "Ignore"
+  ],
+  [
+    "回滚到此版本",
+    "Rollback to this version"
+  ],
+  [
+    "回滚中...",
+    "Rolling back..."
+  ],
+  [
+    "活跃流水线",
+    "Active Pipelines"
+  ],
+  [
+    "获赞",
+    "Likes Received"
+  ],
+  [
+    "基于你的账号关键词匹配热点选题",
+    "Match trending topics based on your account keywords"
+  ],
+  [
+    "集中管理所有平台账号",
+    "Manage all platform accounts in one place"
+  ],
+  [
+    "计划发布时间",
+    "Scheduled Publish Time"
+  ],
+  [
+    "加载账号...",
+    "Loading accounts..."
+  ],
+  [
+    "检查登录态",
+    "Check Login Status"
+  ],
+  [
+    "简介",
+    "Bio"
+  ],
+  [
+    "简要描述项目定位...",
+    "Briefly describe project positioning..."
+  ],
+  [
+    "将创建一个新版本，内容恢复到 v{n} 的状态。此操作不会删除现有版本。",
+    "A new version will be created, restoring content to v{n}. Existing versions will not be deleted."
+  ],
+  [
+    "将调用 topic-generator 技能生成选题",
+    "Will invoke topic-generator skill to generate topics"
+  ],
+  [
+    "将内容状态推进到审核阶段",
+    "Advance content status to review stage"
+  ],
+  [
+    "进行中",
+    "In Progress"
+  ],
+  [
+    "进行中的内容",
+    "Content In Progress"
+  ],
+  [
+    "禁忌话题",
+    "Forbidden Topics"
+  ],
+  [
+    "禁用",
+    "Disable"
+  ],
+  [
+    "开始你的创作之旅",
+    "Start your creative journey"
+  ],
+  [
+    "可选：描述任务用途",
+    "Optional: describe task purpose"
+  ],
+  [
+    "来源",
+    "Source"
+  ],
+  [
+    "立即发布",
+    "Publish Now"
+  ],
+  [
+    "例如：\n• 根据这个链接更新项目信息 https://...\n• 把定位改为科技数码测评\n• 增加 B站 和知乎作为分发平台",
+    "e.g.:\n• Update project info from this link https://...\n• Change positioning to tech reviews\n• Add Bilibili and Zhihu as distribution platforms"
+  ],
+  [
+    "例如：18-30岁女性",
+    "e.g.: Women aged 18-30"
+  ],
+  [
+    "例如：3秒悬念开头",
+    "e.g.: 3-second suspense opening"
+  ],
+  [
+    "例如：护肤成分",
+    "e.g.: skincare ingredients"
+  ],
+  [
+    "例如：美妆",
+    "e.g.: beauty"
+  ],
+  [
+    "例如：美妆、科技、美食",
+    "e.g.: beauty, tech, food"
+  ],
+  [
+    "例如：我的小红书账号",
+    "e.g.: My Xiaohongshu account"
+  ],
+  [
+    "例如：专业测评博主",
+    "e.g.: Professional review blogger"
+  ],
+  [
+    "例如：专业、亲切",
+    "e.g.: professional, friendly"
+  ],
+  [
+    "例如：专业、亲切、幽默",
+    "e.g.: professional, friendly, humorous"
+  ],
+  [
+    "领域",
+    "Niche"
+  ],
+  [
+    "浏览器窗口将自动打开平台登录页，请在 5 分钟内完成登录",
+    "Browser will open the platform login page, please complete login within 5 minutes"
+  ],
+  [
+    "浏览器指纹已生成",
+    "Browser fingerprint generated"
+  ],
+  [
+    "流水线驱动的创作流程",
+    "Pipeline-driven creation workflow"
+  ],
+  [
+    "没有符合筛选条件的账号",
+    "No accounts match the filter"
+  ],
+  [
+    "描述你想要的修改",
+    "Describe the changes you want"
+  ],
+  [
+    "描述修改内容或粘贴账号链接，AI 自动更新项目信息",
+    "Describe changes or paste account link, AI will auto-update project info"
+  ],
+  [
+    "描述选题方向和要点...",
+    "Describe topic direction and key points..."
+  ],
+  [
+    "描述这个模式的特点和使用场景",
+    "Describe the characteristics and use cases of this pattern"
+  ],
+  [
+    "模式名称",
+    "Pattern Name"
+  ],
+  [
+    "模式模板，例如：[悬念问题] + [反转事实] + [引导互动]",
+    "Pattern template, e.g.: [Suspense Question] + [Plot Twist] + [Engagement CTA]"
+  ],
+  [
+    "目标平台",
+    "Target Platform"
+  ],
+  [
+    "目标受众",
+    "Target Audience"
+  ],
+  [
+    "内容标题...",
+    "Content title..."
+  ],
+  [
+    "内容类型",
+    "Content Type"
+  ],
+  [
+    "内容日历",
+    "Content Calendar"
+  ],
+  [
+    "内容支柱",
+    "Content Pillars"
+  ],
+  [
+    "排期",
+    "Scheduled"
+  ],
+  [
+    "排期发布的内容会出现在这里",
+    "Scheduled content will appear here"
+  ],
+  [
+    "平台",
+    "Platform"
+  ],
+  [
+    "平台账号管理",
+    "Platform Account Management"
+  ],
+  [
+    "评论",
+    "Comments"
+  ],
+  [
+    "启动浏览器登录",
+    "Launch Browser Login"
+  ],
+  [
+    "启动浏览器失败",
+    "Failed to launch browser"
+  ],
+  [
+    "启用",
+    "Enable"
+  ],
+  [
+    "启用任务",
+    "Enable Task"
+  ],
+  [
+    "潜力",
+    "Potential"
+  ],
+  [
+    "请先创建或选择一个项目",
+    "Please create or select a project first"
+  ],
+  [
+    "请先拉取热榜数据，系统将自动生成选题",
+    "Please fetch trending data first, topics will be auto-generated"
+  ],
+  [
+    "请先设置账号画像和关键词",
+    "Please set up account profile and keywords first"
+  ],
+  [
+    "请先选择视频内容或模板",
+    "Please select video content or template first"
+  ],
+  [
+    "请先选择项目",
+    "Please select a project first"
+  ],
+  [
+    "请在弹出的浏览器窗口中完成登录",
+    "Please complete login in the browser window"
+  ],
+  [
+    "全部平台",
+    "All Platforms"
+  ],
+  [
+    "全部状态",
+    "All Status"
+  ],
+  [
+    "确认回滚",
+    "Confirm Rollback"
+  ],
+  [
+    "确认删除",
+    "Confirm Delete"
+  ],
+  [
+    "热榜",
+    "Trending"
+  ],
+  [
+    "热点看板",
+    "Trending Board"
+  ],
+  [
+    "热点数据尚未加载",
+    "Trending data not loaded yet"
+  ],
+  [
+    "热度",
+    "Popularity"
+  ],
+  [
+    "人设",
+    "Persona"
+  ],
+  [
+    "任务类型",
+    "Task Type"
+  ],
+  [
+    "任务名称",
+    "Task Name"
+  ],
+  [
+    "删除项目",
+    "Delete Project"
+  ],
+  [
+    "删除中...",
+    "Deleting..."
+  ],
+  [
+    "上次运行",
+    "Last Run"
+  ],
+  [
+    "上一步",
+    "Previous"
+  ],
+  [
+    "尚未设置账号画像",
+    "Account profile not set up yet"
+  ],
+  [
+    "设置画像",
+    "Set Profile"
+  ],
+  [
+    "设置账号定位和内容策略",
+    "Set account positioning and content strategy"
+  ],
+  [
+    "设置账号画像（可选）",
+    "Set account profile (optional)"
+  ],
+  [
+    "审核通过",
+    "Approved"
+  ],
+  [
+    "审核中",
+    "Under Review"
+  ],
+  [
+    "实时热榜",
+    "Live Trending"
+  ],
+  [
+    "实时热点流与智能选题",
+    "Real-time trends & smart topic suggestions"
+  ],
+  [
+    "视频导出成功",
+    "Video exported successfully"
+  ],
+  [
+    "视频导出功能需要完整的 Electron 环境",
+    "Video export requires full Electron environment"
+  ],
+  [
+    "视频导出失败",
+    "Video export failed"
+  ],
+  [
+    "视频工作台",
+    "Video Studio"
+  ],
+  [
+    "视频模板",
+    "Video Templates"
+  ],
+  [
+    "视频内容",
+    "Video Content"
+  ],
+  [
+    "视频审核",
+    "Video Review"
+  ],
+  [
+    "视频文件路径",
+    "Video file path"
+  ],
+  [
+    "视频项目",
+    "Video Project"
+  ],
+  [
+    "视频已完成",
+    "Video Completed"
+  ],
+  [
+    "视频制作完成，已进入审核阶段",
+    "Video production complete, entered review stage"
+  ],
+  [
+    "视频制作中",
+    "Video In Production"
+  ],
+  [
+    "视频组合",
+    "Video Composition"
+  ],
+  [
+    "适用平台",
+    "Applicable Platforms"
+  ],
+  [
+    "收藏",
+    "Favorites"
+  ],
+  [
+    "收起",
+    "Collapse"
+  ],
+  [
+    "收起对比",
+    "Collapse Comparison"
+  ],
+  [
+    "手动编辑",
+    "Manual Edit"
+  ],
+  [
+    "输入标签，回车添加",
+    "Enter tag, press Enter to add"
+  ],
+  [
+    "输入内容标题...",
+    "Enter content title..."
+  ],
+  [
+    "输入平台 API Key...",
+    "Enter platform API Key..."
+  ],
+  [
+    "输入任务名称",
+    "Enter task name"
+  ],
+  [
+    "输入正文内容...",
+    "Enter body content..."
+  ],
+  [
+    "数据复盘",
+    "Analytics Review"
+  ],
+  [
+    "添加",
+    "Add"
+  ],
+  [
+    "添加你的社交媒体账号，管理登录态并自动发布内容",
+    "Add your social media accounts, manage login status and auto-publish"
+  ],
+  [
+    "添加平台账号",
+    "Add Platform Account"
+  ],
+  [
+    "添加账号",
+    "Add Account"
+  ],
+  [
+    "填写项目基本信息",
+    "Fill in project basic info"
+  ],
+  [
+    "通过 AI 创作的草稿会保存在这里",
+    "AI-created drafts will be saved here"
+  ],
+  [
+    "通过竞品分析或手动添加积累爆款模式",
+    "Accumulate viral patterns via competitor analysis or manual entry"
+  ],
+  [
+    "推荐选题",
+    "Recommended Topics"
+  ],
+  [
+    "退回修改",
+    "Return for Revision"
+  ],
+  [
+    "完成账号登录",
+    "Complete Account Login"
+  ],
+  [
+    "完成制作",
+    "Complete Production"
+  ],
+  [
+    "未命名内容",
+    "Untitled Content"
+  ],
+  [
+    "无标题",
+    "Untitled"
+  ],
+  [
+    "细分领域",
+    "Sub-niche"
+  ],
+  [
+    "下次运行",
+    "Next Run"
+  ],
+  [
+    "项目概览与内容管理",
+    "Project overview & content management"
+  ],
+  [
+    "项目名称",
+    "Project Name"
+  ],
+  [
+    "项目设置",
+    "Project Settings"
+  ],
+  [
+    "项目头像",
+    "Project Avatar"
+  ],
+  [
+    "新建内容",
+    "New Content"
+  ],
+  [
+    "新增爆款模式",
+    "Add Viral Pattern"
+  ],
+  [
+    "新增模式",
+    "Add Pattern"
+  ],
+  [
+    "选题",
+    "Topics"
+  ],
+  [
+    "选题描述",
+    "Topic Description"
+  ],
+  [
+    "选题推荐",
+    "Topic Recommendations"
+  ],
+  [
+    "选择登录方式",
+    "Select Login Method"
+  ],
+  [
+    "选择频率",
+    "Select Frequency"
+  ],
+  [
+    "选择项目",
+    "Select Project"
+  ],
+  [
+    "选择需要同步分发的其他平台",
+    "Select other platforms for cross-posting"
+  ],
+  [
+    "选择要添加的社交媒体平台",
+    "Select social media platform to add"
+  ],
+  [
+    "已创建内容",
+    "Created Content"
+  ],
+  [
+    "已发布",
+    "Published"
+  ],
+  [
+    "已排期",
+    "Scheduled"
+  ],
+  [
+    "与当前版本 (v{n}) 对比",
+    "Compare with current version (v{n})"
+  ],
+  [
+    "预览",
+    "Preview"
+  ],
+  [
+    "阅读",
+    "Reads"
+  ],
+  [
+    "在创作工作台新建视频类型内容",
+    "Create new video content in Creation Workspace"
+  ],
+  [
+    "在创作面板中编辑账号画像",
+    "Edit account profile in Creation Panel"
+  ],
+  [
+    "在对话中使用\"帮我找选题\"获取热点推荐",
+    "Use \"find me topics\" in chat to get trending recommendations"
+  ],
+  [
+    "在对话中说\"开始创作\"启动流水线",
+    "Say \"start creating\" in chat to launch pipeline"
+  ],
+  [
+    "在对话中说\"有什么热点\"或\"帮我找选题\"，AI 将通过 NewsNow 和 TrendRadar 获取实时热点",
+    "Say \"what's trending\" or \"find me topics\" in chat, AI will fetch real-time trends via NewsNow and TrendRadar"
+  ],
+  [
+    "在平台开放平台获取 API Key，密钥将加密存储",
+    "Get API Key from platform's developer portal, keys will be encrypted"
+  ],
+  [
+    "暂无版本记录",
+    "No version history"
+  ],
+  [
+    "暂无爆款模式",
+    "No viral patterns yet"
+  ],
+  [
+    "暂无发布记录",
+    "No publish history"
+  ],
+  [
+    "暂无活跃流水线",
+    "No active pipelines"
+  ],
+  [
+    "暂无内容，开始创作吧",
+    "No content yet, start creating!"
+  ],
+  [
+    "暂无热榜数据",
+    "No trending data"
+  ],
+  [
+    "暂无视频内容",
+    "No video content"
+  ],
+  [
+    "暂无项目",
+    "No projects"
+  ],
+  [
+    "暂无选题推荐",
+    "No topic recommendations"
+  ],
+  [
+    "粘贴 Cookie",
+    "Paste Cookie"
+  ],
+  [
+    "账号画像",
+    "Account Profile"
+  ],
+  [
+    "账号简介...",
+    "Account bio..."
+  ],
+  [
+    "账号添加成功",
+    "Account added successfully"
+  ],
+  [
+    "账号已就绪",
+    "Account Ready"
+  ],
+  [
+    "正文",
+    "Body"
+  ],
+  [
+    "正在启动浏览器...",
+    "Launching browser..."
+  ],
+  [
+    "支持输入修改描述或账号链接，AI 将自动分析并更新项目",
+    "Enter change description or account link, AI will auto-analyze and update project"
+  ],
+  [
+    "执行间隔",
+    "Execution Interval"
+  ],
+  [
+    "执行时间",
+    "Execution Time"
+  ],
+  [
+    "只读",
+    "Read Only"
+  ],
+  [
+    "指纹配置已保存，后续自动发布和数据采集将使用此指纹",
+    "Fingerprint config saved, will be used for auto-publishing and data collection"
+  ],
+  [
+    "重新登录",
+    "Re-login"
+  ],
+  [
+    "重新登录成功",
+    "Re-login successful"
+  ],
+  [
+    "主平台",
+    "Primary Platform"
+  ],
+  [
+    "主账号",
+    "Primary Account"
+  ],
+  [
+    "状态更新失败",
+    "Status update failed"
+  ],
+  [
+    "总点赞",
+    "Total Likes"
+  ],
+  [
+    "总评论",
+    "Total Comments"
+  ],
+  [
+    "总收藏",
+    "Total Favorites"
+  ],
+  [
+    "总阅读",
+    "Total Reads"
+  ],
+  [
+    "最佳发布时间",
+    "Best Publish Time"
+  ],
+  [
+    "最近内容",
+    "Recent Content"
   ]
 ]

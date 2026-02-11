@@ -29,6 +29,7 @@ import {
   ExternalLink,
   HelpCircle,
   CheckCircle2,
+  Clock,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -57,6 +58,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'external-link': ExternalLink,
   'help-circle': HelpCircle,
   'check-circle-2': CheckCircle2,
+  'clock': Clock,
 }
 
 /**

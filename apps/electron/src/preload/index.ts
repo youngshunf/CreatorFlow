@@ -723,6 +723,24 @@ const api: ElectronAPI = {
       update: (workspaceId: string, config: unknown) =>
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE, workspaceId, config),
     },
+    scheduledTasks: {
+      list: (workspaceId: string, filter?: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_LIST, workspaceId, filter),
+      get: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_DELETE, workspaceId, id),
+      toggle: (workspaceId: string, id: string, enabled: boolean) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE, workspaceId, id, enabled),
+    },
+    reviewTasksAll: {
+      list: (workspaceId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_REVIEW_TASKS_LIST_ALL, workspaceId),
+    },
   },
 
   // Video API (Remotion video creation)

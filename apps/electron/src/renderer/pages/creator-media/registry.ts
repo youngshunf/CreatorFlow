@@ -8,6 +8,7 @@ const ContentCalendar = React.lazy(() => import('./ContentCalendar'))
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard'))
 const PlatformAccountsView = React.lazy(() => import('./PlatformAccountsView'))
 const PublishWorkbench = React.lazy(() => import('./PublishWorkbench'))
+const ScheduledTasksView = React.lazy(() => import('./ScheduledTasksView'))
 
 /**
  * APP 视图注册表
@@ -23,5 +24,6 @@ export const APP_VIEW_REGISTRY: Record<string, Record<string, React.LazyExoticCo
     analytics: AnalyticsDashboard,
     accounts: PlatformAccountsView,
     publisher: PublishWorkbench,
+    'scheduled-tasks': ScheduledTasksView,
   },
 }

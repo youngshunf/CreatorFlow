@@ -69,7 +69,7 @@ export default function HotTopicsBoard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
                   </svg>
                   <p className="text-sm text-muted-foreground">{t('在对话中使用"帮我找选题"获取热点推荐')}</p>
-                  <p className="text-xs text-muted-foreground/70">{t('将调用 hot-topic-scout 技能分析热点')}</p>
+                  <p className="text-xs text-muted-foreground/70">{t('将调用 topic-generator 技能生成选题')}</p>
                 </div>
               </div>
             </div>

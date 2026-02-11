@@ -534,6 +534,49 @@ export type UpdateRecommendedTopic = Partial<Omit<RecommendedTopic, 'id' | 'proj
 /** 视频渲染状态 */
 export type VideoRenderStatus = 'not_started' | 'rendering' | 'completed' | 'failed';
 
+// ============================================================
+// 定时任务
+// ============================================================
+
+/** 定时任务类型 */
+export type ScheduledTaskType = 'review' | 'publish' | 'collect' | 'custom';
+
+/** 定时任务状态 */
+export type ScheduledTaskStatus = 'active' | 'paused' | 'error' | 'completed';
+
+/** 调度模式 */
+export type ScheduleMode = 'cron' | 'interval' | 'once';
+
+/** scheduled_tasks — 定时任务表 */
+export interface ScheduledTask {
+  id: string;
+  project_id: string | null;
+  name: string;
+  description: string | null;
+  task_type: ScheduledTaskType;
+  schedule_mode: ScheduleMode;
+  cron_expression: string | null;
+  interval_seconds: number | null;
+  scheduled_at: string | null;
+  enabled: number;                   // SQLite boolean: 0 | 1
+  status: ScheduledTaskStatus;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  run_count: number;
+  last_error: string | null;
+  payload: string | null;            // JSON: 任务特定配置
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateScheduledTask = Omit<ScheduledTask, 'created_at' | 'updated_at' | 'run_count' | 'last_run_at' | 'last_error'> & {
+  run_count?: number;
+  last_run_at?: string | null;
+  last_error?: string | null;
+};
+
+export type UpdateScheduledTask = Partial<Omit<ScheduledTask, 'id' | 'created_at'>> & { updated_at?: string };
+
 /** 视频内容元数据 — 存储在 contents.metadata JSON 字段 */
 export interface ContentVideoMetadata {
   /** 关联的 VideoProject.id */

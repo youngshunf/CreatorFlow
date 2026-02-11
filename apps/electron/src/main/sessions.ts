@@ -1989,12 +1989,6 @@ export class SessionManager {
     // directories, excluding skills and MCP servers that SDK may include.
     {
       const { commands, translations } = scanWorkspaceCommands(m.workspace.rootPath, getGlobalPluginDataPath())
-      // Merge plugin translations from SDK plugins if agent is available
-      if (m.agent) {
-        const plugins = m.agent.getSdkPlugins()
-        const pluginTrans = loadPluginTranslations(plugins)
-        Object.assign(translations, pluginTrans)
-      }
       if (commands.length > 0) {
         this.sendEvent({
           type: 'slash_commands_available',

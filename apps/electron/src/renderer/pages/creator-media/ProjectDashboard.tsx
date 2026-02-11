@@ -11,6 +11,8 @@ import { CreateContentDialog } from './components/CreateContentDialog'
 import { VersionHistoryDialog } from './components/VersionHistoryDialog'
 import { HotTopicsPanel } from './components/HotTopicsPanel'
 import { TopicRecommendPanel } from './components/TopicRecommendPanel'
+import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
+import { useActiveWorkspace } from '@/context/AppShellContext'
 import type { Content } from '@sprouty-ai/shared/db/types'
 import { POSTING_FREQUENCY_LIST } from '@sprouty-ai/shared/db/types'
 
@@ -26,6 +28,9 @@ export default function ProjectDashboard() {
     upsertProfile, createContent, deleteContent, updateContentStatus,
     listContentVersions, rollbackContentVersion,
   } = useCreatorMedia()
+
+  const workspace = useActiveWorkspace()
+  const wsRoot = workspace?.rootPath || ''
 
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [showProjectSettings, setShowProjectSettings] = useState(false)
@@ -106,6 +111,20 @@ export default function ProjectDashboard() {
           </p>
         </div>
         <div className="titlebar-no-drag flex items-center gap-2">
+          <EditPopover
+            trigger={
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground hover:bg-muted/40 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                </svg>
+                {t('AI 新建')}
+              </button>
+            }
+            {...getEditConfig('creator-media-create-project', wsRoot)}
+          />
           <button
             type="button"
             onClick={() => setShowCreateProject(true)}
@@ -144,16 +163,32 @@ export default function ProjectDashboard() {
           <div className="min-w-0">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-foreground">{t('最近内容')}</h2>
-              <button
-                type="button"
-                onClick={() => setShowCreateContent(true)}
-                className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                {t('新建内容')}
-              </button>
+              <div className="flex items-center gap-2">
+                <EditPopover
+                  trigger={
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                      </svg>
+                      {t('AI 创建')}
+                    </button>
+                  }
+                  {...getEditConfig('creator-media-create-content', wsRoot)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCreateContent(true)}
+                  className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {t('新建内容')}
+                </button>
+              </div>
             </div>
             <ContentTable
               contents={contents}
@@ -169,16 +204,32 @@ export default function ProjectDashboard() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-foreground">{t('账号画像')}</h2>
               {activeProject && (
-                <button
-                  type="button"
-                  onClick={() => setShowProfileEdit(true)}
-                  className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
-                  </svg>
-                  {t('编辑画像')}
-                </button>
+                <div className="flex items-center gap-2">
+                  <EditPopover
+                    trigger={
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                        </svg>
+                        {t('AI 编辑')}
+                      </button>
+                    }
+                    {...getEditConfig('creator-media-edit-profile', wsRoot)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileEdit(true)}
+                    className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+                    </svg>
+                    {t('编辑画像')}
+                  </button>
+                </div>
               )}
             </div>
             {profile ? (

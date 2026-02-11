@@ -1080,6 +1080,16 @@ export const IPC_CHANNELS = {
   // 选题调度配置
   CREATOR_MEDIA_TOPIC_SCHEDULE_GET: 'creatorMedia:topicSchedule:get',
   CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE: 'creatorMedia:topicSchedule:update',
+
+  // 定时任务
+  CREATOR_MEDIA_SCHEDULED_TASKS_LIST: 'creatorMedia:scheduledTasks:list',
+  CREATOR_MEDIA_SCHEDULED_TASKS_GET: 'creatorMedia:scheduledTasks:get',
+  CREATOR_MEDIA_SCHEDULED_TASKS_CREATE: 'creatorMedia:scheduledTasks:create',
+  CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE: 'creatorMedia:scheduledTasks:update',
+  CREATOR_MEDIA_SCHEDULED_TASKS_DELETE: 'creatorMedia:scheduledTasks:delete',
+  CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE: 'creatorMedia:scheduledTasks:toggle',
+  // 采集调度任务（全量只读查看）
+  CREATOR_MEDIA_REVIEW_TASKS_LIST_ALL: 'creatorMedia:reviewTasks:listAll',
 } as const
 
 /**

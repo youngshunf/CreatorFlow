@@ -15,9 +15,10 @@
 // Constants
 // ============================================================================
 
-// Workspace ID character class for regex: word chars, spaces (NOT newlines), hyphens, dots
+// Workspace ID character class for regex: word chars (incl. Unicode), spaces (NOT newlines), hyphens, dots
 // Using literal space instead of \s to avoid matching newlines which would break parsing
-export const WS_ID_CHARS = '[\\w .-]'
+// \p{L} matches any Unicode letter (Chinese, Japanese, Korean, etc.)
+export const WS_ID_CHARS = '[\\w\\p{L} .-]'
 
 // ============================================================================
 // Types
@@ -75,7 +76,7 @@ export function parseMentions(
   // Match skill mentions: [skill:slug] or [skill:workspaceId:slug]
   // The pattern captures the last component (slug) after any number of colons
   // Workspace IDs can contain spaces, hyphens, underscores, and dots
-  const skillPattern = new RegExp(`\\[skill:(?:${WS_ID_CHARS}+:)?([\\w-]+)\\]`, 'g')
+  const skillPattern = new RegExp(`\\[skill:(?:${WS_ID_CHARS}+:)?([\\w-]+)\\]`, 'gu')
   while ((match = skillPattern.exec(text)) !== null) {
     const slug = match[1]!
     if (availableSkillSlugs.includes(slug) && !result.skills.includes(slug)) {
@@ -116,7 +117,7 @@ export function stripAllMentions(text: string): string {
     .replace(/\[source:[\w-]+\]/g, '')
     // Remove [skill:slug] or [skill:workspaceId:slug]
     // Workspace IDs can contain spaces, hyphens, underscores, and dots
-    .replace(new RegExp(`\\[skill:(?:${WS_ID_CHARS}+:)?[\\w-]+\\]`, 'g'), '')
+    .replace(new RegExp(`\\[skill:(?:${WS_ID_CHARS}+:)?[\\w-]+\\]`, 'gu'), '')
     // Remove [file:path]
     .replace(/\[file:[^\]]+\]/g, '')
     // Remove [folder:path]

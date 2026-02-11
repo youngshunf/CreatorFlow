@@ -78,6 +78,10 @@ export type EditContextKey =
   | 'add-label'
   | 'edit-views'
   | 'edit-tool-icons'
+  | 'creator-media-create-project'
+  | 'creator-media-edit-profile'
+  | 'creator-media-create-content'
+  | 'creator-media-edit-scheduled-task'
 
 /**
  * Full edit configuration including context for agent and example for UI.
@@ -471,6 +475,138 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
     example: '为我的自定义 CLI 工具 "deploy" 添加图标',
     model: 'haiku',
     systemPromptPreset: 'mini',
+    inlineExecution: true,
+  }),
+
+  // Creator-media contexts
+  'creator-media-create-project': (location) => ({
+    context: {
+      label: '创建项目',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '用户想要通过 AI 智能创建一个自媒体项目。请根据用户提供的信息（可能是账号链接、账号描述、或领域描述），分析并生成完整的项目信息和账号画像。\n\n' +
+        '你需要：\n' +
+        '1. 如果用户提供了账号链接，尝试访问并分析该账号的公开信息\n' +
+        '2. 根据分析结果，使用 sqlite3 命令直接将项目和画像写入数据库\n' +
+        '3. 所有字段都必须填写，不能为 NULL —— 如果用户未提供某些信息，请根据上下文智能推断合理的值\n\n' +
+        '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
+        '操作步骤（必须严格按照以下顺序执行）：\n\n' +
+        '步骤1 - 生成 UUID 和头像：\n' +
+        'PROJECT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n' +
+        'PROFILE_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n\n' +
+        '头像处理（avatar_path）：\n' +
+        '- 如果用户提供了图片 URL，直接使用该 URL 作为 avatar_path\n' +
+        '- 否则，根据项目名称和领域生成一个 SVG 头像文件，保存到 .sprouty-ai/avatars/<PROJECT_ID>.svg，avatar_path 填写该相对路径\n' +
+        '- SVG 头像要求：简洁美观，使用领域相关图标，配合适合该领域的渐变背景色，尺寸 128x128\n\n' +
+        '步骤2 - 创建项目并设为活跃：\n' +
+        'sqlite3 .sprouty-ai/db/creator.db "UPDATE projects SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE is_active = 1;"\n' +
+        'sqlite3 .sprouty-ai/db/creator.db "INSERT INTO projects (id, name, description, platform, platforms, avatar_path, is_active) VALUES (...)"\n\n' +
+        '步骤3 - 创建账号画像（所有字段必填）：\n' +
+        'sqlite3 .sprouty-ai/db/creator.db "INSERT INTO account_profiles (id, project_id, niche, sub_niche, persona, target_audience, tone, keywords, bio, content_pillars, posting_frequency, best_posting_time, style_references, taboo_topics, pillar_weights) VALUES (...)"\n\n' +
+        '字段说明：\n' +
+        '- platform 取值：xiaohongshu / douyin / bilibili / weibo / wechat / zhihu / toutiao / kuaishou / youtube / tiktok / instagram / twitter / threads / facebook / linkedin / pinterest / medium / substack / other\n' +
+        '- platforms：JSON 数组字符串，如 \'["xiaohongshu","douyin"]\'\n' +
+        '- posting_frequency 取值：daily / 3_per_week / weekly / biweekly / monthly\n' +
+        '- best_posting_time：如 \'20:00\' 或 \'12:00,20:00\'\n' +
+        '- pillar_weights：JSON 对象，键为内容支柱名称，值为权重(0-1)，所有权重之和为1\n' +
+        '- 文本中的单引号需要转义为两个单引号（SQL 标准）\n\n' +
+        '重要：\n' +
+        '- 所有字段都必须有值，不允许 NULL，请根据用户信息和领域知识智能推断\n' +
+        '- 必须使用 sqlite3 命令操作数据库，不要调用任何 MCP 工具\n' +
+        '- 创建 SVG 头像前先确保目录存在：mkdir -p .sprouty-ai/avatars\n' +
+        '- 创建完成后告知用户项目已创建成功',
+    },
+    example: '我是一个小红书美妆博主，主要做护肤品测评',
+    overridePlaceholder: '描述你的账号或粘贴主页链接',
+    model: 'sonnet',
+    systemPromptPreset: 'default',
+    inlineExecution: true,
+  }),
+
+  'creator-media-edit-profile': (location) => ({
+    context: {
+      label: '编辑画像',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '用户想要修改当前活跃项目的账号画像。\n\n' +
+        '操作步骤：\n' +
+        '1. 先读取当前活跃项目和画像：\n' +
+        '   sqlite3 -header -column .sprouty-ai/db/creator.db "SELECT p.id, p.name, ap.* FROM projects p LEFT JOIN account_profiles ap ON ap.project_id = p.id WHERE p.is_active = 1;"\n' +
+        '2. 根据用户需求，使用 sqlite3 UPDATE 语句修改 account_profiles 表中的对应字段\n' +
+        '3. 如果画像不存在，使用 INSERT 创建\n\n' +
+        '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
+        '可修改字段：niche, sub_niche, persona, target_audience, tone, keywords, bio, content_pillars, posting_frequency, best_posting_time, style_references, taboo_topics, pillar_weights\n\n' +
+        '重要：\n' +
+        '- 必须使用 sqlite3 命令操作数据库\n' +
+        '- 文本中的单引号需要转义为两个单引号\n' +
+        '- 修改完成后告知用户已更新',
+    },
+    example: '把目标受众改为 25-35 岁职场女性',
+    overridePlaceholder: '描述你想修改的画像内容',
+    model: 'haiku',
+    systemPromptPreset: 'default',
+    inlineExecution: true,
+  }),
+
+  'creator-media-create-content': (location) => ({
+    context: {
+      label: '新建内容',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '用户想要为当前活跃项目创建新的内容条目。\n\n' +
+        '操作步骤：\n' +
+        '1. 先读取当前活跃项目：\n' +
+        '   sqlite3 .sprouty-ai/db/creator.db "SELECT id, name, platform FROM projects WHERE is_active = 1;"\n' +
+        '2. 生成 UUID：CONTENT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n' +
+        '3. 使用 sqlite3 INSERT 创建内容：\n' +
+        '   sqlite3 .sprouty-ai/db/creator.db "INSERT INTO contents (id, project_id, title, content_type, status, body) VALUES (...)"\n\n' +
+        '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
+        '字段说明：\n' +
+        '- content_type 取值：article / short-video / video / image-text / thread / story\n' +
+        '- status 取值：idea / creating / review / scheduled / published\n' +
+        '- body：内容正文（Markdown 格式）\n' +
+        '- 可选字段：hook, outline, tags, scheduled_at, metadata\n\n' +
+        '重要：\n' +
+        '- 必须使用 sqlite3 命令操作数据库\n' +
+        '- 根据用户描述智能推断 content_type\n' +
+        '- 创建完成后告知用户',
+    },
+    example: '写一篇关于防晒霜选购指南的小红书笔记',
+    overridePlaceholder: '描述你想创建的内容',
+    model: 'haiku',
+    systemPromptPreset: 'default',
+    inlineExecution: true,
+  }),
+
+  'creator-media-edit-scheduled-task': (location) => ({
+    context: {
+      label: '定时任务',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '用户想要通过 AI 辅助管理定时任务。\n\n' +
+        '操作步骤：\n' +
+        '1. 先读取当前定时任务列表：\n' +
+        '   sqlite3 -header -column .sprouty-ai/db/creator.db "SELECT id, name, task_type, schedule_mode, cron_expression, interval_seconds, enabled, status FROM scheduled_tasks ORDER BY created_at DESC;"\n' +
+        '2. 根据用户需求，使用 sqlite3 INSERT/UPDATE/DELETE 操作 scheduled_tasks 表\n\n' +
+        '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
+        '字段说明：\n' +
+        '- task_type：review / publish / collect / custom\n' +
+        '- schedule_mode：cron / interval / once\n' +
+        '- cron_expression：Cron 表达式（当 schedule_mode=cron 时）\n' +
+        '- interval_seconds：间隔秒数（当 schedule_mode=interval 时）\n' +
+        '- scheduled_at：执行时间（当 schedule_mode=once 时）\n' +
+        '- enabled：1=启用 0=禁用\n' +
+        '- status：active / paused / error / completed\n' +
+        '- payload：JSON 格式的任务配置\n\n' +
+        '重要：\n' +
+        '- 必须使用 sqlite3 命令操作数据库\n' +
+        '- 新建任务时 id 使用 UUID\n' +
+        '- 操作完成后告知用户',
+    },
+    example: '创建一个每天早上8点执行的采集任务',
+    overridePlaceholder: '描述你想创建或修改的定时任务',
+    model: 'haiku',
+    systemPromptPreset: 'default',
     inlineExecution: true,
   }),
 }
