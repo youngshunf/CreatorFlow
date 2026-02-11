@@ -22,6 +22,8 @@ import * as viralPatternsRepo from '@sprouty-ai/shared/db/repositories/viral-pat
 import * as reviewTasksRepo from '@sprouty-ai/shared/db/repositories/review-tasks';
 import * as contentVersionsRepo from '@sprouty-ai/shared/db/repositories/content-versions';
 import * as publishQueueRepo from '@sprouty-ai/shared/db/repositories/publish-queue';
+import * as draftsRepo from '@sprouty-ai/shared/db/repositories/drafts';
+import * as mediaFilesRepo from '@sprouty-ai/shared/db/repositories/media-files';
 import { generateProjectContext } from '@sprouty-ai/shared/db';
 import { createBrowserProfileManager } from '@sprouty-ai/shared/services/browser-profile-manager';
 import { createFingerprintGenerator } from '@sprouty-ai/shared/services/fingerprint-generator';
@@ -496,6 +498,68 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
     const fingerprint = fingerprintGenerator.generate(platformAccountId);
     profileManager.saveFingerprint(platformAccountId, fingerprint);
     return fingerprint;
+  });
+
+  // ============================================================
+  // 草稿管理
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_LIST, async (_event, workspaceId: string, projectId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return draftsRepo.listByProject(db, projectId);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_GET, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return draftsRepo.getDraft(db, id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_CREATE, async (_event, workspaceId: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return draftsRepo.createDraft(db, data as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_UPDATE, async (_event, workspaceId: string, id: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return draftsRepo.updateDraft(db, id, data as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_DELETE, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return draftsRepo.deleteDraft(db, id);
+  });
+
+  // ============================================================
+  // 素材管理
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_LIST, async (_event, workspaceId: string, projectId: string, filters?: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return mediaFilesRepo.listByProject(db, projectId, filters as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_GET, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return mediaFilesRepo.getMediaFile(db, id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_CREATE, async (_event, workspaceId: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return mediaFilesRepo.createMediaFile(db, data as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_DELETE, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return mediaFilesRepo.deleteMediaFile(db, id);
   });
 
   ipcLog.info('[creator-media-ipc] 已注册所有 creatorMedia IPC 通道');

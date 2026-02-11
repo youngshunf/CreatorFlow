@@ -1,157 +1,157 @@
 ---
-description: Initialize the productivity system and open the dashboard
+description: 初始化生产力系统并打开仪表盘
 ---
 
-# Start Command
+# 开始命令
 
-> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../CONNECTORS.md).
+> 如果你看到不熟悉的占位符或需要检查已连接的工具，请参阅 [CONNECTORS.md](../CONNECTORS.md)。
 
-Initialize the task and memory systems, then open the unified dashboard.
+初始化任务和记忆系统，然后打开统一仪表盘。
 
-## Instructions
+## 操作说明
 
-### 1. Check What Exists
+### 1. 检查已有内容
 
-Check the working directory for:
-- `TASKS.md` — task list
-- `CLAUDE.md` — working memory
-- `memory/` — deep memory directory
-- `dashboard.html` — the visual UI
+检查工作目录中是否存在：
+- `TASKS.md` — 任务列表
+- `CLAUDE.md` — 工作记忆
+- `memory/` — 深度记忆目录
+- `dashboard.html` — 可视化界面
 
-### 2. Create What's Missing
+### 2. 创建缺失内容
 
-**If `TASKS.md` doesn't exist:** Create it with the standard template (see task-management skill). Place it in the current working directory.
+**如果 `TASKS.md` 不存在：** 使用标准模板创建（参见任务管理技能）。放置在当前工作目录中。
 
-**If `dashboard.html` doesn't exist:** Copy it from `${CLAUDE_PLUGIN_ROOT}/skills/dashboard.html` to the current working directory.
+**如果 `dashboard.html` 不存在：** 从 `${CLAUDE_PLUGIN_ROOT}/skills/dashboard.html` 复制到当前工作目录。
 
-**If `CLAUDE.md` and `memory/` don't exist:** This is a fresh setup — after opening the dashboard, begin the memory bootstrap workflow (see below). Place these in the current working directory.
+**如果 `CLAUDE.md` 和 `memory/` 不存在：** 这是全新安装 — 打开仪表盘后，开始记忆引导流程（见下文）。将这些文件放在当前工作目录中。
 
-### 3. Open the Dashboard
+### 3. 打开仪表盘
 
-Do NOT use `open` or `xdg-open` — in Cowork, the agent runs in a VM and shell open commands won't reach the user's browser. Instead, tell the user: "Dashboard is ready at `dashboard.html`. Open it from your file browser to get started."
+不要使用 `open` 或 `xdg-open` — 在 Cowork 中，agent 运行在虚拟机中，shell 的 open 命令无法到达用户的浏览器。请告诉用户："仪表盘已就绪，位于 `dashboard.html`。请从文件浏览器中打开它。"
 
-### 4. Orient the User
+### 4. 引导用户
 
-If everything was already initialized:
+如果一切已经初始化：
 ```
-Dashboard open. Your tasks and memory are both loaded.
-- /productivity:update to sync tasks and check memory
-- /productivity:update --comprehensive for a deep scan of all activity
-```
-
-If memory hasn't been bootstrapped yet, continue to step 5.
-
-### 5. Bootstrap Memory (First Run Only)
-
-Only do this if `CLAUDE.md` and `memory/` don't exist yet.
-
-The best source of workplace language is the user's actual task list. Real tasks = real shorthand.
-
-**Ask the user:**
-```
-Where do you keep your todos or task list? This could be:
-- A local file (e.g., TASKS.md, todo.txt)
-- An app (e.g. Asana, Linear, Jira, Notion, Todoist)
-- A notes file
-
-I'll use your tasks to learn your workplace shorthand.
+仪表盘已打开。你的任务和记忆都已加载。
+- /productivity:update 同步任务并检查记忆
+- /productivity:update --comprehensive 对所有活动进行深度扫描
 ```
 
-**Once you have access to the task list:**
+如果记忆尚未引导，继续第 5 步。
 
-For each task item, analyze it for potential shorthand:
-- Names that might be nicknames
-- Acronyms or abbreviations
-- Project references or codenames
-- Internal terms or jargon
+### 5. 引导记忆（仅首次运行）
 
-**For each item, decode it interactively:**
+仅在 `CLAUDE.md` 和 `memory/` 不存在时执行此步骤。
 
+最好的职场用语来源是用户的实际任务列表。真实任务 = 真实简写。
+
+**询问用户：**
 ```
-Task: "Send PSR to Todd re: Phoenix blockers"
+你的待办事项或任务列表放在哪里？可以是：
+- 本地文件（如 TASKS.md、todo.txt）
+- 应用（如飞书、Teambition、禅道、语雀）
+- 笔记文件
 
-I see some terms I want to make sure I understand:
-
-1. **PSR** - What does this stand for?
-2. **Todd** - Who is Todd? (full name, role)
-3. **Phoenix** - Is this a project codename? What's it about?
+我会通过你的任务来学习你的职场简写用语。
 ```
 
-Continue through each task, asking only about terms you haven't already decoded.
+**获取任务列表后：**
 
-### 6. Optional Comprehensive Scan
+分析每个任务项中可能的简写：
+- 可能是昵称的名字
+- 缩写或简称
+- 项目代号
+- 内部术语或行话
 
-After task list decoding, offer:
+**对每个项目进行交互式解码：**
+
 ```
-Do you want me to do a comprehensive scan of your messages, emails, and documents?
-This takes longer but builds much richer context about the people, projects, and terms in your work.
+任务："给老王发 PSR，关于凤凰项目的阻塞问题"
 
-Or we can stick with what we have and add context later.
+我看到一些需要确认的术语：
+
+1. **PSR** - 这是什么的缩写？
+2. **老王** - 老王是谁？（全名、职位）
+3. **凤凰项目** - 这是项目代号吗？具体是什么？
 ```
 
-**If they choose comprehensive scan:**
+继续处理每个任务，只询问尚未解码的术语。
 
-Gather data from available MCP sources:
-- **Chat:** Recent messages, channels, DMs
-- **Email:** Sent messages, recipients
-- **Documents:** Recent docs, collaborators
-- **Calendar:** Meetings, attendees
+### 6. 可选的全面扫描
 
-Build a braindump of people, projects, and terms found. Present findings grouped by confidence:
-- **Ready to add** (high confidence) — offer to add directly
-- **Needs clarification** — ask the user
-- **Low frequency / unclear** — note for later
+任务列表解码完成后，提供选项：
+```
+是否需要我对你的消息、邮件和文档进行全面扫描？
+这需要更长时间，但能建立更丰富的人员、项目和术语上下文。
 
-### 7. Write Memory Files
+或者我们可以先用现有的内容，以后再补充。
+```
 
-From everything gathered, create:
+**如果选择全面扫描：**
 
-**CLAUDE.md** (working memory, ~50-80 lines):
+从可用的 MCP 数据源收集数据：
+- **聊天：** 最近的消息、群组、私聊
+- **邮件：** 已发送的邮件、收件人
+- **文档：** 最近的文档、协作者
+- **日历：** 会议、参会人
+
+整理发现的人员、项目和术语。按置信度分组展示：
+- **可直接添加**（高置信度）— 提供直接添加
+- **需要确认** — 询问用户
+- **低频/不确定** — 记录备用
+
+### 7. 写入记忆文件
+
+根据收集到的所有信息，创建：
+
+**CLAUDE.md**（工作记忆，约 50-80 行）：
 ```markdown
-# Memory
+# 记忆
 
-## Me
-[Name], [Role] on [Team].
+## 关于我
+[姓名]，[团队]的[职位]。
 
-## People
-| Who | Role |
+## 人员
+| 谁 | 角色 |
 |-----|------|
-| **[Nickname]** | [Full Name], [role] |
+| **[昵称]** | [全名]，[职位] |
 
-## Terms
-| Term | Meaning |
+## 术语
+| 术语 | 含义 |
 |------|---------|
-| [acronym] | [expansion] |
+| [缩写] | [全称] |
 
-## Projects
-| Name | What |
+## 项目
+| 名称 | 说明 |
 |------|------|
-| **[Codename]** | [description] |
+| **[代号]** | [描述] |
 
-## Preferences
-- [preferences discovered]
+## 偏好
+- [发现的偏好]
 ```
 
-**memory/** directory:
-- `memory/glossary.md` — full decoder ring (acronyms, terms, nicknames, codenames)
-- `memory/people/{name}.md` — individual profiles
-- `memory/projects/{name}.md` — project details
-- `memory/context/company.md` — teams, tools, processes
+**memory/** 目录：
+- `memory/glossary.md` — 完整术语表（缩写、术语、昵称、代号）
+- `memory/people/{name}.md` — 个人档案
+- `memory/projects/{name}.md` — 项目详情
+- `memory/context/company.md` — 团队、工具、流程
 
-### 8. Report Results
+### 8. 报告结果
 
 ```
-Productivity system ready:
-- Tasks: TASKS.md (X items)
-- Memory: X people, X terms, X projects
-- Dashboard: open in browser
+生产力系统已就绪：
+- 任务：TASKS.md（X 项）
+- 记忆：X 位人员，X 个术语，X 个项目
+- 仪表盘：在浏览器中打开
 
-Use /productivity:update to keep things current (add --comprehensive for a deep scan).
+使用 /productivity:update 保持更新（添加 --comprehensive 进行深度扫描）。
 ```
 
-## Notes
+## 注意事项
 
-- If memory is already initialized, this just opens the dashboard
-- Nicknames are critical — always capture how people are actually referred to
-- If a source isn't available, skip it and note the gap
-- Memory grows organically through natural conversation after bootstrap
+- 如果记忆已初始化，此命令只会打开仪表盘
+- 昵称至关重要 — 务必记录人们实际使用的称呼
+- 如果某个数据源不可用，跳过并记录缺口
+- 引导完成后，记忆会在日常对话中自然增长

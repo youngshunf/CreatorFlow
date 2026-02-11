@@ -1,7 +1,7 @@
 {
   "name": "productivity",
   "version": "1.0.0",
-  "description": "Manage tasks, plan your day, and build up memory of important context about your work. Syncs with your calendar, email, and chat to keep everything organized and on track.",
+  "description": "管理任务、规划日程，并积累工作中的重要上下文记忆。与日历、邮件和聊天工具同步，让一切井井有条。",
   "author": {
     "name": "Anthropic"
   }

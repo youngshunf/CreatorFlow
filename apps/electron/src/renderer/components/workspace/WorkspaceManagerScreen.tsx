@@ -284,6 +284,7 @@ export function WorkspaceManagerScreen({
           workspaceName={deleteTarget?.name ?? ''}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
+          usePortal={false}
         />
       </FullscreenOverlayBase>
     </>

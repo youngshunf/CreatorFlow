@@ -1,322 +1,322 @@
 ---
 name: memory-management
-description: Two-tier memory system that makes Claude a true workplace collaborator. Decodes shorthand, acronyms, nicknames, and internal language so Claude understands requests like a colleague would. CLAUDE.md for working memory, memory/ directory for the full knowledge base.
+description: 双层记忆系统，让 Claude 成为真正的职场协作者。解码简写、缩写、昵称和内部用语，让 Claude 像同事一样理解请求。CLAUDE.md 用于工作记忆，memory/ 目录用于完整知识库。
 ---
 
-# Memory Management
+# 记忆管理
 
-Memory makes Claude your workplace collaborator - someone who speaks your internal language.
+记忆让 Claude 成为你的职场协作者 — 一个能说你们内部语言的人。
 
-## The Goal
+## 目标
 
-Transform shorthand into understanding:
-
-```
-User: "ask todd to do the PSR for oracle"
-              ↓ Claude decodes
-"Ask Todd Martinez (Finance lead) to prepare the Pipeline Status Report
- for the Oracle Systems deal ($2.3M, closing Q2)"
-```
-
-Without memory, that request is meaningless. With memory, Claude knows:
-- **todd** → Todd Martinez, Finance lead, prefers Slack
-- **PSR** → Pipeline Status Report (weekly sales doc)
-- **oracle** → Oracle Systems deal, not the company
-
-## Architecture
+将简写转化为理解：
 
 ```
-CLAUDE.md          ← Hot cache (~30 people, common terms)
+用户："让老王做一下 PSR，关于甲骨文的"
+              ↓ Claude 解码
+"让王明（财务负责人）准备管线状态报告，
+ 关于甲骨文系统的交易（230万，Q2 结单）"
+```
+
+没有记忆，这个请求毫无意义。有了记忆，Claude 知道：
+- **老王** → 王明，财务负责人，偏好飞书沟通
+- **PSR** → 管线状态报告（每周销售文档）
+- **甲骨文** → 甲骨文系统交易，不是甲骨文公司
+
+## 架构
+
+```
+CLAUDE.md          ← 热缓存（约30人，常用术语）
 memory/
-  glossary.md      ← Full decoder ring (everything)
-  people/          ← Complete profiles
-  projects/        ← Project details
-  context/         ← Company, teams, tools
+  glossary.md      ← 完整术语表（所有内容）
+  people/          ← 完整人员档案
+  projects/        ← 项目详情
+  context/         ← 公司、团队、工具
 ```
 
-**CLAUDE.md (Hot Cache):**
-- Top ~30 people you interact with most
-- ~30 most common acronyms/terms
-- Active projects (5-15)
-- Your preferences
-- **Goal: Cover 90% of daily decoding needs**
+**CLAUDE.md（热缓存）：**
+- 你最常互动的约 30 人
+- 约 30 个最常用的缩写/术语
+- 活跃项目（5-15 个）
+- 你的偏好
+- **目标：覆盖 90% 的日常解码需求**
 
-**memory/glossary.md (Full Glossary):**
-- Complete decoder ring - everyone, every term
-- Searched when something isn't in CLAUDE.md
-- Can grow indefinitely
+**memory/glossary.md（完整术语表）：**
+- 完整的解码手册 — 所有人、所有术语
+- 当热缓存中找不到时搜索
+- 可无限增长
 
-**memory/people/, projects/, context/:**
-- Rich detail when needed for execution
-- Full profiles, history, context
+**memory/people/、projects/、context/：**
+- 执行时需要的丰富细节
+- 完整档案、历史、上下文
 
-## Lookup Flow
+## 查找流程
 
 ```
-User: "ask todd about the PSR for phoenix"
+用户："问老王关于凤凰项目的 PSR"
 
-1. Check CLAUDE.md (hot cache)
-   → Todd? ✓ Todd Martinez, Finance
-   → PSR? ✓ Pipeline Status Report
-   → Phoenix? ✓ DB migration project
+1. 检查 CLAUDE.md（热缓存）
+   → 老王？ ✓ 王明，财务
+   → PSR？ ✓ 管线状态报告
+   → 凤凰项目？ ✓ 数据库迁移项目
 
-2. If not found → search memory/glossary.md
-   → Full glossary has everyone/everything
+2. 如果未找到 → 搜索 memory/glossary.md
+   → 完整术语表包含所有人/所有内容
 
-3. If still not found → ask user
-   → "What does X mean? I'll remember it."
+3. 如果仍未找到 → 询问用户
+   → "X 是什么意思？我会记住的。"
 ```
 
-This tiered approach keeps CLAUDE.md lean (~100 lines) while supporting unlimited scale in memory/.
+这种分层方式让 CLAUDE.md 保持精简（约 100 行），同时在 memory/ 中支持无限扩展。
 
-## File Locations
+## 文件位置
 
-- **Working memory:** `CLAUDE.md` in current working directory
-- **Deep memory:** `memory/` subdirectory
+- **工作记忆：** 当前工作目录中的 `CLAUDE.md`
+- **深度记忆：** `memory/` 子目录
 
-## Working Memory Format (CLAUDE.md)
+## 工作记忆格式（CLAUDE.md）
 
-Use tables for compactness. Target ~50-80 lines total.
+使用表格保持紧凑。目标约 50-80 行。
 
 ```markdown
-# Memory
+# 记忆
 
-## Me
-[Name], [Role] on [Team]. [One sentence about what I do.]
+## 关于我
+[姓名]，[团队]的[职位]。[一句话描述我做什么。]
 
-## People
-| Who | Role |
+## 人员
+| 谁 | 角色 |
 |-----|------|
-| **Todd** | Todd Martinez, Finance lead |
-| **Sarah** | Sarah Chen, Engineering (Platform) |
-| **Greg** | Greg Wilson, Sales |
-→ Full list: memory/glossary.md, profiles: memory/people/
+| **老王** | 王明，财务负责人 |
+| **小陈** | 陈思，工程部（平台组） |
+| **老张** | 张伟，销售 |
+→ 完整列表：memory/glossary.md，档案：memory/people/
 
-## Terms
-| Term | Meaning |
+## 术语
+| 术语 | 含义 |
 |------|---------|
-| PSR | Pipeline Status Report |
-| P0 | Drop everything priority |
-| standup | Daily 9am sync |
-→ Full glossary: memory/glossary.md
+| PSR | 管线状态报告 |
+| P0 | 最高优先级，放下一切 |
+| 站会 | 每天早上9点同步 |
+→ 完整术语表：memory/glossary.md
 
-## Projects
-| Name | What |
+## 项目
+| 名称 | 说明 |
 |------|------|
-| **Phoenix** | DB migration, Q2 launch |
-| **Horizon** | Mobile app redesign |
-→ Details: memory/projects/
+| **凤凰** | 数据库迁移，Q2 上线 |
+| **地平线** | 移动端重新设计 |
+→ 详情：memory/projects/
 
-## Preferences
-- 25-min meetings with buffers
-- Async-first, Slack over email
-- No meetings Friday afternoons
+## 偏好
+- 25 分钟会议，留缓冲时间
+- 异步优先，飞书优于邮件
+- 周五下午不开会
 ```
 
-## Deep Memory Format (memory/)
+## 深度记忆格式（memory/）
 
-**memory/glossary.md** - The decoder ring:
+**memory/glossary.md** - 解码手册：
 ```markdown
-# Glossary
+# 术语表
 
-Workplace shorthand, acronyms, and internal language.
+职场简写、缩写和内部用语。
 
-## Acronyms
-| Term | Meaning | Context |
+## 缩写
+| 术语 | 含义 | 上下文 |
 |------|---------|---------|
-| PSR | Pipeline Status Report | Weekly sales doc |
-| OKR | Objectives & Key Results | Quarterly planning |
-| P0/P1/P2 | Priority levels | P0 = drop everything |
+| PSR | 管线状态报告 | 每周销售文档 |
+| OKR | 目标与关键成果 | 季度规划 |
+| P0/P1/P2 | 优先级 | P0 = 放下一切 |
 
-## Internal Terms
-| Term | Meaning |
+## 内部术语
+| 术语 | 含义 |
 |------|---------|
-| standup | Daily 9am sync in #engineering |
-| the migration | Project Phoenix database work |
-| ship it | Deploy to production |
-| escalate | Loop in leadership |
+| 站会 | 每天早上9点在 #工程 群的同步 |
+| 那个迁移 | 凤凰项目的数据库工作 |
+| 上线 | 部署到生产环境 |
+| 升级 | 拉领导层介入 |
 
-## Nicknames → Full Names
-| Nickname | Person |
+## 昵称 → 全名
+| 昵称 | 人员 |
 |----------|--------|
-| Todd | Todd Martinez (Finance) |
-| T | Also Todd Martinez |
+| 老王 | 王明（财务） |
+| 小王 | 也是王明 |
 
-## Project Codenames
-| Codename | Project |
+## 项目代号
+| 代号 | 项目 |
 |----------|---------|
-| Phoenix | Database migration |
-| Horizon | New mobile app |
+| 凤凰 | 数据库迁移 |
+| 地平线 | 新移动端应用 |
 ```
 
-**memory/people/{name}.md:**
+**memory/people/{name}.md：**
 ```markdown
-# Todd Martinez
+# 王明
 
-**Also known as:** Todd, T
-**Role:** Finance Lead
-**Team:** Finance
-**Reports to:** CFO (Michael Chen)
+**也叫：** 老王、小王
+**职位：** 财务负责人
+**团队：** 财务部
+**汇报给：** CFO（陈明）
 
-## Communication
-- Prefers Slack DM
-- Quick responses, very direct
-- Best time: mornings
+## 沟通方式
+- 偏好飞书私聊
+- 回复快，风格直接
+- 最佳时间：上午
 
-## Context
-- Handles all PSRs and financial reporting
-- Key contact for deal approvals over $500k
-- Works closely with Sales on forecasting
+## 上下文
+- 负责所有 PSR 和财务报告
+- 超过 50 万的交易审批关键联系人
+- 与销售部密切合作做预测
 
-## Notes
-- Cubs fan, likes talking baseball
+## 备注
+- 篮球迷，喜欢聊 NBA
 ```
 
-**memory/projects/{name}.md:**
+**memory/projects/{name}.md：**
 ```markdown
-# Project Phoenix
+# 凤凰项目
 
-**Codename:** Phoenix
-**Also called:** "the migration"
-**Status:** Active, launching Q2
+**代号：** 凤凰
+**也叫：** "那个迁移"
+**状态：** 进行中，Q2 上线
 
-## What It Is
-Database migration from legacy Oracle to PostgreSQL.
+## 项目简介
+从旧版 Oracle 数据库迁移到 PostgreSQL。
 
-## Key People
-- Sarah - tech lead
-- Todd - budget owner
-- Greg - stakeholder (sales impact)
+## 关键人员
+- 小陈 - 技术负责人
+- 老王 - 预算负责人
+- 老张 - 利益相关方（销售影响）
 
-## Context
-$1.2M budget, 6-month timeline. Critical path for Horizon project.
+## 上下文
+120 万预算，6 个月周期。是地平线项目的关键路径。
 ```
 
-**memory/context/company.md:**
+**memory/context/company.md：**
 ```markdown
-# Company Context
+# 公司上下文
 
-## Tools & Systems
-| Tool | Used for | Internal name |
+## 工具与系统
+| 工具 | 用途 | 内部叫法 |
 |------|----------|---------------|
-| Slack | Communication | - |
-| Asana | Engineering tasks | - |
-| Salesforce | CRM | "SF" or "the CRM" |
-| Notion | Docs/wiki | - |
+| 飞书 | 沟通协作 | - |
+| Teambition | 工程任务 | - |
+| 纷享销客 | CRM | "CRM" |
+| 语雀 | 文档/知识库 | - |
 
-## Teams
-| Team | What they do | Key people |
+## 团队
+| 团队 | 职责 | 关键人员 |
 |------|--------------|------------|
-| Platform | Infrastructure | Sarah (lead) |
-| Finance | Money stuff | Todd (lead) |
-| Sales | Revenue | Greg |
+| 平台组 | 基础设施 | 小陈（负责人） |
+| 财务部 | 财务管理 | 老王（负责人） |
+| 销售部 | 营收 | 老张 |
 
-## Processes
-| Process | What it means |
+## 流程
+| 流程 | 含义 |
 |---------|---------------|
-| Weekly sync | Monday 10am all-hands |
-| Ship review | Thursday deploy approval |
+| 周会 | 周一上午10点全员会 |
+| 发布评审 | 周四部署审批 |
 ```
 
-## How to Interact
+## 交互方式
 
-### Decoding User Input (Tiered Lookup)
+### 解码用户输入（分层查找）
 
-**Always** decode shorthand before acting on requests:
+**始终**在执行请求前解码简写：
 
 ```
-1. CLAUDE.md (hot cache)     → Check first, covers 90% of cases
-2. memory/glossary.md        → Full glossary if not in hot cache
-3. memory/people/, projects/ → Rich detail when needed
-4. Ask user                  → Unknown term? Learn it.
+1. CLAUDE.md（热缓存）     → 首先检查，覆盖 90% 的情况
+2. memory/glossary.md        → 热缓存中没有时查完整术语表
+3. memory/people/、projects/ → 需要时获取丰富细节
+4. 询问用户                  → 未知术语？学习它。
 ```
 
-Example:
+示例：
 ```
-User: "ask todd to do the PSR for oracle"
+用户："让老王做一下 PSR，关于甲骨文的"
 
-CLAUDE.md lookup:
-  "todd" → Todd Martinez, Finance ✓
-  "PSR" → Pipeline Status Report ✓
-  "oracle" → (not in hot cache)
+CLAUDE.md 查找：
+  "老王" → 王明，财务 ✓
+  "PSR" → 管线状态报告 ✓
+  "甲骨文" → （不在热缓存中）
 
-memory/glossary.md lookup:
-  "oracle" → Oracle Systems deal ($2.3M) ✓
+memory/glossary.md 查找：
+  "甲骨文" → 甲骨文系统交易（230万） ✓
 
-Now Claude can act with full context.
+现在 Claude 可以带着完整上下文执行了。
 ```
 
-### Adding Memory
+### 添加记忆
 
-When user says "remember this" or "X means Y":
+当用户说"记住这个"或"X 的意思是 Y"：
 
-1. **Glossary items** (acronyms, terms, shorthand):
-   - Add to memory/glossary.md
-   - If frequently used, add to CLAUDE.md Quick Glossary
+1. **术语项**（缩写、术语、简写）：
+   - 添加到 memory/glossary.md
+   - 如果经常使用，添加到 CLAUDE.md 快速术语表
 
-2. **People:**
-   - Create/update memory/people/{name}.md
-   - Add to CLAUDE.md Key People if important
-   - **Capture nicknames** - critical for decoding
+2. **人员：**
+   - 创建/更新 memory/people/{name}.md
+   - 如果重要，添加到 CLAUDE.md 关键人员
+   - **捕获昵称** — 对解码至关重要
 
-3. **Projects:**
-   - Create/update memory/projects/{name}.md
-   - Add to CLAUDE.md Active Projects if current
-   - **Capture codenames** - "Phoenix", "the migration", etc.
+3. **项目：**
+   - 创建/更新 memory/projects/{name}.md
+   - 如果是当前项目，添加到 CLAUDE.md 活跃项目
+   - **捕获代号** — "凤凰"、"那个迁移"等
 
-4. **Preferences:** Add to CLAUDE.md Preferences section
+4. **偏好：** 添加到 CLAUDE.md 偏好部分
 
-### Recalling Memory
+### 回忆记忆
 
-When user asks "who is X" or "what does X mean":
+当用户问"X 是谁"或"X 是什么意思"：
 
-1. Check CLAUDE.md first
-2. Check memory/ for full detail
-3. If not found: "I don't know what X means yet. Can you tell me?"
+1. 先检查 CLAUDE.md
+2. 检查 memory/ 获取完整细节
+3. 如果未找到："我还不知道 X 是什么意思。能告诉我吗？"
 
-### Progressive Disclosure
+### 渐进式披露
 
-1. Load CLAUDE.md for quick parsing of any request
-2. Dive into memory/ when you need full context for execution
-3. Example: drafting an email to todd about the PSR
-   - CLAUDE.md tells you Todd = Todd Martinez, PSR = Pipeline Status Report
-   - memory/people/todd-martinez.md tells you he prefers Slack, is direct
+1. 加载 CLAUDE.md 用于快速解析任何请求
+2. 需要完整上下文执行时深入 memory/
+3. 示例：给老王写一封关于 PSR 的邮件
+   - CLAUDE.md 告诉你 老王 = 王明，PSR = 管线状态报告
+   - memory/people/wang-ming.md 告诉你他偏好飞书，风格直接
 
-## Bootstrapping
+## 引导
 
-Use `/productivity:start` to initialize by scanning your chat, calendar, email, and documents. Extracts people, projects, and starts building the glossary.
+使用 `/productivity:start` 通过扫描你的聊天、日历、邮件和文档来初始化。提取人员、项目，并开始构建术语表。
 
-## Conventions
+## 约定
 
-- **Bold** terms in CLAUDE.md for scannability
-- Keep CLAUDE.md under ~100 lines (the "hot 30" rule)
-- Filenames: lowercase, hyphens (`todd-martinez.md`, `project-phoenix.md`)
-- Always capture nicknames and alternate names
-- Glossary tables for easy lookup
-- When something's used frequently, promote it to CLAUDE.md
-- When something goes stale, demote it to memory/ only
+- CLAUDE.md 中**加粗**术语以便快速浏览
+- CLAUDE.md 保持在约 100 行以内（"热门 30"规则）
+- 文件名：小写，连字符（`wang-ming.md`、`project-phoenix.md`）
+- 始终捕获昵称和别名
+- 术语表使用表格便于查找
+- 经常使用的内容提升到 CLAUDE.md
+- 过时的内容降级到仅保留在 memory/
 
-## What Goes Where
+## 内容归属
 
-| Type | CLAUDE.md (Hot Cache) | memory/ (Full Storage) |
+| 类型 | CLAUDE.md（热缓存） | memory/（完整存储） |
 |------|----------------------|------------------------|
-| Person | Top ~30 frequent contacts | glossary.md + people/{name}.md |
-| Acronym/term | ~30 most common | glossary.md (complete list) |
-| Project | Active projects only | glossary.md + projects/{name}.md |
-| Nickname | In Key People if top 30 | glossary.md (all nicknames) |
-| Company context | Quick reference only | context/company.md |
-| Preferences | All preferences | - |
-| Historical/stale | ✗ Remove | ✓ Keep in memory/ |
+| 人员 | 最常联系的约 30 人 | glossary.md + people/{name}.md |
+| 缩写/术语 | 约 30 个最常用的 | glossary.md（完整列表） |
+| 项目 | 仅活跃项目 | glossary.md + projects/{name}.md |
+| 昵称 | 在关键人员中（如果是前 30） | glossary.md（所有昵称） |
+| 公司上下文 | 仅快速参考 | context/company.md |
+| 偏好 | 所有偏好 | - |
+| 历史/过时 | ✗ 移除 | ✓ 保留在 memory/ |
 
-## Promotion / Demotion
+## 提升 / 降级
 
-**Promote to CLAUDE.md when:**
-- You use a term/person frequently
-- It's part of active work
+**提升到 CLAUDE.md 的条件：**
+- 你经常使用某个术语/人员
+- 它是当前工作的一部分
 
-**Demote to memory/ only when:**
-- Project completed
-- Person no longer frequent contact
-- Term rarely used
+**降级到仅 memory/ 的条件：**
+- 项目已完成
+- 人员不再是常联系人
+- 术语很少使用
 
-This keeps CLAUDE.md fresh and relevant.
+这样可以保持 CLAUDE.md 的新鲜和相关性。

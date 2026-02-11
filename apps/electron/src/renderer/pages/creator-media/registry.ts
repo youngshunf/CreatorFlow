@@ -7,6 +7,7 @@ const VideoStudio = React.lazy(() => import('./VideoStudio'))
 const ContentCalendar = React.lazy(() => import('./ContentCalendar'))
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard'))
 const PlatformAccountsView = React.lazy(() => import('./PlatformAccountsView'))
+const PublishWorkbench = React.lazy(() => import('./PublishWorkbench'))
 
 /**
  * APP 视图注册表
@@ -21,5 +22,6 @@ export const APP_VIEW_REGISTRY: Record<string, Record<string, React.LazyExoticCo
     calendar: ContentCalendar,
     analytics: AnalyticsDashboard,
     accounts: PlatformAccountsView,
+    publisher: PublishWorkbench,
   },
 }

@@ -600,6 +600,7 @@ export const IPC_CHANNELS = {
   CREATE_WORKSPACE: 'workspaces:create',
   DELETE_WORKSPACE: 'workspaces:delete',
   CHECK_WORKSPACE_SLUG: 'workspaces:checkSlug',
+  CHECK_WORKSPACE_NAME: 'workspaces:checkName',
 
   // Window management
   GET_WINDOW_WORKSPACE: 'window:getWorkspace',
@@ -749,6 +750,7 @@ export const IPC_CHANNELS = {
 
   // Apps (local bundled apps)
   APPS_LIST_BUNDLED: 'apps:listBundled',
+  APP_GET_VIEWS: 'app:getViews',
 
   // Marketplace (cloud skill/app market)
   MARKETPLACE_LIST_SKILLS: 'marketplace:listSkills',
@@ -940,6 +942,19 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_BROWSER_PROFILE_EXISTS: 'creatorMedia:browser:profileExists',
   CREATOR_MEDIA_BROWSER_DELETE_PROFILE: 'creatorMedia:browser:deleteProfile',
   CREATOR_MEDIA_BROWSER_GENERATE_FINGERPRINT: 'creatorMedia:browser:generateFingerprint',
+
+  // 草稿管理
+  CREATOR_MEDIA_DRAFTS_LIST: 'creatorMedia:drafts:list',
+  CREATOR_MEDIA_DRAFTS_GET: 'creatorMedia:drafts:get',
+  CREATOR_MEDIA_DRAFTS_CREATE: 'creatorMedia:drafts:create',
+  CREATOR_MEDIA_DRAFTS_UPDATE: 'creatorMedia:drafts:update',
+  CREATOR_MEDIA_DRAFTS_DELETE: 'creatorMedia:drafts:delete',
+
+  // 素材管理
+  CREATOR_MEDIA_MEDIA_FILES_LIST: 'creatorMedia:mediaFiles:list',
+  CREATOR_MEDIA_MEDIA_FILES_GET: 'creatorMedia:mediaFiles:get',
+  CREATOR_MEDIA_MEDIA_FILES_CREATE: 'creatorMedia:mediaFiles:create',
+  CREATOR_MEDIA_MEDIA_FILES_DELETE: 'creatorMedia:mediaFiles:delete',
 } as const
 
 /**
@@ -1001,6 +1016,7 @@ export interface ElectronAPI {
   createWorkspace(folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge'): Promise<CreateWorkspaceResult>
   deleteWorkspace(workspaceId: string, mode: 'delete' | 'backup'): Promise<{ success: boolean; newActiveWorkspaceId?: string | null }>
   checkWorkspaceSlug(slug: string): Promise<{ exists: boolean; path: string }>
+  checkWorkspaceName(name: string): Promise<{ exists: boolean }>
 
   // Window management
   getWindowWorkspace(): Promise<string | null>
@@ -1182,6 +1198,7 @@ export interface ElectronAPI {
 
   // Apps (local bundled apps)
   listBundledApps(): Promise<Array<{ id: string; name: string; description: string; version: string; iconPath?: string }>>
+  getAppViews(workspaceId: string): Promise<{ defaultView?: string; sidebar?: Array<{ viewId: string; title: string; icon: string; order: number }> } | null>
 
   // Marketplace
   marketplaceListSkills(options?: import('@sprouty-ai/shared/marketplace').ListSkillsParams): Promise<import('@sprouty-ai/shared/marketplace').PaginatedResponse<import('@sprouty-ai/shared/marketplace').MarketplaceSkill>>
@@ -1195,7 +1212,7 @@ export interface ElectronAPI {
   marketplaceUpdateSkill(workspaceId: string, skillId: string, version?: string): Promise<import('@sprouty-ai/shared/marketplace').InstallResult>
   marketplaceCheckUpdates(workspaceId: string): Promise<import('@sprouty-ai/shared/marketplace').UpdateItem[]>
   marketplaceGetInstalled(workspaceId: string): Promise<import('@sprouty-ai/shared/marketplace').InstalledSkillInfo[]>
-  onMarketplaceInstallProgress(callback: (progress: import('@sprouty-ai/shared/marketplace').InstallProgress) => void): () => void
+  onMarketplaceInstallProgress(callback: (progress: import('@sprouty-ai/shared/marketplace').AppInstallProgress) => void): () => void
 
   // Statuses (workspace-scoped)
   listStatuses(workspaceId: string): Promise<import('@sprouty-ai/shared/statuses').StatusConfig[]>
@@ -1371,6 +1388,19 @@ export interface ElectronAPI {
       profileExists(workspaceId: string, platformAccountId: string): Promise<boolean>
       deleteProfile(workspaceId: string, platformAccountId: string): Promise<boolean>
       generateFingerprint(workspaceId: string, platformAccountId: string): Promise<import('@sprouty-ai/shared/services/browser-profile-manager').BrowserFingerprint>
+    }
+    drafts: {
+      list(workspaceId: string, projectId: string): Promise<import('@sprouty-ai/shared/db/types').Draft[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').Draft | undefined>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateDraft): Promise<import('@sprouty-ai/shared/db/types').Draft>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdateDraft): Promise<import('@sprouty-ai/shared/db/types').Draft | undefined>
+      delete(workspaceId: string, id: string): Promise<boolean>
+    }
+    mediaFiles: {
+      list(workspaceId: string, projectId: string, filters?: { type?: string }): Promise<import('@sprouty-ai/shared/db/types').MediaFile[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').MediaFile | undefined>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateMediaFile): Promise<import('@sprouty-ai/shared/db/types').MediaFile>
+      delete(workspaceId: string, id: string): Promise<boolean>
     }
   }
 

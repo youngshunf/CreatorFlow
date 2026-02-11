@@ -1,18 +1,18 @@
-# Connectors
+# 连接器
 
-## How tool references work
+## 工具引用的工作方式
 
-Plugin files use `~~category` as a placeholder for whatever tool the user connects in that category. For example, `~~project tracker` might mean Asana, Linear, Jira, or any other project tracker with an MCP server.
+插件文件使用 `~~类别` 作为占位符，代表用户在该类别中连接的任何工具。例如，`~~项目管理` 可能指飞书项目、Teambition 或其他带有 MCP 服务器的项目管理工具。
 
-Plugins are **tool-agnostic** — they describe workflows in terms of categories (chat, project tracker, knowledge base, etc.) rather than specific products. The `.mcp.json` pre-configures specific MCP servers, but any MCP server in that category works.
+插件是**工具无关的** — 它们以类别（聊天、项目管理、知识库等）来描述工作流，而非特定产品。`.mcp.json` 预配置了特定的 MCP 服务器，但该类别中的任何 MCP 服务器都可以使用。
 
-## Connectors for this plugin
+## 本插件的连接器
 
-| Category | Placeholder | Included servers | Other options |
-|----------|-------------|-----------------|---------------|
-| Chat | `~~chat` | Slack | Microsoft Teams, Discord |
-| Email | `~~email` | Microsoft 365 | — |
-| Calendar | `~~calendar` | Microsoft 365 | — |
-| Knowledge base | `~~knowledge base` | Notion | Confluence, Guru, Coda |
-| Project tracker | `~~project tracker` | Asana, Linear, Atlassian (Jira/Confluence), monday.com, ClickUp | Shortcut, Basecamp, Wrike |
-| Office suite | `~~office suite` | Microsoft 365 | — |
+| 类别 | 占位符 | 已包含的服务 | 其他可选项 |
+|------|--------|-------------|-----------|
+| 聊天 | `~~聊天` | 飞书、钉钉 | 企业微信 |
+| 邮件 | `~~邮件` | 飞书 | 网易邮箱、QQ邮箱 |
+| 日历 | `~~日历` | 飞书、钉钉 | — |
+| 知识库 | `~~知识库` | 语雀 | 飞书文档、Notion、石墨文档 |
+| 项目管理 | `~~项目管理` | Teambition | 飞书项目、TAPD、禅道 |
+| 办公套件 | `~~办公套件` | WPS | 飞书文档 |

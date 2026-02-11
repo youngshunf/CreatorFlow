@@ -9,6 +9,13 @@ interface DeleteWorkspaceDialogProps {
   workspaceName: string
   onConfirm: (mode: 'delete' | 'backup') => void
   onCancel: () => void
+  /**
+   * 是否使用 createPortal 渲染到 document.body。
+   * 当弹窗在 Radix Dialog（如 FullscreenOverlayBase）内部使用时，
+   * 必须设为 false，否则 Radix 的焦点陷阱会阻止交互。
+   * 默认 true。
+   */
+  usePortal?: boolean
 }
 
 /**
@@ -22,6 +29,7 @@ export function DeleteWorkspaceDialog({
   workspaceName,
   onConfirm,
   onCancel,
+  usePortal = true,
 }: DeleteWorkspaceDialogProps) {
   const t = useT()
   const [mode, setMode] = useState<'delete' | 'backup'>('backup')
@@ -50,7 +58,7 @@ export function DeleteWorkspaceDialog({
 
   if (!open) return null
 
-  return createPortal(
+  const content = (
     <div
       className="fixed inset-0 z-[400] flex items-center justify-center"
       onClick={handleBackdropClick}
@@ -127,7 +135,8 @@ export function DeleteWorkspaceDialog({
           </Button>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   )
+
+  return usePortal ? createPortal(content, document.body) : content
 }

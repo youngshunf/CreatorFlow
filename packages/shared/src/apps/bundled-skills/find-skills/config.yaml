@@ -1,0 +1,12 @@
+id: find-skills
+name: 查找技能
+version: 1.0.0
+description: 帮助用户发现和安装代理技能，当用户询问"如何做X"、"找一个X的技能"、"有没有能...的技能"，或表达对扩展功能的兴趣时使用
+author:
+  name: 平台
+pricing: free
+category: 开发工具
+tags:
+- 技能管理
+- 包管理
+- CLI工具

@@ -5,16 +5,14 @@ import { useCreatorMedia } from './hooks/useCreatorMedia'
 import { ProjectSwitcher } from './components/ProjectSwitcher'
 import { AddPlatformAccountDialog } from './components/AddPlatformAccountDialog'
 import type { PlatformAccount, Platform } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_MAP, PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
 
-/** 平台配置 */
-const PLATFORM_CONFIG: Record<string, { label: string; color: string }> = {
-  xiaohongshu: { label: '小红书', color: 'text-red-500' },
-  douyin: { label: '抖音', color: 'text-pink-500' },
-  bilibili: { label: 'B站', color: 'text-blue-400' },
-  zhihu: { label: '知乎', color: 'text-blue-600' },
-  weibo: { label: '微博', color: 'text-orange-500' },
-  wechat: { label: '微信', color: 'text-green-500' },
-  x: { label: 'X', color: 'text-foreground' },
+/** 平台配置 — 从共享定义查找 */
+const getPlatformConfig = (platform: string) => {
+  const meta = PLATFORM_MAP[platform as Platform]
+  return meta
+    ? { label: meta.shortLabel, color: meta.color.split(' ')[0] }
+    : { label: platform, color: 'text-foreground' }
 }
 
 /** 登录状态配置 */
@@ -168,8 +166,8 @@ export default function PlatformAccountsView() {
               className="rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs text-foreground"
             >
               <option value="all">{t('全部平台')}</option>
-              {Object.entries(PLATFORM_CONFIG).map(([id, cfg]) => (
-                <option key={id} value={id}>{t(cfg.label)}</option>
+              {PLATFORM_LIST.map((p) => (
+                <option key={p.id} value={p.id}>{t(p.shortLabel)}</option>
               ))}
             </select>
             <select
@@ -265,7 +263,7 @@ function AccountCard({
   onDelete: () => void
 }) {
   const t = useT()
-  const platform = PLATFORM_CONFIG[account.platform] || { label: account.platform, color: 'text-foreground' }
+  const platform = getPlatformConfig(account.platform)
   const authStatus = AUTH_STATUS_CONFIG[account.auth_status] || AUTH_STATUS_CONFIG.not_logged_in
   const authMethod = account.auth_method ? AUTH_METHOD_LABELS[account.auth_method] || account.auth_method : null
 
@@ -359,7 +357,7 @@ function EmptyState() {
           </p>
         </div>
         <div className="flex items-center justify-center gap-2 pt-1">
-          {['小红书', '抖音', 'B站', '知乎', '微博'].map((name) => (
+          {PLATFORM_LIST.map(p => p.shortLabel).map((name) => (
             <span key={name} className="inline-flex items-center rounded-full bg-muted/60 px-2.5 py-0.5 text-[10px] text-muted-foreground">
               {t(name)}
             </span>

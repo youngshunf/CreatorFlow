@@ -1,167 +1,167 @@
 ---
-description: Sync tasks and refresh memory from your current activity
+description: 从当前活动同步任务并刷新记忆
 argument-hint: "[--comprehensive]"
 ---
 
-# Update Command
+# 更新命令
 
-> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../CONNECTORS.md).
+> 如果你看到不熟悉的占位符或需要检查已连接的工具，请参阅 [CONNECTORS.md](../CONNECTORS.md)。
 
-Keep your task list and memory current. Two modes:
+保持任务列表和记忆的时效性。两种模式：
 
-- **Default:** Sync tasks from external tools, triage stale items, check memory for gaps
-- **`--comprehensive`:** Deep scan chat, email, calendar, docs — flag missed todos and suggest new memories
+- **默认模式：** 从外部工具同步任务，处理过期项目，检查记忆缺口
+- **`--comprehensive`：** 深度扫描聊天、邮件、日历、文档 — 标记遗漏的待办并建议新记忆
 
-## Usage
+## 用法
 
 ```bash
 /productivity:update
 /productivity:update --comprehensive
 ```
 
-## Default Mode
+## 默认模式
 
-### 1. Load Current State
+### 1. 加载当前状态
 
-Read `TASKS.md` and `memory/` directory. If they don't exist, suggest `/productivity:start` first.
+读取 `TASKS.md` 和 `memory/` 目录。如果不存在，建议先运行 `/productivity:start`。
 
-### 2. Sync Tasks from External Sources
+### 2. 从外部来源同步任务
 
-Check for available task sources:
-- **Project tracker** (e.g. Asana, Linear, Jira) (if MCP available)
-- **GitHub Issues** (if in a repo): `gh issue list --assignee=@me`
+检查可用的任务来源：
+- **项目管理工具**（如飞书项目、Teambition、禅道）（如有 MCP 可用）
+- **GitHub Issues**（如在代码仓库中）：`gh issue list --assignee=@me`
 
-If no sources are available, skip to Step 3.
+如果没有可用来源，跳到第 3 步。
 
-**Fetch tasks assigned to the user** (open/in-progress). Compare against TASKS.md:
+**获取分配给用户的任务**（进行中/待处理）。与 TASKS.md 对比：
 
-| External task | TASKS.md match? | Action |
-|---------------|-----------------|--------|
-| Found, not in TASKS.md | No match | Offer to add |
-| Found, already in TASKS.md | Match by title (fuzzy) | Skip |
-| In TASKS.md, not in external | No match | Flag as potentially stale |
-| Completed externally | In Active section | Offer to mark done |
+| 外部任务 | TASKS.md 中匹配？ | 操作 |
+|---------|-----------------|------|
+| 找到，不在 TASKS.md 中 | 无匹配 | 提供添加 |
+| 找到，已在 TASKS.md 中 | 标题模糊匹配 | 跳过 |
+| 在 TASKS.md 中，不在外部 | 无匹配 | 标记为可能过期 |
+| 外部已完成 | 在进行中分区 | 提供标记完成 |
 
-Present diff and let user decide what to add/complete.
+展示差异，让用户决定添加/完成哪些。
 
-### 3. Triage Stale Items
+### 3. 处理过期项目
 
-Review Active tasks in TASKS.md and flag:
-- Tasks with due dates in the past
-- Tasks in Active for 30+ days
-- Tasks with no context (no person, no project)
+检查 TASKS.md 中的进行中任务，标记：
+- 截止日期已过的任务
+- 在进行中超过 30 天的任务
+- 没有上下文的任务（无关联人员、无关联项目）
 
-Present each for triage: Mark done? Reschedule? Move to Someday?
+逐个展示供处理：标记完成？重新安排？移到以后再说？
 
-### 4. Decode Tasks for Memory Gaps
+### 4. 解码任务中的记忆缺口
 
-For each task, attempt to decode all entities (people, projects, acronyms, tools, links):
-
-```
-Task: "Send PSR to Todd re: Phoenix blockers"
-
-Decode:
-- PSR → ✓ Pipeline Status Report (in glossary)
-- Todd → ✓ Todd Martinez (in people/)
-- Phoenix → ? Not in memory
-```
-
-Track what's fully decoded vs. what has gaps.
-
-### 5. Fill Gaps
-
-Present unknown terms grouped:
-```
-I found terms in your tasks I don't have context for:
-
-1. "Phoenix" (from: "Send PSR to Todd re: Phoenix blockers")
-   → What's Phoenix?
-
-2. "Maya" (from: "sync with Maya on API design")
-   → Who is Maya?
-```
-
-Add answers to the appropriate memory files (people/, projects/, glossary.md).
-
-### 6. Capture Enrichment
-
-Tasks often contain richer context than memory. Extract and update:
-- **Links** from tasks → add to project/people files
-- **Status changes** ("launch done") → update project status, demote from CLAUDE.md
-- **Relationships** ("Todd's sign-off on Maya's proposal") → cross-reference people
-- **Deadlines** → add to project files
-
-### 7. Report
+对每个任务，尝试解码所有实体（人员、项目、缩写、工具、链接）：
 
 ```
-Update complete:
-- Tasks: +3 from project tracker (e.g. Asana), 1 completed, 2 triaged
-- Memory: 2 gaps filled, 1 project enriched
-- All tasks decoded ✓
+任务："给老王发 PSR，关于凤凰项目的阻塞问题"
+
+解码：
+- PSR → ✓ 管线状态报告（在术语表中）
+- 老王 → ✓ 王明，财务负责人（在人员库中）
+- 凤凰项目 → ? 不在记忆中
 ```
 
-## Comprehensive Mode (`--comprehensive`)
+跟踪哪些已完全解码，哪些有缺口。
 
-Everything in Default Mode, plus a deep scan of recent activity.
+### 5. 填补缺口
 
-### Extra Step: Scan Activity Sources
-
-Gather data from available MCP sources:
-- **Chat:** Search recent messages, read active channels
-- **Email:** Search sent messages
-- **Documents:** List recently touched docs
-- **Calendar:** List recent + upcoming events
-
-### Extra Step: Flag Missed Todos
-
-Compare activity against TASKS.md. Surface action items that aren't tracked:
-
+分组展示未知术语：
 ```
-## Possible Missing Tasks
+我在你的任务中发现了一些没有上下文的术语：
 
-From your activity, these look like todos you haven't captured:
+1. "凤凰项目"（来自："给老王发 PSR，关于凤凰项目的阻塞问题"）
+   → 凤凰项目是什么？
 
-1. From chat (Jan 18):
-   "I'll send the updated mockups by Friday"
-   → Add to TASKS.md?
-
-2. From meeting "Phoenix Standup" (Jan 17):
-   You have a recurring meeting but no Phoenix tasks active
-   → Anything needed here?
-
-3. From email (Jan 16):
-   "I'll review the API spec this week"
-   → Add to TASKS.md?
+2. "小美"（来自："和小美同步 API 设计"）
+   → 小美是谁？
 ```
 
-Let user pick which to add.
+将答案添加到相应的记忆文件（people/、projects/、glossary.md）。
 
-### Extra Step: Suggest New Memories
+### 6. 捕获补充信息
 
-Surface new entities not in memory:
+任务通常包含比记忆更丰富的上下文。提取并更新：
+- 任务中的**链接** → 添加到项目/人员文件
+- **状态变更**（"已上线"）→ 更新项目状态，从 CLAUDE.md 降级
+- **关系**（"老王审批小美的方案"）→ 交叉引用人员
+- **截止日期** → 添加到项目文件
+
+### 7. 报告
 
 ```
-## New People (not in memory)
-| Name | Frequency | Context |
-|------|-----------|---------|
-| Maya Rodriguez | 12 mentions | design, UI reviews |
-| Alex K | 8 mentions | DMs about API |
-
-## New Projects/Topics
-| Name | Frequency | Context |
-|------|-----------|---------|
-| Starlight | 15 mentions | planning docs, product |
-
-## Suggested Cleanup
-- **Horizon project** — No mentions in 30 days. Mark completed?
+更新完成：
+- 任务：从项目管理工具新增 3 项，1 项已完成，2 项已处理
+- 记忆：填补 2 个缺口，1 个项目信息已补充
+- 所有任务已解码 ✓
 ```
 
-Present grouped by confidence. High-confidence items offered to add directly; low-confidence items asked about.
+## 全面模式（`--comprehensive`）
 
-## Notes
+包含默认模式的所有内容，外加对近期活动的深度扫描。
 
-- Never auto-add tasks or memories without user confirmation
-- External source links are preserved when available
-- Fuzzy matching on task titles handles minor wording differences
-- Safe to run frequently — only updates when there's new info
-- `--comprehensive` always runs interactively
+### 额外步骤：扫描活动来源
+
+从可用的 MCP 数据源收集数据：
+- **聊天：** 搜索最近的消息，查看活跃群组
+- **邮件：** 搜索已发送的邮件
+- **文档：** 列出最近编辑的文档
+- **日历：** 列出最近和即将到来的日程
+
+### 额外步骤：标记遗漏的待办
+
+将活动与 TASKS.md 对比。找出未被跟踪的行动项：
+
+```
+## 可能遗漏的任务
+
+从你的活动中，这些看起来像是你还没记录的待办：
+
+1. 来自聊天（1月18日）：
+   "我周五前把更新后的设计稿发过去"
+   → 添加到 TASKS.md？
+
+2. 来自会议"凤凰项目站会"（1月17日）：
+   你有一个定期会议但没有凤凰项目的活跃任务
+   → 有什么需要做的吗？
+
+3. 来自邮件（1月16日）：
+   "这周我来审查 API 规格"
+   → 添加到 TASKS.md？
+```
+
+让用户选择要添加哪些。
+
+### 额外步骤：建议新记忆
+
+找出不在记忆中的新实体：
+
+```
+## 新人员（不在记忆中）
+| 姓名 | 出现频率 | 上下文 |
+|------|---------|--------|
+| 小美 | 12 次提及 | 设计、UI 评审 |
+| 阿凯 | 8 次提及 | 私聊讨论 API |
+
+## 新项目/话题
+| 名称 | 出现频率 | 上下文 |
+|------|---------|--------|
+| 星光计划 | 15 次提及 | 规划文档、产品 |
+
+## 建议清理
+- **地平线项目** — 30 天内无提及。标记为已完成？
+```
+
+按置信度分组展示。高置信度项目直接提供添加；低置信度项目进行询问。
+
+## 注意事项
+
+- 不会在未经用户确认的情况下自动添加任务或记忆
+- 可用时保留外部来源链接
+- 任务标题的模糊匹配可处理细微的措辞差异
+- 可以频繁运行 — 只在有新信息时更新
+- `--comprehensive` 始终以交互方式运行

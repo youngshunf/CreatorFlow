@@ -13,6 +13,7 @@ import {
 import { Monitor, Smartphone, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ContentType, ContentStatus, PipelineMode } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
 import { VideoTemplatePicker } from './VideoTemplatePicker'
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
@@ -23,15 +24,7 @@ const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'live', label: '直播' },
 ]
 
-const PLATFORM_OPTIONS = [
-  { value: 'xiaohongshu', label: '小红书' },
-  { value: 'douyin', label: '抖音' },
-  { value: 'bilibili', label: 'B站' },
-  { value: 'wechat', label: '微信公众号' },
-  { value: 'zhihu', label: '知乎' },
-  { value: 'weibo', label: '微博' },
-  { value: 'x', label: 'X (Twitter)' },
-]
+const PLATFORM_OPTIONS = PLATFORM_LIST.map(p => ({ value: p.id, label: p.label }))
 
 /** 分辨率映射 */
 const ASPECT_RATIO_MAP: Record<string, { width: number; height: number }> = {

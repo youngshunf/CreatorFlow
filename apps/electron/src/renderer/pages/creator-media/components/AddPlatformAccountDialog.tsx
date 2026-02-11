@@ -1,21 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useT } from '@/context/LocaleContext'
 import type { Platform } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
 
 // ============================================================
 // 常量
 // ============================================================
 
-/** 平台配置 */
-const PLATFORMS: Array<{ id: Platform; label: string; color: string; desc: string }> = [
-  { id: 'xiaohongshu', label: '小红书', color: 'text-red-500 border-red-200 dark:border-red-800', desc: '图文/短视频种草' },
-  { id: 'douyin', label: '抖音', color: 'text-pink-500 border-pink-200 dark:border-pink-800', desc: '短视频/直播' },
-  { id: 'bilibili', label: 'B站', color: 'text-blue-400 border-blue-200 dark:border-blue-800', desc: '中长视频/专栏' },
-  { id: 'zhihu', label: '知乎', color: 'text-blue-600 border-blue-200 dark:border-blue-800', desc: '问答/专栏文章' },
-  { id: 'weibo', label: '微博', color: 'text-orange-500 border-orange-200 dark:border-orange-800', desc: '图文/短视频' },
-  { id: 'wechat', label: '微信公众号', color: 'text-green-500 border-green-200 dark:border-green-800', desc: '公众号文章' },
-  { id: 'x', label: 'X (Twitter)', color: 'text-foreground border-border', desc: '推文/长文' },
-]
+/** 平台配置 — 从共享定义导入 */
+const PLATFORMS = PLATFORM_LIST
 
 /** 登录方式 */
 type AuthMethod = 'browser_profile' | 'cookie' | 'api_key'

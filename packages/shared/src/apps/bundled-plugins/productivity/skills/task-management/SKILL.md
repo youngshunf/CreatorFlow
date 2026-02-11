@@ -1,90 +1,90 @@
 ---
 name: task-management
-description: Simple task management using a shared TASKS.md file. Reference this when the user asks about their tasks, wants to add/complete tasks, or needs help tracking commitments.
+description: 使用共享的 TASKS.md 文件进行简单的任务管理。当用户询问任务、想要添加/完成任务或需要帮助跟踪承诺时，请参考此技能。
 ---
 
-# Task Management
+# 任务管理
 
-Tasks are tracked in a simple `TASKS.md` file that both you and the user can edit.
+任务通过一个简单的 `TASKS.md` 文件进行跟踪，你和用户都可以编辑。
 
-## File Location
+## 文件位置
 
-**Always use `TASKS.md` in the current working directory.**
+**始终使用当前工作目录中的 `TASKS.md`。**
 
-- If it exists, read/write to it
-- If it doesn't exist, create it with the template below
+- 如果存在，直接读写
+- 如果不存在，使用下面的模板创建
 
-## Dashboard Setup (First Run)
+## 仪表盘设置（首次运行）
 
-A visual dashboard is available for managing tasks and memory. **On first interaction with tasks:**
+有一个可视化仪表盘可用于管理任务和记忆。**首次与任务交互时：**
 
-1. Check if `dashboard.html` exists in the current working directory
-2. If not, copy it from `${CLAUDE_PLUGIN_ROOT}/skills/dashboard.html` to the current working directory
-3. Inform the user: "I've added the dashboard. Run `/productivity:start` to set up the full system."
+1. 检查当前工作目录中是否存在 `dashboard.html`
+2. 如果不存在，从 `${CLAUDE_PLUGIN_ROOT}/skills/dashboard.html` 复制到当前工作目录
+3. 告知用户："我已添加仪表盘。运行 `/productivity:start` 来设置完整系统。"
 
-The task board:
-- Reads and writes to the same `TASKS.md` file
-- Auto-saves changes
-- Watches for external changes (syncs when you edit via CLI)
-- Supports drag-and-drop reordering of tasks and sections
+任务看板：
+- 读写同一个 `TASKS.md` 文件
+- 自动保存更改
+- 监视外部更改（当你通过命令行编辑时自动同步）
+- 支持拖拽重新排序任务和分区
 
-## Format & Template
+## 格式与模板
 
-When creating a new TASKS.md, use this exact template (without example tasks):
+创建新的 TASKS.md 时，使用以下模板（不含示例任务）：
 
 ```markdown
-# Tasks
+# 任务
 
-## Active
+## 进行中
 
-## Waiting On
+## 等待中
 
-## Someday
+## 以后再说
 
-## Done
+## 已完成
 ```
 
-Task format:
-- `- [ ] **Task title** - context, for whom, due date`
-- Sub-bullets for additional details
-- Completed: `- [x] ~~Task~~ (date)`
+任务格式：
+- `- [ ] **任务标题** - 上下文、负责人、截止日期`
+- 子项用于补充细节
+- 已完成：`- [x] ~~任务~~ (日期)`
 
-## How to Interact
+## 交互方式
 
-**When user asks "what's on my plate" / "my tasks":**
-- Read TASKS.md
-- Summarize Active and Waiting On sections
-- Highlight anything overdue or urgent
+**当用户问"我有什么任务"/"我的任务"：**
+- 读取 TASKS.md
+- 总结进行中和等待中的分区
+- 突出显示任何逾期或紧急的项目
 
-**When user says "add a task" / "remind me to":**
-- Add to Active section with `- [ ] **Task**` format
-- Include context if provided (who it's for, due date)
+**当用户说"添加一个任务"/"提醒我"：**
+- 以 `- [ ] **任务**` 格式添加到进行中分区
+- 如果提供了上下文（给谁的、截止日期），一并包含
 
-**When user says "done with X" / "finished X":**
-- Find the task
-- Change `[ ]` to `[x]`
-- Add strikethrough: `~~task~~`
-- Add completion date
-- Move to Done section
+**当用户说"X 做完了"/"完成了 X"：**
+- 找到该任务
+- 将 `[ ]` 改为 `[x]`
+- 添加删除线：`~~任务~~`
+- 添加完成日期
+- 移到已完成分区
 
-**When user asks "what am I waiting on":**
-- Read the Waiting On section
-- Note how long each item has been waiting
+**当用户问"我在等什么"：**
+- 读取等待中分区
+- 标注每个项目已等待多长时间
 
-## Conventions
+## 约定
 
-- **Bold** the task title for scannability
-- Include "for [person]" when it's a commitment to someone
-- Include "due [date]" for deadlines
-- Include "since [date]" for waiting items
-- Sub-bullets for additional context
-- Keep Done section for ~1 week, then clear old items
+- **加粗**任务标题以便快速浏览
+- 当任务是对某人的承诺时，包含"给[人名]"
+- 有截止日期时包含"截止[日期]"
+- 等待中的项目包含"自[日期]起"
+- 子项用于补充上下文
+- 已完成分区保留约 1 周，然后清理旧项目
 
-## Extracting Tasks
+## 提取任务
 
-When summarizing meetings or conversations, offer to add extracted tasks:
-- Commitments the user made ("I'll send that over")
-- Action items assigned to them
-- Follow-ups mentioned
+在总结会议或对话时，主动提供添加提取到的任务：
+- 用户做出的承诺（"我把那个发过去"）
+- 分配给他们的行动项
+- 提到的后续跟进
 
-Ask before adding - don't auto-add without confirmation.
+添加前先询问 — 不要未经确认就自动添加。

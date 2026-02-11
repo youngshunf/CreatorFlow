@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useT } from '@/context/LocaleContext'
 import type { ViralPattern, ViralPatternCategory, ViralPatternSource, Platform } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
 
 const CATEGORIES: { value: ViralPatternCategory; label: string }[] = [
   { value: 'hook', label: '开头钩子' },
@@ -19,13 +20,7 @@ const SOURCES: { value: ViralPatternSource; label: string }[] = [
 
 const PLATFORMS: { value: Platform | ''; label: string }[] = [
   { value: '', label: '全平台' },
-  { value: 'xiaohongshu', label: '小红书' },
-  { value: 'douyin', label: '抖音' },
-  { value: 'bilibili', label: 'B站' },
-  { value: 'wechat', label: '微信' },
-  { value: 'zhihu', label: '知乎' },
-  { value: 'weibo', label: '微博' },
-  { value: 'x', label: 'X' },
+  ...PLATFORM_LIST.map(p => ({ value: p.id as Platform, label: p.shortLabel })),
 ]
 
 interface ViralPatternDialogProps {

@@ -288,6 +288,20 @@ export interface AppManifest {
   // Plugin support
   plugins?: PluginCompatibility;
 
+  // APP 视图配置
+  /** APP 视图配置（侧边栏导航项等） */
+  views?: {
+    /** 默认视图 ID */
+    defaultView?: string;
+    /** 侧边栏视图列表 */
+    sidebar?: Array<{
+      viewId: string;
+      title: string;
+      icon: string;    // lucide icon name, e.g. "layout-dashboard", "send"
+      order: number;
+    }>;
+  };
+
   // Plugin-specific fields (only for type: 'plugin')
   /** For plugins: list of compatible main app IDs with versions */
   compatibleApps?: string[];

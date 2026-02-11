@@ -73,6 +73,8 @@
     "./db/repositories/review-tasks": "./src/db/repositories/review-tasks.ts",
     "./db/repositories/content-versions": "./src/db/repositories/content-versions.ts",
     "./db/repositories/publish-queue": "./src/db/repositories/publish-queue.ts",
+    "./db/repositories/drafts": "./src/db/repositories/drafts.ts",
+    "./db/repositories/media-files": "./src/db/repositories/media-files.ts",
     "./services/review-scheduler": "./src/services/review-scheduler.ts",
     "./services/browser-profile-manager": "./src/services/browser-profile-manager.ts",
     "./services/fingerprint-generator": "./src/services/fingerprint-generator.ts",

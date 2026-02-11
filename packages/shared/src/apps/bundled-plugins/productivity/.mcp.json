@@ -1,36 +1,24 @@
 {
   "mcpServers": {
-    "slack": {
+    "feishu": {
       "type": "http",
-      "url": "https://mcp.slack.com/mcp"
+      "url": "https://mcp.feishu.cn/mcp"
     },
-    "notion": {
+    "dingtalk": {
       "type": "http",
-      "url": "https://mcp.notion.com/mcp"
+      "url": "https://mcp.dingtalk.com/mcp"
     },
-    "asana": {
+    "yuque": {
       "type": "http",
-      "url": "https://mcp.asana.com/v2/mcp"
+      "url": "https://mcp.yuque.com/mcp"
     },
-    "linear": {
+    "teambition": {
       "type": "http",
-      "url": "https://mcp.linear.app/mcp"
+      "url": "https://mcp.teambition.com/mcp"
     },
-    "atlassian": {
+    "wps": {
       "type": "http",
-      "url": "https://mcp.atlassian.com/v1/mcp"
-    },
-    "ms365": {
-      "type": "http",
-      "url": "https://microsoft365.mcp.claude.com/mcp"
-    },
-    "monday": {
-      "type": "http",
-      "url": "https://mcp.monday.com/mcp"
-    },
-    "clickup": {
-      "type": "http",
-      "url": "https://mcp.clickup.com/mcp"
+      "url": "https://mcp.wps.cn/mcp"
     }
   }
 }

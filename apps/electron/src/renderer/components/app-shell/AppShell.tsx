@@ -29,13 +29,7 @@ import {
   Files,
   Store,
   LayoutDashboard,
-  PenTool,
-  TrendingUp,
-  Calendar,
-  BarChart3,
   Film,
-  Users,
-  Clapperboard,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -131,6 +125,7 @@ import { MarketplaceListPanel } from "./MarketplaceListPanel"
 import type { RichTextInputHandle } from "@/components/ui/rich-text-input"
 import { hasOpenOverlay } from "@/lib/overlay-detection"
 import { clearSourceIconCaches } from "@/lib/icon-cache"
+import { getLucideIcon } from "@/lib/lucide-icon-map"
 import { useT } from "@/context/LocaleContext"
 import { FileTreePanel, FilePreviewPanel } from "@/components/file-manager"
 
@@ -927,6 +922,15 @@ function AppShellContent({
   }, [])
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId)
+
+  // APP 视图配置（从工作区的 app-manifest.json views.sidebar 动态加载）
+  const [appViews, setAppViews] = useState<Array<{ viewId: string; title: string; icon: string; order: number }>>([])
+  useEffect(() => {
+    if (!activeWorkspaceId || !activeWorkspace?.appId) { setAppViews([]); return }
+    window.electronAPI.getAppViews(activeWorkspaceId).then((views) => {
+      setAppViews(views?.sidebar ?? [])
+    })
+  }, [activeWorkspaceId, activeWorkspace?.appId])
 
   // File manager state - selected file for preview
   const [selectedFile, setSelectedFile] = useState<FMFileEntry | null>(null)
@@ -1893,12 +1897,13 @@ function AppShellContent({
   const unifiedSidebarItems = React.useMemo((): SidebarItem[] => {
     const result: SidebarItem[] = []
 
-    // 0. Home section: explicit workspace home view
-    result.push({ id: 'nav:home', type: 'nav', action: handleHomeClick })
-
-    // 0.5 APP 视图: 创作面板、创作工作台
-    result.push({ id: 'nav:appView:dashboard', type: 'nav', action: () => navigate(routes.view.appView('app.creator-media', 'dashboard')) })
-    result.push({ id: 'nav:appView:workspace', type: 'nav', action: () => navigate(routes.view.appView('app.creator-media', 'workspace')) })
+    // 0. APP 视图（从 manifest.json views.sidebar 动态生成）
+    for (const view of appViews) {
+      const appId = activeWorkspace?.appId
+      if (appId) {
+        result.push({ id: `nav:appView:${view.viewId}`, type: 'nav', action: () => navigate(routes.view.appView(appId, view.viewId)) })
+      }
+    }
 
     // 1. Chats section: All Chats, Flagged, States header, States items
     result.push({ id: 'nav:allChats', type: 'nav', action: handleAllChatsClick })
@@ -1921,15 +1926,14 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Video, Files, Marketplace, Subscription, Settings
-    result.push({ id: 'nav:video', type: 'nav', action: () => navigate(routes.view.video()) })
+    // 3. Files, Marketplace, Subscription, Settings
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
     result.push({ id: 'nav:subscription', type: 'nav', action: handleSubscriptionClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
 
     return result
-  }, [handleHomeClick, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSubscriptionClick, handleSettingsClick])
+  }, [handleHomeClick, appViews, activeWorkspace?.appId, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSubscriptionClick, handleSettingsClick])
 
   // Toggle folder expanded state
   const handleToggleFolder = React.useCallback((path: string) => {
@@ -2243,64 +2247,16 @@ function AppShellContent({
                   getItemProps={getSidebarItemProps}
                   focusedItemId={focusedSidebarItemId}
                   links={[
-                    // --- Home ---
-                    {
-                      id: "nav:home",
-                      title: t('开始'),
-                      icon: Home,
-                      variant: activeRoute === 'home' ? "default" : "ghost",
-                      onClick: handleHomeClick,
-                    },
-                    // --- APP 视图（创作面板、创作工作台）---
-                    {
-                      id: "nav:appView:dashboard",
-                      title: t('创作面板'),
-                      icon: LayoutDashboard,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'dashboard' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'dashboard')),
-                    },
-                    {
-                      id: "nav:appView:workspace",
-                      title: t('创作工作台'),
-                      icon: PenTool,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'workspace' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'workspace')),
-                    },
-                    {
-                      id: "nav:appView:hot-topics",
-                      title: t('热点看板'),
-                      icon: TrendingUp,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'hot-topics' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'hot-topics')),
-                    },
-                    {
-                      id: "nav:appView:video-studio",
-                      title: t('视频工作台'),
-                      icon: Clapperboard,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'video-studio' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'video-studio')),
-                    },
-                    {
-                      id: "nav:appView:calendar",
-                      title: t('内容日历'),
-                      icon: Calendar,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'calendar' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'calendar')),
-                    },
-                    {
-                      id: "nav:appView:analytics",
-                      title: t('数据复盘'),
-                      icon: BarChart3,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'analytics' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'analytics')),
-                    },
-                    {
-                      id: "nav:appView:accounts",
-                      title: t('平台账号'),
-                      icon: Users,
-                      variant: isAppViewNavigation(navState) && navState.viewId === 'accounts' ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.appView('app.creator-media', 'accounts')),
-                    },
+                    // --- APP 视图（从 manifest.json views.sidebar 动态生成）---
+                    ...appViews
+                      .sort((a, b) => a.order - b.order)
+                      .map((view) => ({
+                        id: `nav:appView:${view.viewId}`,
+                        title: t(view.title),
+                        icon: getLucideIcon(view.icon) ?? LayoutDashboard,
+                        variant: (isAppViewNavigation(navState) && navState.viewId === view.viewId ? "default" : "ghost") as "default" | "ghost",
+                        onClick: () => activeWorkspace?.appId && navigate(routes.view.appView(activeWorkspace.appId, view.viewId)),
+                      })),
                     // --- Chats Section (with Flagged, States, Labels as sub-items) ---
                     {
                       id: "nav:allChats",
@@ -2374,14 +2330,6 @@ function AppShellContent({
                           items: buildLabelSidebarItems(labelTree),
                         },
                       ],
-                    },
-                    // --- Video ---
-                    {
-                      id: "nav:video",
-                      title: t('视频创作'),
-                      icon: Film,
-                      variant: isVideoNavigation(navState) ? "default" : "ghost",
-                      onClick: () => navigate(routes.view.video()),
                     },
                     // --- Files ---
                     {

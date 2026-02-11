@@ -11,16 +11,9 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
 import type { Platform } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_LIST, PLATFORM_IDS } from '@sprouty-ai/shared/db/types'
 
-const PLATFORMS: { value: Platform; label: string }[] = [
-  { value: 'xiaohongshu', label: '小红书' },
-  { value: 'douyin', label: '抖音' },
-  { value: 'bilibili', label: 'B站' },
-  { value: 'wechat', label: '微信公众号' },
-  { value: 'zhihu', label: '知乎' },
-  { value: 'weibo', label: '微博' },
-  { value: 'x', label: 'X (Twitter)' },
-]
+const PLATFORMS = PLATFORM_LIST.map(p => ({ value: p.id, label: p.label }))
 
 /** 读取文件为 data URL */
 function readFileAsDataURL(file: File): Promise<string> {
@@ -40,11 +33,56 @@ function buildAICreatePrompt(userInput: string) {
 
 你需要：
 1. 如果用户提供了账号链接，尝试访问并分析该账号的公开信息
-2. 根据分析结果，调用 creatorMedia 相关 IPC 创建项目和画像
-3. 项目字段：name（项目名称）、platform（主平台：xiaohongshu/douyin/bilibili/wechat/zhihu/weibo/x）、description（描述）、platforms（多平台 JSON 数组）
-4. 画像字段：niche（领域）、sub_niche（细分领域）、persona（人设）、target_audience（目标受众）、tone（调性）、keywords（关键词，逗号分隔）、content_pillars（内容支柱，逗号分隔）、posting_frequency（发布频率：daily/3_per_week/weekly/biweekly/monthly）、taboo_topics（禁忌话题）
+2. 根据分析结果，使用 sqlite3 命令直接将项目和画像写入数据库
+3. 所有字段都必须填写，不能为 NULL —— 如果用户未提供某些信息，请根据上下文智能推断合理的值
 
-请使用 creatorMedia 技能完成项目创建和画像设置。如果无法直接创建，请输出结构化的 JSON 数据供用户参考。</context>
+数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）
+
+操作步骤（必须严格按照以下顺序执行）：
+
+步骤1 - 生成 UUID 和头像：
+\`\`\`bash
+PROJECT_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+PROFILE_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+\`\`\`
+
+头像处理（avatar_path）：
+- 如果用户提供了图片 URL，直接使用该 URL 作为 avatar_path
+- 否则，根据项目名称和领域生成一个 SVG 头像文件，保存到 .sprouty-ai/avatars/<PROJECT_ID>.svg，avatar_path 填写该相对路径
+- SVG 头像要求：简洁美观，使用领域相关图标，配合适合该领域的渐变背景色，尺寸 128x128
+
+步骤2 - 创建项目并设为活跃：
+\`\`\`bash
+sqlite3 .sprouty-ai/db/creator.db <<'SQL'
+UPDATE projects SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE is_active = 1;
+INSERT INTO projects (id, name, description, platform, platforms, avatar_path, is_active)
+VALUES ('<PROJECT_ID>', '<项目名称>', '<项目描述>', '<主平台>', '<平台JSON数组>', '<头像路径>', 1);
+SQL
+\`\`\`
+
+步骤3 - 创建账号画像（所有字段必填）：
+\`\`\`bash
+sqlite3 .sprouty-ai/db/creator.db <<'SQL'
+INSERT INTO account_profiles (id, project_id, niche, sub_niche, persona, target_audience, tone, keywords, bio, content_pillars, posting_frequency, best_posting_time, style_references, taboo_topics, pillar_weights)
+VALUES ('<PROFILE_ID>', '<PROJECT_ID>', '<领域>', '<细分领域>', '<人设定位>', '<目标受众>', '<内容调性>', '<关键词逗号分隔>', '<账号简介>', '<内容支柱逗号分隔>', '<发布频率>', '<最佳发布时间>', '<风格参考>', '<禁忌话题>', '<支柱权重JSON>');
+SQL
+\`\`\`
+
+字段说明：
+- platform 取值：${PLATFORM_IDS}
+- platforms：JSON 数组字符串，如 '["xiaohongshu","douyin"]'
+- posting_frequency 取值：daily / 3_per_week / weekly / biweekly / monthly
+- best_posting_time：如 '20:00' 或 '12:00,20:00'
+- pillar_weights：JSON 对象，键为内容支柱名称，值为权重(0-1)，所有权重之和为1，如 '{"知识分享":0.4,"产品评测":0.3,"日常vlog":0.3}'
+- style_references：参考的同领域优秀账号或内容风格，逗号分隔
+- taboo_topics：该领域应避免的敏感话题，逗号分隔
+- 文本中的单引号需要转义为两个单引号（SQL 标准）
+
+重要：
+- 所有字段都必须有值，不允许 NULL，请根据用户信息和领域知识智能推断
+- 必须使用 sqlite3 命令操作数据库，不要调用任何 MCP 工具
+- 创建 SVG 头像前先确保目录存在：mkdir -p .sprouty-ai/avatars
+- 创建完成后告知用户项目已创建成功</context>
 </creator_media_task>
 
 `
@@ -89,7 +127,7 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ open, onOpenChange, onCreateProject, onUpsertProfile }: CreateProjectDialogProps) {
   const t = useT()
-  const [mode, setMode] = useState<'manual' | 'ai'>('manual')
+  const [mode, setMode] = useState<'manual' | 'ai'>('ai')
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
 
@@ -215,17 +253,6 @@ export function CreateProjectDialog({ open, onOpenChange, onCreateProject, onUps
         <div className="flex items-center gap-1 rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
-            onClick={() => setMode('manual')}
-            className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              mode === 'manual'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t('手动填写')}
-          </button>
-          <button
-            type="button"
             onClick={() => setMode('ai')}
             className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               mode === 'ai'
@@ -239,6 +266,17 @@ export function CreateProjectDialog({ open, onOpenChange, onCreateProject, onUps
               </svg>
               {t('AI 智能填写')}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('manual')}
+            className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              mode === 'manual'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t('手动填写')}
           </button>
         </div>
 

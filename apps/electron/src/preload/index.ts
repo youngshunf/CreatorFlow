@@ -37,6 +37,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.DELETE_WORKSPACE, workspaceId, mode),
   checkWorkspaceSlug: (slug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_SLUG, slug),
+  checkWorkspaceName: (name: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CHECK_WORKSPACE_NAME, name),
 
   // Window management
   getWindowWorkspace: () => ipcRenderer.invoke(IPC_CHANNELS.GET_WINDOW_WORKSPACE),
@@ -324,6 +326,8 @@ const api: ElectronAPI = {
   // Apps (local bundled apps)
   listBundledApps: () =>
     ipcRenderer.invoke(IPC_CHANNELS.APPS_LIST_BUNDLED),
+  getAppViews: (workspaceId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VIEWS, workspaceId),
 
   // Marketplace
   marketplaceListSkills: (options?: import('@sprouty-ai/shared/marketplace').ListSkillsParams) =>
@@ -641,6 +645,28 @@ const api: ElectronAPI = {
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_DELETE_PROFILE, workspaceId, platformAccountId),
       generateFingerprint: (workspaceId: string, platformAccountId: string) =>
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_BROWSER_GENERATE_FINGERPRINT, workspaceId, platformAccountId),
+    },
+    drafts: {
+      list: (workspaceId: string, projectId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_LIST, workspaceId, projectId),
+      get: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_DRAFTS_DELETE, workspaceId, id),
+    },
+    mediaFiles: {
+      list: (workspaceId: string, projectId: string, filters?: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_LIST, workspaceId, projectId, filters),
+      get: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_GET, workspaceId, id),
+      create: (workspaceId: string, data: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_CREATE, workspaceId, data),
+      delete: (workspaceId: string, id: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_MEDIA_FILES_DELETE, workspaceId, id),
     },
   },
 

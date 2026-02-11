@@ -11,6 +11,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
 import type { Project, Platform, UpdateProject, AccountProfile } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_LIST, PLATFORM_IDS } from '@sprouty-ai/shared/db/types'
 
 /** 构建 AI 编辑项目的 prompt，返回完整 prompt 和用于隐藏元数据的 badge */
 function buildAIEditPrompt(project: Project, profile: AccountProfile | null, userInput: string) {
@@ -19,8 +20,9 @@ function buildAIEditPrompt(project: Project, profile: AccountProfile | null, use
     profile: profile ? {
       niche: profile.niche, sub_niche: profile.sub_niche, persona: profile.persona,
       target_audience: profile.target_audience, tone: profile.tone, keywords: profile.keywords,
-      content_pillars: profile.content_pillars, posting_frequency: profile.posting_frequency,
-      taboo_topics: profile.taboo_topics,
+      bio: profile.bio, content_pillars: profile.content_pillars, posting_frequency: profile.posting_frequency,
+      best_posting_time: profile.best_posting_time, style_references: profile.style_references,
+      taboo_topics: profile.taboo_topics, pillar_weights: profile.pillar_weights,
     } : null,
   }, null, 2)
 
@@ -32,11 +34,73 @@ function buildAIEditPrompt(project: Project, profile: AccountProfile | null, use
 
 你需要：
 1. 如果用户提供了账号链接，尝试访问并分析该账号的公开信息
-2. 根据分析结果，更新项目和画像数据
-3. 项目字段：name、platform（xiaohongshu/douyin/bilibili/wechat/zhihu/weibo/x）、description、platforms（JSON 数组）
-4. 画像字段：niche、sub_niche、persona、target_audience、tone、keywords（逗号分隔）、content_pillars（逗号分隔）、posting_frequency（daily/3_per_week/weekly/biweekly/monthly）、taboo_topics
+2. 根据分析结果，使用 sqlite3 命令直接更新数据库中的项目和画像数据
+3. 所有字段都必须有值，不允许 NULL —— 对于用户未提及的字段，保留当前值；对于当前为空的字段，请根据上下文智能推断合理的值
 
-请使用 creatorMedia 技能完成更新。如果无法直接更新，请输出结构化的 JSON 数据供用户参考。</context>
+数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）
+
+步骤1 - 更新项目信息：
+\`\`\`bash
+sqlite3 .sprouty-ai/db/creator.db <<'SQL'
+UPDATE projects SET
+  name = '<项目名称>',
+  description = '<项目描述>',
+  platform = '<主平台>',
+  platforms = '<平台JSON数组>',
+  avatar_path = '<头像路径>',
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = '${project.id}';
+SQL
+\`\`\`
+
+步骤2 - 更新账号画像（所有字段必填）：
+\`\`\`bash
+sqlite3 .sprouty-ai/db/creator.db <<'SQL'
+INSERT INTO account_profiles (id, project_id, niche, sub_niche, persona, target_audience, tone, keywords, bio, content_pillars, posting_frequency, best_posting_time, style_references, taboo_topics, pillar_weights)
+VALUES (
+  (SELECT COALESCE((SELECT id FROM account_profiles WHERE project_id = '${project.id}'), lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))))),
+  '${project.id}', '<领域>', '<细分领域>', '<人设定位>', '<目标受众>', '<内容调性>', '<关键词逗号分隔>', '<账号简介>', '<内容支柱逗号分隔>', '<发布频率>', '<最佳发布时间>', '<风格参考>', '<禁忌话题>', '<支柱权重JSON>'
+)
+ON CONFLICT(project_id) DO UPDATE SET
+  niche = excluded.niche,
+  sub_niche = excluded.sub_niche,
+  persona = excluded.persona,
+  target_audience = excluded.target_audience,
+  tone = excluded.tone,
+  keywords = excluded.keywords,
+  bio = excluded.bio,
+  content_pillars = excluded.content_pillars,
+  posting_frequency = excluded.posting_frequency,
+  best_posting_time = excluded.best_posting_time,
+  style_references = excluded.style_references,
+  taboo_topics = excluded.taboo_topics,
+  pillar_weights = excluded.pillar_weights,
+  updated_at = CURRENT_TIMESTAMP;
+SQL
+\`\`\`
+
+头像处理（avatar_path）：
+- 如果用户提供了新的图片 URL，直接使用该 URL 作为 avatar_path
+- 如果当前项目已有头像且用户未要求更换，保留当前值
+- 如果需要生成新头像，根据项目名称和领域生成 SVG 文件，保存到 .sprouty-ai/avatars/${project.id}.svg
+- SVG 头像要求：简洁美观，使用领域相关图标，配合适合该领域的渐变背景色，尺寸 128x128
+- 生成前先确保目录存在：mkdir -p .sprouty-ai/avatars
+
+字段说明：
+- platform 取值：${PLATFORM_IDS}
+- platforms：JSON 数组字符串，如 '["xiaohongshu","douyin"]'
+- posting_frequency 取值：daily / 3_per_week / weekly / biweekly / monthly
+- best_posting_time：如 '20:00' 或 '12:00,20:00'
+- pillar_weights：JSON 对象，键为内容支柱名称，值为权重(0-1)，所有权重之和为1，如 '{"知识分享":0.4,"产品评测":0.3,"日常vlog":0.3}'
+- style_references：参考的同领域优秀账号或内容风格，逗号分隔
+- taboo_topics：该领域应避免的敏感话题，逗号分隔
+- 文本中的单引号需要转义为两个单引号（SQL 标准）
+
+重要：
+- 所有字段都必须有值，不允许 NULL
+- 未提及的字段保留当前值，当前为空的字段请智能推断
+- 必须使用 sqlite3 命令操作数据库，不要调用任何 MCP 工具
+- 更新完成后告知用户项目已更新成功</context>
 </creator_media_task>
 
 `
@@ -52,15 +116,7 @@ function buildAIEditPrompt(project: Project, profile: AccountProfile | null, use
   return { prompt, badges }
 }
 
-const PLATFORMS: { value: Platform; label: string }[] = [
-  { value: 'xiaohongshu', label: '小红书' },
-  { value: 'douyin', label: '抖音' },
-  { value: 'bilibili', label: 'B站' },
-  { value: 'wechat', label: '微信公众号' },
-  { value: 'zhihu', label: '知乎' },
-  { value: 'weibo', label: '微博' },
-  { value: 'x', label: 'X (Twitter)' },
-]
+const PLATFORMS = PLATFORM_LIST.map(p => ({ value: p.id, label: p.label }))
 
 /** 读取文件为 data URL */
 function readFileAsDataURL(file: File): Promise<string> {
@@ -83,7 +139,7 @@ interface ProjectSettingsDialogProps {
 
 export function ProjectSettingsDialog({ open, onOpenChange, project, profile, onUpdate, onDelete }: ProjectSettingsDialogProps) {
   const t = useT()
-  const [mode, setMode] = useState<'manual' | 'ai'>('manual')
+  const [mode, setMode] = useState<'manual' | 'ai'>('ai')
   const [aiInput, setAiInput] = useState('')
   const [name, setName] = useState(project.name)
   const [platform, setPlatform] = useState<Platform>(project.platform)
@@ -99,7 +155,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project, profile, on
     setDescription(project.description || '')
     setAvatarPreview(project.avatar_path || '')
     setConfirmDelete(false)
-    setMode('manual')
+    setMode('ai')
     setAiInput('')
     // 解析已有的多平台数据
     try {
@@ -183,17 +239,6 @@ export function ProjectSettingsDialog({ open, onOpenChange, project, profile, on
         <div className="flex items-center gap-1 rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
-            onClick={() => setMode('manual')}
-            className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              mode === 'manual'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t('手动编辑')}
-          </button>
-          <button
-            type="button"
             onClick={() => setMode('ai')}
             className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               mode === 'ai'
@@ -207,6 +252,17 @@ export function ProjectSettingsDialog({ open, onOpenChange, project, profile, on
               </svg>
               {t('AI 智能编辑')}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('manual')}
+            className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              mode === 'manual'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t('手动编辑')}
           </button>
         </div>
 

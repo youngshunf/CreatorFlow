@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -271,6 +271,43 @@ CREATE TABLE IF NOT EXISTS publish_queue (
 
 CREATE INDEX IF NOT EXISTS idx_queue_status ON publish_queue(status, priority DESC, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_queue_platform ON publish_queue(platform_account_id, status);
+
+-- 草稿表
+CREATE TABLE IF NOT EXISTS drafts (
+  id              TEXT PRIMARY KEY,
+  project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title           TEXT,
+  content         TEXT NOT NULL,
+  content_type    TEXT,
+  media           TEXT NOT NULL DEFAULT '[]',
+  tags            TEXT,
+  target_platforms TEXT,
+  metadata        TEXT,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_draft_project ON drafts(project_id);
+
+-- 素材库表
+CREATE TABLE IF NOT EXISTS media_files (
+  id              TEXT PRIMARY KEY,
+  project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  type            TEXT NOT NULL,
+  path            TEXT NOT NULL,
+  filename        TEXT NOT NULL,
+  size            INTEGER NOT NULL,
+  width           INTEGER,
+  height          INTEGER,
+  duration        INTEGER,
+  thumbnail       TEXT,
+  tags            TEXT,
+  description     TEXT,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id);
+CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type);
 `;
 
 /** 初始版本记录 SQL */

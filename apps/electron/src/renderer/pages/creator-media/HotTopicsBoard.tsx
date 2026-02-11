@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { useT } from '@/context/LocaleContext'
 import { useCreatorMedia } from './hooks/useCreatorMedia'
 import { ProjectSwitcher } from './components/ProjectSwitcher'
+import { PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
 
-/** 平台标签 */
+/** 平台标签（热点源包含非标准平台） */
 const PLATFORMS = [
   { id: 'all', label: '全部' },
-  { id: 'weibo', label: '微博' },
-  { id: 'douyin', label: '抖音' },
-  { id: 'zhihu', label: '知乎' },
-  { id: 'bilibili', label: 'B站' },
+  ...PLATFORM_LIST.map(p => ({ id: p.id, label: p.shortLabel })),
   { id: 'baidu', label: '百度' },
 ]
 

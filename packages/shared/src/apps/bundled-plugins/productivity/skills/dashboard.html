@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Productivity</title>
+  <title>生产力</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='2' width='24' height='28' rx='4' fill='%23faf9f5' stroke='%23D97757' stroke-width='2'/%3E%3Crect x='8' y='0' width='16' height='5' rx='2.5' fill='%23D97757'/%3E%3Cpath d='M9 13l3 3 5-5' fill='none' stroke='%23D97757' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='12' width='5' height='2' rx='1' fill='%23c4c4c2'/%3E%3Crect x='9' y='20' width='10' height='2' rx='1' fill='%23c4c4c2'/%3E%3Crect x='9' y='25' width='7' height='2' rx='1' fill='%23c4c4c2'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1201,22 +1201,22 @@
         <rect x="9" y="25" width="7" height="2" rx="1" fill="#c4c4c2"/>
       </svg>
       <div>
-        <h1>Productivity</h1>
+        <h1>生产力</h1>
         <div id="filePath" class="file-path"></div>
       </div>
       <div class="view-toggle" id="mainTabToggle">
-        <button id="tasksTabBtn" class="active">Tasks</button>
-        <button id="memoryTabBtn">Memory</button>
+        <button id="tasksTabBtn" class="active">任务</button>
+        <button id="memoryTabBtn">记忆</button>
       </div>
       <div class="view-toggle" id="taskViewToggle">
-        <button id="boardViewBtn" class="active">Board</button>
-        <button id="listViewBtn">List</button>
+        <button id="boardViewBtn" class="active">看板</button>
+        <button id="listViewBtn">列表</button>
       </div>
     </div>
     <div class="buttons">
-      <button id="openTaskBtn">Select File</button>
-      <button id="openMemoryBtn" style="display: none;">Open Folder</button>
-      <button id="saveBtn" class="primary" disabled style="display: none;">Save</button>
+      <button id="openTaskBtn">选择文件</button>
+      <button id="openMemoryBtn" style="display: none;">打开文件夹</button>
+      <button id="saveBtn" class="primary" disabled style="display: none;">保存</button>
     </div>
   </header>
 
@@ -1225,8 +1225,8 @@
     <div class="list-view" id="listView" style="display: none;"></div>
     <div class="board" id="board">
       <div class="empty-state" id="boardEmptyState" style="width: 100%;">
-        <p style="margin-bottom: 24px; font-size: 18px; font-weight: 600; color: var(--text-primary);">Select your TASKS.md file</p>
-        <button id="openBtnLarge">Select TASKS.md</button>
+        <p style="margin-bottom: 24px; font-size: 18px; font-weight: 600; color: var(--text-primary);">选择你的 TASKS.md 文件</p>
+        <button id="openBtnLarge">选择 TASKS.md</button>
       </div>
     </div>
   </div>
@@ -1234,8 +1234,8 @@
   <!-- MEMORY TAB PANEL -->
   <div class="tab-panel" id="memoryPanel">
     <div id="memoryEmptyState" class="empty-state">
-      <p style="margin-bottom: 24px; font-size: 18px; font-weight: 600; color: var(--text-primary);">Select your project folder</p>
-      <button id="openMemoryBtnLarge">Select Folder</button>
+      <p style="margin-bottom: 24px; font-size: 18px; font-weight: 600; color: var(--text-primary);">选择你的项目文件夹</p>
+      <button id="openMemoryBtnLarge">选择文件夹</button>
     </div>
     <div id="memoryMainContent" style="display: none; flex-direction: column; min-height: 0; flex: 1;">
       <div class="memory-tabs" id="memoryTabsContainer"></div>
@@ -1249,13 +1249,13 @@
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <div class="modal-header">
-        <h3 id="modalTitle">Edit</h3>
+        <h3 id="modalTitle">编辑</h3>
         <button class="modal-close" id="modalClose">&times;</button>
       </div>
       <div class="modal-body" id="modalBody"></div>
       <div class="modal-footer">
-        <button id="modalCancel">Cancel</button>
-        <button id="modalSave" class="primary">Save</button>
+        <button id="modalCancel">取消</button>
+        <button id="modalSave" class="primary">保存</button>
       </div>
     </div>
   </div>
@@ -1424,7 +1424,7 @@
 
       let html = `
         <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <button class="delete-btn" data-action="delete" title="Delete task">&times;</button>
+          <button class="delete-btn" data-action="delete" title="删除任务">&times;</button>
           <span class="checkbox ${task.checked ? 'checked' : ''}" data-action="toggle"></span>
           <div class="card-title" data-action="edit-title">${task.title}</div>
         </div>
@@ -1433,7 +1433,7 @@
       if (task.note) {
         html += `<div class="card-note" data-action="edit-note" style="cursor: pointer; margin-left: 30px;">${task.note}</div>`;
       } else {
-        html += `<div class="card-note add-on-hover" data-action="edit-note" style="cursor: pointer; margin-left: 30px; font-style: italic;">+ Add note</div>`;
+        html += `<div class="card-note add-on-hover" data-action="edit-note" style="cursor: pointer; margin-left: 30px; font-style: italic;">+ 添加备注</div>`;
       }
 
       if (task.subtasks.length > 0) {
@@ -1444,11 +1444,11 @@
             <span data-action="edit-subtask" data-idx="${idx}" style="cursor: pointer;">${st.text}</span>
           </div>`;
         });
-        html += `<div class="subtask add-on-hover" data-action="add-subtask" style="color: var(--text-muted); cursor: pointer; font-style: italic; padding-left: 24px;">+ Add subtask</div>`;
+        html += `<div class="subtask add-on-hover" data-action="add-subtask" style="color: var(--text-muted); cursor: pointer; font-style: italic; padding-left: 24px;">+ 添加子任务</div>`;
         html += '</div>';
       } else {
         html += `<div class="card-subtasks add-on-hover" style="margin-left: 30px;">
-          <div class="subtask" data-action="add-subtask" style="color: var(--text-muted); cursor: pointer; font-style: italic;">+ Add subtask</div>
+          <div class="subtask" data-action="add-subtask" style="color: var(--text-muted); cursor: pointer; font-style: italic;">+ 添加子任务</div>
         </div>`;
       }
 
@@ -1524,7 +1524,7 @@
       const input = document.createElement('input');
       input.type = 'text';
       input.value = task.note || '';
-      input.placeholder = 'Add a note...';
+      input.placeholder = '添加备注...';
       input.style.cssText = 'width: 100%; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 6px; padding: 4px 8px; color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none;';
 
       noteEl.replaceWith(input);
@@ -1577,7 +1577,7 @@
     function startAddingSubtask(el, task) {
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'New subtask...';
+      input.placeholder = '新建子任务...';
       input.style.cssText = 'width: calc(100% - 10px); background: var(--bg-card); border: 2px solid var(--accent); border-radius: 4px; padding: 2px 6px; color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none;';
 
       el.replaceWith(input);
@@ -1649,7 +1649,7 @@
         </div>
         <div class="cards" data-column="${id}"></div>
         <div class="add-card">
-          <button data-add="${id}">+ Add task</button>
+          <button data-add="${id}">+ 添加任务</button>
         </div>
       `;
 
@@ -1764,7 +1764,7 @@
 
       const input = document.createElement('textarea');
       input.className = 'new-task-input';
-      input.placeholder = 'What needs to be done?';
+      input.placeholder = '需要做什么？';
       input.rows = 2;
       container.appendChild(input);
       input.focus();
@@ -1827,7 +1827,7 @@
     }
 
     function deleteTask(task) {
-      if (!confirm(`Delete "${task.title}"?`)) return;
+      if (!confirm(`删除"${task.title}"？`)) return;
       for (const section of sections) {
         const sectionTasks = tasks[section.id] || [];
         const idx = sectionTasks.findIndex(t => t.id === task.id);
@@ -1861,9 +1861,9 @@
         lastModified = file.lastModified;
         hasChanges = false;
         saveBtn.disabled = true;
-        showStatus('Saved');
+        showStatus('已保存');
       } catch (e) {
-        showStatus('Save failed: ' + e.message);
+        showStatus('保存失败: ' + e.message);
       }
       isSaving = false;
     }
@@ -1879,7 +1879,7 @@
           sections = result.sections;
           tasks = result.tasks;
           renderTasks();
-          showStatus('Reloaded');
+          showStatus('已重新加载');
         }
       } catch (e) { console.log('Watch error:', e); }
     }
@@ -1908,7 +1908,7 @@
       const addSectionBtn = document.createElement('div');
       addSectionBtn.className = 'column';
       addSectionBtn.style.cssText = 'background: transparent; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; min-height: 120px;';
-      addSectionBtn.innerHTML = '<span style="color: var(--text-muted); font-size: 14px; font-weight: 500;">+ Add Section</span>';
+      addSectionBtn.innerHTML = '<span style="color: var(--text-muted); font-size: 14px; font-weight: 500;">+ 添加分区</span>';
       addSectionBtn.addEventListener('click', () => startAddingSection(addSectionBtn));
       board.appendChild(addSectionBtn);
     }
@@ -1925,10 +1925,10 @@
       quickAdd.className = 'quick-add';
       quickAdd.style.cssText = 'border-bottom: 2px solid var(--border); margin-bottom: 24px; padding-bottom: 16px;';
 
-      const sectionName = sections.find(s => s.id === quickAddSection)?.name || 'Select section';
+      const sectionName = sections.find(s => s.id === quickAddSection)?.name || '选择分区';
       quickAdd.innerHTML = `
         <span class="checkbox" style="opacity: 0.3;"></span>
-        <input type="text" class="quick-add-input" placeholder="Add a task..." id="quickAddInput">
+        <input type="text" class="quick-add-input" placeholder="添加任务..." id="quickAddInput">
         <span class="quick-add-section" id="quickAddSectionBtn">${sectionName}</span>
       `;
       listView.appendChild(quickAdd);
@@ -2041,7 +2041,7 @@
       // Add Section button
       const addSectionBtn = document.createElement('div');
       addSectionBtn.className = 'list-add-section';
-      addSectionBtn.textContent = '+ Add Section';
+      addSectionBtn.textContent = '+ 添加分区';
       addSectionBtn.addEventListener('click', () => { startAddingListSection(addSectionBtn); });
       listView.appendChild(addSectionBtn);
     }
@@ -2086,7 +2086,7 @@
     function startAddingListSection(btn) {
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'Section name...';
+      input.placeholder = '分区名称...';
       input.style.cssText = 'width: 100%; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; padding: 12px 16px; color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; text-align: left;';
 
       btn.innerHTML = '';
@@ -2169,7 +2169,7 @@
       } else {
         const addNote = document.createElement('div');
         addNote.className = 'list-item-note add-note';
-        addNote.textContent = '+ Add note';
+        addNote.textContent = '+ 添加备注';
         addNote.addEventListener('click', (e) => {
           e.stopPropagation();
           startEditingListNote(addNote, task);
@@ -2215,7 +2215,7 @@
 
       const addSubtask = document.createElement('div');
       addSubtask.className = 'list-item-add-subtask';
-      addSubtask.textContent = '+ Add subtask';
+      addSubtask.textContent = '+ 添加子任务';
       addSubtask.addEventListener('click', (e) => {
         e.stopPropagation();
         startAddingListSubtask(addSubtask, task);
@@ -2224,7 +2224,7 @@
 
       const actions = document.createElement('div');
       actions.className = 'list-item-actions';
-      actions.innerHTML = '<button title="Delete task">&times;</button>';
+      actions.innerHTML = '<button title="删除任务">&times;</button>';
       actions.querySelector('button').addEventListener('click', (e) => {
         e.stopPropagation();
         deleteTask(task);
@@ -2241,7 +2241,7 @@
       const input = document.createElement('input');
       input.type = 'text';
       input.value = task.note || '';
-      input.placeholder = 'Add a note...';
+      input.placeholder = '添加备注...';
       input.style.cssText = 'width: 100%; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 6px; padding: 4px 8px; color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none;';
 
       noteEl.replaceWith(input);
@@ -2294,7 +2294,7 @@
     function startAddingListSubtask(el, task) {
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'New subtask...';
+      input.placeholder = '新建子任务...';
       input.style.cssText = 'width: calc(100% - 10px); background: var(--bg-card); border: 2px solid var(--accent); border-radius: 4px; padding: 2px 6px; color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none;';
 
       el.replaceWith(input);
@@ -2402,7 +2402,7 @@
     function startAddingSection(btn) {
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'Section name...';
+      input.placeholder = '分区名称...';
       input.style.cssText = 'width: 220px; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; padding: 10px 14px; color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none;';
 
       btn.innerHTML = '';
@@ -2448,9 +2448,9 @@
         startWatching();
         taskFileName = file.name;
         filePathEl.textContent = file.name;
-        showStatus('Loaded ' + file.name);
+        showStatus('已加载 ' + file.name);
       } catch (e) {
-        if (e.name !== 'AbortError') { showStatus('Error: ' + e.message); }
+        if (e.name !== 'AbortError') { showStatus('错误: ' + e.message); }
       }
     }
 
@@ -2465,8 +2465,8 @@
         await writable.close();
         hasChanges = false;
         saveBtn.disabled = true;
-        showStatus('Saved');
-      } catch (e) { showStatus('Error: ' + e.message); }
+        showStatus('已保存');
+      } catch (e) { showStatus('错误: ' + e.message); }
     });
 
     window.addEventListener('beforeunload', (e) => {
@@ -2614,10 +2614,10 @@
         memoryEmptyState.style.display = 'none';
         memoryMainContent.style.display = 'flex';
         filePathEl.textContent = memoryDirHandle.name;
-        showStatus('Loaded memory from ' + memoryDirHandle.name);
+        showStatus('已从 ' + memoryDirHandle.name + ' 加载记忆');
 
       } catch (e) {
-        if (e.name !== 'AbortError') { showStatus('Error: ' + e.message); }
+        if (e.name !== 'AbortError') { showStatus('错误: ' + e.message); }
       }
     }
 
@@ -2729,7 +2729,7 @@
           </div>
           <div class="file-card-content expanded markdown-content">${claudeContent}</div>
         </div>
-        <button onclick="openEditModal('CLAUDE.md', 'claudeMd')" style="margin-top: 10px;">Edit CLAUDE.md</button>
+        <button onclick="openEditModal('CLAUDE.md', 'claudeMd')" style="margin-top: 10px;">编辑 CLAUDE.md</button>
       `;
     }
 
@@ -2746,7 +2746,7 @@
           </div>
           <div class="file-card-content expanded markdown-content">${content}</div>
         </div>
-        <button onclick="openEditModal('${fileName}', 'memoryFile')" style="margin-top: 10px;">Edit ${fileName}</button>
+        <button onclick="openEditModal('${fileName}', 'memoryFile')" style="margin-top: 10px;">编辑 ${fileName}</button>
       `;
     }
 
@@ -2763,7 +2763,7 @@
       let html = `
         <div class="search-box">
           <span style="color: var(--text-muted);">&#128269;</span>
-          <input type="text" placeholder="Search ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
+          <input type="text" placeholder="搜索 ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
         </div>
         <div class="memory-grid" id="dirGrid">
       `;
@@ -2807,7 +2807,7 @@
 
       html += `
         <div class="add-btn" onclick="openNewFileModal('${dirName}')">
-          + Add to ${dirName}
+          + 添加到 ${dirName}
         </div>
       </div>`;
 
@@ -2818,7 +2818,7 @@
       let html = `
         <div class="search-box">
           <span style="color: var(--text-muted);">&#128269;</span>
-          <input type="text" placeholder="Search ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
+          <input type="text" placeholder="搜索 ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
         </div>
         <div id="dirGrid">
       `;
@@ -2932,7 +2932,7 @@
           ${renderMarkdownToHtml(file.content)}
         </div>
         <div class="form-group">
-          <label>Edit Raw Markdown</label>
+          <label>编辑原始 Markdown</label>
           <textarea id="editContent">${escapeHtml(file.content)}</textarea>
         </div>
       `;
@@ -2944,9 +2944,9 @@
     }
 
     function openNewFileModal(dirName) {
-      document.getElementById('modalTitle').textContent = `Add to ${dirName}`;
+      document.getElementById('modalTitle').textContent = `添加到 ${dirName}`;
 
-      let template = '# New Entry\n\n';
+      let template = '# 新条目\n\n';
       const existingFiles = memoryData.memoryDirs[dirName];
       if (existingFiles && existingFiles.length > 0) {
         const sample = existingFiles[0].parsed;
@@ -2963,11 +2963,11 @@
 
       document.getElementById('modalBody').innerHTML = `
         <div class="form-group">
-          <label>Filename (without .md)</label>
-          <input type="text" id="newFileName" placeholder="my-new-entry" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); font-size: 14px; font-family: inherit; margin-bottom: 16px;">
+          <label>文件名（不含 .md）</label>
+          <input type="text" id="newFileName" placeholder="新条目名称" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); font-size: 14px; font-family: inherit; margin-bottom: 16px;">
         </div>
         <div class="form-group">
-          <label>Content</label>
+          <label>内容</label>
           <textarea id="editContent">${escapeHtml(template)}</textarea>
         </div>
       `;
@@ -2986,10 +2986,10 @@
         if (file) content = file.content;
       }
 
-      document.getElementById('modalTitle').textContent = `Edit ${fileName}`;
+      document.getElementById('modalTitle').textContent = `编辑 ${fileName}`;
       document.getElementById('modalBody').innerHTML = `
         <div class="form-group">
-          <label>Content</label>
+          <label>内容</label>
           <textarea id="editContent" style="min-height: 400px;">${escapeHtml(content)}</textarea>
         </div>
       `;
@@ -3013,7 +3013,7 @@
           const writable = await memoryData.claudeMd.fileHandle.createWritable();
           await writable.write(content);
           await writable.close();
-          showStatus('Saved CLAUDE.md');
+          showStatus('已保存 CLAUDE.md');
 
         } else if (type === 'memoryFile') {
           const fileName = modalOverlay.dataset.fileName;
@@ -3023,7 +3023,7 @@
             const writable = await file.fileHandle.createWritable();
             await writable.write(content);
             await writable.close();
-            showStatus('Saved ' + fileName);
+            showStatus('已保存 ' + fileName);
           }
 
         } else if (type === 'dirFile') {
@@ -3037,13 +3037,13 @@
             const writable = await file.fileHandle.createWritable();
             await writable.write(content);
             await writable.close();
-            showStatus('Saved ' + fileName);
+            showStatus('已保存 ' + fileName);
           }
 
         } else if (type === 'newDirFile') {
           const dirName = modalOverlay.dataset.dirName;
           let fileName = document.getElementById('newFileName').value.trim();
-          if (!fileName) { showStatus('Please enter a filename'); return; }
+          if (!fileName) { showStatus('请输入文件名'); return; }
           if (!fileName.endsWith('.md')) fileName += '.md';
 
           const memoryDir = await memoryDirHandle.getDirectoryHandle('memory');
@@ -3062,14 +3062,14 @@
             parsed: parseMemoryMarkdown(content)
           });
 
-          showStatus('Created ' + fileName);
+          showStatus('已创建 ' + fileName);
         }
 
         closeModal();
         renderMemory();
 
       } catch (e) {
-        showStatus('Error saving: ' + e.message);
+        showStatus('保存出错: ' + e.message);
       }
     }
 

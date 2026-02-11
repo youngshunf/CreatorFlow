@@ -19,10 +19,8 @@ import {
   rmSync,
   createWriteStream,
 } from 'fs';
-import { join, basename, dirname } from 'path';
-import { pipeline } from 'stream/promises';
+import { join, dirname } from 'path';
 import { createHash } from 'crypto';
-import { Extract } from 'unzipper';
 import type {
   InstallProgress,
   InstallProgressCallback,
@@ -135,6 +133,7 @@ function calculateFileHash(filePath: string): string {
 
 /**
  * Extract a zip file to a directory
+ * 使用 unzipper.Open.file 方式解压，避免 pipeline + Extract 丢失文件的问题
  */
 async function extractZip(zipPath: string, destDir: string): Promise<void> {
   // Ensure destination exists
@@ -142,11 +141,10 @@ async function extractZip(zipPath: string, destDir: string): Promise<void> {
     mkdirSync(destDir, { recursive: true });
   }
 
-  // Extract using unzipper
-  const extract = Extract({ path: destDir });
-  const readStream = require('fs').createReadStream(zipPath);
-  
-  await pipeline(readStream, extract);
+  // 使用 Open.file 读取完整 zip 后再解压，确保所有文件都被正确提取
+  const { Open } = require('unzipper');
+  const directory = await Open.file(zipPath);
+  await directory.extract({ path: destDir });
 }
 
 /**

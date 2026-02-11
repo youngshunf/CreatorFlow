@@ -116,6 +116,48 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE INDEX IF NOT EXISTS idx_queue_platform ON publish_queue(platform_account_id, status)');
     },
   },
+  {
+    version: 6,
+    description: '新增草稿表 drafts + 素材库表 media_files',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drafts (
+          id              TEXT PRIMARY KEY,
+          project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          title           TEXT,
+          content         TEXT NOT NULL,
+          content_type    TEXT,
+          media           TEXT NOT NULL DEFAULT '[]',
+          tags            TEXT,
+          target_platforms TEXT,
+          metadata        TEXT,
+          created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_draft_project ON drafts(project_id)');
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS media_files (
+          id              TEXT PRIMARY KEY,
+          project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          type            TEXT NOT NULL,
+          path            TEXT NOT NULL,
+          filename        TEXT NOT NULL,
+          size            INTEGER NOT NULL,
+          width           INTEGER,
+          height          INTEGER,
+          duration        INTEGER,
+          thumbnail       TEXT,
+          tags            TEXT,
+          description     TEXT,
+          created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type)');
+    },
+  },
 ];
 
 /**
@@ -175,6 +217,6 @@ export function migrate(db: CreatorMediaDB): { from: number; to: number; applied
     }
   });
 
-  const newVersion = pendingMigrations[pendingMigrations.length - 1].version;
+  const newVersion = pendingMigrations[pendingMigrations.length - 1]!.version;
   return { from: currentVersion, to: newVersion, applied: pendingMigrations.length };
 }

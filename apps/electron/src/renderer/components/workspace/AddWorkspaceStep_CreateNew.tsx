@@ -1,103 +1,105 @@
 import { useState, useEffect, useCallback } from "react"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, FolderOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { slugify } from "@/lib/slugify"
 import { Input } from "../ui/input"
-import { Button } from "../ui/button"
-import { AddWorkspaceContainer, AddWorkspaceStepHeader, AddWorkspaceSecondaryButton, AddWorkspacePrimaryButton } from "./primitives"
-import { AddWorkspace_RadioOption } from "./AddWorkspace_RadioOption"
+import { AddWorkspaceContainer, AddWorkspaceStepHeader, AddWorkspacePrimaryButton } from "./primitives"
 import { useT, use$T } from "@/context/LocaleContext"
-
-type LocationOption = 'default' | 'custom'
 
 interface AddWorkspaceStep_CreateNewProps {
   onBack: () => void
   onCreate: (folderPath: string, name: string) => Promise<void>
   isCreating: boolean
-  /** Default workspace name (typically from selected app) */
-  defaultName?: string
+  /** 选中的应用名称，用于生成默认工作区名称 */
+  appName?: string
 }
 
 /**
- * AddWorkspaceStep_CreateNew - Create a new workspace
+ * AddWorkspaceStep_CreateNew - 创建新工作区
  *
- * Fields:
- * - Workspace name (required)
- * - Location: Default (~/.sprouty-ai/workspaces/) or Custom
+ * 流程：
+ * 1. 必须选择文件夹
+ * 2. 工作区名称默认为 "目录名-应用名"，选择目录后自动更新
+ * 3. 创建时校验同名工作区
  */
 export function AddWorkspaceStep_CreateNew({
   onBack,
   onCreate,
   isCreating,
-  defaultName = ''
+  appName = ''
 }: AddWorkspaceStep_CreateNewProps) {
   const t = useT()
   const $t = use$T()
-  const [name, setName] = useState(defaultName)
-  const [locationOption, setLocationOption] = useState<LocationOption>('default')
-  const [customPath, setCustomPath] = useState<string | null>(null)
-  const [homeDir, setHomeDir] = useState('')
+  const [name, setName] = useState('')
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isValidating, setIsValidating] = useState(false)
+  // 标记用户是否手动修改过名称
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false)
 
-  // Get home directory on mount
-  useEffect(() => {
-    window.electronAPI.getHomeDir().then(setHomeDir)
+  // 根据选中的目录和应用名生成默认工作区名称
+  const generateDefaultName = useCallback((folderPath: string, app: string) => {
+    const folderName = folderPath.split(/[\\/]/).pop() || ''
+    if (app && folderName) {
+      return `${folderName}-${app}`
+    }
+    return folderName || app || ''
   }, [])
 
-  const slug = slugify(name)
-  const defaultBasePath = homeDir ? `${homeDir}/.sprouty-ai/workspaces` : '~/.sprouty-ai/workspaces'
-  const finalPath = locationOption === 'default'
-    ? `${defaultBasePath}/${slug}`
-    : customPath
-      ? `${customPath}/${slug}`
-      : null
-
-  // Validate slug uniqueness when name changes
+  // 校验工作区名称是否已存在
   useEffect(() => {
-    if (!slug) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
       setError(null)
       return
     }
 
-    const validateSlug = async () => {
+    const validateName = async () => {
       setIsValidating(true)
       try {
-        const result = await window.electronAPI.checkWorkspaceSlug(slug)
+        const result = await window.electronAPI.checkWorkspaceName(trimmedName)
         if (result.exists) {
-          setError($t('名为 "{name}" 的工作区已存在', { name: slug }))
+          setError($t('名为 "{name}" 的工作区已存在，请修改名称', { name: trimmedName }))
         } else {
           setError(null)
         }
       } catch (err) {
-        console.error('Failed to validate workspace slug:', err)
+        console.error('Failed to validate workspace name:', err)
       } finally {
         setIsValidating(false)
       }
     }
 
-    // Debounce validation
-    const timeout = setTimeout(validateSlug, 300)
+    // 防抖校验
+    const timeout = setTimeout(validateName, 300)
     return () => clearTimeout(timeout)
-  }, [slug])
+  }, [name, $t])
 
   const handleBrowse = useCallback(async () => {
     const path = await window.electronAPI.openFolderDialog()
     if (path) {
-      setCustomPath(path)
+      setSelectedPath(path)
+      // 如果用户没有手动修改过名称，自动更新
+      if (!nameManuallyEdited) {
+        setName(generateDefaultName(path, appName))
+      }
     }
+  }, [appName, nameManuallyEdited, generateDefaultName])
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value)
+    setNameManuallyEdited(true)
   }, [])
 
   const handleCreate = useCallback(async () => {
-    if (!name.trim() || !finalPath || error) return
-    await onCreate(finalPath, name.trim())
-  }, [name, finalPath, error, onCreate])
+    if (!name.trim() || !selectedPath || error) return
+    await onCreate(selectedPath, name.trim())
+  }, [name, selectedPath, error, onCreate])
 
-  const canCreate = name.trim() && finalPath && !error && !isValidating && !isCreating
+  const canCreate = name.trim() && selectedPath && !error && !isValidating && !isCreating
 
   return (
     <AddWorkspaceContainer>
-      {/* Back button */}
+      {/* 返回按钮 */}
       <button
         onClick={onBack}
         disabled={isCreating}
@@ -113,11 +115,46 @@ export function AddWorkspaceStep_CreateNew({
 
       <AddWorkspaceStepHeader
         title={t('创建工作区')}
-        description={t('输入名称并选择工作区的存储位置。')}
+        description={t('选择工作区文件夹并输入名称。')}
       />
 
       <div className="mt-6 w-full space-y-6">
-        {/* Workspace name */}
+        {/* 选择文件夹 - 整行可点击 */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground mb-2.5">
+            {t('工作区文件夹')}
+          </label>
+          <button
+            type="button"
+            onClick={handleBrowse}
+            disabled={isCreating}
+            className={cn(
+              "flex items-center gap-3 w-full p-3.5 rounded-xl text-left",
+              "bg-background shadow-minimal",
+              "border border-transparent",
+              "transition-all duration-150",
+              "hover:bg-foreground/5 hover:border-border/50",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              isCreating && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <div className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+              selectedPath ? "bg-accent/10 text-accent" : "bg-foreground/5 text-muted-foreground"
+            )}>
+              <FolderOpen className="h-4.5 w-4.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              {selectedPath ? (
+                <p className="text-sm text-foreground truncate">{selectedPath}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('点击选择文件夹')}</p>
+              )}
+            </div>
+          </button>
+        </div>
+
+        {/* 工作区名称 */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-foreground mb-2.5">
             {t('工作区名称')}
@@ -125,10 +162,9 @@ export function AddWorkspaceStep_CreateNew({
           <div className="bg-background shadow-minimal rounded-lg">
             <Input
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('我的工作区')}
+              onChange={handleNameChange}
+              placeholder={t('选择文件夹后自动生成')}
               disabled={isCreating}
-              autoFocus
               className="border-0 bg-transparent shadow-none"
             />
           </div>
@@ -137,45 +173,7 @@ export function AddWorkspaceStep_CreateNew({
           )}
         </div>
 
-        {/* Location selection */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-foreground mb-2.5">
-            {t('位置')}
-          </label>
-
-          {/* Default location option */}
-          <AddWorkspace_RadioOption
-            name="location"
-            checked={locationOption === 'default'}
-            onChange={() => setLocationOption('default')}
-            disabled={isCreating}
-            title={t('默认位置')}
-            subtitle={t('在 .sprouty-ai 文件夹下')}
-          />
-
-          {/* Custom location option */}
-          <AddWorkspace_RadioOption
-            name="location"
-            checked={locationOption === 'custom'}
-            onChange={() => setLocationOption('custom')}
-            disabled={isCreating}
-            title={t('选择位置')}
-            subtitle={customPath || t('选择新工作区的存储位置。')}
-            action={locationOption === 'custom' ? (
-              <AddWorkspaceSecondaryButton
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleBrowse()
-                }}
-                disabled={isCreating}
-              >
-                {t('浏览')}
-              </AddWorkspaceSecondaryButton>
-            ) : undefined}
-          />
-        </div>
-
-        {/* Create button */}
+        {/* 创建按钮 */}
         <AddWorkspacePrimaryButton
           onClick={handleCreate}
           disabled={!canCreate}
