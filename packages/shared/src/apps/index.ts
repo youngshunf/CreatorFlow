@@ -55,4 +55,5 @@ export {
   uninstallPluginFromWorkspace,
   migrateWorkspaceToApp,
   installSkillsFromCloud,
+  createDirectoryStructure,
 } from './initializer.ts';

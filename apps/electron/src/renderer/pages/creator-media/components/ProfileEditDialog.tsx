@@ -10,15 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
+import { POSTING_FREQUENCY_LIST } from '@sprouty-ai/shared/db/types'
 import type { AccountProfile } from '@sprouty-ai/shared/db/types'
-
-const FREQUENCIES = [
-  { value: 'daily', label: '每天' },
-  { value: '3_per_week', label: '每周3次' },
-  { value: 'weekly', label: '每周1次' },
-  { value: 'biweekly', label: '每两周1次' },
-  { value: 'monthly', label: '每月1次' },
-]
 
 interface ProfileEditDialogProps {
   open: boolean
@@ -203,8 +196,8 @@ export function ProfileEditDialog({ open, onOpenChange, projectId, profile, onSa
                   <SelectValue placeholder={t('选择频率')} />
                 </SelectTrigger>
                 <SelectContent className="z-modal">
-                  {FREQUENCIES.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{t(f.label)}</SelectItem>
+                  {POSTING_FREQUENCY_LIST.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{t(f.label)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

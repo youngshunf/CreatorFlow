@@ -21,9 +21,7 @@ import {
   createWriteStream,
 } from 'fs';
 import { join } from 'path';
-import { pipeline } from 'stream/promises';
 import { createHash } from 'crypto';
-import { Extract } from 'unzipper';
 import type {
   InstallProgress,
   AppInstallProgress,
@@ -157,6 +155,7 @@ function calculateFileHash(filePath: string): string {
 
 /**
  * Extract a zip file to a directory
+ * 使用 unzipper.Open.file 方式解压，避免 pipeline + Extract 丢失文件的问题
  */
 async function extractZip(zipPath: string, destDir: string): Promise<void> {
   // Ensure destination exists
@@ -164,11 +163,10 @@ async function extractZip(zipPath: string, destDir: string): Promise<void> {
     mkdirSync(destDir, { recursive: true });
   }
 
-  // Extract using unzipper
-  const extract = Extract({ path: destDir });
-  const readStream = require('fs').createReadStream(zipPath);
-
-  await pipeline(readStream, extract);
+  // 使用 Open.file 读取完整 zip 后再解压，确保所有文件都被正确提取
+  const { Open } = require('unzipper');
+  const directory = await Open.file(zipPath);
+  await directory.extract({ path: destDir });
 }
 
 /**
@@ -755,6 +753,17 @@ export async function installApp(
     const targetManifest = join(creatorFlowDir, 'app-manifest.json');
     copyFileSync(sourceManifest, targetManifest);
 
+    // Create workspace directory structure from manifest
+    try {
+      const manifest = JSON.parse(readFileSync(sourceManifest, 'utf-8'));
+      if (manifest.workspace?.directoryStructure) {
+        const { createDirectoryStructure } = await import('../apps/initializer.ts');
+        createDirectoryStructure(workspaceRoot, manifest.workspace.directoryStructure);
+      }
+    } catch (_e) {
+      // Non-fatal: directory structure creation failure shouldn't block install
+    }
+
     // Merge app directories - always use mergeDir to preserve user customizations
     // Extended list includes labels, statuses, resources for merge install
     const appDirs = ['prompts', 'guides', 'sources', 'labels', 'statuses', 'resources', 'skills'];
@@ -928,6 +937,16 @@ export async function installAppFromLocal(
     // Copy manifest.json (always overwrite)
     const targetManifest = join(creatorFlowDir, 'app-manifest.json');
     copyFileSync(manifestPath, targetManifest);
+
+    // Create workspace directory structure from manifest
+    try {
+      if (manifest.workspace?.directoryStructure) {
+        const { createDirectoryStructure } = await import('../apps/initializer.ts');
+        createDirectoryStructure(workspaceRoot, manifest.workspace.directoryStructure);
+      }
+    } catch (_e) {
+      // Non-fatal: directory structure creation failure shouldn't block install
+    }
 
     // Merge app directories - always use mergeDir to preserve user customizations
     // Extended list includes labels, statuses, resources for merge install

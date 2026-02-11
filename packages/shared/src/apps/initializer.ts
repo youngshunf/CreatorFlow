@@ -35,7 +35,7 @@ import { resolveSourceConfigPaths } from './video-mcp-paths.ts';
 /**
  * Recursively create directory structure from template
  */
-function createDirectoryStructure(basePath: string, structure: DirectoryStructure): void {
+export function createDirectoryStructure(basePath: string, structure: DirectoryStructure): void {
   for (const [name, children] of Object.entries(structure)) {
     const dirPath = join(basePath, name);
     

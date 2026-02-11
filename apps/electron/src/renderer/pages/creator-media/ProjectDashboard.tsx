@@ -10,6 +10,7 @@ import { ProfileEditDialog } from './components/ProfileEditDialog'
 import { CreateContentDialog } from './components/CreateContentDialog'
 import { VersionHistoryDialog } from './components/VersionHistoryDialog'
 import type { Content } from '@sprouty-ai/shared/db/types'
+import { POSTING_FREQUENCY_LIST } from '@sprouty-ai/shared/db/types'
 
 /**
  * 创作面板 — 项目仪表盘视图
@@ -135,90 +136,178 @@ export default function ProjectDashboard() {
         {/* 统计卡片 */}
         <StatCards stats={stats} videoCreating={videoStats.creating} videoCompleted={videoStats.completed} />
 
-        {/* 最近内容 */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-foreground">{t('最近内容')}</h2>
-            <button
-              type="button"
-              onClick={() => setShowCreateContent(true)}
-              className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              {t('新建内容')}
-            </button>
-          </div>
-          <ContentTable
-            contents={contents}
-            maxItems={10}
-            onStatusChange={updateContentStatus}
-            onDelete={deleteContent}
-            onVersionHistory={setVersionHistoryContent}
-          />
-        </div>
-
-        {/* 账号画像摘要 */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-foreground">{t('账号画像')}</h2>
-            {activeProject && (
+        {/* 最近内容 + 账号画像：大屏左右，小屏上下 */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
+          {/* 最近内容 */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-medium text-foreground">{t('最近内容')}</h2>
               <button
                 type="button"
-                onClick={() => setShowProfileEdit(true)}
+                onClick={() => setShowCreateContent(true)}
                 className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {t('编辑画像')}
+                {t('新建内容')}
               </button>
-            )}
-          </div>
-          {profile ? (
-            <div className="rounded-lg border border-border/60 bg-background/40 px-4 py-3 space-y-2">
-              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
-                {profile.niche && (
-                  <span><span className="text-muted-foreground">{t('领域')}:</span> <span className="text-foreground">{profile.niche}</span></span>
-                )}
-                {profile.persona && (
-                  <span><span className="text-muted-foreground">{t('人设')}:</span> <span className="text-foreground">{profile.persona}</span></span>
-                )}
-                {profile.tone && (
-                  <span><span className="text-muted-foreground">{t('调性')}:</span> <span className="text-foreground">{profile.tone}</span></span>
-                )}
-                {profile.target_audience && (
-                  <span><span className="text-muted-foreground">{t('目标受众')}:</span> <span className="text-foreground">{profile.target_audience}</span></span>
-                )}
-              </div>
-              {profile.keywords && (
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.keywords.split(',').map((kw: string, i: number) => (
-                    <span key={i} className="inline-flex rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
-                      {kw.trim()}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center">
-              <p className="text-sm text-muted-foreground">{t('尚未设置账号画像')}</p>
+            <ContentTable
+              contents={contents}
+              maxItems={10}
+              onStatusChange={updateContentStatus}
+              onDelete={deleteContent}
+              onVersionHistory={setVersionHistoryContent}
+            />
+          </div>
+
+          {/* 账号画像 */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-medium text-foreground">{t('账号画像')}</h2>
               {activeProject && (
                 <button
                   type="button"
                   onClick={() => setShowProfileEdit(true)}
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
                   </svg>
-                  {t('设置画像')}
+                  {t('编辑画像')}
                 </button>
               )}
             </div>
-          )}
+            {profile ? (
+              <div className="rounded-lg border border-border/60 bg-background/40 px-4 py-3 space-y-3">
+                {/* 核心字段 */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  {profile.niche && (
+                    <div>
+                      <span className="text-muted-foreground">{t('领域')}</span>
+                      <p className="text-foreground mt-0.5">{profile.niche}</p>
+                    </div>
+                  )}
+                  {profile.sub_niche && (
+                    <div>
+                      <span className="text-muted-foreground">{t('细分领域')}</span>
+                      <p className="text-foreground mt-0.5">{profile.sub_niche}</p>
+                    </div>
+                  )}
+                  {profile.persona && (
+                    <div>
+                      <span className="text-muted-foreground">{t('人设')}</span>
+                      <p className="text-foreground mt-0.5">{profile.persona}</p>
+                    </div>
+                  )}
+                  {profile.target_audience && (
+                    <div>
+                      <span className="text-muted-foreground">{t('目标受众')}</span>
+                      <p className="text-foreground mt-0.5">{profile.target_audience}</p>
+                    </div>
+                  )}
+                  {profile.tone && (
+                    <div>
+                      <span className="text-muted-foreground">{t('调性')}</span>
+                      <p className="text-foreground mt-0.5">{profile.tone}</p>
+                    </div>
+                  )}
+                  {profile.posting_frequency && (
+                    <div>
+                      <span className="text-muted-foreground">{t('发布频率')}</span>
+                      <p className="text-foreground mt-0.5">{t(POSTING_FREQUENCY_LIST.find(f => f.id === profile.posting_frequency)?.label ?? profile.posting_frequency)}</p>
+                    </div>
+                  )}
+                  {profile.best_posting_time && (
+                    <div>
+                      <span className="text-muted-foreground">{t('最佳发布时间')}</span>
+                      <p className="text-foreground mt-0.5">{profile.best_posting_time}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 简介 */}
+                {profile.bio && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">{t('简介')}</span>
+                    <p className="text-foreground mt-0.5 leading-relaxed">{profile.bio}</p>
+                  </div>
+                )}
+
+                {/* 关键词 */}
+                {profile.keywords && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">{t('关键词')}</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {profile.keywords.split(',').map((kw: string, i: number) => (
+                        <span key={i} className="inline-flex rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+                          {kw.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 内容支柱 */}
+                {profile.content_pillars && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">{t('内容支柱')}</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {profile.content_pillars.split(',').map((p: string, i: number) => {
+                        let weight: string | null = null
+                        if (profile.pillar_weights) {
+                          try {
+                            const weights = JSON.parse(profile.pillar_weights)
+                            const w = weights[p.trim()]
+                            if (w != null) weight = `${Math.round(w * 100)}%`
+                          } catch { /* ignore */ }
+                        }
+                        return (
+                          <span key={i} className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent-foreground">
+                            {p.trim()}
+                            {weight && <span className="ml-1 opacity-60">{weight}</span>}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 风格参考 */}
+                {profile.style_references && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">{t('风格参考')}</span>
+                    <p className="text-foreground mt-0.5">{profile.style_references}</p>
+                  </div>
+                )}
+
+                {/* 禁忌话题 */}
+                {profile.taboo_topics && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">{t('禁忌话题')}</span>
+                    <p className="text-foreground mt-0.5">{profile.taboo_topics}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center">
+                <p className="text-sm text-muted-foreground">{t('尚未设置账号画像')}</p>
+                {activeProject && (
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileEdit(true)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    {t('设置画像')}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

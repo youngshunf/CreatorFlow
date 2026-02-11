@@ -16,7 +16,40 @@ export type Platform =
   | 'bilibili'
   | 'zhihu'
   | 'weibo'
-  | 'x';
+  | 'x'
+  | 'toutiao'
+  | 'sina'
+  | 'sohu';
+
+/** 平台元数据 */
+export interface PlatformMeta {
+  id: Platform
+  label: string
+  shortLabel: string
+  color: string
+  desc: string
+}
+
+/** 所有平台配置（单一数据源） */
+export const PLATFORM_LIST: PlatformMeta[] = [
+  { id: 'xiaohongshu', label: '小红书', shortLabel: '小红书', color: 'text-red-500 border-red-200 dark:border-red-800', desc: '图文/短视频种草' },
+  { id: 'douyin', label: '抖音', shortLabel: '抖音', color: 'text-pink-500 border-pink-200 dark:border-pink-800', desc: '短视频/直播' },
+  { id: 'bilibili', label: 'B站', shortLabel: 'B站', color: 'text-blue-400 border-blue-200 dark:border-blue-800', desc: '中长视频/专栏' },
+  { id: 'wechat', label: '微信公众号', shortLabel: '微信', color: 'text-green-500 border-green-200 dark:border-green-800', desc: '公众号文章' },
+  { id: 'zhihu', label: '知乎', shortLabel: '知乎', color: 'text-blue-600 border-blue-200 dark:border-blue-800', desc: '问答/专栏文章' },
+  { id: 'weibo', label: '微博', shortLabel: '微博', color: 'text-orange-500 border-orange-200 dark:border-orange-800', desc: '图文/短视频' },
+  { id: 'x', label: 'X (Twitter)', shortLabel: 'X', color: 'text-foreground border-border', desc: '推文/长文' },
+  { id: 'toutiao', label: '今日头条', shortLabel: '头条', color: 'text-red-600 border-red-200 dark:border-red-800', desc: '图文/短视频/微头条' },
+  { id: 'sina', label: '新浪', shortLabel: '新浪', color: 'text-orange-600 border-orange-200 dark:border-orange-800', desc: '新闻/博客' },
+  { id: 'sohu', label: '搜狐', shortLabel: '搜狐', color: 'text-yellow-600 border-yellow-200 dark:border-yellow-800', desc: '图文/视频号' },
+]
+
+/** 平台 id → 元数据 快速查找 */
+export const PLATFORM_MAP: Record<Platform, PlatformMeta> =
+  PLATFORM_LIST.reduce((m, p) => { m[p.id] = p; return m }, {} as Record<Platform, PlatformMeta>)
+
+/** 所有平台 id 列表（用于 prompt 等场景） */
+export const PLATFORM_IDS: string = PLATFORM_LIST.map(p => p.id).join(' / ')
 
 /** 内容状态流转 */
 export type ContentStatus =
@@ -75,6 +108,14 @@ export type AuthMethod = 'cookie' | 'oauth' | 'api_key' | 'browser_profile';
 
 /** 发布频率 */
 export type PostingFrequency = 'daily' | '3_per_week' | 'weekly' | 'biweekly' | 'monthly';
+
+export const POSTING_FREQUENCY_LIST: { id: PostingFrequency; label: string }[] = [
+  { id: 'daily', label: '每天' },
+  { id: '3_per_week', label: '每周3次' },
+  { id: 'weekly', label: '每周1次' },
+  { id: 'biweekly', label: '每两周1次' },
+  { id: 'monthly', label: '每月1次' },
+];
 
 /** 采集任务状态 */
 export type ReviewTaskStatus = 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
@@ -374,6 +415,54 @@ export interface PublishQueueItem {
 
 export type CreatePublishQueueInput = Omit<PublishQueueItem, 'created_at' | 'updated_at'>;
 export type UpdatePublishQueueInput = Partial<Omit<PublishQueueItem, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
+// 草稿
+// ============================================================
+
+/** 草稿 — 未进入创作流水线的内容片段 */
+export interface Draft {
+  id: string;
+  project_id: string;
+  title: string | null;
+  content: string;
+  content_type: ContentType | null;
+  media: string;                    // JSON: string[]
+  tags: string | null;              // JSON: string[]
+  target_platforms: string | null;  // JSON: Platform[]
+  metadata: string | null;          // JSON: 扩展元数据
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateDraft = Omit<Draft, 'created_at' | 'updated_at'>;
+export type UpdateDraft = Partial<Omit<Draft, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
+// 素材库
+// ============================================================
+
+/** 素材文件类型 */
+export type MediaFileType = 'image' | 'video';
+
+/** media_files — 素材库 */
+export interface MediaFile {
+  id: string;
+  project_id: string;
+  type: MediaFileType;
+  path: string;
+  filename: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  duration: number | null;          // 视频时长（秒）
+  thumbnail: string | null;
+  tags: string | null;              // JSON: string[]
+  description: string | null;
+  created_at: string;
+}
+
+export type CreateMediaFile = Omit<MediaFile, 'created_at'>;
 
 // ============================================================
 // 视频内容元数据（存储在 contents.metadata JSON 字段）

@@ -42,6 +42,7 @@ export type {
   AuthStatus,
   AuthMethod,
   PostingFrequency,
+  POSTING_FREQUENCY_LIST,
   Project,
   AccountProfile,
   PlatformAccount,
@@ -79,6 +80,12 @@ export type {
   PublishQueueItem,
   CreatePublishQueueInput,
   UpdatePublishQueueInput,
+  Draft,
+  CreateDraft,
+  UpdateDraft,
+  MediaFileType,
+  MediaFile,
+  CreateMediaFile,
 } from './types.ts';
 
 export { QueuePriority } from './types.ts';
