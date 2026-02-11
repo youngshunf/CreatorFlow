@@ -2,15 +2,16 @@ import { query, createSdkMcpServer, tool, AbortError, type Query, type SDKMessag
 import { getDefaultOptions, resetClaudeConfigCheck } from './options.ts';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources';
 import { z } from 'zod';
-import { getSystemPrompt, getDateTimeContext, getWorkingDirectoryContext } from '../prompts/system.ts';
-// Plan types are used by UI components; not needed in creator-flow.ts since Safe Mode is user-controlled
+import { getSystemPrompt } from '../prompts/system.ts';
+import { BaseAgent, type MiniAgentConfig, MINI_AGENT_TOOLS, MINI_AGENT_MCP_KEYS } from './base-agent.ts';
+import type { BackendConfig, PermissionRequestType } from './backend/types.ts';
+// Plan types are used by UI components; not needed in sprouty-agent.ts since Safe Mode is user-controlled
 import { parseError, type AgentError } from './errors.ts';
 import { runErrorDiagnostics } from './diagnostics.ts';
-import { getLastApiError } from '../network-interceptor.ts';
-import { loadStoredConfig, loadConfigDefaults, getAnthropicBaseUrl, resolveModelId, type Workspace } from '../config/storage.ts';
-import { isLocalMcpEnabled, getGlobalPluginDataPath, ensureGlobalPluginManifest, migratePluginDir } from '../workspaces/storage.ts';
+import { loadStoredConfig, loadConfigDefaults, type Workspace, type AuthType, getDefaultLlmConnection, getLlmConnection } from '../config/storage.ts';
+import { isLocalMcpEnabled } from '../workspaces/storage.ts';
 import { loadPlanFromPath, type SessionConfig as Session } from '../sessions/storage.ts';
-import { DEFAULT_MODEL, isClaudeModel } from '../config/models.ts';
+import { DEFAULT_MODEL, isClaudeModel, getDefaultSummarizationModel } from '../config/models.ts';
 import { getCredentialManager } from '../credentials/index.ts';
 import { updatePreferences, loadPreferences, formatPreferencesForPrompt, type UserPreferences } from '../config/preferences.ts';
 import type { FileAttachment } from '../utils/files.ts';
@@ -25,13 +26,13 @@ import {
   cleanupSessionScopedTools,
   type AuthRequest,
 } from './session-scoped-tools.ts';
+import { type HookSystem, type SdkHookCallbackMatcher } from '../hooks-simple/index.ts';
 import {
   getPermissionMode,
   setPermissionMode,
   cyclePermissionMode,
   initializeModeState,
   cleanupModeState,
-  formatSessionState,
   shouldAllowToolInMode,
   blockWithReason,
   isApiEndpointAllowed,
@@ -41,21 +42,36 @@ import {
 } from './mode-manager.ts';
 import { type PermissionsContext, permissionsConfigCache } from './permissions-config.ts';
 import { getSessionPlansPath, getSessionPath } from '../sessions/storage.ts';
-import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { expandPath } from '../utils/paths.ts';
+import { extractWorkspaceSlug } from '../utils/workspace.ts';
 import {
   ConfigWatcher,
   createConfigWatcher,
   type ConfigWatcherCallbacks,
 } from '../config/watcher.ts';
 import type { ValidationIssue } from '../config/validators.ts';
-import { detectConfigFileType, validateConfigFileContent, formatValidationResult } from '../config/validators.ts';
+import { detectConfigFileType, detectAppConfigFileType, validateConfigFileContent, formatValidationResult } from '../config/validators.ts';
+// Shared PreToolUse utilities
+import {
+  expandToolPaths,
+  qualifySkillName,
+  stripToolMetadata,
+  validateConfigWrite,
+  BUILT_IN_TOOLS,
+} from './core/pre-tool-use.ts';
 import { type ThinkingLevel, getThinkingTokens, DEFAULT_THINKING_LEVEL } from './thinking-levels.ts';
 import type { LoadedSource } from '../sources/types.ts';
 import { sourceNeedsAuthentication } from '../sources/credential-manager.ts';
-import { t, $t } from '../locale/index.ts';
-import { SDK_COMMAND_TRANSLATIONS } from './slash-command-data.ts';
-// slash-command-translations is dynamically imported in init handler (scanWorkspaceCommands)
+import type {
+  AgentBackend,
+  ChatOptions,
+  PermissionCallback,
+  PlanCallback,
+  AuthCallback,
+  SourceChangeCallback,
+  SourceActivationCallback,
+} from './backend/types.ts';
 
 // Re-export permission mode functions for application usage
 export {
@@ -74,34 +90,16 @@ export {
 import type { AgentEvent } from '@sprouty-ai/core/types';
 export type { AgentEvent };
 
+// Stateless tool matching — pure functions for SDK message → AgentEvent conversion
+import { ToolIndex, extractToolStarts, extractToolResults, type ContentBlock } from './tool-matching.ts';
+
 // Re-export types for UI components
 export type { LoadedSource } from '../sources/types.ts';
 
-/**
- * Reason for aborting agent execution.
- * Used to distinguish user-initiated stops from internal aborts.
- */
-export enum AbortReason {
-  /** User clicked stop button */
-  UserStop = 'user_stop',
-  /** Agent submitted a plan and is awaiting review */
-  PlanSubmitted = 'plan_submitted',
-  /** Agent requested authentication and is awaiting user input */
-  AuthRequest = 'auth_request',
-  /** New message sent while processing (silent redirect) */
-  Redirect = 'redirect',
-  /** Source was auto-activated mid-turn (silent, auto-retry follows) */
-  SourceActivated = 'source_activated',
-}
-
-/**
- * Message type for recovery context building.
- * Simplified from StoredMessage - only what's needed for context injection.
- */
-export interface RecoveryMessage {
-  type: 'user' | 'assistant';
-  content: string;
-}
+// Import and re-export AbortReason and RecoveryMessage from core module (single source of truth)
+// Re-exported for backwards compatibility with existing imports from claude-agent.ts
+import { AbortReason, type RecoveryMessage } from './core/index.ts';
+export { AbortReason, type RecoveryMessage };
 
 export interface SproutyAgentConfig {
   workspace: Workspace;
@@ -124,6 +122,8 @@ export interface SproutyAgentConfig {
   };
   /** System prompt preset for mini agents ('default' | 'mini' or custom string) */
   systemPromptPreset?: 'default' | 'mini' | string;
+  /** Workspace-level HookSystem instance (shared across all agents in the workspace) */
+  hookSystem?: HookSystem;
 }
 
 // Permission request tracking
@@ -244,14 +244,9 @@ function handleUpdatePreferences(input: Record<string, unknown>): string {
     }
   }
 
-  // Handle notes (append to existing)
+  // Handle notes (replace)
   if (input.notes && typeof input.notes === 'string') {
-    const current = loadPreferences();
-    const existingNotes = current.notes || '';
-    const newNote = input.notes;
-    updates.notes = existingNotes
-      ? `${existingNotes}\n- ${newNote}`
-      : `- ${newNote}`;
+    updates.notes = input.notes;
   }
 
   // Check if anything was actually updated
@@ -280,7 +275,7 @@ const updateUserPreferencesTool = tool(
     region: z.string().optional().describe("The user's state/region/province"),
     country: z.string().optional().describe("The user's country"),
     language: z.string().optional().describe("The user's preferred language for responses"),
-    notes: z.string().optional().describe('Additional notes about the user that would be helpful to remember (preferences, context, etc.). This appends to existing notes.'),
+    notes: z.string().optional().describe('Additional notes about the user that would be helpful to remember (preferences, context, etc.). Replaces any existing notes.'),
   },
   async (args) => {
     try {
@@ -322,47 +317,31 @@ export type SdkMcpServerConfig =
   | { type: 'stdio'; command: string; args?: string[]; env?: Record<string, string> };
 
 /**
- * Detect the ENOENT .claude/skills directory error from the Claude Code SDK.
- * The SDK scans a global skills directory for managed/enterprise skills
+ * Detect the Windows ENOENT .claude/skills directory error from the Claude Code SDK.
+ * The SDK scans C:\ProgramData\ClaudeCode\.claude\skills for managed/enterprise skills
  * but crashes if the directory doesn't exist. This is an upstream SDK bug.
  * See: https://github.com/anthropics/claude-code/issues/20571
  *
- * Paths by platform:
- * - macOS: /Library/Application Support/ClaudeCode/.claude/skills
- * - Windows: C:\ProgramData\ClaudeCode\.claude\skills
- *
  * Returns a typed_error event with user-friendly instructions, or null if not this error.
  */
-function buildSkillsDirError(errorText: string): { type: 'typed_error'; error: AgentError } | null {
+function buildWindowsSkillsDirError(errorText: string): { type: 'typed_error'; error: AgentError } | null {
   if (!errorText.includes('ENOENT') || !errorText.includes('skills')) {
     return null;
   }
 
   const pathMatch = errorText.match(/scandir\s+'([^']+)'/);
-  const isWindows = process.platform === 'win32';
-  const defaultPath = isWindows
-    ? 'C:\\ProgramData\\ClaudeCode\\.claude\\skills'
-    : '/Library/Application Support/ClaudeCode/.claude/skills';
-  const missingPath = pathMatch?.[1] || defaultPath;
-
-  const title = isWindows ? t('需要 Windows 设置') : t('需要设置');
-  const details = isWindows
-    ? [
-        t('PowerShell（以管理员身份运行）：'),
-        `New-Item -ItemType Directory -Force -Path "${missingPath}"`,
-      ]
-    : [
-        t('终端（使用 sudo 运行）：'),
-        `sudo mkdir -p "${missingPath}"`,
-      ];
+  const missingPath = pathMatch?.[1] || 'C:\\ProgramData\\ClaudeCode\\.claude\\skills';
 
   return {
     type: 'typed_error',
     error: {
       code: 'unknown_error',
-      title,
-      message: $t('SDK 需要一个不存在的目录：{path} — 请创建此文件夹，然后重启应用。', { path: missingPath }),
-      details,
+      title: 'Windows Setup Required',
+      message: `The SDK requires a directory that doesn't exist: ${missingPath} — Create this folder in File Explorer, then restart the app.`,
+      details: [
+        `PowerShell (run as Administrator):`,
+        `New-Item -ItemType Directory -Force -Path "${missingPath}"`,
+      ],
       actions: [],
       canRetry: true,
       originalError: errorText,
@@ -370,45 +349,26 @@ function buildSkillsDirError(errorText: string): { type: 'typed_error'; error: A
   };
 }
 
-export class SproutyAgent {
-  private config: SproutyAgentConfig;
+export class SproutyAgent extends BaseAgent {
+  // Note: SproutyAgentConfig is compatible with BackendConfig, so we use the inherited this.config
   private currentQuery: Query | null = null;
   private currentQueryAbortController: AbortController | null = null;
   private lastAbortReason: AbortReason | null = null;
   private sessionId: string | null = null;
   private isHeadless: boolean = false;
   private pendingPermissions: Map<string, PendingPermission> = new Map();
-  private alwaysAllowedCommands: Set<string> = new Set(); // Base commands allowed for this session (e.g., "ls", "cat")
-  private alwaysAllowedDomains: Set<string> = new Set(); // Domains allowed for curl/wget (session-scoped)
+  // Permission whitelists are now managed by this.permissionManager (inherited from BaseAgent)
   // Pre-built source server configs (user-defined sources, separate from agent)
   // Supports both HTTP/SSE and stdio transports
   private sourceMcpServers: Record<string, SdkMcpServerConfig> = {};
   // In-process MCP servers for source API integrations
   private sourceApiServers: Record<string, ReturnType<typeof createSdkMcpServer>> = {};
-  // Set of active source server names (for blocking disabled sources)
-  private activeSourceServerNames: Set<string> = new Set();
-  // Set of intended active source slugs (what UI shows as active, may differ from activeSourceServerNames if build fails)
-  private intendedActiveSlugs: Set<string> = new Set();
-  // Full list of all sources in workspace (for context injection)
-  private allSources: LoadedSource[] = [];
-  // Sources already introduced to agent this session (for incremental context)
-  private knownSourceSlugs: Set<string> = new Set();
-  // Temporary clarifications (not yet saved to Craft document)
-  private temporaryClarifications: string | null = null;
+  // Source state tracking is now managed by this.sourceManager (inherited from BaseAgent)
   // Safe mode state - user-controlled read-only exploration mode
   private safeMode: boolean = false;
   // SDK tools list (captured from init message)
   private sdkTools: string[] = [];
-  // SDK slash commands (captured from SDK init message + supportedCommands())
-  private sdkSlashCommands: Array<{ name: string; description: string; argumentHint: string }> = [];
-  // SDK plugins (captured from SDK init message)
-  private sdkPlugins: Array<{ name: string; path: string }> = [];
-  // Session-level thinking level ('off', 'think', 'max') - sticky, persisted
-  private thinkingLevel: ThinkingLevel = 'think';
-  // Ultrathink override - when true, boosts to max thinking for one message (resets after query)
-  private ultrathinkOverride: boolean = false;
-  // Config file watcher for hot-reloading source changes
-  private configWatcher: ConfigWatcher | null = null;
+  // Thinking level and ultrathink override are now managed by BaseAgent
   // Pinned system prompt components (captured on first chat, used for consistency after compaction)
   private pinnedPreferencesPrompt: string | null = null;
   // Track if preference drift notification has been shown this session
@@ -443,7 +403,7 @@ export class SproutyAgent {
   }
 
   // Callback for permission requests - set by application to receive permission prompts
-  public onPermissionRequest: ((request: { requestId: string; toolName: string; command: string; description: string; type?: 'bash' }) => void) | null = null;
+  public onPermissionRequest: ((request: { requestId: string; toolName: string; command?: string; description: string; type?: PermissionRequestType }) => void) | null = null;
 
   // Debug callback for status messages
   public onDebug: ((message: string) => void) | null = null;
@@ -466,40 +426,42 @@ export class SproutyAgent {
   // Callback when a source config changes (hot-reload from file watcher)
   public onSourceChange: ((slug: string, source: LoadedSource | null) => void) | null = null;
 
-  // Callback when the sources list changes (add/remove)
-  public onSourcesListChange: ((sources: LoadedSource[]) => void) | null = null;
+  // onSourcesListChange, onConfigValidationError, and onSourceActivationRequest are inherited from BaseAgent
 
-  // Callback when config file validation fails
-  public onConfigValidationError: ((file: string, errors: ValidationIssue[]) => void) | null = null;
-
-  // Callback when a source tool is called but the source isn't enabled in the session.
-  // The callback should enable the source and return true if successful, false otherwise.
-  // This enables auto-enabling sources when the agent tries to use their tools.
-  public onSourceActivationRequest: ((sourceSlug: string) => Promise<boolean>) | null = null;
-
-  // Callback when SDK slash commands are available (for @ menu display)
-  // Called with commands from SDK init, then again with enriched data from supportedCommands()
-  public onSlashCommandsAvailable: ((
-    commands: Array<{ name: string; description: string; argumentHint: string }>,
-    plugins: Array<{ name: string; path: string }>,
-  ) => void) | null = null;
+  // Callback when token usage is updated (for context window display).
+  // Note: Full UsageTracker integration is planned for Phase 4 refactoring.
+  public onUsageUpdate: ((update: { inputTokens: number; contextWindow?: number; cacheHitRate?: number }) => void) | null = null;
 
   constructor(config: SproutyAgentConfig) {
-    // Resolve model: prioritize session model > config model > DEFAULT_MODEL
-    const model = config.session?.model ?? config.model ?? DEFAULT_MODEL;
-    this.config = { ...config, model };
+    // Resolve model: prioritize session model > config model (caller must provide via connection)
+    const model = config.session?.model ?? config.model!;
+
+    // Build BackendConfig for BaseAgent
+    // Context window for Anthropic models is 200k tokens
+    const CLAUDE_CONTEXT_WINDOW = 200_000;
+    const backendConfig: BackendConfig = {
+      provider: 'anthropic',
+      workspace: config.workspace,
+      session: config.session,
+      model,
+      thinkingLevel: config.thinkingLevel,
+      mcpToken: config.mcpToken,
+      isHeadless: config.isHeadless,
+      debugMode: config.debugMode,
+      systemPromptPreset: config.systemPromptPreset,
+      onSdkSessionIdUpdate: config.onSdkSessionIdUpdate,
+      onSdkSessionIdCleared: config.onSdkSessionIdCleared,
+      getRecoveryMessages: config.getRecoveryMessages,
+    };
+
+    // Call BaseAgent constructor - initializes model, thinkingLevel, permissionManager, sourceManager, etc.
+    // The inherited this.config is set by super() and compatible with SproutyAgentConfig
+    super(backendConfig, DEFAULT_MODEL, CLAUDE_CONTEXT_WINDOW);
+
     this.isHeadless = config.isHeadless ?? false;
 
     // Log which model is being used (helpful for debugging custom models)
-    debug(`[SproutyAgent] Using model: ${model}`);
-
-    // Ensure global plugin manifest exists for SDK plugin discovery
-    ensureGlobalPluginManifest();
-
-    // Initialize thinking level from config (defaults to 'think' from class initialization)
-    if (config.thinkingLevel) {
-      this.thinkingLevel = config.thinkingLevel;
-    }
+    this.debug(`Using model: ${model}`);
 
     // Initialize sessionId from session config for conversation resumption
     if (config.session?.sdkSessionId) {
@@ -540,209 +502,45 @@ export class SproutyAgent {
     }
   }
 
-  /**
-   * Start the config file watcher for hot-reloading changes.
-   */
-  private startConfigWatcher(): void {
-    if (this.configWatcher) {
-      return; // Already running
-    }
+  // Config watcher methods (startConfigWatcher, stopConfigWatcher) are now inherited from BaseAgent
+  // Thinking level methods (setThinkingLevel, getThinkingLevel, setUltrathinkOverride) are now inherited from BaseAgent
 
-    this.configWatcher = createConfigWatcher(this.workspaceRootPath, {
-      onSourceChange: (slug, source) => {
-        debug('[SproutyAgent] Source changed:', slug, source ? 'updated' : 'deleted');
-        this.onSourceChange?.(slug, source);
-      },
-      onSourcesListChange: (sources) => {
-        debug('[SproutyAgent] Sources list changed:', sources.length);
-        this.onSourcesListChange?.(sources);
-      },
-      onValidationError: (file, result) => {
-        debug('[SproutyAgent] Config validation error:', file, result.errors);
-        this.onConfigValidationError?.(file, result.errors);
-      },
-      onError: (file, error) => {
-        debug('[SproutyAgent] Config file error:', file, error.message);
-      },
-    });
-
-    debug('[SproutyAgent] Config watcher started');
-  }
+  // Permission command utilities (getBaseCommand, isDangerousCommand, extractDomainFromNetworkCommand)
+  // are now available via this.permissionManager
 
   /**
-   * Stop the config file watcher.
-   */
-  private stopConfigWatcher(): void {
-    if (this.configWatcher) {
-      this.configWatcher.stop();
-      this.configWatcher = null;
-      debug('[SproutyAgent] Config watcher stopped');
-    }
-  }
-
-  /**
-   * Handle a source config update from the file watcher.
-   * Updates internal MCP/API server state when a source changes.
-   */
-  private handleSourceUpdate(slug: string, source: LoadedSource | null): void {
-    if (!source) {
-      // Source was deleted - remove from active servers
-      delete this.sourceMcpServers[slug];
-      delete this.sourceApiServers[slug];
-      this.activeSourceServerNames.delete(slug);
-      debug('[SproutyAgent] Removed source:', slug);
-      return;
-    }
-
-    // Source was updated - check if we need to update server state
-    if (!source.config.enabled) {
-      // Disabled - remove from active servers
-      delete this.sourceMcpServers[slug];
-      delete this.sourceApiServers[slug];
-      this.activeSourceServerNames.delete(slug);
-      debug('[SproutyAgent] Disabled source:', slug);
-    } else {
-      // Enabled - add to active servers (will be rebuilt on next query)
-      this.activeSourceServerNames.add(slug);
-      debug('[SproutyAgent] Enabled source:', slug);
-      // Note: Actual MCP/API server configs are rebuilt in getOptions()
-      // This just marks the source as active for the next run
-    }
-  }
-
-  /**
-   * Set the session-level thinking level.
-   * This is sticky and persisted across messages.
-   */
-  setThinkingLevel(level: ThinkingLevel): void {
-    this.thinkingLevel = level;
-    this.onDebug?.(`[SproutyAgent] Thinking level: ${level}`);
-  }
-
-  /**
-   * Get the current session-level thinking level.
-   */
-  getThinkingLevel(): ThinkingLevel {
-    return this.thinkingLevel;
-  }
-
-  /**
-   * Enable or disable ultrathink override (per-message boost to max thinking).
-   * When enabled, overrides thinkingLevel to 'max' for one message only.
-   * Resets to false after query completes.
-   */
-  setUltrathinkOverride(enabled: boolean): void {
-    this.ultrathinkOverride = enabled;
-    this.onDebug?.(`[SproutyAgent] Ultrathink override: ${enabled ? 'ENABLED' : 'disabled'}`);
-  }
-
-  /**
-   * Extract the base command from a bash command string
-   * e.g., "ls -la /tmp" -> "ls", "git push origin main" -> "git push"
-   */
-  private getBaseCommand(command: string): string {
-    const trimmed = command.trim();
-
-    // Handle git subcommands specially (git push, git reset, etc.)
-    if (trimmed.startsWith('git ')) {
-      const parts = trimmed.split(/\s+/);
-      if (parts.length >= 2) {
-        return `${parts[0]} ${parts[1]}`;
-      }
-    }
-
-    // For other commands, just take the first word
-    const firstWord = trimmed.split(/\s+/)[0] || trimmed;
-    return firstWord;
-  }
-
-  /**
-   * Check if a command is dangerous (should never be auto-allowed)
-   */
-  private isDangerousCommand(baseCommand: string): boolean {
-    return DANGEROUS_COMMANDS.has(baseCommand);
-  }
-
-  /**
-   * Extract domain from a curl/wget command
-   * e.g., curl https://api.example.com/path -> "api.example.com"
-   */
-  private extractDomainFromNetworkCommand(command: string): string | null {
-    const urlMatch = command.match(/https?:\/\/([^\/\s"']+)/i);
-    return urlMatch?.[1] ?? null;
-  }
-
-  /**
-   * Respond to a pending permission request
+   * Respond to a pending permission request.
+   * Uses permissionManager for whitelisting.
    */
   respondToPermission(requestId: string, allowed: boolean, alwaysAllow: boolean = false): void {
-    this.onDebug?.(`respondToPermission: ${requestId}, allowed=${allowed}, alwaysAllow=${alwaysAllow}, pending=${this.pendingPermissions.has(requestId)}`);
+    this.debug(`respondToPermission: ${requestId}, allowed=${allowed}, alwaysAllow=${alwaysAllow}, pending=${this.pendingPermissions.has(requestId)}`);
     const pending = this.pendingPermissions.get(requestId);
     if (pending) {
-      this.onDebug?.(`Resolving permission promise for ${requestId}`);
+      this.debug(`Resolving permission promise for ${requestId}`);
 
       // If "always allow" was selected, remember it (with special handling for curl/wget)
       if (alwaysAllow && allowed) {
         if (['curl', 'wget'].includes(pending.baseCommand)) {
           // For curl/wget, whitelist the domain instead of the command
-          const domain = this.extractDomainFromNetworkCommand(pending.command);
+          const domain = this.permissionManager.extractDomainFromNetworkCommand(pending.command);
           if (domain) {
-            this.alwaysAllowedDomains.add(domain);
-            this.onDebug?.(`Added domain "${domain}" to always-allowed domains`);
+            this.permissionManager.whitelistDomain(domain);
+            this.debug(`Added domain "${domain}" to always-allowed domains`);
           }
-        } else if (!this.isDangerousCommand(pending.baseCommand)) {
-          this.alwaysAllowedCommands.add(pending.baseCommand);
-          this.onDebug?.(`Added "${pending.baseCommand}" to always-allowed commands`);
+        } else if (!this.permissionManager.isDangerousCommand(pending.baseCommand)) {
+          this.permissionManager.whitelistCommand(pending.baseCommand);
+          this.debug(`Added "${pending.baseCommand}" to always-allowed commands`);
         }
       }
 
       pending.resolve(allowed);
       this.pendingPermissions.delete(requestId);
     } else {
-      this.onDebug?.(`No pending permission found for ${requestId}`);
+      this.debug(`No pending permission found for ${requestId}`);
     }
   }
 
-  // ============================================
-  // Safe Mode Methods
-  // ============================================
-
-  /**
-   * Check if currently in safe mode (read-only exploration)
-   * Uses modeManager as single source of truth.
-   */
-  isInSafeMode(): boolean {
-    return getPermissionMode(this.modeSessionId) === 'safe';
-  }
-
-  /**
-   * Check if a task should trigger planning (heuristic)
-   * Returns true for complex tasks that would benefit from planning
-   */
-  shouldSuggestPlanning(userMessage: string): boolean {
-    const message = userMessage.toLowerCase();
-
-    // Keywords that suggest complex tasks
-    const complexKeywords = [
-      'implement', 'create', 'build', 'develop', 'design',
-      'refactor', 'migrate', 'upgrade', 'restructure',
-      'add feature', 'new feature', 'integrate',
-      'set up', 'setup', 'configure', 'install',
-      'multiple', 'several', 'all', 'entire', 'whole',
-    ];
-
-    // Check for complex keywords
-    const hasComplexKeyword = complexKeywords.some(keyword => message.includes(keyword));
-
-    // Check message length (longer messages often indicate complex tasks)
-    const isLongMessage = message.length > 200;
-
-    // Check for multiple sentences (indicates multi-step task)
-    const sentenceCount = message.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    const hasMultipleSentences = sentenceCount > 2;
-
-    return hasComplexKeyword || isLongMessage || hasMultipleSentences;
-  }
+  // isInSafeMode() is now inherited from BaseAgent
 
   /**
    * Check if a tool requires permission and handle it
@@ -801,10 +599,11 @@ export class SproutyAgent {
   async *chat(
     userMessage: string,
     attachments?: FileAttachment[],
-    _isRetry: boolean = false // Internal flag for session expiry retry
+    options?: ChatOptions
   ): AsyncGenerator<AgentEvent> {
-    const chatStartTime = Date.now();
-    debug(`[chat] 开始执行 chat()`);
+    // Extract options (ChatOptions interface from AgentBackend)
+    const _isRetry = options?.isRetry ?? false;
+
     try {
       const sessionId = this.config.session?.id || `temp-${Date.now()}`;
 
@@ -840,8 +639,9 @@ export class SproutyAgent {
         return;
       }
 
-      // Detect mini agent mode early (needed for tool/MCP restrictions)
-      const isMiniAgent = this.config.systemPromptPreset === 'mini';
+      // Get centralized mini agent configuration (from BaseAgent)
+      // This ensures Claude and Codex agents use the same detection and constants
+      const miniConfig = this.getMiniAgentConfig();
 
       // Block SDK tools that require UI we don't have:
       // - EnterPlanMode/ExitPlanMode: We use safe mode instead (user-controlled via UI)
@@ -857,35 +657,46 @@ export class SproutyAgent {
       debug('[chat] sourceMcpServers:', sourceMcpResult.servers);
       debug('[chat] sourceApiServers:', this.sourceApiServers);
 
-      const mcpServers: Options['mcpServers'] = isMiniAgent
-        ? {
-            // Mini agents need session tools (config_validate)
-            session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-          }
-        : {
-            preferences: getPreferencesServer(false),
-            // Session-scoped tools (SubmitPlan, source_test, etc.)
-            session: getSessionScopedTools(sessionId, this.workspaceRootPath),
-            // Add user-defined source servers (MCP and API, filtered by local MCP setting)
-            ...sourceMcpResult.servers,
-            ...this.sourceApiServers,
-          };
+      // Build full MCP servers set first, then filter for mini agents
+      const fullMcpServers: Options['mcpServers'] = {
+        preferences: getPreferencesServer(false),
+        // Session-scoped tools (SubmitPlan, source_test, etc.)
+        session: getSessionScopedTools(sessionId, this.workspaceRootPath),
+        // Craft Agents documentation - always available for searching setup guides
+        // This is a public Mintlify MCP server, no auth needed
+        'sprouty-ai-docs': {
+          type: 'http',
+          url: 'https://agents.craft.do/docs/mcp',
+        },
+        // Add user-defined source servers (MCP and API, filtered by local MCP setting)
+        // Note: Craft MCP server is now added via sources system
+        ...sourceMcpResult.servers,
+        ...this.sourceApiServers,
+      };
+
+      // Mini agents: filter to minimal set using centralized keys
+      // Regular agents: use full set including preferences, docs, and user sources
+      const mcpServers: Options['mcpServers'] = miniConfig.enabled
+        ? this.filterMcpServersForMiniAgent(fullMcpServers, miniConfig.mcpServerKeys)
+        : fullMcpServers;
       
       // Configure SDK options
-      // Resolve model: use tier name when using custom API (OpenRouter), else specific version
-      const modelConfig = this.config.model || DEFAULT_MODEL;
-      const model = resolveModelId(modelConfig);
+      // Model is always set by caller via connection config
+      const model = this._model;
 
       // Log provider context for diagnostics (custom base URL = third-party provider)
-      const activeBaseUrl = getAnthropicBaseUrl();
+      const defaultConnSlug = getDefaultLlmConnection();
+      const defaultConn = defaultConnSlug ? getLlmConnection(defaultConnSlug) : null;
+      const activeBaseUrl = defaultConn?.baseUrl;
       if (activeBaseUrl) {
         debug(`[chat] Custom provider: baseUrl=${activeBaseUrl}, model=${model}, hasApiKey=${!!process.env.ANTHROPIC_API_KEY}`);
       }
 
       // Determine effective thinking level: ultrathink override boosts to max for this message
-      const effectiveThinkingLevel: ThinkingLevel = this.ultrathinkOverride ? 'max' : this.thinkingLevel;
-      const thinkingTokens = getThinkingTokens(effectiveThinkingLevel, modelConfig);
-      debug(`[chat] Thinking: level=${this.thinkingLevel}, override=${this.ultrathinkOverride}, effective=${effectiveThinkingLevel}, tokens=${thinkingTokens}`);
+      // Uses inherited protected fields from BaseAgent
+      const effectiveThinkingLevel: ThinkingLevel = this._ultrathinkOverride ? 'max' : this._thinkingLevel;
+      const thinkingTokens = getThinkingTokens(effectiveThinkingLevel, model);
+      debug(`[chat] Thinking: level=${this._thinkingLevel}, override=${this._ultrathinkOverride}, effective=${effectiveThinkingLevel}, tokens=${thinkingTokens}`);
 
       // NOTE: Parent-child tracking for subagents is documented below (search for
       // "PARENT-CHILD TOOL TRACKING"). The SDK's parent_tool_use_id is authoritative.
@@ -897,13 +708,13 @@ export class SproutyAgent {
       // support Anthropic-specific betas or extended thinking parameters
       const isClaude = isClaudeModel(model);
 
-      // Log mini agent mode details
-      if (isMiniAgent) {
-        debug('[CreatorFlow] 🤖 MINI AGENT mode - optimized for quick config edits');
-        debug('[CreatorFlow] Mini agent optimizations:', {
+      // Log mini agent mode details (using centralized config)
+      if (miniConfig.enabled) {
+        debug('[SproutyAgent] 🤖 MINI AGENT mode - optimized for quick config edits');
+        debug('[SproutyAgent] Mini agent optimizations:', {
           model,
-          tools: ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash'],
-          mcpServers: ['session', 'creator-flow-docs'],
+          tools: miniConfig.tools,
+          mcpServers: miniConfig.mcpServerKeys,
           thinking: 'disabled',
           systemPrompt: 'lean (no Claude Code preset)',
         });
@@ -915,21 +726,9 @@ export class SproutyAgent {
         // Capture stderr from SDK subprocess for error diagnostics
         // This helps identify why sessions fail with "process exited with code 1"
         stderr: (data: string) => {
-          // 过滤 SDK 内部遥测错误（不影响核心功能）
-          // "1P event logging" 是 SDK 向 Anthropic 分析服务发送使用数据时的错误
-          // 403 错误通常由网络限制、防火墙或区域限制导致
-          const isTelemetryError = data.includes('1P event logging') ||
-                                   data.includes('events failed to export');
-
-          if (!isTelemetryError) {
-            // 只记录非遥测错误到控制台
-            debug('[SDK stderr]', data);
-            console.error('[SDK stderr]', data);
-          } else {
-            // 遥测错误只记录到调试文件，不显示在控制台
-            debug('[SDK telemetry]', data);
-          }
-
+          // Log to both debug file AND console for visibility
+          debug('[SDK stderr]', data);
+          console.error('[SDK stderr]', data);
           // Keep last 20 lines to avoid unbounded memory growth
           this.lastStderrOutput.push(data);
           if (this.lastStderrOutput.length > 20) {
@@ -939,12 +738,12 @@ export class SproutyAgent {
         // Extended thinking: tokens based on effective thinking level (session level + ultrathink override)
         // Non-Claude models don't support extended thinking, so pass 0 to disable
         // Mini agents also disable thinking for efficiency (quick config edits don't need deep reasoning)
-        maxThinkingTokens: isMiniAgent ? 0 : (isClaude ? thinkingTokens : 0),
+        maxThinkingTokens: miniConfig.minimizeThinking ? 0 : (isClaude ? thinkingTokens : 0),
         // System prompt configuration:
         // - Mini agents: Use custom (lean) system prompt without Claude Code preset
         // - Normal agents: Append to Claude Code's system prompt (recommended by docs)
-        systemPrompt: this.config.systemPromptPreset === 'mini'
-          ? getSystemPrompt(undefined, undefined, this.workspaceRootPath, undefined, 'mini')
+        systemPrompt: miniConfig.enabled
+          ? this.getMiniSystemPrompt()
           : {
               type: 'preset' as const,
               preset: 'claude_code' as const,
@@ -966,18 +765,26 @@ export class SproutyAgent {
         // - Mini agents: minimal set for quick config edits (reduces token count ~70%)
         // - Regular agents: full Claude Code toolset
         tools: (() => {
-          const toolsValue = isMiniAgent
-            ? ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash']
+          const toolsValue = miniConfig.enabled
+            ? [...miniConfig.tools]  // Use centralized tool list
             : { type: 'preset' as const, preset: 'claude_code' as const };
-          debug('[CreatorFlow] 🔧 Tools configuration:', JSON.stringify(toolsValue));
+          debug('[SproutyAgent] 🔧 Tools configuration:', JSON.stringify(toolsValue));
           return toolsValue;
         })(),
         // Bypass SDK's built-in permission system - we handle all permissions via PreToolUse hook
         // This allows Safe Mode to properly allow read-only bash commands without SDK interference
         permissionMode: 'bypassPermissions',
         allowDangerouslySkipPermissions: true,
-        // Use PreToolUse hook to intercept tool calls (plan mode blocking happens here)
-        hooks: {
+        // User hooks from hooks.json are merged with internal hooks
+        hooks: (() => {
+          // Build user-defined hooks from hooks.json using the workspace-level HookSystem
+          const userHooks = this.config.hookSystem?.buildSdkHooks() ?? {};
+          if (Object.keys(userHooks).length > 0) {
+            debug('[SproutyAgent] User SDK hooks loaded:', Object.keys(userHooks).join(', '));
+          }
+
+          // Internal hooks for permission handling and logging
+          const internalHooks: Record<string, SdkHookCallbackMatcher[]> = {
           PreToolUse: [{
             hooks: [async (input) => {
               // Only handle PreToolUse events
@@ -999,7 +806,7 @@ export class SproutyAgent {
               // Build permissions context for loading custom permissions.json files
               const permissionsContext: PermissionsContext = {
                 workspaceRootPath: this.workspaceRootPath,
-                activeSourceSlugs: Array.from(this.activeSourceServerNames),
+                activeSourceSlugs: Array.from(this.sourceManager.getActiveSlugs()),
               };
 
               // In 'allow-all' mode, still check for explicitly blocked tools
@@ -1074,16 +881,16 @@ export class SproutyAgent {
                   // Built-in MCP servers that are always available (not user sources)
                   // - preferences: user preferences storage
                   // - session: session-scoped tools (SubmitPlan, source_test, etc.)
-                  // - creator-flows-docs: always-available documentation search
-                  const builtInMcpServers = new Set(['preferences', 'session', 'creator-flows-docs']);
+                  // - sprouty-ai-docs: always-available documentation search
+                  const builtInMcpServers = new Set(['preferences', 'session', 'sprouty-ai-docs']);
 
                   // Check if this is a source server (not built-in)
                   if (!builtInMcpServers.has(serverName)) {
                     // Check if source server is active
-                    const isActive = this.activeSourceServerNames.has(serverName);
+                    const isActive = this.sourceManager.isSourceActive(serverName);
                     if (!isActive) {
                       // Check if this source exists in workspace (just not enabled in session)
-                      const sourceExists = this.allSources.some(s => s.config.slug === serverName);
+                      const sourceExists = this.sourceManager.getAllSources().some(s => s.config.slug === serverName);
 
                       if (sourceExists && this.onSourceActivationRequest) {
                         // Try to auto-enable the source
@@ -1140,204 +947,73 @@ export class SproutyAgent {
               }
 
               // ============================================================
-              // EMPTY INPUT GUARD: Detect SDK tool_input serialization failures
-              // When the model generates very large tool inputs (e.g., Write with
-              // a full HTML page as content), the SDK subprocess may fail to
-              // serialize the input, resulting in an empty {} object. Without this
-              // guard, the agent enters an infinite retry loop because it keeps
-              // calling Write with the same large content that keeps getting dropped.
-              // See: https://github.com/anthropics/claude-agent-sdk/issues/XXX
+              // SHARED PRETOOLUSE CHECKS
+              // Uses shared utilities from core/pre-tool-use.ts for consistency
+              // with CodexAgent implementation
               // ============================================================
-              const writeTools = new Set(['Write', 'Edit', 'MultiEdit']);
-              if (writeTools.has(input.tool_name)) {
-                const toolInput = input.tool_input as Record<string, unknown>;
-                const inputKeys = Object.keys(toolInput);
 
-                if (input.tool_name === 'Write' && (!toolInput.file_path || !toolInput.content)) {
-                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Write tool received empty/missing parameters (keys: ${inputKeys.join(', ') || 'none'})`);
-                  return {
-                    continue: false,
-                    decision: 'block' as const,
-                    reason: `Write tool received empty parameters — this happens when the file content is too large for a single Write call.\n\nTo fix this, split the operation:\n1. Use Bash with heredoc to write the file: cat > "path/to/file" << 'EOF'\n   ...content...\n   EOF\n2. Or use Write to create a small skeleton file first, then use Edit to add content section by section.\n\nDo NOT retry Write with the same large content — it will fail again.`,
-                  };
-                }
+              const toolInput = input.tool_input as Record<string, unknown>;
+              let modifiedInput: Record<string, unknown> | null = null;
 
-                if (input.tool_name === 'Edit' && !toolInput.file_path) {
-                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Edit tool received empty/missing file_path (keys: ${inputKeys.join(', ') || 'none'})`);
-                  return {
-                    continue: false,
-                    decision: 'block' as const,
-                    reason: `Edit tool received empty parameters — the input may be too large for the SDK to serialize.\n\nTry splitting the edit into smaller chunks, or use Bash with heredoc for large content.`,
-                  };
-                }
-
-                if (input.tool_name === 'MultiEdit' && !toolInput.file_path) {
-                  this.onDebug?.(`[EMPTY_INPUT_GUARD] MultiEdit tool received empty/missing file_path (keys: ${inputKeys.join(', ') || 'none'})`);
-                  return {
-                    continue: false,
-                    decision: 'block' as const,
-                    reason: `MultiEdit tool received empty parameters — the input may be too large for the SDK to serialize.\n\nTry splitting the edits into smaller individual Edit calls.`,
-                  };
-                }
-              }
-
-              // Also guard Bash tool against empty command (same SDK serialization issue)
-              if (input.tool_name === 'Bash') {
-                const toolInput = input.tool_input as Record<string, unknown>;
-                if (!toolInput.command) {
-                  this.onDebug?.(`[EMPTY_INPUT_GUARD] Bash tool received empty command (keys: ${Object.keys(toolInput).join(', ') || 'none'})`);
-                  return {
-                    continue: false,
-                    decision: 'block' as const,
-                    reason: `Bash tool received empty command parameter — the command may be too large for the SDK to serialize.\n\nTry splitting the command into smaller parts, or write content to a file first and then execute it.`,
-                  };
-                }
-              }
-
-              // ============================================================
               // PATH EXPANSION: Expand ~ in file paths for SDK file tools
-              // Node.js fs doesn't expand ~ so we must do it ourselves
-              // ============================================================
-              const filePathTools = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'NotebookEdit']);
-              if (filePathTools.has(input.tool_name)) {
-                const toolInput = input.tool_input as Record<string, unknown>;
-                let updatedInput: Record<string, unknown> | null = null;
-
-                // Expand file_path if present and starts with ~
-                if (typeof toolInput.file_path === 'string' && toolInput.file_path.startsWith('~')) {
-                  const expandedPath = expandPath(toolInput.file_path);
-                  this.onDebug?.(`Expanding path: ${toolInput.file_path} → ${expandedPath}`);
-                  updatedInput = { ...toolInput, file_path: expandedPath };
-                }
-
-                // Expand notebook_path if present and starts with ~
-                if (typeof toolInput.notebook_path === 'string' && toolInput.notebook_path.startsWith('~')) {
-                  const expandedPath = expandPath(toolInput.notebook_path);
-                  this.onDebug?.(`Expanding notebook path: ${toolInput.notebook_path} → ${expandedPath}`);
-                  updatedInput = { ...(updatedInput || toolInput), notebook_path: expandedPath };
-                }
-
-                // Expand path if present and starts with ~ (for Glob, Grep)
-                if (typeof toolInput.path === 'string' && toolInput.path.startsWith('~')) {
-                  const expandedPath = expandPath(toolInput.path);
-                  this.onDebug?.(`Expanding search path: ${toolInput.path} → ${expandedPath}`);
-                  updatedInput = { ...(updatedInput || toolInput), path: expandedPath };
-                }
-
-                // ============================================================
-                // CONFIG FILE VALIDATION: For Write/Edit to workspace config files,
-                // validate the content before allowing the write to proceed.
-                // This prevents invalid configs from ever reaching disk.
-                // Validates: sources/*/config.json, skills/*/SKILL.md,
-                //            statuses/config.json, permissions.json
-                // ============================================================
-                const configWriteTools = new Set(['Write', 'Edit']);
-                if (configWriteTools.has(input.tool_name)) {
-                  // Resolve the final file path (after any ~ expansion)
-                  const resolvedPath = (updatedInput?.file_path ?? toolInput.file_path) as string | undefined;
-
-                  if (resolvedPath) {
-                    const detection = detectConfigFileType(resolvedPath, this.workspaceRootPath);
-
-                    if (detection) {
-                      let contentToValidate: string | null = null;
-
-                      if (input.tool_name === 'Write') {
-                        // For Write, the full file content is in tool_input.content
-                        contentToValidate = toolInput.content as string;
-                      } else if (input.tool_name === 'Edit') {
-                        // For Edit, simulate the replacement on the current file content
-                        try {
-                          const currentContent = readFileSync(resolvedPath, 'utf-8');
-                          const oldString = toolInput.old_string as string;
-                          const newString = toolInput.new_string as string;
-                          const replaceAll = toolInput.replace_all as boolean | undefined;
-                          contentToValidate = replaceAll
-                            ? currentContent.replaceAll(oldString, newString)
-                            : currentContent.replace(oldString, newString);
-                        } catch {
-                          // File doesn't exist yet or can't be read — skip validation
-                          // (Write tool will create it; Edit will fail on its own)
-                        }
-                      }
-
-                      if (contentToValidate) {
-                        const validationResult = validateConfigFileContent(detection, contentToValidate);
-                        if (validationResult && !validationResult.valid) {
-                          this.onDebug?.(`Config validation blocked ${input.tool_name} to ${detection.displayFile}: ${validationResult.errors.length} errors`);
-                          return {
-                            continue: false,
-                            decision: 'block' as const,
-                            reason: `Cannot write invalid config to ${detection.displayFile}.\n\n${formatValidationResult(validationResult)}\n\nFix the errors above and try again.`,
-                          };
-                        }
-                      }
-                    }
-                  }
-                }
-
-                // If any path was expanded, return updated input
-                if (updatedInput) {
-                  return {
-                    continue: true,
-                    hookSpecificOutput: {
-                      hookEventName: 'PreToolUse' as const,
-                      updatedInput,
-                    },
-                  };
-                }
+              const pathResult = expandToolPaths(
+                input.tool_name,
+                toolInput,
+                (msg) => this.onDebug?.(msg)
+              );
+              if (pathResult.modified) {
+                modifiedInput = pathResult.input;
               }
 
-              // ============================================================
-              // SKILL QUALIFICATION: Ensure skill names are fully-qualified (workspaceId:slug)
-              // The SDK requires fully-qualified names to resolve skills. If the agent
-              // calls a skill with just the short slug, we prefix it here.
-              // Phase 1 (UI layer) should already inject the full name in rawText, but this
-              // provides defense-in-depth for edge cases where agent calls Skill directly.
-              // ============================================================
+              // CONFIG FILE VALIDATION: Validate config writes before they happen
+              const configResult = validateConfigWrite(
+                input.tool_name,
+                modifiedInput || toolInput,
+                this.workspaceRootPath,
+                (msg) => this.onDebug?.(msg)
+              );
+              if (!configResult.valid) {
+                return {
+                  continue: false,
+                  decision: 'block' as const,
+                  reason: configResult.error!,
+                };
+              }
+
+              // SKILL QUALIFICATION: Ensure skill names are fully-qualified
+              // SDK expects "workspaceSlug:skillSlug" format, NOT UUID
               if (input.tool_name === 'Skill') {
-                const toolInput = input.tool_input as { skill?: string; args?: string };
-                if (toolInput.skill && !toolInput.skill.includes(':')) {
-                  // Short name detected - prepend workspace slug (folder name)
-                  // SDK expects: "workspaceSlug:skillSlug" format, NOT UUID
-                  const pathParts = this.workspaceRootPath.split('/').filter(Boolean);
-                  const workspaceSlug = pathParts[pathParts.length - 1] || this.config.workspace.id;
-                  const qualifiedSkill = `${workspaceSlug}:${toolInput.skill}`;
-                  this.onDebug?.(`Skill tool: qualified "${toolInput.skill}" → "${qualifiedSkill}"`);
-                  return {
-                    continue: true,
-                    hookSpecificOutput: {
-                      hookEventName: 'PreToolUse' as const,
-                      updatedInput: { ...toolInput, skill: qualifiedSkill },
-                    },
-                  };
+                const workspaceSlug = extractWorkspaceSlug(this.workspaceRootPath, this.config.workspace.id);
+                const skillResult = qualifySkillName(
+                  modifiedInput || toolInput,
+                  workspaceSlug,
+                  (msg) => this.onDebug?.(msg)
+                );
+                if (skillResult.modified) {
+                  modifiedInput = skillResult.input;
                 }
               }
 
-              // Built-in SDK tools (don't extract _intent from these)
-              const builtInTools = new Set([
-                'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep',
-                'WebFetch', 'WebSearch', 'Task', 'TaskOutput',
-                'TodoWrite', 'MultiEdit', 'NotebookEdit', 'KillShell',
-                'SubmitPlan', 'Skill', 'SlashCommand',
-              ]);
+              // TOOL METADATA STRIPPING: Remove _intent/_displayName from ALL tools
+              // (extracted for UI in tool-matching.ts, stripped here before SDK execution)
+              const metadataResult = stripToolMetadata(
+                input.tool_name,
+                modifiedInput || toolInput,
+                (msg) => this.onDebug?.(msg)
+              );
+              if (metadataResult.modified) {
+                modifiedInput = metadataResult.input;
+              }
 
-              // Strip _intent and _displayName metadata from MCP tool inputs before forwarding
-              // These fields are for UI display only, not for the actual MCP server
-              if (!builtInTools.has(input.tool_name)) {
-                const toolInput = input.tool_input as Record<string, unknown>;
-                const hasMetadata = '_intent' in toolInput || '_displayName' in toolInput;
-
-                if (hasMetadata) {
-                  const { _intent, _displayName, ...cleanInput } = toolInput;
-                  return {
-                    continue: true,
-                    hookSpecificOutput: {
-                      hookEventName: 'PreToolUse' as const,
-                      updatedInput: cleanInput,
-                    },
-                  };
-                }
+              // If any modifications were made, return with updated input
+              if (modifiedInput) {
+                return {
+                  continue: true,
+                  hookSpecificOutput: {
+                    hookEventName: 'PreToolUse' as const,
+                    updatedInput: modifiedInput,
+                  },
+                };
               }
 
               // ============================================================
@@ -1389,7 +1065,7 @@ export class SproutyAgent {
                 const filePath = (toolInput.file_path as string) || (toolInput.notebook_path as string) || 'unknown';
 
                 // Check if this tool type is already allowed for this session
-                if (this.alwaysAllowedCommands.has(input.tool_name)) {
+                if (this.permissionManager.isCommandWhitelisted(input.tool_name)) {
                   this.onDebug?.(`Auto-allowing "${input.tool_name}" (previously approved)`);
                   return { continue: true };
                 }
@@ -1427,7 +1103,7 @@ export class SproutyAgent {
                   const serverAndTool = input.tool_name.replace('mcp__', '').replace(/__/g, '/');
 
                   // Check if this tool is already allowed for this session
-                  if (this.alwaysAllowedCommands.has(input.tool_name)) {
+                  if (this.permissionManager.isCommandWhitelisted(input.tool_name)) {
                     this.onDebug?.(`Auto-allowing "${input.tool_name}" (previously approved)`);
                     return { continue: true };
                   }
@@ -1467,7 +1143,7 @@ export class SproutyAgent {
                   }
 
                   // Check if this API pattern is already allowed (session whitelist)
-                  if (this.alwaysAllowedCommands.has(apiDescription)) {
+                  if (this.permissionManager.isCommandWhitelisted(apiDescription)) {
                     this.onDebug?.(`Auto-allowing API "${apiDescription}" (previously approved)`);
                     return { continue: true };
                   }
@@ -1497,7 +1173,7 @@ export class SproutyAgent {
                   ? (input.tool_input as Record<string, unknown>).command
                   : JSON.stringify(input.tool_input);
                 const commandStr = String(command);
-                const baseCommand = this.getBaseCommand(commandStr);
+                const baseCommand = this.permissionManager.getBaseCommand(commandStr);
 
                 // Auto-allow read-only commands (same ones allowed in Explore mode)
                 // Use merged config to get actual patterns from default.json (SAFE_MODE_CONFIG has empty arrays)
@@ -1509,15 +1185,15 @@ export class SproutyAgent {
                 }
 
                 // Check if this base command is already allowed (and not dangerous)
-                if (this.alwaysAllowedCommands.has(baseCommand) && !this.isDangerousCommand(baseCommand)) {
+                if (this.permissionManager.isCommandWhitelisted(baseCommand) && !this.permissionManager.isDangerousCommand(baseCommand)) {
                   this.onDebug?.(`Auto-allowing "${baseCommand}" (previously approved)`);
                   return { continue: true };
                 }
 
                 // For curl/wget, check if the domain is whitelisted
                 if (['curl', 'wget'].includes(baseCommand)) {
-                  const domain = this.extractDomainFromNetworkCommand(commandStr);
-                  if (domain && this.alwaysAllowedDomains.has(domain)) {
+                  const domain = this.permissionManager.extractDomainFromNetworkCommand(commandStr);
+                  if (domain && this.permissionManager.isDomainWhitelisted(domain)) {
                     this.onDebug?.(`Auto-allowing ${baseCommand} to "${domain}" (domain whitelisted)`);
                     return { continue: true };
                   }
@@ -1576,18 +1252,34 @@ export class SproutyAgent {
           SubagentStart: [{
             hooks: [async (input, _hookToolUseID) => {
               const typedInput = input as { agent_id?: string; agent_type?: string };
-              console.log(`[SproutyAgent] SubagentStart: agent_id=${typedInput.agent_id}, type=${typedInput.agent_type}`);
+              debug(`[SproutyAgent] SubagentStart: agent_id=${typedInput.agent_id}, type=${typedInput.agent_type}`);
               return { continue: true };
             }],
           }],
           SubagentStop: [{
             hooks: [async (input, _toolUseID) => {
               const typedInput = input as { agent_id?: string };
-              console.log(`[SproutyAgent] SubagentStop: agent_id=${typedInput.agent_id}`);
+              debug(`[SproutyAgent] SubagentStop: agent_id=${typedInput.agent_id}`);
               return { continue: true };
             }],
           }],
-        },
+          };
+
+          // Merge internal hooks with user hooks from hooks.json
+          // Internal hooks run first (permissions), then user hooks
+          const mergedHooks: Record<string, SdkHookCallbackMatcher[]> = { ...internalHooks };
+          for (const [event, matchers] of Object.entries(userHooks)) {
+            if (mergedHooks[event]) {
+              // Append user hooks after internal hooks
+              mergedHooks[event] = [...mergedHooks[event], ...matchers];
+            } else {
+              // Add new event hooks
+              mergedHooks[event] = matchers;
+            }
+          }
+
+          return mergedHooks;
+        })(),
         // Continue from previous session if we have one (enables conversation history & auto compaction)
         // Skip resume on retry (after session expiry) to start fresh
         ...(!_isRetry && this.sessionId ? { resume: this.sessionId } : {}),
@@ -1600,46 +1292,12 @@ export class SproutyAgent {
         },
         // Selectively disable tools - file tools are disabled (use MCP), web/code controlled by settings
         disallowedTools,
-        // Load workspace and global plugins for SDK integration (enables skills, commands, agents).
-        // Global plugins are loaded from ~/.sprouty-ai/plugins/
-        // Workspace plugins are loaded from .sprouty-ai/plugins/
-        plugins: (() => {
-          const globalPath = getGlobalPluginDataPath();
-          const wsPath = `${this.workspaceRootPath}/.sprouty-ai`;
-          // 自动迁移旧插件目录结构（.claude-plugin/{name}/ → plugins/{name}/）
-          migratePluginDir(globalPath);
-          migratePluginDir(wsPath);
-          const pluginEntries: Array<{ type: 'local'; path: string }> = [
-            { type: 'local' as const, path: globalPath },
-            { type: 'local' as const, path: wsPath },
-          ];
-          // Scan for nested plugins inside plugins/ directories.
-          // SDK only loads top-level plugin paths, so nested plugins (e.g. productivity/)
-          // must be added as separate entries.
-          for (const basePath of [globalPath, wsPath]) {
-            const pluginsDir = `${basePath}/plugins`;
-            if (!existsSync(pluginsDir)) continue;
-            try {
-              for (const entry of readdirSync(pluginsDir)) {
-                const nestedDir = `${pluginsDir}/${entry}`;
-                try {
-                  if (!statSync(nestedDir).isDirectory()) continue;
-                } catch { continue; }
-                // Check if this subdirectory is a plugin (has .claude-plugin/plugin.json)
-                if (existsSync(`${nestedDir}/.claude-plugin/plugin.json`)) {
-                  pluginEntries.push({ type: 'local' as const, path: nestedDir });
-                }
-              }
-            } catch { /* ignore scan errors */ }
-          }
-          console.error(`[SproutyAgent] Plugin paths: ${pluginEntries.map(p => p.path).join(', ')}`);
-          return pluginEntries;
-        })(),
+        // Load workspace as SDK plugin (enables skills, commands, agents from workspace)
+        plugins: [{ type: 'local' as const, path: this.workspaceRootPath }],
       };
 
       // Track whether we're trying to resume a session (for error handling)
       const wasResuming = !_isRetry && !!this.sessionId;
-      debug(`[chat] 构建 options 完成，耗时 ${Date.now() - chatStartTime}ms`);
 
       // Log resume attempt for debugging session failures
       if (wasResuming) {
@@ -1659,29 +1317,19 @@ export class SproutyAgent {
 
       // Known SDK slash commands that bypass context wrapping.
       // These are sent directly to the SDK without date/session/source context.
-      // Includes both SDK built-in commands (compact, commit, etc.) and plugin commands
-      // (e.g. productivity:start). Plugin commands are handled by the SDK's plugin system.
-      const FALLBACK_SLASH_COMMANDS = ['compact'];
+      // Currently only 'compact' is supported - add more here as needed.
+      const SDK_SLASH_COMMANDS = ['compact'] as const;
 
       // Detect SDK slash commands - must be sent directly without context wrapping.
-      // Pattern: /command or /command <instructions> (supports plugin:command format)
+      // Pattern: /command or /command <instructions>
       const trimmedMessage = userMessage.trim();
-      const commandMatch = trimmedMessage.match(/^\/([a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)?)(\s|$)/i);
+      const commandMatch = trimmedMessage.match(/^\/([a-z]+)(\s|$)/i);
       const commandName = commandMatch?.[1]?.toLowerCase();
-      const knownCommands = this.sdkSlashCommands.length > 0
-        ? this.sdkSlashCommands.map(c => c.name)
-        : FALLBACK_SLASH_COMMANDS;
-      // Recognize as slash command if:
-      // 1. It's in the known commands list, OR
-      // 2. It uses plugin:command format (colon indicates a plugin command)
-      //    Plugin commands may not be in sdkSlashCommands yet if the event hasn't fired,
-      //    but the colon format is exclusively used by plugin slash commands.
       const isSlashCommand = commandName &&
-        (knownCommands.includes(commandName) || commandName.includes(':')) &&
+        SDK_SLASH_COMMANDS.includes(commandName as typeof SDK_SLASH_COMMANDS[number]) &&
         !attachments?.length;
 
       // Create the query - handle slash commands, binary attachments, or regular messages
-      const queryCreateStart = Date.now();
       if (isSlashCommand) {
         // Send slash commands directly to SDK without context wrapping.
         // The SDK processes these as internal commands (e.g., /compact triggers compaction).
@@ -1698,81 +1346,30 @@ export class SproutyAgent {
         const prompt = this.buildTextPrompt(userMessage, attachments);
         this.currentQuery = query({ prompt, options: optionsWithAbort });
       }
-      debug(`[chat] query() 创建完成，耗时 ${Date.now() - queryCreateStart}ms，累计 ${Date.now() - chatStartTime}ms`);
 
-      // Track tool uses for mapping results and preventing duplicates
-      const pendingToolUses = new Map<string, { name: string; input: Record<string, unknown> }>();
-      // SDK emits tool_use in both stream_event (partial) and assistant (complete) messages
-      // Track emitted tool_starts to avoid duplicate UI updates
+      // ═══════════════════════════════════════════════════════════════════════════
+      // STATELESS TOOL MATCHING (see tool-matching.ts for details)
+      // ═══════════════════════════════════════════════════════════════════════════
+      //
+      // Tool matching uses direct ID-based lookup instead of FIFO queues.
+      // The SDK provides:
+      // - parent_tool_use_id on every message → identifies subagent context
+      // - tool_use_id on tool_result content blocks → directly identifies which tool
+      //
+      // This eliminates order-dependent matching. Same messages → same output.
+      //
+      // Three data structures are needed:
+      // - toolIndex: append-only map of toolUseId → {name, input} (order-independent)
+      // - emittedToolStarts: append-only set for stream/assistant dedup (order-independent)
+      // - activeParentTools: tracks running Task tool IDs for fallback parent assignment
+      //   (used when SDK's parent_tool_use_id is null but a Task is active)
+      // ═══════════════════════════════════════════════════════════════════════════
+      const toolIndex = new ToolIndex();
       const emittedToolStarts = new Set<string>();
-      // Track tool IDs that have been matched to results (but not yet deleted from pendingToolUses)
-      // This prevents the FIFO fallback from matching multiple results to the same tool
-      const matchedToolIds = new Set<string>();
-
-      // ═══════════════════════════════════════════════════════════════════════════
-      // PARENT-CHILD TOOL TRACKING (for Task/TaskOutput subagent tools)
-      // ═══════════════════════════════════════════════════════════════════════════
-      //
-      // PURPOSE: Track which tools are children of which parent (Task/TaskOutput)
-      // for correct UI hierarchy display and result matching.
-      //
-      // ─────────────────────────────────────────────────────────────────────────────
-      // HOW IT WORKS: SDK's parent_tool_use_id
-      // ─────────────────────────────────────────────────────────────────────────────
-      //
-      // The Claude Agent SDK provides `parent_tool_use_id` on ALL message types:
-      // - SDKAssistantMessage, SDKPartialAssistantMessage, SDKToolProgressMessage, SDKUserMessage
-      //
-      // For tools running INSIDE a subagent (Task), this field points to the parent Task's ID.
-      // This is the AUTHORITATIVE source for parent-child relationships.
-      //
-      // ─────────────────────────────────────────────────────────────────────────────
-      // PARENT ASSIGNMENT PATHS (at tool_start time)
-      // ─────────────────────────────────────────────────────────────────────────────
-      //
-      // 1. SINGLE PARENT: When only one Task is active, assign child to it (unambiguous)
-      //    → Log: "CHILD REGISTERED (assistant/single-parent)"
-      //
-      // 2. MULTIPLE PARENTS + SDK PARENT: Use SDK's parent_tool_use_id (authoritative)
-      //    → Log: "CHILD REGISTERED (assistant/sdk-parent)" or "(stream/sdk-parent)"
-      //
-      // 3. FIFO FALLBACK: If SDK doesn't provide parent (edge case), use first active parent
-      //    → Log: "CHILD REGISTERED (assistant/fifo-fallback)" or "(stream/fifo-fallback)"
-      //    → This should rarely happen now that we use SDK's parent_tool_use_id
-      //
-      // ─────────────────────────────────────────────────────────────────────────────
-      // RESULT MATCHING (at tool_result time)
-      // ─────────────────────────────────────────────────────────────────────────────
-      //
-      // When a tool_result arrives with parent_tool_use_id pointing to a PARENT tool:
-      // - The result is for a CHILD of that parent, not the parent itself
-      // - Match to children in FIFO order using parentToChildren map
-      // - This handles: Task(A) → Grep, Read → results come back with parent=A
-      //
-      // ─────────────────────────────────────────────────────────────────────────────
-      // DATA STRUCTURES
-      // ─────────────────────────────────────────────────────────────────────────────
-      //
-      // PARENT_TOOL_NAMES: Tools that can spawn children (Task, TaskOutput)
-      // activeParentTools: Set of currently running parent tool IDs
-      // parentToChildren:  Map<parentId, childIds[]> - ordered for FIFO result matching
-      // childToParent:     Map<childId, parentId> - for UI hierarchy lookup
-      //
-      // ─────────────────────────────────────────────────────────────────────────────
-      // RELATED CODE
-      // ─────────────────────────────────────────────────────────────────────────────
-      //
-      // - SubagentStart/SubagentStop hooks (line ~1345): Logging only, not for mapping
-      // - apps/electron/src/main/sessions.ts: Similar tracking at session manager level
-      //   (uses parentToolStack as fallback, but prefers event.parentToolUseId from here)
-      //
-      // ═══════════════════════════════════════════════════════════════════════════
-      // Only Task is a parent tool (spawns subagent children)
-      // TaskOutput just retrieves results from background tasks - it doesn't spawn children
-      const PARENT_TOOL_NAMES = ['Task'];
-      const activeParentTools = new Set<string>();                    // Currently running parent tool IDs
-      const parentToChildren = new Map<string, string[]>();           // parentId → [childIds...] (FIFO order)
-      const childToParent = new Map<string, string>();                // childId → parentId (for hierarchy)
+      const activeParentTools = new Set<string>();
+      // Session directory for reading tool metadata — prevents race condition when
+      // concurrent sessions clobber the singleton _sessionDir in toolMetadataStore.
+      const metadataSessionDir = getSessionPath(this.workspaceRootPath, sessionId);
 
       // Process SDK messages and convert to AgentEvents
       let receivedComplete = false;
@@ -1783,21 +1380,8 @@ export class SproutyAgent {
       // Track whether we received any assistant content (for empty response detection)
       // When SDK returns empty response (e.g., failed resume), we need to detect and recover
       let receivedAssistantContent = false;
-      let firstMessageReceived = false;
       try {
         for await (const message of this.currentQuery) {
-          if (!firstMessageReceived) {
-            firstMessageReceived = true;
-            debug(`[chat] SDK 返回第一条消息，从 chat() 开始到现在耗时 ${Date.now() - chatStartTime}ms`);
-          }
-          // Debug: log all SDK messages for slash command debugging
-          if (isSlashCommand) {
-            console.error(`[SproutyAgent] SDK slash msg: type=${'type' in message ? message.type : '?'}, subtype=${'subtype' in message ? message.subtype : '?'}`);
-            if ('result' in message) {
-              const r = (message as any).result;
-              console.error(`[SproutyAgent] SDK slash result field: type=${typeof r}, value=${typeof r === 'string' ? r.slice(0, 500) : JSON.stringify(r)?.slice(0, 500)}`);
-            }
-          }
           // Track if we got any text content from assistant
           if ('type' in message && message.type === 'assistant' && 'message' in message) {
             const assistantMsg = message.message as { content?: unknown[] };
@@ -1822,18 +1406,18 @@ export class SproutyAgent {
 
           const events = await this.convertSDKMessage(
             message,
-            pendingToolUses,
+            toolIndex,
             emittedToolStarts,
-            matchedToolIds,
-            { PARENT_TOOL_NAMES, activeParentTools, parentToChildren, childToParent },
+            activeParentTools,
             pendingTextForStopReason,
             (text) => { pendingTextForStopReason = text; },
             currentTurnId,
-            (id) => { currentTurnId = id; }
+            (id) => { currentTurnId = id; },
+            metadataSessionDir,
           );
           for (const event of events) {
             // Check for tool-not-found errors on inactive sources and attempt auto-activation
-            const inactiveSourceError = this.detectInactiveSourceToolError(event, pendingToolUses);
+            const inactiveSourceError = this.detectInactiveSourceToolError(event, toolIndex);
 
             if (inactiveSourceError && this.onSourceActivationRequest) {
               const { sourceSlug, toolName } = inactiveSourceError;
@@ -1864,6 +1448,7 @@ export class SproutyAgent {
                   yield {
                     type: 'tool_result' as const,
                     toolUseId: toolResultEvent.toolUseId,
+                    toolName: toolResultEvent.toolName,
                     result: `Source "${sourceSlug}" could not be activated. It may require authentication. Please check the source status in the sources panel.`,
                     isError: true,
                     input: toolResultEvent.input,
@@ -1906,7 +1491,7 @@ export class SproutyAgent {
 
           yield { type: 'info', message: 'Restoring conversation context...' };
           // Retry with fresh session, injecting conversation history into the message
-          yield* this.chat(messageWithContext, attachments, true);
+          yield* this.chat(messageWithContext, attachments, { isRetry: true });
           return;
         }
 
@@ -2031,12 +1616,12 @@ export class SproutyAgent {
           ));
 
         if (isConfigCorruption && !_isRetry) {
-          debug('[CreatorFlow] Detected .claude.json corruption, repairing and retrying...');
+          debug('[SproutyAgent] Detected .claude.json corruption, repairing and retrying...');
           // Reset the once-per-process guard so ensureClaudeConfig() runs again
           // on the retry — it will repair the file before the next subprocess spawn
           resetClaudeConfigCheck();
           yield { type: 'info', message: 'Repairing configuration file...' };
-          yield* this.chat(userMessage, attachments, true);
+          yield* this.chat(userMessage, attachments, { isRetry: true });
           return;
         }
 
@@ -2080,14 +1665,14 @@ export class SproutyAgent {
             // Use 'info' instead of 'status' to show message without spinner
             yield { type: 'info', message: 'Session expired, restoring context...' };
             // Recursively call with isRetry=true (yield* delegates all events)
-            yield* this.chat(userMessage, attachments, true);
+            yield* this.chat(userMessage, attachments, { isRetry: true });
             return;
           }
 
-          // Check for SDK setup error (missing .claude/skills directory)
-          const skillsDirError = buildSkillsDirError(stderrContext || rawErrorMsg);
-          if (skillsDirError) {
-            yield skillsDirError;
+          // Check for Windows SDK setup error (missing .claude/skills directory)
+          const windowsSkillsError = buildWindowsSkillsDirError(stderrContext || rawErrorMsg);
+          if (windowsSkillsError) {
+            yield windowsSkillsError;
             yield { type: 'complete' };
             return;
           }
@@ -2095,9 +1680,21 @@ export class SproutyAgent {
           debug('[SESSION_DEBUG] >>> TAKING PATH: Run diagnostics (not session expired)');
 
           // Run diagnostics to identify specific cause (2s timeout)
-          const storedConfig = loadStoredConfig();
+          // Derive authType from the default LLM connection
+          const { getDefaultLlmConnection, getLlmConnection } = await import('../config/storage.ts');
+          const defaultConnSlug = getDefaultLlmConnection();
+          const connection = defaultConnSlug ? getLlmConnection(defaultConnSlug) : null;
+          // Map connection authType to legacy AuthType format for diagnostics
+          let diagnosticAuthType: AuthType | undefined;
+          if (connection) {
+            if (connection.authType === 'api_key' || connection.authType === 'api_key_with_endpoint' || connection.authType === 'bearer_token') {
+              diagnosticAuthType = 'api_key';
+            } else if (connection.authType === 'oauth') {
+              diagnosticAuthType = 'oauth_token';
+            }
+          }
           const diagnostics = await runErrorDiagnostics({
-            authType: storedConfig?.authType,
+            authType: diagnosticAuthType,
             workspaceId: this.config.workspace?.id,
             rawError: stderrContext || rawErrorMsg,
           });
@@ -2164,7 +1761,7 @@ export class SproutyAgent {
           // Use 'info' instead of 'status' to show message without spinner
           yield { type: 'info', message: statusMessage };
           // Recursively call with isRetry=true (yield* delegates all events)
-          yield* this.chat(userMessage, attachments, true);
+          yield* this.chat(userMessage, attachments, { isRetry: true });
           return;
         }
 
@@ -2200,217 +1797,14 @@ export class SproutyAgent {
       this.currentQuery = null;
       // Reset ultrathink override after query completes (single-shot per-message boost)
       // Note: thinkingLevel is NOT reset - it's sticky for the session
-      this.ultrathinkOverride = false;
+      this._ultrathinkOverride = false;
     }
   }
 
-  /**
-   * Format source state as a lightweight XML block for injection into user messages.
-   * Shows active sources, inactive sources, and introduces new sources with taglines.
-   * New sources (not seen before this session) include descriptions to help agent understand usage.
-   *
-   * Active sources are determined by intendedActiveSlugs (what UI shows as active).
-   * If a source is intended-active but has no working tools (build failed), we note the issue.
-   */
-  private formatSourceState(): string {
-    // Use intended active slugs (what UI shows) rather than just what built successfully
-    const activeSlugs = [...this.intendedActiveSlugs].sort();
+  // formatSourceState() and getAuthToolName() are now delegated to this.sourceManager
 
-    // Find inactive sources (in allSources but not intended-active)
-    const inactiveSources = this.allSources.filter(
-      (s) => !this.intendedActiveSlugs.has(s.config.slug)
-    );
-
-    // Find sources not yet seen this session
-    const unseenSources = this.allSources.filter(
-      (s) => !this.knownSourceSlugs.has(s.config.slug)
-    );
-
-    // Find active sources that need attention (needs_auth or failed status)
-    const activeSources = this.allSources.filter(
-      (s) => this.intendedActiveSlugs.has(s.config.slug)
-    );
-    const sourcesNeedingAttention = activeSources.filter(
-      (s) => s.config.connectionStatus === 'needs_auth' || s.config.connectionStatus === 'failed'
-    );
-
-    // Check if this is the first message (no sources known yet)
-    const isFirstMessage = this.knownSourceSlugs.size === 0;
-
-    // Mark all current sources as known for next message
-    this.allSources.forEach((s) => this.knownSourceSlugs.add(s.config.slug));
-
-    // Build output parts
-    const parts: string[] = [];
-
-    // Active sources line - include warning for sources with failed builds
-    if (activeSlugs.length > 0) {
-      const activeWithStatus = activeSlugs.map((slug) => {
-        const hasWorkingTools = this.activeSourceServerNames.has(slug);
-        return hasWorkingTools ? slug : `${slug} (no tools)`;
-      });
-      parts.push(`Active: ${activeWithStatus.join(', ')}`);
-    } else {
-      parts.push('Active: none');
-    }
-
-    // Inactive sources with reason
-    // Use sourceNeedsAuthentication() to correctly check if auth is required,
-    // not just whether isAuthenticated is set. Sources with authType: "none"
-    // should show "inactive" not "needs auth".
-    if (inactiveSources.length > 0) {
-      const inactiveList = inactiveSources.map((s) => {
-        const reason = !s.config.enabled
-          ? 'disabled'
-          : sourceNeedsAuthentication(s)
-            ? 'needs auth'
-            : 'inactive';
-        return `${s.config.slug} (${reason})`;
-      });
-      parts.push(`Inactive: ${inactiveList.join(', ')}`);
-    }
-
-    // Source descriptions (shown once per session when first introduced)
-    if (unseenSources.length > 0) {
-      parts.push('');
-      // Only show "New:" header for mid-conversation additions, not first message
-      if (!isFirstMessage) {
-        parts.push('New:');
-      }
-      for (const s of unseenSources) {
-        const tagline = s.config.tagline || s.config.provider;
-        parts.push(`- ${s.config.slug}: ${tagline}`);
-      }
-    }
-
-    let output = `<sources>\n${parts.join('\n')}\n</sources>`;
-
-    // Inject issue context for sources needing attention (auth failed, etc.)
-    // These are ALWAYS shown, regardless of "seen" status, to ensure agent can troubleshoot
-    for (const s of sourcesNeedingAttention) {
-      const status = s.config.connectionStatus;
-      output += `\n\n<source_issue source="${s.config.slug}" status="${status}">`;
-
-      if (s.config.connectionError) {
-        output += `\nError: ${s.config.connectionError}`;
-      }
-
-      // Provide context-aware fix instructions based on auth type and transport
-      const authTool = this.getAuthToolName(s);
-      if (authTool) {
-        // Auth-based source - likely revoked or expired token
-        output += `\n\nThis source requires re-authentication. The user may have revoked access or the token expired.`;
-        output += `\nTo fix: Re-authenticate using ${authTool}.`;
-      } else if (s.config.mcp?.transport === 'stdio') {
-        // Local stdio server - process may have crashed or isn't installed
-        output += `\n\nThis is a local MCP server that is not responding. The server process may need to be restarted.`;
-        output += `\nTo fix: Check if the server command/path is correct and the process can start.`;
-      } else {
-        // Remote no-auth source - server unreachable or URL changed
-        output += `\n\nThis source's server is unreachable. It may be down or the URL may have changed.`;
-        output += `\nTo fix: Check the server URL and network connectivity. Use WebSearch to verify the endpoint is correct.`;
-      }
-      output += `\n</source_issue>`;
-    }
-
-    return output;
-  }
-
-  /**
-   * Get the correct authentication tool name for a source, or null if no auth is needed.
-   * Tool names are based on source type and provider, not the source slug.
-   */
-  private getAuthToolName(source: LoadedSource): string | null {
-    const { type, provider, mcp, api } = source.config;
-
-    // MCP sources
-    if (type === 'mcp') {
-      if (mcp?.authType === 'oauth') {
-        return 'source_oauth_trigger';
-      }
-      if (mcp?.authType === 'bearer') {
-        return 'source_credential_prompt';
-      }
-      // authType: 'none' or undefined (stdio) - no auth needed
-      return null;
-    }
-
-    // API sources: check provider for specific OAuth triggers
-    if (type === 'api') {
-      // Check for no-auth APIs first
-      if (api?.authType === 'none' || api?.authType === undefined) {
-        return null;
-      }
-
-      // OAuth providers have specific triggers
-      switch (provider) {
-        case 'google':
-          return 'source_google_oauth_trigger';
-        case 'slack':
-          return 'source_slack_oauth_trigger';
-        case 'microsoft':
-          return 'source_microsoft_oauth_trigger';
-        default:
-          // Non-OAuth API sources (api key, bearer, header, query) use credential prompt
-          return 'source_credential_prompt';
-      }
-    }
-
-    // Local sources or unknown - no auth
-    return null;
-  }
-
-  /**
-   * Format workspace capabilities for prompt injection.
-   * Informs the agent about what features are available in this workspace.
-   */
-  private formatWorkspaceCapabilities(): string {
-    const capabilities: string[] = [];
-
-    // Check local MCP server capability
-    const localMcpEnabled = isLocalMcpEnabled(this.workspaceRootPath);
-    if (localMcpEnabled) {
-      capabilities.push('local-mcp: enabled (stdio subprocess servers supported)');
-    } else {
-      capabilities.push('local-mcp: disabled (only HTTP/SSE servers)');
-    }
-
-    return `<workspace_capabilities>\n${capabilities.join('\n')}\n</workspace_capabilities>`;
-  }
-
-  /**
-   * Build recovery context from previous messages when SDK resume fails.
-   * Called when we detect an empty response during resume - we need to inject
-   * the previous conversation context so the agent can continue naturally.
-   *
-   * Returns a formatted string to prepend to the user message, or null if no context available.
-   */
-  private buildRecoveryContext(): string | null {
-    const messages = this.config.getRecoveryMessages?.();
-    if (!messages || messages.length === 0) {
-      return null;
-    }
-
-    // Format messages as a conversation block the agent can understand
-    const formattedMessages = messages.map(m => {
-      const role = m.type === 'user' ? 'User' : 'Assistant';
-      // Truncate very long messages to avoid bloating context (max ~1000 chars each)
-      const content = m.content.length > 1000
-        ? m.content.slice(0, 1000) + '...[truncated]'
-        : m.content;
-      return `[${role}]: ${content}`;
-    }).join('\n\n');
-
-    return `<conversation_recovery>
-This session was interrupted and is being restored. Here is the recent conversation context:
-
-${formattedMessages}
-
-Please continue the conversation naturally from where we left off.
-</conversation_recovery>
-
-`;
-  }
+  // buildRecoveryContext() is now inherited from BaseAgent
+  // formatWorkspaceCapabilities() is now in PromptBuilder
 
   /**
    * Build a simple text prompt with embedded text file contents (for text-only messages)
@@ -2420,31 +1814,15 @@ Please continue the conversation naturally from where we left off.
   private buildTextPrompt(text: string, attachments?: FileAttachment[]): string {
     const parts: string[] = [];
 
-    // Add date/time context first (moved from system prompt to enable caching)
-    parts.push(getDateTimeContext());
+    // Add context parts using centralized PromptBuilder
+    // This includes: date/time, session state (with plansFolderPath),
+    // workspace capabilities, and working directory context
+    const contextParts = this.promptBuilder.buildContextParts(
+      { plansFolderPath: getSessionPlansPath(this.workspaceRootPath, this.modeSessionId) },
+      this.sourceManager.formatSourceState()
+    );
 
-    // Add session state (always includes all modes with true/false state)
-    // This lightweight format replaces the verbose mode context
-    // Include plans folder path so agent knows where to write plans in safe mode
-    const plansFolderPath = getSessionPlansPath(this.workspaceRootPath, this.modeSessionId);
-    parts.push(formatSessionState(this.modeSessionId, { plansFolderPath }));
-
-    // Add source state (always included to inform agent about available sources)
-    parts.push(this.formatSourceState());
-
-    // Add workspace capabilities (local MCP enabled/disabled, etc.)
-    parts.push(this.formatWorkspaceCapabilities());
-
-    // Add working directory context
-    // Calculate effective working directory (same logic as cwd parameter)
-    const effectiveWorkingDir = this.config.session?.workingDirectory ??
-      (this.modeSessionId ? getSessionPath(this.workspaceRootPath, this.modeSessionId) : undefined);
-    const isSessionRoot = !this.config.session?.workingDirectory && !!this.modeSessionId;
-    // Pass sdkCwd so agent knows if bash runs from a different directory than workingDirectory
-    const workingDirContext = getWorkingDirectoryContext(effectiveWorkingDir, isSessionRoot, this.config.session?.sdkCwd);
-    if (workingDirContext) {
-      parts.push(workingDirContext);
-    }
+    parts.push(...contextParts);
 
     // Add file attachments with stored path info (agent uses Read tool to access content)
     // Text files are NOT embedded inline to prevent context overflow from large files
@@ -2477,30 +1855,16 @@ Please continue the conversation naturally from where we left off.
   private buildSDKUserMessage(text: string, attachments?: FileAttachment[]): SDKUserMessage {
     const contentBlocks: ContentBlockParam[] = [];
 
-    // Add date/time context first (moved from system prompt to enable caching)
-    contentBlocks.push({ type: 'text', text: getDateTimeContext() });
+    // Add context parts using centralized PromptBuilder
+    // This includes: date/time, session state (with plansFolderPath),
+    // workspace capabilities, and working directory context
+    const contextParts = this.promptBuilder.buildContextParts(
+      { plansFolderPath: getSessionPlansPath(this.workspaceRootPath, this.modeSessionId) },
+      this.sourceManager.formatSourceState()
+    );
 
-    // Add session state (always includes all modes with true/false state)
-    // This lightweight format replaces the verbose mode context
-    // Include plans folder path so agent knows where to write plans in safe mode
-    const plansFolderPath = getSessionPlansPath(this.workspaceRootPath, this.modeSessionId);
-    contentBlocks.push({ type: 'text', text: formatSessionState(this.modeSessionId, { plansFolderPath }) });
-
-    // Add source state (always included to inform agent about available sources)
-    contentBlocks.push({ type: 'text', text: this.formatSourceState() });
-
-    // Add workspace capabilities (local MCP enabled/disabled, etc.)
-    contentBlocks.push({ type: 'text', text: this.formatWorkspaceCapabilities() });
-
-    // Add working directory context
-    // Calculate effective working directory (same logic as cwd parameter)
-    const effectiveWorkingDirSdk = this.config.session?.workingDirectory ??
-      (this.modeSessionId ? getSessionPath(this.workspaceRootPath, this.modeSessionId) : undefined);
-    const isSessionRootSdk = !this.config.session?.workingDirectory && !!this.modeSessionId;
-    // Pass sdkCwd so agent knows if bash runs from a different directory than workingDirectory
-    const workingDirContextSdk = getWorkingDirectoryContext(effectiveWorkingDirSdk, isSessionRootSdk, this.config.session?.sdkCwd);
-    if (workingDirContextSdk) {
-      contentBlocks.push({ type: 'text', text: workingDirContextSdk });
+    for (const part of contextParts) {
+      contentBlocks.push({ type: 'text', text: part });
     }
 
     // Add attachments - images/PDFs are uploaded inline, text files are path-only
@@ -2652,217 +2016,103 @@ Please continue the conversation naturally from where we left off.
 
   /**
    * Map SDK assistant message error codes to typed error events with user-friendly messages.
-   * 
-   * IMPORTANT: The Claude Agent SDK has a bug where it doesn't properly map API errors
-   * to specific error codes. For example, HTTP 429 (rate limit) may be returned as 'unknown'.
-   * To work around this, when we receive 'unknown', we check the captured API error from
-   * the network interceptor to get the actual HTTP status code.
+   * Reads from SDK debug log file to extract actual API error details.
    */
-  private async mapSDKErrorToTypedError(errorCode: SDKAssistantMessageError): Promise<{ type: 'typed_error'; error: AgentError }> {
+  private async mapSDKErrorToTypedError(
+    errorCode: SDKAssistantMessageError
+  ): Promise<{ type: 'typed_error'; error: AgentError }> {
     // Try to extract actual error message from SDK debug log file
     const actualError = await this.parseApiErrorFromDebugLog();
-    
-    // Check for captured API error to get the real HTTP status code
-    // This helps us correctly identify errors that the SDK maps to 'unknown'
-    const capturedError = getLastApiError();
-    if (capturedError) {
-      debug(`[mapSDKErrorToTypedError] Captured API error: status=${capturedError.status}, message=${capturedError.message}`);
-      console.error(`[SproutyAgent] Captured API error: ${capturedError.status} ${capturedError.message}`);
-      
-      // Map HTTP status codes to proper error types
-      if (capturedError.status === 429) {
-        // Rate limit error - use the message from the API if available
-        return {
-          type: 'typed_error',
-          error: {
-            code: 'rate_limited',
-            title: '额度限制',
-            message: capturedError.message || '今日额度已用完，请明天再来',
-            details: ['您的 AI 使用额度已达到上限', '额度将在明天重置'],
-            actions: [
-              { key: 'r', label: '重试', action: 'retry' },
-            ],
-            canRetry: true,
-            retryDelayMs: 5000,
-          },
-        };
-      }
-      
-      if (capturedError.status === 401) {
-        return {
-          type: 'typed_error',
-          error: {
-            code: 'invalid_api_key',
-            title: '认证失败',
-            message: capturedError.message || '无法通过 API 认证，您的 API 密钥可能无效或已过期。',
-            details: ['请在设置中检查 API 密钥', '确保 API 密钥未被撤销'],
-            actions: [
-              { key: 's', label: '设置', action: 'settings' },
-              { key: 'r', label: '重试', action: 'retry' },
-            ],
-            canRetry: true,
-            retryDelayMs: 1000,
-          },
-        };
-      }
-      
-      if (capturedError.status === 402) {
-        return {
-          type: 'typed_error',
-          error: {
-            code: 'billing_error',
-            title: '计费错误',
-            message: capturedError.message || '您的账户存在计费问题。',
-            details: ['请检查账户计费状态'],
-            actions: [
-              { key: 's', label: '更新凭证', action: 'settings' },
-            ],
-            canRetry: false,
-          },
-        };
-      }
-      
-      if (capturedError.status >= 500) {
-        return {
-          type: 'typed_error',
-          error: {
-            code: 'network_error',
-            title: '服务错误',
-            message: capturedError.message || 'API 服务出现问题，请稍后重试。',
-            details: ['这可能是临时问题', '请稍后重试'],
-            actions: [
-              { key: 'r', label: '重试', action: 'retry' },
-            ],
-            canRetry: true,
-            retryDelayMs: 2000,
-          },
-        };
-      }
-    }
-    
-    // Standard error mapping for when SDK correctly identifies the error
     const errorMap: Record<SDKAssistantMessageError, AgentError> = {
       'authentication_failed': {
         code: 'invalid_api_key',
-        title: '认证失败',
-        message: '无法通过 Anthropic 认证，您的 API 密钥可能无效或已过期。',
-        details: ['请在设置中检查 API 密钥', '确保 API 密钥未被撤销'],
+        title: 'Authentication Failed',
+        message: 'Unable to authenticate with Anthropic. Your API key may be invalid or expired.',
+        details: ['Check your API key in settings', 'Ensure your API key has not been revoked'],
         actions: [
-          { key: 's', label: '设置', action: 'settings' },
-          { key: 'r', label: '重试', action: 'retry' },
+          { key: 's', label: 'Settings', action: 'settings' },
+          { key: 'r', label: 'Retry', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 1000,
       },
       'billing_error': {
         code: 'billing_error',
-        title: '计费错误',
-        message: '您的账户存在计费问题。',
-        details: ['请检查 Anthropic 账户计费状态'],
+        title: 'Billing Error',
+        message: 'Your account has a billing issue.',
+        details: ['Check your Anthropic account billing status'],
         actions: [
-          { key: 's', label: '更新凭证', action: 'settings' },
+          { key: 's', label: 'Update credentials', action: 'settings' },
         ],
         canRetry: false,
       },
       'rate_limit': {
         code: 'rate_limited',
-        title: '额度限制',
-        message: '今日额度已用完，请明天再来',
-        details: ['您的 AI 使用额度已达到上限', '额度将在明天重置'],
+        title: 'Rate Limit Exceeded',
+        message: 'Too many requests. Please wait a moment before trying again.',
+        details: ['Rate limits reset after a short period', 'Consider upgrading your plan for higher limits'],
         actions: [
-          { key: 'r', label: '重试', action: 'retry' },
+          { key: 'r', label: 'Retry', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 5000,
       },
       'invalid_request': {
         code: 'invalid_request',
-        title: '无效请求',
-        message: 'API 拒绝了此请求。',
+        title: 'Invalid Request',
+        message: 'The API rejected this request.',
         details: [
           ...(actualError ? [
-            `错误: ${actualError.message}`,
-            `类型: ${actualError.errorType}`,
-            ...(actualError.requestId ? [`请求 ID: ${actualError.requestId}`] : []),
+            `Error: ${actualError.message}`,
+            `Type: ${actualError.errorType}`,
+            ...(actualError.requestId ? [`Request ID: ${actualError.requestId}`] : []),
           ] : []),
-          '尝试移除附件并重新发送',
-          '检查图片格式是否支持 (PNG, JPEG, GIF, WebP)',
+          'Try removing any attachments and resending',
+          'Check if images are in a supported format (PNG, JPEG, GIF, WebP)',
         ],
         actions: [
-          { key: 'r', label: '重试', action: 'retry' },
+          { key: 'r', label: 'Retry', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 1000,
       },
       'server_error': {
         code: 'network_error',
-        title: '连接错误',
-        message: '无法连接到 API 服务器，请检查网络连接。',
+        title: 'Connection Error',
+        message: 'Unable to connect to the API server. Check your internet connection.',
         details: [
-          '请确认网络连接正常',
-          '检查 API 端点是否可访问',
-          '防火墙或 VPN 可能正在阻止连接',
+          'Verify your network connection is active',
+          'Check if the API endpoint is accessible',
+          'Firewall or VPN may be blocking the connection',
         ],
         actions: [
-          { key: 'r', label: '重试', action: 'retry' },
+          { key: 'r', label: 'Retry', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 2000,
       },
       'unknown': {
         code: 'unknown_error',
-        title: '未知错误',
-        message: '连接 AI 时发生意外错误。',
+        title: 'Unknown Error',
+        message: 'An unexpected error occurred.',
         details: [
           ...(actualError ? [
-            `错误: ${actualError.message}`,
-            `类型: ${actualError.errorType}`,
-            ...(actualError.requestId ? [`请求 ID: ${actualError.requestId}`] : []),
+            `Error: ${actualError.message}`,
+            `Type: ${actualError.errorType}`,
+            ...(actualError.requestId ? [`Request ID: ${actualError.requestId}`] : []),
           ] : []),
-          '这可能是临时问题',
-          '请检查网络连接',
+          'This may be a temporary issue',
+          'Check your network connection',
         ],
         actions: [
-          { key: 'r', label: '重试', action: 'retry' },
+          { key: 'r', label: 'Retry', action: 'retry' },
         ],
         canRetry: true,
         retryDelayMs: 2000,
       },
     };
 
-    let error = errorMap[errorCode];
-
-    // Check if this is an API provider error (internal server error, api_error, overloaded, etc.)
-    // These indicate issues on the provider side, not the user's side
-    if (errorCode === 'unknown' && actualError) {
-      const isProviderError =
-        actualError.errorType === 'api_error' ||
-        actualError.errorType === 'overloaded_error' ||
-        actualError.message.toLowerCase().includes('internal server error') ||
-        actualError.message.toLowerCase().includes('overloaded') ||
-        actualError.message.toLowerCase().includes('service unavailable');
-
-      if (isProviderError) {
-        error = {
-          code: 'provider_error',
-          title: 'AI Provider Error',
-          message: 'The AI provider is experiencing issues. This is not a problem with your setup.',
-          details: [
-            ...(actualError.requestId ? [`Request ID: ${actualError.requestId}`] : []),
-            'Check the provider status page for outages',
-            'Try again in a few minutes',
-            'Consider switching to a different AI provider in settings',
-          ],
-          actions: [
-            { key: 'r', label: 'Retry', action: 'retry' },
-            { key: 's', label: 'Settings', action: 'settings' },
-          ],
-          canRetry: true,
-          retryDelayMs: 5000,
-        };
-      }
-    }
-
+    const error = errorMap[errorCode];
     return {
       type: 'typed_error',
       error,
@@ -2871,19 +2121,14 @@ Please continue the conversation naturally from where we left off.
 
   private async convertSDKMessage(
     message: SDKMessage,
-    pendingToolUses: Map<string, { name: string; input: Record<string, unknown> }>,
+    toolIndex: ToolIndex,
     emittedToolStarts: Set<string>,
-    matchedToolIds: Set<string>,
-    parentChildTracking: {
-      PARENT_TOOL_NAMES: string[];
-      activeParentTools: Set<string>;
-      parentToChildren: Map<string, string[]>;
-      childToParent: Map<string, string>;
-    },
+    activeParentTools: Set<string>,
     pendingText: string | null,
     setPendingText: (text: string | null) => void,
     turnId: string | null,
-    setTurnId: (id: string | null) => void
+    setTurnId: (id: string | null) => void,
+    sessionDir?: string,
   ): Promise<AgentEvent[]> {
     const events: AgentEvent[] = [];
 
@@ -2900,9 +2145,6 @@ Please continue the conversation naturally from where we left off.
         // Check for SDK-level errors FIRST (auth, network, rate limits, etc.)
         // These errors are set by the SDK when API calls fail
         if ('error' in message && message.error) {
-          // DEBUG: Log the exact error code from SDK for troubleshooting
-          console.error(`[SproutyAgent] SDK returned error code: '${message.error}' (type: ${typeof message.error})`);
-          debug(`[SDK ERROR] message.error = '${message.error}'`);
           // Extract actual API error from SDK debug log for better error details
           // Uses async to allow retry with delays for race condition handling
           const errorEvent = await this.mapSDKErrorToTypedError(message.error);
@@ -2945,108 +2187,39 @@ Please continue the conversation naturally from where we left off.
 
         // Full assistant message with content blocks
         const content = message.message.content;
-        let textContent = '';
 
+        // Extract text from content blocks
+        let textContent = '';
         for (const block of content) {
           if (block.type === 'text') {
             textContent += block.text;
-          } else if (block.type === 'tool_use') {
-            // Extract intent and displayName from the tool_use input for UI display
-            // Note: PreToolUse hook strips these before forwarding to MCP servers
-            const toolInput = block.input as Record<string, unknown>;
-            let intent: string | undefined = toolInput._intent as string | undefined;
-            const displayName: string | undefined = toolInput._displayName as string | undefined;
-
-            // Debug: log tool input to see if metadata is present
-            debug(`[convertSDKMessage] tool_use ${block.name}: _intent=${intent}, _displayName=${displayName}, input keys=${Object.keys(toolInput).join(', ')}`);
-
-            // For Bash, use its description field instead of intent
-            if (!intent && block.name === 'Bash') {
-              const bashInput = block.input as { description?: string };
-              intent = bashInput.description;
-            }
-
-            // Only emit if not already emitted via stream_event
-            if (!emittedToolStarts.has(block.id)) {
-              emittedToolStarts.add(block.id);
-              pendingToolUses.set(block.id, {
-                name: block.name,
-                input: block.input as Record<string, unknown>,
-              });
-
-              // Register tool in parent-child hierarchy (see main docs above)
-              const { PARENT_TOOL_NAMES, activeParentTools, parentToChildren, childToParent } = parentChildTracking;
-              const isParentTool = PARENT_TOOL_NAMES.includes(block.name);
-
-              let parentToolUseId: string | undefined;
-              if (isParentTool) {
-                // This is a parent tool (Task, TaskOutput) - it can spawn children
-                activeParentTools.add(block.id);
-                parentToChildren.set(block.id, []);
-                this.onDebug?.(`Parent tool started: ${block.name} (${block.id})`);
-              } else if (activeParentTools.size === 1) {
-                // Single active parent - unambiguous, assign directly
-                const parentId = Array.from(activeParentTools)[0]!;
-                parentToChildren.get(parentId)?.push(block.id);
-                childToParent.set(block.id, parentId);
-                parentToolUseId = parentId;
-                console.log(`[SproutyAgent] CHILD REGISTERED (assistant/single-parent): ${block.name} (${block.id}) under parent ${parentId}`);
-              } else if (activeParentTools.size > 1) {
-                // Multiple active parents - use SDK's parent_tool_use_id (authoritative source)
-                // Messages from subagent context include parent_tool_use_id pointing to the Task
-                const sdkParentId = (message as { parent_tool_use_id?: string | null }).parent_tool_use_id;
-                if (sdkParentId && activeParentTools.has(sdkParentId)) {
-                  parentToChildren.get(sdkParentId)?.push(block.id);
-                  childToParent.set(block.id, sdkParentId);
-                  parentToolUseId = sdkParentId;
-                  console.log(`[SproutyAgent] CHILD REGISTERED (assistant/sdk-parent): ${block.name} (${block.id}) → Task (${sdkParentId})`);
-                } else {
-                  // Fallback: FIFO if SDK doesn't provide parent
-                  const parentId = Array.from(activeParentTools)[0]!;
-                  parentToChildren.get(parentId)?.push(block.id);
-                  childToParent.set(block.id, parentId);
-                  parentToolUseId = parentId;
-                  console.log(`[SproutyAgent] CHILD REGISTERED (assistant/fifo-fallback): ${block.name} (${block.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
-                }
-              }
-              // else: no active parents - tool is top-level, no parent needed
-
-              events.push({
-                type: 'tool_start',
-                toolName: block.name,
-                toolUseId: block.id,
-                input: block.input as Record<string, unknown>,
-                intent,
-                displayName,
-                turnId: turnId || undefined,
-                parentToolUseId, // Include parent for hierarchy tracking
-              });
-            } else {
-              // Update input if we have more complete data now
-              const existing = pendingToolUses.get(block.id);
-              const newInput = block.input as Record<string, unknown>;
-              const hasNewInput = Object.keys(newInput).length > 0;
-              const hadEmptyInput = existing && Object.keys(existing.input).length === 0;
-
-              if (hasNewInput && hadEmptyInput) {
-                pendingToolUses.set(block.id, {
-                  name: block.name,
-                  input: newInput,
-                });
-                // Emit another tool_start with the full input, intent, and displayName
-                events.push({
-                  type: 'tool_start',
-                  toolName: block.name,
-                  toolUseId: block.id,
-                  input: newInput,
-                  intent,
-                  displayName,
-                  turnId: turnId || undefined,
-                });
-              }
-            }
           }
         }
+
+        // Stateless tool start extraction — uses SDK's parent_tool_use_id directly.
+        // Falls back to activeParentTools when SDK doesn't provide parent info.
+        const sdkParentId = message.parent_tool_use_id;
+        const toolStartEvents = extractToolStarts(
+          content as ContentBlock[],
+          sdkParentId,
+          toolIndex,
+          emittedToolStarts,
+          turnId || undefined,
+          activeParentTools,
+          sessionDir,
+        );
+
+        // Track active Task tools for fallback parent assignment.
+        // When a Task tool starts, add it to the active set.
+        // This enables fallback parent assignment for child tools when SDK's
+        // parent_tool_use_id is null.
+        for (const event of toolStartEvents) {
+          if (event.type === 'tool_start' && event.toolName === 'Task') {
+            activeParentTools.add(event.toolUseId);
+          }
+        }
+
+        events.push(...toolStartEvents);
 
         if (textContent) {
           // Don't emit text_complete yet - wait for message_delta to get actual stop_reason
@@ -3077,81 +2250,46 @@ Please continue the conversation naturally from where we left off.
           const stopReason = (event as any).delta?.stop_reason;
           if (pendingText) {
             const isIntermediate = stopReason === 'tool_use';
-            events.push({ type: 'text_complete', text: pendingText, isIntermediate, turnId: turnId || undefined });
+            // SDK's parent_tool_use_id identifies the subagent context for this text
+            // (null = main agent, Task ID = inside subagent)
+            events.push({ type: 'text_complete', text: pendingText, isIntermediate, turnId: turnId || undefined, parentToolUseId: message.parent_tool_use_id || undefined });
             setPendingText(null);
           }
         }
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          events.push({ type: 'text_delta', text: event.delta.text, turnId: turnId || undefined });
+          events.push({ type: 'text_delta', text: event.delta.text, turnId: turnId || undefined, parentToolUseId: message.parent_tool_use_id || undefined });
         } else if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+          // Stateless tool start extraction from stream events.
+          // SDK's parent_tool_use_id is authoritative for parent assignment.
+          // Falls back to activeParentTools when SDK doesn't provide parent info.
+          // Stream events arrive with empty input — the full input comes later
+          // in the assistant message (extractToolStarts handles dedup + re-emit).
           const toolBlock = event.content_block;
-          // Only emit if not already emitted
-          if (!emittedToolStarts.has(toolBlock.id)) {
-            emittedToolStarts.add(toolBlock.id);
-            pendingToolUses.set(toolBlock.id, {
-              name: toolBlock.name,
-              input: {},
-            });
+          const sdkParentId = message.parent_tool_use_id;
+          const streamBlocks: ContentBlock[] = [{
+            type: 'tool_use' as const,
+            id: toolBlock.id,
+            name: toolBlock.name,
+            input: (toolBlock.input ?? {}) as Record<string, unknown>,
+          }];
+          const streamEvents = extractToolStarts(
+            streamBlocks,
+            sdkParentId,
+            toolIndex,
+            emittedToolStarts,
+            turnId || undefined,
+            activeParentTools,
+            sessionDir,
+          );
 
-            // Register tool in parent-child hierarchy (see main docs above)
-            // Must happen here (stream_event) because it arrives before assistant message
-            const { PARENT_TOOL_NAMES, activeParentTools, parentToChildren, childToParent } = parentChildTracking;
-            const isParentTool = PARENT_TOOL_NAMES.includes(toolBlock.name);
-
-            // SDK provides parent_tool_use_id on stream events for tools running inside Task
-            // This is the authoritative source - use it when available
-            const sdkParentId = message.parent_tool_use_id;
-
-            // Debug: log what SDK provides for parent tracking
-            console.log(`[SproutyAgent] TOOL START: ${toolBlock.name} (${toolBlock.id}), sdk_parent=${sdkParentId}, activeParents=[${Array.from(activeParentTools).join(',')}]`);
-
-            let parentToolUseId: string | undefined;
-            if (isParentTool) {
-              // This is a parent tool (Task, TaskOutput) - it can spawn children
-              activeParentTools.add(toolBlock.id);
-              parentToChildren.set(toolBlock.id, []);
-              console.log(`[SproutyAgent] PARENT REGISTERED (stream): ${toolBlock.name} (${toolBlock.id})`);
-            } else if (sdkParentId && activeParentTools.has(sdkParentId)) {
-              // SDK provides correct parent for subagent tools - use it
-              parentToolUseId = sdkParentId;
-              parentToChildren.get(sdkParentId)?.push(toolBlock.id);
-              childToParent.set(toolBlock.id, sdkParentId);
-              console.log(`[SproutyAgent] CHILD REGISTERED (stream/sdk): ${toolBlock.name} (${toolBlock.id}) under parent ${sdkParentId}`);
-            } else if (activeParentTools.size === 1) {
-              // Single active parent - unambiguous, assign directly
-              const parentId = Array.from(activeParentTools)[0]!;
-              parentToChildren.get(parentId)?.push(toolBlock.id);
-              childToParent.set(toolBlock.id, parentId);
-              parentToolUseId = parentId;
-              console.log(`[SproutyAgent] CHILD REGISTERED (stream/single-parent): ${toolBlock.name} (${toolBlock.id}) under parent ${parentId}`);
-            } else if (activeParentTools.size > 1) {
-              // Multiple active parents - use SDK's parent_tool_use_id (authoritative source)
-              // sdkParentId is already extracted above from message.parent_tool_use_id
-              if (sdkParentId && activeParentTools.has(sdkParentId)) {
-                parentToChildren.get(sdkParentId)?.push(toolBlock.id);
-                childToParent.set(toolBlock.id, sdkParentId);
-                parentToolUseId = sdkParentId;
-                console.log(`[SproutyAgent] CHILD REGISTERED (stream/sdk-parent): ${toolBlock.name} (${toolBlock.id}) → Task (${sdkParentId})`);
-              } else {
-                // Fallback: FIFO if SDK doesn't provide parent
-                const parentId = Array.from(activeParentTools)[0]!;
-                parentToChildren.get(parentId)?.push(toolBlock.id);
-                childToParent.set(toolBlock.id, parentId);
-                parentToolUseId = parentId;
-                console.log(`[SproutyAgent] CHILD REGISTERED (stream/fifo-fallback): ${toolBlock.name} (${toolBlock.id}) → ${parentId} (sdk_parent=${sdkParentId})`);
-              }
+          // Track active Task tools for fallback parent assignment
+          for (const evt of streamEvents) {
+            if (evt.type === 'tool_start' && evt.toolName === 'Task') {
+              activeParentTools.add(evt.toolUseId);
             }
-            // else: no active parents - tool is top-level, no parent needed
-
-            events.push({
-              type: 'tool_start',
-              toolName: toolBlock.name,
-              toolUseId: toolBlock.id,
-              input: {},
-              turnId: turnId || undefined,
-              parentToolUseId,
-            });
           }
+
+          events.push(...streamEvents);
         }
         break;
       }
@@ -3162,222 +2300,55 @@ Please continue the conversation naturally from where we left off.
           break;
         }
 
-        // Debug: log user message structure for tool results
-        if (this.onDebug && 'parent_tool_use_id' in message) {
-          const hasResult = 'tool_use_result' in message && message.tool_use_result !== undefined;
-          this.onDebug(`User message for tool ${message.parent_tool_use_id}: hasResult=${hasResult}, pendingTools=${pendingToolUses.size}`);
-        }
-
         // ─────────────────────────────────────────────────────────────────────────
-        // TOOL RESULT MATCHING
+        // STATELESS TOOL RESULT MATCHING
         // ─────────────────────────────────────────────────────────────────────────
-        // Three cases to handle:
-        //
-        // Case 1: parent_tool_use_id is a PARENT tool (Task, TaskOutput)
-        //   → Result is for a CHILD of that parent, match using FIFO
-        //
-        // Case 2: parent_tool_use_id is a regular tool ID
-        //   → Result is for that tool directly
-        //
-        // Case 3: parent_tool_use_id is null (in-process MCP tools)
-        //   → Use FIFO fallback with matchedToolIds to avoid double-matching
+        // Uses extractToolResults() which matches results by explicit tool_use_id
+        // from content blocks — no FIFO queues, no parent stacks needed.
+        // Falls back to convenience field tool_use_result when content blocks
+        // are unavailable (e.g., some in-process MCP tools).
         // ─────────────────────────────────────────────────────────────────────────
-        if (message.tool_use_result !== undefined) {
-          let toolUseId = message.parent_tool_use_id;
-          let toolUse: { name: string; input: Record<string, unknown> } | undefined;
+        if (message.tool_use_result !== undefined || ('message' in message && message.message)) {
+          // Extract content blocks from the SDK message
+          const msgContent = ('message' in message && message.message)
+            ? ((message.message as { content?: unknown[] }).content ?? [])
+            : [];
+          const contentBlocks = (Array.isArray(msgContent) ? msgContent : []) as ContentBlock[];
 
-          const { activeParentTools, parentToChildren, childToParent } = parentChildTracking;
+          const sdkParentId = message.parent_tool_use_id;
+          const toolUseResultValue = message.tool_use_result;
 
-          if (toolUseId && activeParentTools.has(toolUseId)) {
-            // Case 1: parent_tool_use_id points to a PARENT tool (Task, TaskOutput)
-            // This result is for a CHILD of that parent, not the parent itself
-            // Match to the first unmatched child in FIFO order
-            const children = parentToChildren.get(toolUseId);
-            console.log(`[SproutyAgent] RESULT MATCHING: parent=${toolUseId}, children.length=${children?.length || 0}`);
-            if (children && children.length > 0) {
-              const firstChild = children.shift()!; // Remove first child (FIFO)
-              console.log(`[SproutyAgent] MATCHED TO CHILD: ${firstChild}`);
-              this.onDebug?.(`Matched child result: parent=${toolUseId}, child=${firstChild}`);
-              toolUseId = firstChild;
-              toolUse = pendingToolUses.get(toolUseId);
-              // Clean up child-to-parent mapping
-              childToParent.delete(firstChild);
-            } else {
-              // No more children in FIFO queue. But check if there are late-registered
-              // children in childToParent that haven't received results yet.
-              // This handles the race condition where children start after results arrive.
-              const pendingChildId = Array.from(childToParent.entries())
-                .find(([_, parentId]) => parentId === toolUseId)?.[0];
+          const resultEvents = extractToolResults(
+            contentBlocks,
+            sdkParentId,
+            toolUseResultValue,
+            toolIndex,
+            turnId || undefined,
+          );
 
-              if (pendingChildId) {
-                // Match to a pending late-started child
-                console.log(`[SproutyAgent] MATCHED TO LATE CHILD: ${pendingChildId} (parent=${toolUseId})`);
-                this.onDebug?.(`Matched late child result: parent=${toolUseId}, child=${pendingChildId}`);
-                toolUseId = pendingChildId;
-                toolUse = pendingToolUses.get(toolUseId);
-                childToParent.delete(pendingChildId);
-              } else {
-                // Truly no more children - this is the parent's own result
-                console.log(`[SproutyAgent] NO CHILDREN LEFT - treating as parent's own result: ${toolUseId}`);
-                this.onDebug?.(`Parent tool completing: ${toolUseId} (no more children)`);
-                toolUse = pendingToolUses.get(toolUseId);
-                // Clean up parent tracking
-                activeParentTools.delete(toolUseId);
-                parentToChildren.delete(toolUseId);
-              }
-            }
-          } else if (toolUseId) {
-            // Case 2: parent_tool_use_id points to a tool we don't recognize as a parent
-            // This could be: (a) a regular tool's own result, or
-            // (b) a child result for a parent that already completed
-            // First check if this is a child result for a completed parent
-            const pendingChildId = Array.from(childToParent.entries())
-              .find(([_, parentId]) => parentId === toolUseId)?.[0];
-
-            if (pendingChildId) {
-              // This is a child result for a completed parent - match to the pending child
-              console.log(`[SproutyAgent] MATCHED TO ORPHANED CHILD: ${pendingChildId} (parent=${toolUseId})`);
-              this.onDebug?.(`Matched orphaned child result: parent=${toolUseId}, child=${pendingChildId}`);
-              toolUseId = pendingChildId;
-              toolUse = pendingToolUses.get(toolUseId);
-              childToParent.delete(pendingChildId);
-            } else {
-              // Regular tool result - parent_tool_use_id is the tool's own ID
-              toolUse = pendingToolUses.get(toolUseId);
-            }
-          } else if (pendingToolUses.size > 0) {
-            // Case 3: parent_tool_use_id is null (in-process MCP tools)
-            // Match with first pending tool not yet matched (FIFO)
-            for (const [id, use] of pendingToolUses.entries()) {
-              if (!matchedToolIds.has(id)) {
-                toolUseId = id;
-                toolUse = use;
-                matchedToolIds.add(id);
-                this.onDebug?.(`Matched null parent_tool_use_id to pending tool: ${toolUseId} (${toolUse.name})`);
-                break;
-              }
+          // Remove completed Task tools from activeParentTools.
+          // When a Task tool result arrives, we no longer need to track it
+          // as an active parent for fallback assignment.
+          for (const event of resultEvents) {
+            if (event.type === 'tool_result' && event.toolName === 'Task') {
+              activeParentTools.delete(event.toolUseId);
             }
           }
 
-          if (toolUseId) {
-            // Safely stringify result, handling circular references
-            let resultStr: string;
-            if (typeof message.tool_use_result === 'string') {
-              resultStr = message.tool_use_result;
-            } else {
-              try {
-                resultStr = JSON.stringify(message.tool_use_result, null, 2);
-              } catch {
-                resultStr = '[Result contains non-serializable data]';
-              }
-            }
-
-            // Check if result indicates an error
-            const isError = this.isToolResultError(message.tool_use_result);
-
-            events.push({
-              type: 'tool_result',
-              toolUseId,
-              result: resultStr,
-              isError,
-              input: toolUse?.input,
-              turnId: turnId || undefined,
-              // Include original parent_tool_use_id for parent-child tracking
-              parentToolUseId: message.parent_tool_use_id || undefined,
-            });
-
-            // Clean up activeParentTools when a Task completes.
-            // This is critical: Task results arrive with parent_tool_use_id=null (main agent level),
-            // so they enter Case 3 (FIFO matching), not Case 1 where cleanup normally happens.
-            // Without this, the Task stays in activeParentTools and subsequent main-agent tools
-            // get incorrectly assigned as children of the completed Task.
-            if (toolUse?.name === 'Task' && toolUseId) {
-              activeParentTools.delete(toolUseId);
-              parentToChildren.delete(toolUseId);
-              console.log(`[CreatorFlow] PARENT CLEANED UP (task-result): ${toolUseId}`);
-            }
-
-            // Detect background task start - Task tool with agent_id in result
-            if (toolUse?.name === 'Task' && !isError && resultStr) {
-              const agentIdMatch = resultStr.match(/agentId:\s*([a-zA-Z0-9_-]+)/);
-              if (agentIdMatch && agentIdMatch[1]) {
-                const taskId = agentIdMatch[1];
-                // Extract intent from tool input if available
-                const intentValue = toolUse.input._intent;
-                const event: AgentEvent = intentValue && typeof intentValue === 'string'
-                  ? {
-                      type: 'task_backgrounded',
-                      toolUseId,
-                      taskId,
-                      intent: intentValue,
-                      turnId: turnId || undefined,
-                    }
-                  : {
-                      type: 'task_backgrounded',
-                      toolUseId,
-                      taskId,
-                      turnId: turnId || undefined,
-                    };
-                events.push(event);
-              }
-            }
-
-            // Detect background shell start - Bash tool with shell_id or backgroundTaskId in result
-            if (toolUse?.name === 'Bash' && !isError && resultStr) {
-              // Match both old format (shell_id: xxx) and new JSON format ("backgroundTaskId": "xxx")
-              const shellIdMatch = resultStr.match(/shell_id:\s*([a-zA-Z0-9_-]+)/)
-                || resultStr.match(/"backgroundTaskId":\s*"([a-zA-Z0-9_-]+)"/);
-              if (shellIdMatch && shellIdMatch[1]) {
-                const shellId = shellIdMatch[1];
-                // Extract intent from tool input if available
-                const intentValue = (typeof toolUse.input._intent === 'string' && toolUse.input._intent)
-                  || (typeof toolUse.input.description === 'string' && toolUse.input.description)
-                  || undefined;
-                // Extract command for process killing
-                const commandValue = typeof toolUse.input.command === 'string' ? toolUse.input.command : undefined;
-                const event: AgentEvent = {
-                  type: 'shell_backgrounded',
-                  toolUseId,
-                  shellId,
-                  turnId: turnId || undefined,
-                  ...(intentValue && { intent: intentValue }),
-                  ...(commandValue && { command: commandValue }),
-                };
-                events.push(event);
-              }
-            }
-
-            // Detect shell killed - KillShell tool was called (success or "not found" both mean shell is gone)
-            if (toolUse?.name === 'KillShell') {
-              const shellId = toolUse.input.shell_id as string;
-              if (shellId) {
-                events.push({
-                  type: 'shell_killed',
-                  shellId,
-                  turnId: turnId || undefined,
-                });
-              }
-            }
-
-            pendingToolUses.delete(toolUseId);
-            matchedToolIds.delete(toolUseId);
-          }
+          events.push(...resultEvents);
         }
         break;
       }
 
       case 'tool_progress': {
-        // tool_progress events are emitted for subagent child tools
-        // These contain the correct parent_tool_use_id for tracking hierarchy
+        // tool_progress events are emitted for subagent child tools.
+        // Uses SDK's parent_tool_use_id as authoritative parent assignment.
         const progress = message as {
           tool_use_id: string;
           tool_name: string;
           parent_tool_use_id: string | null;
           elapsed_time_seconds?: number;
         };
-
-        // Debug: log tool_progress structure
-        console.log(`[SproutyAgent] tool_progress: tool=${progress.tool_name} (${progress.tool_use_id}), parent=${progress.parent_tool_use_id}, elapsed=${progress.elapsed_time_seconds}`);
 
         // Forward elapsed time to UI for live progress updates
         // Use parent_tool_use_id if this is a child tool, so progress updates the parent Task
@@ -3390,36 +2361,34 @@ Please continue the conversation naturally from where we left off.
           });
         }
 
-        // Check if this is a child tool we haven't seen yet
+        // If we haven't seen this tool yet, emit a tool_start via extractToolStarts.
+        // This handles child tools discovered through progress events before
+        // stream_event or assistant message arrives.
         if (!emittedToolStarts.has(progress.tool_use_id)) {
-          emittedToolStarts.add(progress.tool_use_id);
-          pendingToolUses.set(progress.tool_use_id, {
+          const progressBlocks: ContentBlock[] = [{
+            type: 'tool_use' as const,
+            id: progress.tool_use_id,
             name: progress.tool_name,
             input: {},
-          });
+          }];
+          const progressEvents = extractToolStarts(
+            progressBlocks,
+            progress.parent_tool_use_id,
+            toolIndex,
+            emittedToolStarts,
+            turnId || undefined,
+            activeParentTools,
+            sessionDir,
+          );
 
-          // Track parent-child relationship using SDK's parent_tool_use_id (authoritative source)
-          const { PARENT_TOOL_NAMES, activeParentTools, parentToChildren, childToParent } = parentChildTracking;
-          const isParentTool = PARENT_TOOL_NAMES.includes(progress.tool_name);
-
-          let parentToolUseId: string | undefined;
-          if (!isParentTool && progress.parent_tool_use_id && activeParentTools.has(progress.parent_tool_use_id)) {
-            // This is a child tool with correct parent from SDK
-            parentToolUseId = progress.parent_tool_use_id;
-            parentToChildren.get(progress.parent_tool_use_id)?.push(progress.tool_use_id);
-            childToParent.set(progress.tool_use_id, progress.parent_tool_use_id);
-            console.log(`[SproutyAgent] CHILD REGISTERED (tool_progress/sdk): ${progress.tool_name} (${progress.tool_use_id}) → ${progress.parent_tool_use_id}`);
+          // Track active Task tools discovered via progress events
+          for (const evt of progressEvents) {
+            if (evt.type === 'tool_start' && evt.toolName === 'Task') {
+              activeParentTools.add(evt.toolUseId);
+            }
           }
 
-          // Emit tool_start for this child tool
-          events.push({
-            type: 'tool_start',
-            toolName: progress.tool_name,
-            toolUseId: progress.tool_use_id,
-            input: {},
-            turnId: turnId || undefined,
-            parentToolUseId,
-          });
+          events.push(...progressEvents);
         }
         break;
       }
@@ -3474,10 +2443,10 @@ Please continue the conversation naturally from where we left off.
           // Error result - emit error then complete with whatever usage we have
           const errorMsg = 'errors' in message ? message.errors.join(', ') : 'Query failed';
 
-          // Check for SDK setup error (missing .claude/skills directory)
-          const skillsDirError = buildSkillsDirError(errorMsg);
-          if (skillsDirError) {
-            events.push(skillsDirError);
+          // Check for Windows SDK setup error (missing .claude/skills directory)
+          const windowsError = buildWindowsSkillsDirError(errorMsg);
+          if (windowsError) {
+            events.push(windowsError);
           } else {
             events.push({ type: 'error', message: errorMsg });
           }
@@ -3493,28 +2462,6 @@ Please continue the conversation naturally from where we left off.
           if ('tools' in message && Array.isArray(message.tools)) {
             this.sdkTools = message.tools;
             this.onDebug?.(`SDK init: captured ${this.sdkTools.length} tools`);
-          }
-          // Capture plugins from SDK init message
-          if ('plugins' in message && Array.isArray(message.plugins)) {
-            this.sdkPlugins = message.plugins;
-            this.onDebug?.(`SDK init: captured ${this.sdkPlugins.length} plugins: ${this.sdkPlugins.map(p => p.name).join(', ')}`);
-            console.error(`[SproutyAgent] SDK init plugins: ${JSON.stringify(this.sdkPlugins)}`);
-          } else {
-            console.error(`[SproutyAgent] SDK init: NO plugins field in init message`);
-          }
-          // Capture slash commands from SDK init message (names only at this point)
-          if ('slash_commands' in message && Array.isArray(message.slash_commands)) {
-            this.sdkSlashCommands = (message.slash_commands as string[]).map(name => ({
-              name,
-              description: '',
-              argumentHint: '',
-            }));
-            this.onDebug?.(`SDK init: captured ${this.sdkSlashCommands.length} slash commands: ${(message.slash_commands as string[]).join(', ')}`);
-            console.error(`[SproutyAgent] SDK init slash_commands: ${(message.slash_commands as string[]).join(', ')}`);
-            // Notify UI immediately with names (descriptions will follow from enrichSlashCommands)
-            this.onSlashCommandsAvailable?.(this.sdkSlashCommands, this.sdkPlugins);
-            // Enrich with full descriptions asynchronously
-            this.enrichSlashCommands();
           }
         } else if (message.subtype === 'compact_boundary') {
           events.push({
@@ -3547,42 +2494,6 @@ Please continue the conversation naturally from where we left off.
   }
 
   /**
-   * Check if a tool result indicates an error
-   */
-  private isToolResultError(result: unknown): boolean {
-    if (result === null || result === undefined) {
-      return false;
-    }
-
-    // Check for common error patterns in the result
-    if (typeof result === 'object') {
-      const obj = result as Record<string, unknown>;
-      // MCP error format
-      if (obj.isError === true) return true;
-      if (obj.error !== undefined) return true;
-      // Content array with error type
-      if (Array.isArray(obj.content)) {
-        for (const item of obj.content) {
-          if (typeof item === 'object' && item !== null) {
-            const contentItem = item as Record<string, unknown>;
-            if (contentItem.type === 'error') return true;
-          }
-        }
-      }
-    }
-
-    // Check string results for error indicators
-    if (typeof result === 'string') {
-      const lower = result.toLowerCase();
-      if (lower.startsWith('error:') || lower.startsWith('failed:')) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
    * Check if a tool result error indicates a "tool not found" for an inactive source.
    * This is used to detect when Claude tries to call a tool from a source that exists
    * but isn't currently active, so we can auto-activate and retry.
@@ -3591,7 +2502,7 @@ Please continue the conversation naturally from where we left off.
    */
   private detectInactiveSourceToolError(
     event: AgentEvent,
-    pendingToolUses: Map<string, { name: string; input: unknown }>
+    toolIndex: ToolIndex
   ): { sourceSlug: string; toolName: string; input: unknown } | null {
     if (event.type !== 'tool_result' || !event.isError) return null;
 
@@ -3617,11 +2528,11 @@ Please continue the conversation naturally from where we left off.
       }
     }
 
-    // Fallback: try pendingToolUses if we couldn't extract from error
+    // Fallback: try toolIndex if we couldn't extract from error
     if (!toolName) {
-      const toolUse = pendingToolUses.get(event.toolUseId);
-      if (toolUse) {
-        toolName = toolUse.name;
+      const name = toolIndex.getName(event.toolUseId);
+      if (name) {
+        toolName = name;
       }
     }
 
@@ -3637,13 +2548,13 @@ Please continue the conversation naturally from where we left off.
     const sourceSlug = parts[1]!;
 
     // Check if source exists but is inactive
-    const sourceExists = this.allSources.some((s) => s.config.slug === sourceSlug);
-    const isActive = this.activeSourceServerNames.has(sourceSlug);
+    const sourceExists = this.sourceManager.getAllSources().some((s) => s.config.slug === sourceSlug);
+    const isActive = this.sourceManager.isSourceActive(sourceSlug);
 
     if (sourceExists && !isActive) {
-      // Get input from pendingToolUses
-      const toolUse = pendingToolUses.get(event.toolUseId);
-      return { sourceSlug, toolName, input: toolUse?.input ?? {} };
+      // Get input from toolIndex
+      const input = toolIndex.getInput(event.toolUseId);
+      return { sourceSlug, toolName, input: input ?? {} };
     }
 
     return null;
@@ -3674,7 +2585,7 @@ Please continue the conversation naturally from where we left off.
   }
 
   getModel(): string {
-    return this.config.model || DEFAULT_MODEL;
+    return this._model;
   }
 
   /**
@@ -3684,50 +2595,38 @@ Please continue the conversation naturally from where we left off.
     return this.sdkTools;
   }
 
-  /**
-   * Get the list of SDK slash commands (for @ menu display)
-   */
-  getSdkSlashCommands(): Array<{ name: string; description: string; argumentHint: string }> {
-    return this.sdkSlashCommands;
-  }
-
-  getSdkPlugins(): Array<{ name: string; path: string }> {
-    return this.sdkPlugins;
-  }
-
-  /**
-   * Enrich slash commands with full descriptions from supportedCommands() API.
-   * Called after init message is received. Updates sdkSlashCommands in-place
-   * and notifies UI again with enriched data.
-   */
-  private async enrichSlashCommands(): Promise<void> {
-    try {
-      if (!this.currentQuery) return;
-      const commands = await this.currentQuery.supportedCommands();
-      if (commands && commands.length > 0) {
-        // supportedCommands() returns ALL skills+commands. Only use it to enrich
-        // descriptions for commands we already know about (from SDK init slash_commands).
-        // Do NOT replace the list, as that would add skills to the slash command menu.
-        const enrichMap = new Map(commands.map(cmd => [cmd.name, cmd]));
-        for (const existing of this.sdkSlashCommands) {
-          const enriched = enrichMap.get(existing.name);
-          if (enriched) {
-            existing.description = enriched.description ?? existing.description;
-            existing.argumentHint = enriched.argumentHint ?? existing.argumentHint;
-          }
-        }
-        this.onDebug?.(`SDK enrichSlashCommands: enriched ${this.sdkSlashCommands.length} commands with descriptions`);
-        this.onSlashCommandsAvailable?.(this.sdkSlashCommands, this.sdkPlugins);
-      }
-    } catch (err) {
-      this.onDebug?.(`SDK enrichSlashCommands failed: ${err}`);
-    }
-  }
-
   setModel(model: string): void {
     this.config.model = model;
     // Note: Model change takes effect on the next query
   }
+
+  // ============================================================
+  // Mini Agent Mode (uses centralized constants from BaseAgent)
+  // ============================================================
+
+  /**
+   * Check if running in mini agent mode.
+   * Uses centralized detection for consistency with CodexAgent.
+   */
+  isMiniAgent(): boolean {
+    return this.config.systemPromptPreset === 'mini';
+  }
+
+  /**
+   * Get mini agent configuration for provider-specific application.
+   * Returns centralized config from BaseAgent constants.
+   */
+  getMiniAgentConfig(): MiniAgentConfig {
+    const enabled = this.isMiniAgent();
+    return {
+      enabled,
+      tools: enabled ? MINI_AGENT_TOOLS : [],
+      mcpServerKeys: enabled ? MINI_AGENT_MCP_KEYS : [],
+      minimizeThinking: enabled,
+    };
+  }
+
+  // getMiniSystemPrompt() and filterMcpServersForMiniAgent() are inherited from BaseAgent
 
   getWorkspace(): Workspace {
     return this.config.workspace;
@@ -3768,76 +2667,25 @@ Please continue the conversation naturally from where we left off.
    */
   setSourceServers(
     mcpServers: Record<string, SdkMcpServerConfig>,
-    apiServers: Record<string, ReturnType<typeof createSdkMcpServer>>,
+    apiServers: Record<string, unknown>,
     intendedSlugs?: string[]
   ): void {
+    // Store server configs for SDK options building
     this.sourceMcpServers = mcpServers;
-    this.sourceApiServers = apiServers;
+    this.sourceApiServers = apiServers as Record<string, ReturnType<typeof createSdkMcpServer>>;
 
-    // Update the set of active source server names for tool blocking
-    this.activeSourceServerNames = new Set([
-      ...Object.keys(mcpServers),
-      ...Object.keys(apiServers),
-    ]);
-
-    // Update intended active slugs (defaults to what actually built if not specified)
-    this.intendedActiveSlugs = new Set(intendedSlugs ?? [...this.activeSourceServerNames]);
-
-    this.onDebug?.(`Active source servers: ${[...this.activeSourceServerNames].join(', ') || 'none'}`);
-    if (intendedSlugs && intendedSlugs.length !== this.activeSourceServerNames.size) {
-      const failed = intendedSlugs.filter(s => !this.activeSourceServerNames.has(s));
-      if (failed.length > 0) {
-        this.onDebug?.(`Sources with failed builds: ${failed.join(', ')}`);
-      }
-    }
+    // Delegate state tracking to sourceManager (inherited from BaseAgent)
+    this.sourceManager.updateActiveState(
+      Object.keys(mcpServers),
+      Object.keys(apiServers),
+      intendedSlugs
+    );
   }
 
-  /**
-   * Check if a source server is currently active (enabled and authenticated)
-   * Used by PreToolUse hook to block tools from disabled sources
-   */
-  isSourceServerActive(serverName: string): boolean {
-    return this.activeSourceServerNames.has(serverName);
-  }
+  // isSourceServerActive, getActiveSourceServerNames, setAllSources, getAllSources, markSourceUnseen
+  // are now inherited from BaseAgent and delegate to this.sourceManager
 
-  /**
-   * Get the set of active source server names
-   * Used to inform the agent about available sources
-   */
-  getActiveSourceServerNames(): Set<string> {
-    return this.activeSourceServerNames;
-  }
-
-  /**
-   * Set all sources in the workspace (for context injection)
-   * Called by Electron to provide full source list including disabled sources
-   */
-  setAllSources(sources: LoadedSource[]): void {
-    this.allSources = sources;
-  }
-
-  /**
-   * Get all sources in the workspace
-   */
-  getAllSources(): LoadedSource[] {
-    return this.allSources;
-  }
-
-  /**
-   * Mark a source as unseen so its guide will be re-injected on next message.
-   * Call this after re-authentication or when source state changes significantly.
-   */
-  markSourceUnseen(slug: string): void {
-    this.knownSourceSlugs.delete(slug);
-  }
-
-  /**
-   * Set temporary clarifications that are injected into the system prompt
-   * but not yet persisted to the Craft document
-   */
-  setTemporaryClarifications(text: string | null): void {
-    this.temporaryClarifications = text;
-  }
+  // setTemporaryClarifications is now inherited from BaseAgent
 
   /**
    * Get filtered source MCP servers based on local MCP setting
@@ -3881,47 +2729,131 @@ Please continue the conversation naturally from where we left off.
     this.forceAbort();
   }
 
+  // ============================================================
+  // AgentBackend Interface Methods
+  // ============================================================
+
   /**
-   * Dispose the agent instance and clean up all resources.
-   * Called when the session ends (component unmount).
-   * Clears all instance state and module-level callbacks that reference this instance.
+   * Abort current query (async interface for AgentBackend compatibility).
+   * Wraps forceAbort() in a Promise.
    */
-  dispose(): void {
-    // Stop any running query
+  async abort(reason?: string): Promise<void> {
     this.forceAbort();
+  }
 
-    // Clear pending operations
+  /**
+   * Destroy the agent and clean up resources.
+   * Calls super.destroy() for base cleanup, then Claude-specific cleanup.
+   */
+  destroy(): void {
+    // Claude-specific cleanup first
+    this.currentQueryAbortController?.abort();
     this.pendingPermissions.clear();
-
-    // Clear security whitelists
-    this.alwaysAllowedCommands.clear();
-    this.alwaysAllowedDomains.clear();
 
     // Clear pinned system prompt state
     this.pinnedPreferencesPrompt = null;
     this.preferencesDriftNotified = false;
 
-    // Clear callbacks
-    this.onPermissionRequest = null;
-    this.onDebug = null;
-    this.onPlanSubmitted = null;
-    this.onAuthRequest = null;
-    this.onSourceChange = null;
+    // Clear Claude-specific callbacks (not handled by BaseAgent)
     this.onSourcesListChange = null;
     this.onConfigValidationError = null;
-    this.onSourceActivationRequest = null;
-
-    // Stop config watcher
-    this.stopConfigWatcher();
+    this.onUsageUpdate = null;
 
     // Clean up session-specific state
     const configSessionId = this.config.session?.id;
     if (configSessionId) {
-      cleanupModeState(configSessionId);
+      clearPlanFileState(configSessionId);
+      unregisterSessionScopedToolCallbacks(configSessionId);
       cleanupSessionScopedTools(configSessionId);
+      cleanupModeState(configSessionId);
     }
 
     // Clear session
     this.sessionId = null;
+
+    // Base cleanup (stops config watcher, clears whitelists, resets source trackers)
+    super.destroy();
   }
+
+  /**
+   * Check if currently processing a query.
+   */
+  isProcessing(): boolean {
+    return this.currentQuery !== null;
+  }
+
+  /**
+   * Get current permission mode.
+   */
+  getPermissionMode(): PermissionMode {
+    return getPermissionMode(this.modeSessionId);
+  }
+
+  /**
+   * Set permission mode.
+   */
+  setPermissionMode(mode: PermissionMode): void {
+    setPermissionMode(this.modeSessionId, mode);
+  }
+
+  /**
+   * Cycle to next permission mode.
+   */
+  cyclePermissionMode(): PermissionMode {
+    return cyclePermissionMode(this.modeSessionId);
+  }
+
+  // getActiveSourceSlugs() is now inherited from BaseAgent
+
+  // ============================================================
+  // Mini Completion (for title generation and other quick tasks)
+  // ============================================================
+
+  /**
+   * Run a simple text completion using Claude SDK.
+   * No tools, empty system prompt - just text in → text out.
+   * Uses the same auth infrastructure as the main agent.
+   */
+  async runMiniCompletion(prompt: string): Promise<string | null> {
+    try {
+      const model = this.config.miniModel ?? getDefaultSummarizationModel();
+
+      const options = {
+        ...getDefaultOptions(),
+        model,
+        maxTurns: 1,
+        systemPrompt: 'Reply with ONLY the requested text. No explanation.', // Minimal - no Claude Code preset
+      };
+
+      let result = '';
+      for await (const msg of query({ prompt, options })) {
+        if (msg.type === 'assistant') {
+          for (const block of msg.message.content) {
+            if (block.type === 'text') {
+              result += block.text;
+            }
+          }
+        }
+      }
+
+      return result.trim() || null;
+    } catch (error) {
+      this.debug(`[runMiniCompletion] Failed: ${error}`);
+      return null;
+    }
+  }
+
+  // ============================================================
 }
+
+// ============================================================
+// Backward Compatibility Exports
+// ============================================================
+// These aliases allow gradual migration from ClaudeAgent to SproutyAgent.
+// Once all consumers are updated, these can be removed.
+
+/** @deprecated Use SproutyAgent instead */
+export { SproutyAgent as ClaudeAgent };
+
+/** @deprecated Use SproutyAgentConfig instead */
+export type { SproutyAgentConfig as ClaudeAgentConfig };

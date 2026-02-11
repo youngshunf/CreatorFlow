@@ -7,6 +7,10 @@
  * - Appearance (Theme, Font)
  * - Notifications
  * - API Connection (opens OnboardingWizard for editing)
+ * - About (version, updates)
+ *
+ * Note: AI settings (connections, model, thinking) have been moved to AiSettingsPage.
+ * Note: Appearance settings (theme, font) have been moved to AppearanceSettingsPage.
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -63,8 +67,12 @@ export default function AppSettingsPage() {
   const [showApiSetup, setShowApiSetup] = useState(false)
   const setFullscreenOverlayOpen = useSetAtom(fullscreenOverlayOpenAtom)
 
+
   // Notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+
+  // Power state
+  const [keepAwakeEnabled, setKeepAwakeEnabled] = useState(false)
 
   // Auto-update state
   const updateChecker = useUpdateChecker()
@@ -83,26 +91,26 @@ export default function AppSettingsPage() {
     }
   }, [updateChecker])
 
-  // Load current API connection info and notifications on mount
-  const loadConnectionInfo = useCallback(async () => {
+  // Load settings on mount
+  const loadSettings = useCallback(async () => {
     if (!window.electronAPI) return
     try {
-      const [billing, notificationsOn, sub] = await Promise.all([
+      const [billing, notificationsOn, keepAwakeOn, sub] = await Promise.all([
         window.electronAPI.getApiSetup(),
         window.electronAPI.getNotificationsEnabled(),
+        window.electronAPI.getKeepAwakeWhileRunning(),
         subscriptionApi.getInfo().catch(() => null),
       ])
-      setAuthType(billing.authType)
-      setHasCredential(billing.hasCredential)
       setNotificationsEnabled(notificationsOn)
       if (sub) setSubscription(sub)
+      setKeepAwakeEnabled(keepAwakeOn)
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
   }, [])
 
   useEffect(() => {
-    loadConnectionInfo()
+    loadSettings()
   }, [])
 
   // Load preset themes when workspace changes (themes are workspace-scoped)
@@ -158,9 +166,15 @@ export default function AppSettingsPage() {
     apiSetupOnboarding.reset()
   }, [closeApiSetup, loadConnectionInfo, apiSetupOnboarding])
 
+
   const handleNotificationsEnabledChange = useCallback(async (enabled: boolean) => {
     setNotificationsEnabled(enabled)
     await window.electronAPI.setNotificationsEnabled(enabled)
+  }, [])
+
+  const handleKeepAwakeEnabledChange = useCallback(async (enabled: boolean) => {
+    setKeepAwakeEnabled(enabled)
+    await window.electronAPI.setKeepAwakeWhileRunning(enabled)
   }, [])
 
   return (
@@ -231,6 +245,18 @@ export default function AppSettingsPage() {
                   description={t('当 AI 完成聊天任务时发送通知')}
                   checked={notificationsEnabled}
                   onCheckedChange={handleNotificationsEnabledChange}
+                />
+              </SettingsCard>
+            </SettingsSection>
+
+            {/* Power */}
+            <SettingsSection title={t('电源')}>
+              <SettingsCard>
+                <SettingsToggle
+                  label={t('保持屏幕常亮')}
+                  description={t('会话运行时防止屏幕关闭')}
+                  checked={keepAwakeEnabled}
+                  onCheckedChange={handleKeepAwakeEnabledChange}
                 />
               </SettingsCard>
             </SettingsSection>
@@ -346,17 +372,28 @@ export default function AppSettingsPage() {
                 {updateChecker.isReadyToInstall && updateChecker.updateInfo?.latestVersion && (
                   <SettingsRow label={t('安装更新')}>
                     <Button
+                      variant="outline"
                       size="sm"
-                      onClick={updateChecker.installUpdate}
+                      onClick={handleCheckForUpdates}
+                      disabled={isCheckingForUpdates}
                     >
                       {t('重启并更新到')} v{updateChecker.updateInfo.latestVersion}
                     </Button>
                   </SettingsRow>
-                )}
-              </SettingsCard>
-            </SettingsSection>
+                  {updateChecker.isReadyToInstall && (
+                    <SettingsRow label="Install update">
+                      <Button
+                        size="sm"
+                        onClick={updateChecker.installUpdate}
+                      >
+                        Restart to Update
+                      </Button>
+                    </SettingsRow>
+                  )}
+                </SettingsCard>
+              </SettingsSection>
+            </div>
           </div>
-        </div>
         </ScrollArea>
       </div>
     </div>

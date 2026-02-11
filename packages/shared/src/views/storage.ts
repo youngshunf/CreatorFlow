@@ -13,6 +13,7 @@ import { join } from 'path';
 import type { ViewConfig } from './types.ts';
 import { getDefaultViews } from './defaults.ts';
 import { debug } from '../utils/debug.ts';
+import { readJsonFileSync } from '../utils/files.ts';
 
 const WORKSPACE_DATA_DIR = '.sprouty-ai';
 const VIEWS_FILE = 'views.json';
@@ -52,7 +53,7 @@ export function loadViewsConfig(workspaceRootPath: string): ViewsConfig {
   }
 
   try {
-    const config = JSON.parse(readFileSync(configPath, 'utf-8')) as ViewsConfig;
+    const config = readJsonFileSync<ViewsConfig>(configPath);
     return config;
   } catch (error) {
     debug('[loadViewsConfig] Failed to parse config:', error);
@@ -115,7 +116,7 @@ function migrateFromSmartLabels(workspaceRootPath: string): ViewsConfig | null {
   if (!existsSync(labelsConfigPath)) return null;
 
   try {
-    const labelsConfig = JSON.parse(readFileSync(labelsConfigPath, 'utf-8'));
+    const labelsConfig = readJsonFileSync<Record<string, any>>(labelsConfigPath);
     if (!labelsConfig.smartLabels || !Array.isArray(labelsConfig.smartLabels)) return null;
 
     // Migrate: rename IDs from smart-* to view-*

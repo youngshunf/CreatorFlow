@@ -42,7 +42,7 @@ import { IPC_CHANNELS } from '../shared/types'
 export interface DeepLinkTarget {
   /** Workspace ID - undefined means use active window */
   workspaceId?: string
-  /** Compound route format (e.g., 'allChats/chat/abc123', 'settings/shortcuts') */
+  /** Compound route format (e.g., 'allSessions/session/abc123', 'settings/shortcuts') */
   view?: string
   /** Action route (e.g., 'new-chat', 'delete-session') */
   action?: string
@@ -63,7 +63,7 @@ export interface DeepLinkResult {
  * Navigation payload sent to renderer via IPC
  */
 export interface DeepLinkNavigation {
-  /** Compound route format (e.g., 'allChats/chat/abc123', 'settings/shortcuts') */
+  /** Compound route format (e.g., 'allSessions/session/abc123', 'settings/shortcuts') */
   view?: string
   /** Action route (e.g., 'new-chat', 'delete-session') */
   action?: string
@@ -114,7 +114,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
 
     // Compound route prefixes
     const COMPOUND_ROUTE_PREFIXES = [
-      'allChats', 'flagged', 'state', 'sources', 'settings', 'skills'
+      'allSessions', 'flagged', 'state', 'sources', 'settings', 'skills'
     ]
 
     // sproutyai://allChats/..., sproutyai://settings/..., etc. (compound routes)
@@ -140,7 +140,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
       const routeType = pathParts[1]
 
       // Parse compound routes: /workspace/{id}/{compoundRoute}
-      // e.g., /workspace/ws123/allChats/chat/abc123
+      // e.g., /workspace/ws123/allSessions/session/abc123
       if (routeType && COMPOUND_ROUTE_PREFIXES.includes(routeType)) {
         const viewRoute = pathParts.slice(1).join('/')
         result.view = viewRoute

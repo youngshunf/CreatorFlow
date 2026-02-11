@@ -4,6 +4,7 @@ import { useAtomValue } from "jotai"
 import type { FMFileEntry } from "../../../shared/types"
 import { motion, AnimatePresence } from "motion/react"
 import {
+  Archive,
   CheckCircle2,
   Settings,
   ChevronRight,
@@ -30,6 +31,7 @@ import {
   Store,
   LayoutDashboard,
   Film,
+  Cake,
 } from "lucide-react"
 import { PanelRightRounded } from "../icons/PanelRightRounded"
 import { PanelLeftRounded } from "../icons/PanelLeftRounded"
@@ -43,7 +45,7 @@ import { isMac } from "@/lib/platform"
 import { Button } from "@/components/ui/button"
 import { HeaderIconButton } from "@/components/ui/HeaderIconButton"
 import { Separator } from "@/components/ui/separator"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@sprouty-ai/ui"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, DocumentFormattedMarkdownOverlay } from "@sprouty-ai/ui"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -81,7 +83,8 @@ import { AppShellProvider, type AppShellContextType } from "@/context/AppShellCo
 import { EscapeInterruptProvider, useEscapeInterrupt } from "@/context/EscapeInterruptContext"
 import { useTheme } from "@/context/ThemeContext"
 import { getResizeGradientStyle } from "@/hooks/useResizeGradient"
-import { useFocusZone, useGlobalShortcuts } from "@/hooks/keyboard"
+import { useAction, useActionLabel } from "@/actions"
+import { useFocusZone } from "@/hooks/keyboard"
 import { useFocusContext } from "@/context/FocusContext"
 import { getSessionTitle } from "@/utils/session"
 import { useSetAtom } from "jotai"
@@ -104,13 +107,13 @@ import { navigate, routes } from "@/lib/navigate"
 import {
   useNavigation,
   useNavigationState,
-  isChatsNavigation,
+  isSessionsNavigation,
   isSourcesNavigation,
   isSettingsNavigation,
   isSkillsNavigation,
   isFilesNavigation,
   type NavigationState,
-  type ChatFilter,
+  type SessionFilter,
 } from "@/contexts/NavigationContext"
 import { isMarketplaceNavigation, isAppViewNavigation, isVideoNavigation } from "../../../shared/types"
 import type { SettingsSubpage } from "../../../shared/types"
@@ -497,8 +500,8 @@ const PANEL_PANEL_SPACING = 5 // Gap between adjacent panels
  *
  * Layout: [LeftSidebar 20%] | [NavigatorPanel 32%] | [MainContentPanel 48%]
  *
- * Chat Filters:
- * - 'allChats': Shows all sessions
+ * Session Filters:
+ * - 'allSessions': Shows all sessions
  * - 'flagged': Shows flagged sessions
  * - 'state': Shows sessions with a specific todo state
  */
@@ -528,7 +531,6 @@ function AppShellContent({
   const {
     workspaces,
     activeWorkspaceId,
-    currentModel,
     sessionOptions,
     onSelectWorkspace,
     onRefreshWorkspaces,
@@ -536,6 +538,8 @@ function AppShellContent({
     onDeleteSession,
     onFlagSession,
     onUnflagSession,
+    onArchiveSession,
+    onUnarchiveSession,
     onMarkSessionRead,
     onMarkSessionUnread,
     onTodoStateChange,
@@ -547,6 +551,9 @@ function AppShellContent({
     onSendMessage,
     openNewChat,
   } = contextValue
+
+  // Get hotkey labels from centralized action registry
+  const newChatHotkey = useActionLabel('app.newChat').hotkey
 
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(() => {
     return storage.get(storage.KEYS.sidebarVisible, !defaultCollapsed)
@@ -576,6 +583,20 @@ function AppShellContent({
   // Effective focus mode combines prop-based (immutable) and state-based (toggleable)
   const effectiveFocusMode = isFocusedMode || isFocusModeActive
 
+  // What's New overlay
+  const [showWhatsNew, setShowWhatsNew] = React.useState(false)
+  const [releaseNotesContent, setReleaseNotesContent] = React.useState('')
+  const [hasUnseenReleaseNotes, setHasUnseenReleaseNotes] = React.useState(false)
+
+  // Check for unseen release notes on mount
+  useEffect(() => {
+    window.electronAPI.getLatestReleaseVersion().then((latestVersion) => {
+      if (!latestVersion) return
+      const lastSeen = storage.get(storage.KEYS.whatsNewLastSeenVersion, '')
+      setHasUnseenReleaseNotes(lastSeen !== latestVersion)
+    })
+  }, [])
+
   // Window width tracking for responsive behavior
   const [windowWidth, setWindowWidth] = React.useState(window.innerWidth)
 
@@ -598,7 +619,7 @@ function AppShellContent({
   const filePreviewHandleRef = React.useRef<HTMLDivElement>(null)
   const [session, setSession] = useSession()
   const { resolvedMode, isDark, setMode } = useTheme()
-  const { canGoBack, canGoForward, goBack, goForward, navigateToSource, navigate: contextNavigate } = useNavigation()
+  const { canGoBack, canGoForward, goBack, goForward, navigateToSource, navigateToSession, navigate: contextNavigate } = useNavigation()
   const t = useT()
 
   // Double-Esc interrupt feature: first Esc shows warning, second Esc interrupts
@@ -609,34 +630,35 @@ function AppShellContent({
   const navState = useNavigationState()
 
   // Derive chat filter from navigation state (only when in chats navigator)
-  const chatFilter = isChatsNavigation(navState) ? navState.filter : null
+  const sessionFilter = isSessionsNavigation(navState) ? navState.filter : null
 
   // Derive source filter from navigation state (only when in sources navigator)
   const sourceFilter: SourceFilter | null = isSourcesNavigation(navState) ? navState.filter ?? null : null
 
-  // Per-view filter storage: each session list view (allChats, flagged, state:X, label:X, view:X)
+  // Per-view filter storage: each session list view (allSessions, flagged, state:X, label:X, view:X)
   // has its own independent set of status and label filters.
   // Each filter entry stores a mode ('include' or 'exclude') for tri-state filtering.
   type FilterEntry = Record<string, FilterMode> // id → mode
   type ViewFiltersMap = Record<string, { statuses: FilterEntry, labels: FilterEntry }>
 
   // Compute a stable key for the current chat filter view
-  const chatFilterKey = useMemo(() => {
-    if (!chatFilter) return null
-    switch (chatFilter.kind) {
-      case 'allChats': return 'allChats'
+  const sessionFilterKey = useMemo(() => {
+    if (!sessionFilter) return null
+    switch (sessionFilter.kind) {
+      case 'allSessions': return 'allSessions'
       case 'flagged': return 'flagged'
-      case 'state': return `state:${chatFilter.stateId}`
-      case 'label': return `label:${chatFilter.labelId}`
-      case 'view': return `view:${chatFilter.viewId}`
-      default: return 'allChats'
+      case 'archived': return 'archived'
+      case 'state': return `state:${sessionFilter.stateId}`
+      case 'label': return `label:${sessionFilter.labelId}`
+      case 'view': return `view:${sessionFilter.viewId}`
+      default: return 'allSessions'
     }
-  }, [chatFilter])
+  }, [sessionFilter])
 
   const [viewFiltersMap, setViewFiltersMap] = React.useState<ViewFiltersMap>(() => {
     const saved = storage.get<ViewFiltersMap>(storage.KEYS.viewFilters, {})
     // Backward compat: migrate old format (arrays) into new format (Record<string, FilterMode>)
-    if (saved.allChats && Array.isArray((saved.allChats as any).statuses)) {
+    if (saved.allSessions && Array.isArray((saved.allSessions as any).statuses)) {
       // Old format: { statuses: string[], labels: string[] } → new: { statuses: Record, labels: Record }
       for (const key of Object.keys(saved)) {
         const entry = saved[key] as any
@@ -649,8 +671,8 @@ function AppShellContent({
         }
       }
     }
-    // Also migrate legacy global filters if no allChats entry exists
-    if (!saved.allChats) {
+    // Also migrate legacy global filters if no allSessions entry exists
+    if (!saved.allSessions) {
       const oldStatuses = storage.get<TodoStateId[]>(storage.KEYS.listFilter, [])
       const oldLabels = storage.get<string[]>(storage.KEYS.labelFilter, [])
       if (oldStatuses.length > 0 || oldLabels.length > 0) {
@@ -658,7 +680,7 @@ function AppShellContent({
         for (const id of oldStatuses) statuses[id] = 'include'
         const labels: FilterEntry = {}
         for (const id of oldLabels) labels[id] = 'include'
-        saved.allChats = { statuses, labels }
+        saved.allSessions = { statuses, labels }
       }
     }
     return saved
@@ -666,43 +688,43 @@ function AppShellContent({
 
   // Derive current view's status filter as a Map<TodoStateId, FilterMode>
   const listFilter = useMemo(() => {
-    if (!chatFilterKey) return new Map<TodoStateId, FilterMode>()
-    const entry = viewFiltersMap[chatFilterKey]?.statuses ?? {}
+    if (!sessionFilterKey) return new Map<TodoStateId, FilterMode>()
+    const entry = viewFiltersMap[sessionFilterKey]?.statuses ?? {}
     return new Map<TodoStateId, FilterMode>(Object.entries(entry) as [TodoStateId, FilterMode][])
-  }, [viewFiltersMap, chatFilterKey])
+  }, [viewFiltersMap, sessionFilterKey])
 
   // Derive current view's label filter as a Map<string, FilterMode>
   const labelFilter = useMemo(() => {
-    if (!chatFilterKey) return new Map<string, FilterMode>()
-    const entry = viewFiltersMap[chatFilterKey]?.labels ?? {}
+    if (!sessionFilterKey) return new Map<string, FilterMode>()
+    const entry = viewFiltersMap[sessionFilterKey]?.labels ?? {}
     return new Map<string, FilterMode>(Object.entries(entry) as [string, FilterMode][])
-  }, [viewFiltersMap, chatFilterKey])
+  }, [viewFiltersMap, sessionFilterKey])
 
   // Setter for status filter — updates only the current view's entry in the map
   const setListFilter = useCallback((updater: Map<TodoStateId, FilterMode> | ((prev: Map<TodoStateId, FilterMode>) => Map<TodoStateId, FilterMode>)) => {
     setViewFiltersMap(prev => {
-      if (!chatFilterKey) return prev
-      const current = new Map<TodoStateId, FilterMode>(Object.entries(prev[chatFilterKey]?.statuses ?? {}) as [TodoStateId, FilterMode][])
+      if (!sessionFilterKey) return prev
+      const current = new Map<TodoStateId, FilterMode>(Object.entries(prev[sessionFilterKey]?.statuses ?? {}) as [TodoStateId, FilterMode][])
       const next = typeof updater === 'function' ? updater(current) : updater
       return {
         ...prev,
-        [chatFilterKey]: { statuses: Object.fromEntries(next), labels: prev[chatFilterKey]?.labels ?? {} }
+        [sessionFilterKey]: { statuses: Object.fromEntries(next), labels: prev[sessionFilterKey]?.labels ?? {} }
       }
     })
-  }, [chatFilterKey])
+  }, [sessionFilterKey])
 
   // Setter for label filter — updates only the current view's entry in the map
   const setLabelFilter = useCallback((updater: Map<string, FilterMode> | ((prev: Map<string, FilterMode>) => Map<string, FilterMode>)) => {
     setViewFiltersMap(prev => {
-      if (!chatFilterKey) return prev
-      const current = new Map<string, FilterMode>(Object.entries(prev[chatFilterKey]?.labels ?? {}) as [string, FilterMode][])
+      if (!sessionFilterKey) return prev
+      const current = new Map<string, FilterMode>(Object.entries(prev[sessionFilterKey]?.labels ?? {}) as [string, FilterMode][])
       const next = typeof updater === 'function' ? updater(current) : updater
       return {
         ...prev,
-        [chatFilterKey]: { statuses: prev[chatFilterKey]?.statuses ?? {}, labels: Object.fromEntries(next) }
+        [sessionFilterKey]: { statuses: prev[sessionFilterKey]?.statuses ?? {}, labels: Object.fromEntries(next) }
       }
     })
-  }, [chatFilterKey])
+  }, [sessionFilterKey])
   // Search state for session list
   const [searchActive, setSearchActive] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -730,7 +752,7 @@ function AppShellContent({
 
   // Reset search only when navigator or filter changes (not when selecting sessions)
   const navFilterKey = React.useMemo(() => {
-    if (isChatsNavigation(navState)) {
+    if (isSessionsNavigation(navState)) {
       const filter = navState.filter
       return `chats:${filter.kind}:${filter.kind === 'state' ? filter.stateId : ''}`
     }
@@ -745,29 +767,20 @@ function AppShellContent({
   // Auto-hide right sidebar when navigating away from chat sessions
   React.useEffect(() => {
     // Hide sidebar if not in chat view or no session selected
-    if (!isChatsNavigation(navState) || !navState.details) {
+    if (!isSessionsNavigation(navState) || !navState.details) {
       setSkipRightSidebarAnimation(true)
       setIsRightSidebarVisible(false)
       // Reset skip flag after state update
       setTimeout(() => setSkipRightSidebarAnimation(false), 0)
     }
     // 离开 chats navigation 时关闭文件预览（不调整窗口宽度，因为导航切换时布局不同）
-    if (!isChatsNavigation(navState)) {
+    if (!isSessionsNavigation(navState)) {
       setIsFilePreviewVisible(false)
     }
   }, [navState])
 
   // Cmd+F to activate search
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        setSearchActive(true)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  useAction('app.search', () => setSearchActive(true))
 
   // Track window width for responsive right sidebar behavior
   React.useEffect(() => {
@@ -845,7 +858,7 @@ function AppShellContent({
 
     const previousWorkspaceId = previousWorkspaceRef.current
 
-    // Skip on initial mount
+    // Clear transient UI state only on workspace SWITCH (not initial mount)
     if (previousWorkspaceId !== null && previousWorkspaceId !== activeWorkspaceId) {
       // Clear search state
       setSearchActive(false)
@@ -857,9 +870,11 @@ function AppShellContent({
 
       // Clear focused sidebar item
       setFocusedSidebarItemId(null)
+    }
 
-      // Load workspace-scoped filter state from new workspace
-      // (viewFiltersMap, expandedFolders, collapsedItems)
+    // Load workspace-scoped state on BOTH initial mount AND workspace switch
+    // This fixes CMD+R losing filters - previously only ran on workspace switch
+    if (previousWorkspaceId !== activeWorkspaceId) {
       const newViewFilters = storage.get<ViewFiltersMap>(storage.KEYS.viewFilters, {}, activeWorkspaceId)
       setViewFiltersMap(newViewFilters)
 
@@ -1129,70 +1144,99 @@ function AppShellContent({
     chatInputRef.current?.focus()
   }, [])
 
-  // Global keyboard shortcuts
-  useGlobalShortcuts({
-    shortcuts: [
-      // Zone navigation
-      { key: '1', cmd: true, action: () => focusZone('sidebar') },
-      { key: '2', cmd: true, action: () => focusZone('session-list') },
-      { key: '3', cmd: true, action: () => focusZone('chat') },
-      // Tab navigation between zones
-      { key: 'Tab', action: focusNextZone, when: () => !document.querySelector('[role="dialog"]') },
-      // Shift+Tab cycles permission mode through enabled modes (textarea handles its own, this handles when focus is elsewhere)
-      { key: 'Tab', shift: true, action: () => {
-        if (session.selected) {
-          const currentOptions = contextValue.sessionOptions.get(session.selected)
-          const currentMode = currentOptions?.permissionMode ?? 'ask'
-          // Cycle through enabled permission modes
-          const modes = enabledModes.length >= 2 ? enabledModes : ['safe', 'ask', 'allow-all'] as PermissionMode[]
-          const currentIndex = modes.indexOf(currentMode)
-          // If current mode not in enabled list, jump to first enabled mode
-          const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % modes.length
-          const nextMode = modes[nextIndex]
-          contextValue.onSessionOptionsChange(session.selected, { permissionMode: nextMode })
-        }
-      }, when: () => !document.querySelector('[role="dialog"]') && document.activeElement?.tagName !== 'TEXTAREA' },
-      // Sidebar toggle (CMD+B)
-      { key: 'b', cmd: true, action: () => setIsSidebarVisible(v => !v) },
-      // Focus mode toggle (CMD+.) - hides both sidebars
-      { key: '.', cmd: true, action: () => setIsFocusModeActive(v => !v) },
-      // New chat
-      { key: 'n', cmd: true, action: () => handleNewChat(true) },
-      // Settings
-      { key: ',', cmd: true, action: onOpenSettings },
-      // History navigation
-      { key: '[', cmd: true, action: goBack },
-      { key: ']', cmd: true, action: goForward },
-      // Search match navigation (CMD+G next, CMD+SHIFT+G prev)
-      { key: 'g', cmd: true, action: () => chatDisplayRef.current?.goToNextMatch(), when: () => searchActive && (chatMatchInfo.count ?? 0) > 0 },
-      { key: 'g', cmd: true, shift: true, action: () => chatDisplayRef.current?.goToPrevMatch(), when: () => searchActive && (chatMatchInfo.count ?? 0) > 0 },
-      // ESC to stop processing - requires double-press within 1 second
-      // First press shows warning overlay, second press interrupts
-      { key: 'Escape', action: () => {
-        if (session.selected) {
-          const meta = sessionMetaMap.get(session.selected)
-          if (meta?.isProcessing) {
-            // handleEscapePress returns true on second press (within timeout)
-            const shouldInterrupt = handleEscapePress()
-            if (shouldInterrupt) {
-              window.electronAPI.cancelProcessing(session.selected, false).catch(err => {
-                console.error('[AppShell] Failed to cancel processing:', err)
-              })
-            }
-          }
-        }
-      }, when: () => {
-        // Only active when no overlay is open and session is processing
-        // Overlays (dialogs, menus, popovers, etc.) should handle their own Escape
-        if (hasOpenOverlay()) return false
-        if (!session.selected) return false
-        const meta = sessionMetaMap.get(session.selected)
-        return meta?.isProcessing ?? false
-      }},
-      // Theme toggle (CMD+SHIFT+A)
-      { key: 'a', cmd: true, shift: true, action: () => setMode(resolvedMode === 'dark' ? 'light' : 'dark') },
-    ],
+  // Global keyboard shortcuts using centralized action registry
+  // Actions are defined in @/actions/definitions.ts
+
+  // Zone navigation - explicit keyboard intent, always move DOM focus
+  useAction('nav.focusSidebar', () => focusZone('sidebar', { intent: 'keyboard' }))
+  useAction('nav.focusSessionList', () => focusZone('session-list', { intent: 'keyboard' }))
+  useAction('nav.focusChat', () => focusZone('chat', { intent: 'keyboard' }))
+
+  // Tab navigation between zones
+  useAction('nav.nextZone', () => {
+    focusNextZone()
+  }, { enabled: () => !document.querySelector('[role="dialog"]') })
+
+  // Shift+Tab cycles permission mode through enabled modes (textarea handles its own, this handles when focus is elsewhere)
+  useAction('chat.cyclePermissionMode', () => {
+    if (session.selected) {
+      const currentOptions = contextValue.sessionOptions.get(session.selected)
+      const currentMode = currentOptions?.permissionMode ?? 'ask'
+      // Cycle through enabled permission modes
+      const modes = enabledModes.length >= 2 ? enabledModes : ['safe', 'ask', 'allow-all'] as PermissionMode[]
+      const currentIndex = modes.indexOf(currentMode)
+      // If current mode not in enabled list, jump to first enabled mode
+      const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % modes.length
+      const nextMode = modes[nextIndex]
+      contextValue.onSessionOptionsChange(session.selected, { permissionMode: nextMode })
+    }
+  }, { enabled: () => !document.querySelector('[role="dialog"]') && document.activeElement?.tagName !== 'TEXTAREA' })
+
+  // Sidebar toggle (CMD+B)
+  useAction('view.toggleSidebar', () => setIsSidebarVisible(v => !v))
+
+  // Focus mode toggle (CMD+.) - hides both sidebars
+  useAction('view.toggleFocusMode', () => setIsFocusModeActive(v => !v))
+
+  // New chat
+  useAction('app.newChat', () => handleNewChat(true))
+
+  // Settings
+  useAction('app.settings', onOpenSettings)
+
+  // Keyboard shortcuts
+  useAction('app.keyboardShortcuts', onOpenKeyboardShortcuts)
+
+  // New window
+  useAction('app.newWindow', () => window.electronAPI.menuNewWindow())
+
+  // Quit (note: also handled by native menu on macOS)
+  useAction('app.quit', () => window.electronAPI.menuQuit())
+
+  // History navigation
+  useAction('nav.goBack', goBack)
+  useAction('nav.goForward', goForward)
+
+  // History navigation (arrow key alternatives)
+  useAction('nav.goBackAlt', goBack)
+  useAction('nav.goForwardAlt', goForward)
+
+  // Search match navigation (CMD+G next, CMD+SHIFT+G prev)
+  useAction('chat.nextSearchMatch', () => chatDisplayRef.current?.goToNextMatch(), {
+    enabled: () => searchActive && (chatMatchInfo.count ?? 0) > 0
   })
+  useAction('chat.prevSearchMatch', () => chatDisplayRef.current?.goToPrevMatch(), {
+    enabled: () => searchActive && (chatMatchInfo.count ?? 0) > 0
+  })
+
+  // ESC to stop processing - requires double-press within 1 second
+  // First press shows warning overlay, second press interrupts
+  useAction('chat.stopProcessing', () => {
+    if (session.selected) {
+      const meta = sessionMetaMap.get(session.selected)
+      if (meta?.isProcessing) {
+        // handleEscapePress returns true on second press (within timeout)
+        const shouldInterrupt = handleEscapePress()
+        if (shouldInterrupt) {
+          window.electronAPI.cancelProcessing(session.selected, false).catch(err => {
+            console.error('[AppShell] Failed to cancel processing:', err)
+          })
+        }
+      }
+    }
+  }, {
+    // Only active when no overlay is open and session is processing
+    // Overlays (dialogs, menus, popovers, etc.) should handle their own Escape
+    enabled: () => {
+      if (hasOpenOverlay()) return false
+      if (!session.selected) return false
+      const meta = sessionMetaMap.get(session.selected)
+      return meta?.isProcessing ?? false
+    }
+  }, [session, handleEscapePress])
+
+  // Theme toggle (CMD+SHIFT+A)
+  useAction('app.toggleTheme', () => setMode(resolvedMode === 'dark' ? 'light' : 'dark'))
 
   // Global paste listener for file attachments
   // Fires when Cmd+V is pressed anywhere in the app (not just textarea)
@@ -1340,18 +1384,25 @@ function AppShellContent({
       : metas.filter(s => !s.hidden)
   }, [sessionMetaMap, activeWorkspaceId])
 
+  // Active sessions exclude archived - use this for all counts and filters except archived view
+  const activeSessionMetas = useMemo(() => {
+    return workspaceSessionMetas.filter(s => !s.isArchived)
+  }, [workspaceSessionMetas])
+
   // Count sessions by todo state (scoped to workspace)
   const isMetaDone = (s: SessionMeta) => s.todoState === 'done' || s.todoState === 'cancelled'
-  const flaggedCount = workspaceSessionMetas.filter(s => s.isFlagged).length
+  const flaggedCount = activeSessionMetas.filter(s => s.isFlagged).length
+  const archivedCount = workspaceSessionMetas.filter(s => s.isArchived).length
 
   // Compute session counts per label (cumulative: parent includes descendants).
   // Flatten the tree for iteration, use the tree for descendant lookups.
+  // Uses activeSessionMetas to exclude archived sessions from counts.
   const labelCounts = useMemo(() => {
     const allLabels = flattenLabels(labelConfigs)
     const counts: Record<string, number> = {}
     for (const label of allLabels) {
       // Direct count: sessions explicitly tagged with this label (handles valued entries like "priority::3")
-      const directCount = workspaceSessionMetas.filter(
+      const directCount = activeSessionMetas.filter(
         s => s.labels?.some(l => extractLabelId(l) === label.id)
       ).length
       counts[label.id] = directCount
@@ -1360,16 +1411,17 @@ function AppShellContent({
     for (const label of allLabels) {
       const descendants = getDescendantIds(labelConfigs, label.id)
       if (descendants.length > 0) {
-        const descendantCount = workspaceSessionMetas.filter(
+        const descendantCount = activeSessionMetas.filter(
           s => s.labels?.some(l => descendants.includes(extractLabelId(l)))
         ).length
         counts[label.id] = (counts[label.id] || 0) + descendantCount
       }
     }
     return counts
-  }, [workspaceSessionMetas, labelConfigs])
+  }, [activeSessionMetas, labelConfigs])
 
   // Count sessions by individual todo state (dynamic based on effectiveTodoStates)
+  // Uses activeSessionMetas to exclude archived sessions from counts.
   const todoStateCounts = useMemo(() => {
     const counts: Record<TodoStateId, number> = {}
     // Initialize counts for all dynamic statuses
@@ -1377,13 +1429,13 @@ function AppShellContent({
       counts[state.id] = 0
     }
     // Count sessions
-    for (const s of workspaceSessionMetas) {
+    for (const s of activeSessionMetas) {
       const state = (s.todoState || 'todo') as TodoStateId
       // Increment count (initialize to 0 if status not in effectiveTodoStates yet)
       counts[state] = (counts[state] || 0) + 1
     }
     return counts
-  }, [workspaceSessionMetas, effectiveTodoStates])
+  }, [activeSessionMetas, effectiveTodoStates])
 
   // Count sources by type for the Sources dropdown subcategories
   const sourceTypeCounts = useMemo(() => {
@@ -1400,33 +1452,37 @@ function AppShellContent({
   // Filter session metadata based on sidebar mode and chat filter
   const filteredSessionMetas = useMemo(() => {
     // When in sources mode, return empty (no sessions to show)
-    if (!chatFilter) {
+    if (!sessionFilter) {
       return []
     }
 
     let result: SessionMeta[]
 
-    switch (chatFilter.kind) {
-      case 'allChats':
-        // "All Chats" - shows all sessions
-        result = workspaceSessionMetas
+    switch (sessionFilter.kind) {
+      case 'allSessions':
+        // "All Sessions" - shows active (non-archived) sessions
+        result = activeSessionMetas
         break
       case 'flagged':
-        result = workspaceSessionMetas.filter(s => s.isFlagged)
+        result = activeSessionMetas.filter(s => s.isFlagged)
+        break
+      case 'archived':
+        // Archived view shows only archived sessions
+        result = workspaceSessionMetas.filter(s => s.isArchived)
         break
       case 'state':
-        // Filter by specific todo state
-        result = workspaceSessionMetas.filter(s => (s.todoState || 'todo') === chatFilter.stateId)
+        // Filter by specific todo state (excludes archived)
+        result = activeSessionMetas.filter(s => (s.todoState || 'todo') === sessionFilter.stateId)
         break
       case 'label': {
-        if (chatFilter.labelId === '__all__') {
-          // "Labels" header: show all sessions that have at least one label
-          result = workspaceSessionMetas.filter(s => s.labels && s.labels.length > 0)
+        if (sessionFilter.labelId === '__all__') {
+          // "Labels" header: show all active sessions that have at least one label
+          result = activeSessionMetas.filter(s => s.labels && s.labels.length > 0)
         } else {
           // Specific label: includes sessions tagged with this label or any descendant
-          const descendants = getDescendantIds(labelConfigs, chatFilter.labelId)
-          const matchIds = new Set([chatFilter.labelId, ...descendants])
-          result = workspaceSessionMetas.filter(
+          const descendants = getDescendantIds(labelConfigs, sessionFilter.labelId)
+          const matchIds = new Set([sessionFilter.labelId, ...descendants])
+          result = activeSessionMetas.filter(
             s => s.labels?.some(l => matchIds.has(extractLabelId(l)))
           )
         }
@@ -1434,22 +1490,22 @@ function AppShellContent({
       }
       case 'view': {
         // Filter by view: __all__ shows any session matched by any view,
-        // otherwise filter to the specific view
-        result = workspaceSessionMetas.filter(s => {
+        // otherwise filter to the specific view (excludes archived)
+        result = activeSessionMetas.filter(s => {
           const matched = evaluateViews(s)
-          if (chatFilter.viewId === '__all__') {
+          if (sessionFilter.viewId === '__all__') {
             return matched.length > 0
           }
-          return matched.some(v => v.id === chatFilter.viewId)
+          return matched.some(v => v.id === sessionFilter.viewId)
         })
         break
       }
       default:
-        result = workspaceSessionMetas
+        result = activeSessionMetas
     }
 
     // Apply secondary filters (status + labels, AND-ed together) in ALL views.
-    // These layer on top of the primary chatFilter to allow further narrowing.
+    // These layer on top of the primary sessionFilter to allow further narrowing.
     // Each filter supports include/exclude modes:
     //   - Includes: if any exist, only matching items pass
     //   - Excludes: matching items are removed (applied after includes)
@@ -1492,25 +1548,25 @@ function AppShellContent({
     }
 
     return result
-  }, [workspaceSessionMetas, chatFilter, listFilter, labelFilter, labelConfigs])
+  }, [workspaceSessionMetas, activeSessionMetas, sessionFilter, listFilter, labelFilter, labelConfigs])
 
-  // Derive "pinned" (non-removable) filters from the current chatFilter path.
+  // Derive "pinned" (non-removable) filters from the current sessionFilter path.
   // These represent filters that are implicit in the current deeplink/route and
   // should be displayed as fixed chips in the filter bar that users cannot remove.
   const pinnedFilters = useMemo(() => {
-    if (!chatFilter) return { pinnedStatusId: null as string | null, pinnedLabelId: null as string | null, pinnedFlagged: false }
-    switch (chatFilter.kind) {
+    if (!sessionFilter) return { pinnedStatusId: null as string | null, pinnedLabelId: null as string | null, pinnedFlagged: false }
+    switch (sessionFilter.kind) {
       case 'state':
-        return { pinnedStatusId: chatFilter.stateId, pinnedLabelId: null, pinnedFlagged: false }
+        return { pinnedStatusId: sessionFilter.stateId, pinnedLabelId: null, pinnedFlagged: false }
       case 'label':
         // Don't pin the __all__ pseudo-label — that just means "any label"
-        return { pinnedStatusId: null, pinnedLabelId: chatFilter.labelId !== '__all__' ? chatFilter.labelId : null, pinnedFlagged: false }
+        return { pinnedStatusId: null, pinnedLabelId: sessionFilter.labelId !== '__all__' ? sessionFilter.labelId : null, pinnedFlagged: false }
       case 'flagged':
         return { pinnedStatusId: null, pinnedLabelId: null, pinnedFlagged: true }
       default:
         return { pinnedStatusId: null, pinnedLabelId: null, pinnedFlagged: false }
     }
-  }, [chatFilter])
+  }, [sessionFilter])
 
   // Ensure session messages are loaded when selected
   React.useEffect(() => {
@@ -1529,26 +1585,26 @@ function AppShellContent({
     // React batch as the removeSession that just ran inside onDeleteSession,
     // so there should be no intermediate render with stale session data.
     if (result && wasSelected) {
-      if (!chatFilter || chatFilter.kind === 'allChats') {
-        contextNavigate(routes.view.allChats())
-      } else if (chatFilter.kind === 'flagged') {
+      if (!sessionFilter || sessionFilter.kind === 'allSessions') {
+        contextNavigate(routes.view.allSessions())
+      } else if (sessionFilter.kind === 'flagged') {
         contextNavigate(routes.view.flagged())
-      } else if (chatFilter.kind === 'state') {
-        contextNavigate(routes.view.state(chatFilter.stateId))
-      } else if (chatFilter.kind === 'label') {
-        contextNavigate(routes.view.label(chatFilter.labelId))
-      } else if (chatFilter.kind === 'view') {
-        contextNavigate(routes.view.view(chatFilter.viewId))
+      } else if (sessionFilter.kind === 'state') {
+        contextNavigate(routes.view.state(sessionFilter.stateId))
+      } else if (sessionFilter.kind === 'label') {
+        contextNavigate(routes.view.label(sessionFilter.labelId))
+      } else if (sessionFilter.kind === 'view') {
+        contextNavigate(routes.view.view(sessionFilter.viewId))
       } else {
-        contextNavigate(routes.view.allChats())
+        contextNavigate(routes.view.allSessions())
       }
     }
     return result
-  }, [session.selected, onDeleteSession, chatFilter, contextNavigate])
+  }, [session.selected, onDeleteSession, sessionFilter, contextNavigate])
 
   // Right sidebar OPEN button (fades out when sidebar is open, hidden in non-chat views)
   const rightSidebarOpenButton = React.useMemo(() => {
-    if (!isChatsNavigation(navState) || !navState.details) return null
+    if (!isSessionsNavigation(navState) || !navState.details) return null
 
     return (
       <motion.div
@@ -1659,8 +1715,17 @@ function AppShellContent({
     navigate(routes.view.allChats())
   }, [])
 
+  const handleAllSessionsClick = useCallback(() => {
+    navigate(routes.view.allSessions())
+  }, [])
+  }, [])
+
   const handleFlaggedClick = useCallback(() => {
     navigate(routes.view.flagged())
+  }, [])
+
+  const handleArchivedClick = useCallback(() => {
+    navigate(routes.view.archived())
   }, [])
 
   // Handler for individual todo state views
@@ -1726,6 +1791,19 @@ function AppShellContent({
   // Handler for settings view
   const handleSettingsClick = useCallback((subpage: SettingsSubpage = 'user-profile') => {
     navigate(routes.view.settings(subpage))
+  }, [])
+
+  // Handler for What's New overlay
+  const handleWhatsNewClick = useCallback(async () => {
+    const content = await window.electronAPI.getReleaseNotes()
+    setReleaseNotesContent(content)
+    setShowWhatsNew(true)
+    setHasUnseenReleaseNotes(false)
+    // Update last seen version
+    const latestVersion = await window.electronAPI.getLatestReleaseVersion()
+    if (latestVersion) {
+      storage.set(storage.KEYS.whatsNewLastSeenVersion, latestVersion)
+    }
   }, [])
 
   // ============================================================================
@@ -1845,14 +1923,17 @@ function AppShellContent({
   const handleNewChat = useCallback(async (_useCurrentAgent: boolean = true) => {
     if (!activeWorkspace) return
 
-    // Exit search mode and switch to All Chats
+    // Exit search mode and switch to All Sessions
     setSearchActive(false)
     setSearchQuery('')
 
     const newSession = await onCreateSession(activeWorkspace.id)
     // Navigate to the new session via central routing
-    navigate(routes.view.allChats(newSession.id))
-  }, [activeWorkspace, onCreateSession])
+    navigate(routes.view.allSessions(newSession.id))
+
+    // Focus the chat input after navigation completes
+    setTimeout(() => focusZone('chat', { intent: 'programmatic' }), 50)
+  }, [activeWorkspace, onCreateSession, focusZone])
 
   // Delete Source - simplified since agents system is removed
   const handleDeleteSource = useCallback(async (sourceSlug: string) => {
@@ -1905,16 +1986,16 @@ function AppShellContent({
       }
     }
 
-    // 1. Chats section: All Chats, Flagged, States header, States items
-    result.push({ id: 'nav:allChats', type: 'nav', action: handleAllChatsClick })
+    // 1. Sessions section: All Sessions, Flagged, States header, States items
+    result.push({ id: 'nav:allSessions', type: 'nav', action: handleAllSessionsClick })
     result.push({ id: 'nav:flagged', type: 'nav', action: handleFlaggedClick })
-    result.push({ id: 'nav:states', type: 'nav', action: handleAllChatsClick })
+    result.push({ id: 'nav:states', type: 'nav', action: handleAllSessionsClick })
     for (const state of effectiveTodoStates) {
       result.push({ id: `nav:state:${state.id}`, type: 'nav', action: () => handleTodoStateClick(state.id) })
     }
 
     // 2. Labels section header + regular label tree for keyboard nav
-    result.push({ id: 'nav:labels', type: 'nav', action: handleAllChatsClick })
+    result.push({ id: 'nav:labels', type: 'nav', action: handleAllSessionsClick })
     // Flatten regular label tree for keyboard navigation (depth-first)
     const flattenTree = (nodes: LabelTreeNode[]) => {
       for (const node of nodes) {
@@ -1926,14 +2007,20 @@ function AppShellContent({
     }
     flattenTree(labelTree)
 
-    // 3. Files, Marketplace, Subscription, Settings
+    // 2b. Archived section
+    result.push({ id: 'nav:archived', type: 'nav', action: handleArchivedClick })
+
+    // 3. Files, Marketplace, Sources, Skills, Subscription, Settings
     result.push({ id: 'nav:files', type: 'nav', action: handleFilesClick })
     result.push({ id: 'nav:marketplace', type: 'nav', action: handleMarketplaceClick })
+    result.push({ id: 'nav:sources', type: 'nav', action: handleSourcesClick })
+    result.push({ id: 'nav:skills', type: 'nav', action: handleSkillsClick })
     result.push({ id: 'nav:subscription', type: 'nav', action: handleSubscriptionClick })
     result.push({ id: 'nav:settings', type: 'nav', action: () => handleSettingsClick('user-profile') })
+    result.push({ id: 'nav:whats-new', type: 'nav', action: handleWhatsNewClick })
 
     return result
-  }, [handleHomeClick, appViews, activeWorkspace?.appId, handleAllChatsClick, handleFlaggedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSubscriptionClick, handleSettingsClick])
+  }, [handleHomeClick, appViews, activeWorkspace?.appId, handleAllChatsClick, handleAllSessionsClick, handleFlaggedClick, handleArchivedClick, handleTodoStateClick, effectiveTodoStates, handleLabelClick, labelConfigs, labelTree, viewConfigs, handleViewClick, handleSourcesClick, handleSkillsClick, handleFilesClick, handleMarketplaceClick, handleSubscriptionClick, handleSettingsClick, handleWhatsNewClick])
 
   // Toggle folder expanded state
   const handleToggleFolder = React.useCallback((path: string) => {
@@ -1992,8 +2079,8 @@ function AppShellContent({
       }
       case 'ArrowRight': {
         e.preventDefault()
-        // Move to next zone (session list)
-        focusZone('session-list')
+        // Move to next zone (session list) - keyboard navigation
+        focusZone('session-list', { intent: 'keyboard' })
         break
       }
       case 'Enter':
@@ -2043,7 +2130,7 @@ function AppShellContent({
   // Determine if we're on the home view (no session selected in allChats)
   // Home view: chats navigator, allChats filter, no details (no session selected)
   const isHomeView = React.useMemo(() => {
-    return isChatsNavigation(navState) && 
+    return isSessionsNavigation(navState) && 
            navState.filter.kind === 'allChats' && 
            !navState.details
   }, [navState])
@@ -2077,24 +2164,24 @@ function AppShellContent({
     // Settings navigator
     if (isSettingsNavigation(navState)) return t('设置')
 
-    // Chats navigator - use chatFilter
-    if (!chatFilter) return t('所有对话')
+    // Sessions navigator - use sessionFilter
+    if (!sessionFilter) return t('所有对话')
 
-    switch (chatFilter.kind) {
+    switch (sessionFilter.kind) {
       case 'flagged':
         return t('已标记')
       case 'state': {
-        const state = effectiveTodoStates.find(s => s.id === chatFilter.stateId)
+        const state = effectiveTodoStates.find(s => s.id === sessionFilter.stateId)
         return state?.label || t('所有对话')
       }
       case 'label':
-        return chatFilter.labelId === '__all__' ? t('标签') : getLabelDisplayName(labelConfigs, chatFilter.labelId)
+        return sessionFilter.labelId === '__all__' ? t('标签') : getLabelDisplayName(labelConfigs, sessionFilter.labelId)
       case 'view':
-        return chatFilter.viewId === '__all__' ? t('视图') : viewConfigs.find(v => v.id === chatFilter.viewId)?.name || t('视图')
+        return sessionFilter.viewId === '__all__' ? t('视图') : viewConfigs.find(v => v.id === sessionFilter.viewId)?.name || t('视图')
       default:
         return t('所有对话')
     }
-  }, [navState, chatFilter, effectiveTodoStates, labelConfigs, viewConfigs, t])
+  }, [navState, sessionFilter, effectiveTodoStates, labelConfigs, viewConfigs, t])
 
   // Build recursive sidebar items from label tree.
   // Each node renders with condensed height (compact: true) since many labels expected.
@@ -2108,7 +2195,7 @@ function AppShellContent({
     })
     return sorted.map(node => {
       const hasChildren = node.children.length > 0
-      const isActive = chatFilter?.kind === 'label' && chatFilter.labelId === node.fullId
+      const isActive = sessionFilter?.kind === 'label' && sessionFilter.labelId === node.fullId
       const count = labelCounts[node.fullId] || 0
 
       const item: any = {
@@ -2145,11 +2232,10 @@ function AppShellContent({
 
       return item
     })
-  }, [chatFilter, labelCounts, activeWorkspace?.id, handleLabelClick, isExpanded, toggleExpanded, openConfigureLabels, handleAddLabel, handleDeleteLabel])
+  }, [sessionFilter, labelCounts, activeWorkspace?.id, handleLabelClick, isExpanded, toggleExpanded, openConfigureLabels, handleAddLabel, handleDeleteLabel])
 
   return (
     <AppShellProvider value={appShellContextValue}>
-      <TooltipProvider delayDuration={0}>
         {/*
           Draggable title bar region for transparent window (macOS)
           - Fixed overlay at z-titlebar allows window dragging from the top bar area
@@ -2219,7 +2305,7 @@ function AppShellContent({
             <div className="flex h-full flex-col pt-[50px] select-none">
               {/* Sidebar Top Section */}
               <div className="flex-1 flex flex-col min-h-0">
-                {/* New Chat Button - Gmail-style, with context menu for "Open in New Window" */}
+                {/* New Session Button - Gmail-style, with context menu for "Open in New Window" */}
                 <div className="px-2 pt-1 pb-2 shrink-0">
                   <ContextMenu modal={true}>
                     <ContextMenuTrigger asChild>
@@ -2240,8 +2326,9 @@ function AppShellContent({
                     </StyledContextMenuContent>
                   </ContextMenu>
                 </div>
-                {/* Primary Nav: All Chats, Flagged, States, Labels | Sources, Skills | Settings */}
-                <div className="flex-1 overflow-y-auto min-h-0 mask-fade-bottom">
+                {/* Primary Nav: All Sessions, Flagged, States, Labels | Sources, Skills | Settings */}
+                {/* pb-4 provides clearance so the last item scrolls above the mask-fade-bottom gradient */}
+                <div className="flex-1 overflow-y-auto min-h-0 mask-fade-bottom pb-4">
                 <LeftSidebar
                   isCollapsed={false}
                   getItemProps={getSidebarItemProps}
@@ -2257,17 +2344,17 @@ function AppShellContent({
                         variant: (isAppViewNavigation(navState) && navState.viewId === view.viewId ? "default" : "ghost") as "default" | "ghost",
                         onClick: () => activeWorkspace?.appId && navigate(routes.view.appView(activeWorkspace.appId, view.viewId)),
                       })),
-                    // --- Chats Section (with Flagged, States, Labels as sub-items) ---
+                    // --- Sessions Section (with Flagged, States, Labels as sub-items) ---
                     {
-                      id: "nav:allChats",
+                      id: "nav:allSessions",
                       title: t('所有对话'),
                       label: String(workspaceSessionMetas.length),
                       icon: Inbox,
-                      variant: chatFilter?.kind === 'allChats' && activeRoute !== 'home' ? "default" : "ghost",
-                      onClick: handleAllChatsClick,
+                      variant: sessionFilter?.kind === 'allSessions' && activeRoute !== 'home' ? "default" : "ghost",
+                      onClick: handleAllSessionsClick,
                       expandable: true,
-                      expanded: isExpanded('nav:allChats'),
-                      onToggle: () => toggleExpanded('nav:allChats'),
+                      expanded: isExpanded('nav:allSessions'),
+                      onToggle: () => toggleExpanded('nav:allSessions'),
                       items: [
                         // Flagged
                         {
@@ -2275,7 +2362,7 @@ function AppShellContent({
                           title: t('已标记'),
                           label: String(flaggedCount),
                           icon: <Flag className="h-3.5 w-3.5" />,
-                          variant: chatFilter?.kind === 'flagged' ? "default" : "ghost",
+                          variant: sessionFilter?.kind === 'flagged' ? "default" : "ghost",
                           onClick: handleFlaggedClick,
                         },
                         // States: expandable section with status sub-items (drag-and-drop reorder)
@@ -2289,7 +2376,7 @@ function AppShellContent({
                           expanded: isExpanded('nav:states'),
                           onToggle: () => toggleExpanded('nav:states'),
                           contextMenu: {
-                            type: 'allChats',
+                            type: 'allSessions',
                             onConfigureStatuses: openConfigureStatuses,
                           },
                           // Enable flat DnD reorder for status items
@@ -2301,7 +2388,7 @@ function AppShellContent({
                             icon: state.icon,
                             iconColor: state.resolvedColor,
                             iconColorable: state.iconColorable,
-                            variant: (chatFilter?.kind === 'state' && chatFilter.stateId === state.id ? "default" : "ghost") as "default" | "ghost",
+                            variant: (sessionFilter?.kind === 'state' && sessionFilter.stateId === state.id ? "default" : "ghost") as "default" | "ghost",
                             onClick: () => handleTodoStateClick(state.id),
                             contextMenu: {
                               type: 'status' as const,
@@ -2316,7 +2403,7 @@ function AppShellContent({
                           title: t('标签'),
                           icon: Tag,
                           // Only highlighted when "Labels" itself is selected (not sub-labels)
-                          variant: (chatFilter?.kind === 'label' && chatFilter.labelId === '__all__') ? "default" as const : "ghost" as const,
+                          variant: (sessionFilter?.kind === 'label' && sessionFilter.labelId === '__all__') ? "default" as const : "ghost" as const,
                           // Clicking navigates to "all labeled sessions" view
                           onClick: () => handleLabelClick('__all__'),
                           expandable: true,
@@ -2330,6 +2417,15 @@ function AppShellContent({
                           items: buildLabelSidebarItems(labelTree),
                         },
                       ],
+                    },
+                    // --- Archived Section ---
+                    {
+                      id: "nav:archived",
+                      title: t('已归档'),
+                      label: archivedCount > 0 ? String(archivedCount) : undefined,
+                      icon: Archive,
+                      variant: sessionFilter?.kind === 'archived' ? "default" : "ghost",
+                      onClick: handleArchivedClick,
                     },
                     // --- Files ---
                     {
@@ -2364,6 +2460,19 @@ function AppShellContent({
                       icon: Settings,
                       variant: isSettingsNavigation(navState) && navState.subpage !== 'subscription' ? "default" : "ghost",
                       onClick: () => handleSettingsClick('app'),
+                    },
+                    // --- What's New ---
+                    {
+                      id: "nav:whats-new",
+                      title: "What's New",
+                      icon: hasUnseenReleaseNotes ? (
+                        <span className="relative">
+                          <Cake className="h-3.5 w-3.5" />
+                          <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent" />
+                        </span>
+                      ) : Cake,
+                      variant: "ghost" as const,
+                      onClick: handleWhatsNewClick,
                     },
                   ]}
                 />
@@ -2527,11 +2636,11 @@ function AppShellContent({
               opacity: effectiveFocusMode ? 0 : 1,
             }}
             transition={isResizing ? { duration: 0 } : springTransition}
-            className="h-full shrink-0 overflow-hidden"
+            className="h-full shrink-0 overflow-hidden bg-background shadow-middle rounded-l-[14px] rounded-r-[10px]"
           >
             <div
               style={{ width: sessionListWidth }}
-              className="h-full flex flex-col min-w-0 bg-background shadow-middle rounded-l-[14px] rounded-r-[10px]"
+              className="h-full flex flex-col min-w-0 titlebar-no-drag relative z-panel"
             >
             <PanelHeader
               title={isSidebarVisible ? listTitle : undefined}
@@ -2541,7 +2650,7 @@ function AppShellContent({
                   {/* Filter dropdown - available in ALL chat views.
                       Shows user-added filters (removable) and pinned filters (non-removable, derived from route).
                       Pinned filters: state views pin a status, label views pin a label, flagged pins the flag. */}
-                  {isChatsNavigation(navState) && (
+                  {isSessionsNavigation(navState) && (
                     <DropdownMenu onOpenChange={(open) => { if (!open) setFilterDropdownQuery('') }}>
                       <DropdownMenuTrigger asChild>
                         <HeaderIconButton
@@ -3130,7 +3239,7 @@ function AppShellContent({
               />
             )}
             {/* Marketplace now uses full-page layout in MainContentPanel */}
-            {isChatsNavigation(navState) && (
+            {isSessionsNavigation(navState) && (
               /* Sessions List + 文件树（垂直分割） */
               <div ref={sessionColumnRef} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 {/* SessionList 区域 */}
@@ -3138,28 +3247,19 @@ function AppShellContent({
                   {/* SessionList: Scrollable list of session cards */}
                   {/* Key on sidebarMode forces full remount when switching views, skipping animations */}
                   <SessionList
-                    key={chatFilter?.kind}
+                    key={sessionFilter?.kind}
                     items={searchActive ? workspaceSessionMetas : filteredSessionMetas}
                     onDelete={handleDeleteSession}
                     onFlag={onFlagSession}
                     onUnflag={onUnflagSession}
+                    onArchive={onArchiveSession}
+                    onUnarchive={onUnarchiveSession}
                     onMarkUnread={onMarkSessionUnread}
                     onTodoStateChange={onTodoStateChange}
                     onRename={onRenameSession}
                     onFocusChatInput={focusChatInput}
                     onSessionSelect={(selectedMeta) => {
-                      // Navigate to the session via central routing (with filter context)
-                      if (!chatFilter || chatFilter.kind === 'allChats') {
-                        navigate(routes.view.allChats(selectedMeta.id))
-                      } else if (chatFilter.kind === 'flagged') {
-                        navigate(routes.view.flagged(selectedMeta.id))
-                      } else if (chatFilter.kind === 'state') {
-                        navigate(routes.view.state(chatFilter.stateId, selectedMeta.id))
-                      } else if (chatFilter.kind === 'label') {
-                        navigate(routes.view.label(chatFilter.labelId, selectedMeta.id))
-                      } else if (chatFilter.kind === 'view') {
-                        navigate(routes.view.view(chatFilter.viewId, selectedMeta.id))
-                      }
+                      navigateToSession(selectedMeta.id)
                     }}
                     onOpenInNewWindow={(selectedMeta) => {
                       if (activeWorkspaceId) {
@@ -3167,8 +3267,8 @@ function AppShellContent({
                       }
                     }}
                     onNavigateToView={(view) => {
-                      if (view === 'allChats') {
-                        navigate(routes.view.allChats())
+                      if (view === 'allSessions') {
+                        navigate(routes.view.allSessions())
                       } else if (view === 'flagged') {
                         navigate(routes.view.flagged())
                       }
@@ -3266,7 +3366,7 @@ function AppShellContent({
           )}
 
           {/* 文件预览面板 — 按比例分配空间 */}
-          {isChatsNavigation(navState) && isFilePreviewVisible && (
+          {isSessionsNavigation(navState) && isFilePreviewVisible && (
           <div
             style={{ flex: filePreviewRatio }}
             className="overflow-hidden min-w-0 h-full bg-foreground-2 shadow-middle rounded-[10px]"
@@ -3287,7 +3387,7 @@ function AppShellContent({
           )}
 
           {/* 文件预览面板与聊天区之间的 resize handle */}
-          {isChatsNavigation(navState) && isFilePreviewVisible && (
+          {isSessionsNavigation(navState) && isFilePreviewVisible && (
           <div
             ref={filePreviewHandleRef}
             onMouseDown={(e) => { e.preventDefault(); setIsResizing('file-preview') }}
@@ -3313,10 +3413,10 @@ function AppShellContent({
           {/* === MAIN CONTENT PANEL === (hidden in files navigation; full-width for marketplace navigation) */}
           {!isFilesNavigation(navState) && (
           <div
-            style={isChatsNavigation(navState) && isFilePreviewVisible ? { flex: 1 - filePreviewRatio } : undefined}
+            style={isSessionsNavigation(navState) && isFilePreviewVisible ? { flex: 1 - filePreviewRatio } : undefined}
             className={cn(
             "overflow-hidden min-w-0 bg-foreground-2 shadow-middle",
-            !(isChatsNavigation(navState) && isFilePreviewVisible) && "flex-1",
+            !(isSessionsNavigation(navState) && isFilePreviewVisible) && "flex-1",
             effectiveFocusMode ? "rounded-l-[14px]" : "rounded-l-[10px]",
             isRightSidebarVisible ? "rounded-r-[10px]" : "rounded-r-[14px]"
           )}>
@@ -3373,7 +3473,7 @@ function AppShellContent({
                 >
                   <RightSidebar
                     panel={{ type: 'sessionMetadata' }}
-                    sessionId={isChatsNavigation(navState) && navState.details ? navState.details.sessionId : undefined}
+                    sessionId={isSessionsNavigation(navState) && navState.details ? navState.details.sessionId : undefined}
                     closeButton={rightSidebarCloseButton}
                   />
                 </motion.div>
@@ -3406,7 +3506,7 @@ function AppShellContent({
                     <div className="h-full bg-foreground-2 overflow-hidden shadow-strong rounded-[12px]">
                       <RightSidebar
                         panel={{ type: 'sessionMetadata' }}
-                        sessionId={isChatsNavigation(navState) && navState.details ? navState.details.sessionId : undefined}
+                        sessionId={isSessionsNavigation(navState) && navState.details ? navState.details.sessionId : undefined}
                         closeButton={rightSidebarCloseButton}
                       />
                     </div>
@@ -3569,6 +3669,14 @@ function AppShellContent({
         }}
         initialMarketplaceApp={pendingMarketplaceApp}
         onClearInitialApp={() => setPendingMarketplaceApp(undefined)}
+      />
+
+      {/* What's New overlay */}
+      <DocumentFormattedMarkdownOverlay
+        isOpen={showWhatsNew}
+        onClose={() => setShowWhatsNew(false)}
+        content={releaseNotesContent}
+        onOpenUrl={(url) => window.electronAPI.openUrl(url)}
       />
     </AppShellProvider>
   )

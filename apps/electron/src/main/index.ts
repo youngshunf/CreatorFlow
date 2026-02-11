@@ -70,11 +70,15 @@ import { registerIpcHandlers } from './ipc'
 import { createApplicationMenu } from './menu'
 import { WindowManager } from './window-manager'
 import { loadWindowState, saveWindowState } from './window-state'
-import { getWorkspaces, loadStoredConfig } from '@sprouty-ai/shared/config'
+import { getWorkspaces, loadStoredConfig, addWorkspace, saveConfig } from '@sprouty-ai/shared/config'
+import { getDefaultWorkspacesDir } from '@sprouty-ai/shared/workspaces'
 import { initializeDocs } from '@sprouty-ai/shared/docs'
+import { initializeReleaseNotes } from '@sprouty-ai/shared/release-notes'
 import { ensureDefaultPermissions } from '@sprouty-ai/shared/agent/permissions-config'
-import { ensureToolIcons } from '@sprouty-ai/shared/config'
+import { ensureToolIcons, ensurePresetThemes } from '@sprouty-ai/shared/config'
 import { setBundledAssetsRoot } from '@sprouty-ai/shared/utils'
+import { setVendorRoot } from '@sprouty-ai/shared/codex'
+import { setPowerShellValidatorRoot } from '@sprouty-ai/shared/agent'
 import { handleDeepLink } from './deep-link'
 import { registerThumbnailScheme, registerThumbnailHandler } from './thumbnail-protocol'
 import { registerLocalFileScheme, registerLocalFileHandler } from './local-file-protocol'
@@ -173,14 +177,21 @@ async function createInitialWindows(): Promise<void> {
 
   // Load saved window state
   const savedState = loadWindowState()
-  const workspaces = getWorkspaces()
-  const validWorkspaceIds = workspaces.map(ws => ws.id)
+  let workspaces = getWorkspaces()
 
+  // If no workspaces exist, create default "My Workspace" on first run
   if (workspaces.length === 0) {
-    // No workspaces configured - create window without workspace (will show onboarding)
-    windowManager.createWindow({ workspaceId: '' })
-    return
+    // Ensure config file exists (addWorkspace requires it)
+    if (!loadStoredConfig()) {
+      saveConfig({ workspaces: [], activeWorkspaceId: null, activeSessionId: null })
+    }
+    const defaultPath = join(getDefaultWorkspacesDir(), 'my-workspace')
+    addWorkspace({ rootPath: defaultPath, name: 'My Workspace' })
+    workspaces = getWorkspaces() // Refresh after creation
+    mainLog.info('Created default workspace on first run')
   }
+
+  const validWorkspaceIds = workspaces.map(ws => ws.id)
 
   if (savedState?.windows.length) {
     // Restore windows from saved state
@@ -304,8 +315,19 @@ app.whenReady().then(async () => {
   // (docs, permissions, themes, tool-icons resolve via getBundledAssetsDir)
   setBundledAssetsRoot(__dirname)
 
+  // Register vendor root so the Codex binary resolver can find bundled binaries
+  // (Codex binary resolves via resolveCodexBinary() which checks vendor/codex/)
+  setVendorRoot(__dirname)
+
+  // Register PowerShell validator root so it can find the bundled parser script
+  // (Windows only: validates PowerShell commands in Explore mode using AST analysis)
+  setPowerShellValidatorRoot(join(__dirname, 'resources'))
+
   // Initialize bundled docs
   initializeDocs()
+
+  // Initialize bundled release notes
+  initializeReleaseNotes()
 
   // Initialize global skills (first run: copy bundled skills to ~/.sprouty-ai/skills/)
   try {
@@ -341,6 +363,9 @@ app.whenReady().then(async () => {
   // Seed tool icons to ~/.sprouty-ai/tool-icons/ (copies bundled SVGs on first run)
   ensureToolIcons()
 
+  // Seed preset themes to ~/.sprouty-ai/themes/ (copies bundled theme JSONs on first run)
+  ensurePresetThemes()
+
   // Sync marketplace metadata in background (non-blocking, 4-hour interval)
   try {
     const { syncMarketplaceMetadata } = await import('@sprouty-ai/shared/marketplace/sync')
@@ -370,8 +395,14 @@ app.whenReady().then(async () => {
 
   // Set dock icon on macOS (required for dev mode, bundled apps use Info.plist)
   if (process.platform === 'darwin' && app.dock) {
-    const dockIconPath = join(__dirname, '../resources/icon.png')
-    if (existsSync(dockIconPath)) {
+    // In packaged app, resources are at dist/resources/ (same level as __dirname)
+    // In dev, resources are at ../resources/ (sibling of dist/)
+    const dockIconPath = [
+      join(__dirname, 'resources/icon.png'),
+      join(__dirname, '../resources/icon.png'),
+    ].find(p => existsSync(p))
+
+    if (dockIconPath) {
       app.dock.setIcon(dockIconPath)
     }
 
@@ -409,15 +440,36 @@ app.whenReady().then(async () => {
     // Initialize auth (must happen after window creation for error reporting)
     await sessionManager.initialize()
 
+    // Run credential health check at startup to detect issues early
+    // (corruption, machine migration, missing credentials for default connection)
+    try {
+      const { getCredentialManager } = await import('@sprouty-ai/shared/credentials')
+      const credentialManager = getCredentialManager()
+      const health = await credentialManager.checkHealth()
+      if (!health.healthy) {
+        mainLog.warn('Credential health check failed:', health.issues)
+        // Issues will be displayed in Settings → AI when user navigates there
+      }
+    } catch (err) {
+      mainLog.error('Credential health check error:', err)
+    }
+
+    // Initialize power manager (loads setting, must happen after config is available)
+    const { initPowerManager } = await import('./power-manager')
+    await initPowerManager()
+
     // Set Sentry context tags for error grouping (no PII — just config classification).
     // Runs after init so config and auth state are available.
+    // Derives values from the default LLM connection instead of legacy config fields.
     try {
-      const config = loadStoredConfig()
+      const { getLlmConnection, getDefaultLlmConnection } = await import('@sprouty-ai/shared/config')
       const workspaces = getWorkspaces()
-      Sentry.setTag('authType', config?.authType ?? 'unknown')
-      Sentry.setTag('hasCustomEndpoint', String(!!config?.anthropicBaseUrl))
-      Sentry.setTag('model', config?.model ?? 'default')
-      Sentry.setTag('customModel', config?.customModel ?? 'none')
+      const defaultConnSlug = getDefaultLlmConnection()
+      const defaultConn = defaultConnSlug ? getLlmConnection(defaultConnSlug) : null
+      Sentry.setTag('authType', defaultConn?.authType ?? 'unknown')
+      Sentry.setTag('providerType', defaultConn?.providerType ?? 'unknown')
+      Sentry.setTag('hasCustomEndpoint', String(!!defaultConn?.baseUrl))
+      Sentry.setTag('model', defaultConn?.defaultModel ?? 'default')
       Sentry.setTag('workspaceCount', String(workspaces.length))
     } catch (err) {
       mainLog.warn('Failed to set Sentry context tags:', err)
@@ -538,6 +590,10 @@ app.on('before-quit', async (event) => {
     } catch (error) {
       mainLog.error('Failed to cleanup video services:', error)
     }
+
+    // Clean up power manager (release power blocker)
+    const { cleanup: cleanupPowerManager } = await import('./power-manager')
+    cleanupPowerManager()
 
     // If update is in progress, let electron-updater handle the quit flow
     // Force exit breaks the NSIS installer on Windows

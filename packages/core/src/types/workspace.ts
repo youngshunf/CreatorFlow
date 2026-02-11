@@ -20,7 +20,14 @@ export interface Workspace {
   appId?: string;          // Application ID this workspace was created with (e.g., 'app.creator-media')
 }
 
-export type AuthType = 'api_key' | 'oauth_token';
+/**
+ * Authentication type for AI provider
+ * - api_key: Anthropic API key
+ * - oauth_token: Claude Max OAuth (Anthropic)
+ * - codex_oauth: ChatGPT Plus OAuth via Codex app-server
+ * - codex_api_key: OpenAI API key via Codex (OpenRouter, Vercel AI Gateway compatible)
+ */
+export type AuthType = 'api_key' | 'oauth_token' | 'codex_oauth' | 'codex_api_key';
 
 /**
  * OAuth credentials from a fresh authentication flow.

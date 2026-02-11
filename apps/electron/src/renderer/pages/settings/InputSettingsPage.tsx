@@ -14,6 +14,7 @@ import { PanelHeader } from '@/components/app-shell/PanelHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { routes } from '@/lib/navigate'
+import { isMac } from '@/lib/platform'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 import { useT } from '@/context/LocaleContext'
 
@@ -116,7 +117,7 @@ export default function InputSettingsPage() {
                     onValueChange={handleSendMessageKeyChange}
                     options={[
                       { value: 'enter', label: 'Enter', description: t('使用 Shift+Enter 换行') },
-                      { value: 'cmd-enter', label: '⌘ Enter', description: t('使用 Enter 换行') },
+                      { value: 'cmd-enter', label: isMac ? '⌘ Enter' : 'Ctrl+Enter', description: t('使用 Enter 换行') },
                     ]}
                   />
                 </SettingsCard>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { isMac } from "@/lib/platform"
+import { useActionLabel } from "@/actions"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,6 +13,7 @@ import {
   StyledDropdownMenuSubContent,
 } from "@/components/ui/styled-dropdown"
 import * as Icons from "lucide-react"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@sprouty-ai/ui"
 import { CreatorFlowSymbol } from "./icons/CreatorFlowSymbol"
 import { SquarePenRounded } from "./icons/SquarePenRounded"
 import { TopBarButton } from "./ui/TopBarButton"
@@ -157,6 +159,8 @@ interface AppMenuProps {
  * On Windows/Linux, this is the only menu (native menu is hidden).
  * On macOS, this mirrors the native menu for consistency.
  */
+const modKey = isMac ? '⌘' : 'Ctrl+'
+
 export function AppMenu({
   onNewChat,
   onNewWindow,
@@ -173,7 +177,15 @@ export function AppMenu({
 }: AppMenuProps) {
   const t = useT()
   const [isDebugMode, setIsDebugMode] = useState(false)
-  const modKey = isMac ? '⌘' : 'Ctrl+'
+
+  // Get hotkey labels from centralized action registry
+  const newChatHotkey = useActionLabel('app.newChat').hotkey
+  const newWindowHotkey = useActionLabel('app.newWindow').hotkey
+  const settingsHotkey = useActionLabel('app.settings').hotkey
+  const keyboardShortcutsHotkey = useActionLabel('app.keyboardShortcuts').hotkey
+  const quitHotkey = useActionLabel('app.quit').hotkey
+  const goBackHotkey = useActionLabel('nav.goBackAlt').hotkey
+  const goForwardHotkey = useActionLabel('nav.goForwardAlt').hotkey
 
   useEffect(() => {
     window.electronAPI.isDebugMode().then(setIsDebugMode)
@@ -199,13 +211,13 @@ export function AppMenu({
           <StyledDropdownMenuItem onClick={onNewChat}>
             <SquarePenRounded className="h-3.5 w-3.5" />
             {t('新建聊天')}
-            <DropdownMenuShortcut className="pl-6">{modKey}N</DropdownMenuShortcut>
+            {newChatHotkey && <DropdownMenuShortcut className="pl-6">{newChatHotkey}</DropdownMenuShortcut>}
           </StyledDropdownMenuItem>
           {onNewWindow && (
             <StyledDropdownMenuItem onClick={onNewWindow}>
               <Icons.AppWindow className="h-3.5 w-3.5" />
               {t('新建窗口')}
-              <DropdownMenuShortcut className="pl-6">{modKey}⇧N</DropdownMenuShortcut>
+              {newWindowHotkey && <DropdownMenuShortcut className="pl-6">{newWindowHotkey}</DropdownMenuShortcut>}
             </StyledDropdownMenuItem>
           )}
 
@@ -310,7 +322,7 @@ export function AppMenu({
               <StyledDropdownMenuItem onClick={onOpenSettings}>
                 <Icons.Wrench className="h-3.5 w-3.5" />
                 {t('设置...')}
-                <DropdownMenuShortcut className="pl-6">{modKey},</DropdownMenuShortcut>
+                {settingsHotkey && <DropdownMenuShortcut className="pl-6">{settingsHotkey}</DropdownMenuShortcut>}
               </StyledDropdownMenuItem>
               <StyledDropdownMenuItem onClick={onOpenStoredUserPreferences}>
                 <Icons.User className="h-3.5 w-3.5" />
@@ -344,7 +356,7 @@ export function AppMenu({
               <StyledDropdownMenuItem onClick={onOpenKeyboardShortcuts}>
                 <Icons.Keyboard className="h-3.5 w-3.5" />
                 {t('键盘快捷键')}
-                <DropdownMenuShortcut className="pl-6">{modKey}/</DropdownMenuShortcut>
+                {keyboardShortcutsHotkey && <DropdownMenuShortcut className="pl-6">{keyboardShortcutsHotkey}</DropdownMenuShortcut>}
               </StyledDropdownMenuItem>
             </StyledDropdownMenuSubContent>
           </DropdownMenuSub>
@@ -383,7 +395,7 @@ export function AppMenu({
           <StyledDropdownMenuItem onClick={() => window.electronAPI.menuQuit()}>
             <Icons.LogOut className="h-3.5 w-3.5" />
             {t('退出智小芽')}
-            <DropdownMenuShortcut className="pl-6">{modKey}Q</DropdownMenuShortcut>
+            {quitHotkey && <DropdownMenuShortcut className="pl-6">{quitHotkey}</DropdownMenuShortcut>}
           </StyledDropdownMenuItem>
         </StyledDropdownMenuContent>
       </DropdownMenu>
@@ -392,22 +404,32 @@ export function AppMenu({
       <div className="flex-1" />
 
       {/* Back Navigation */}
-      <TopBarButton
-        onClick={onBack}
-        disabled={!canGoBack}
-        aria-label="Go back"
-      >
-        <Icons.ChevronLeft className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
-      </TopBarButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <TopBarButton
+            onClick={onBack}
+            disabled={!canGoBack}
+            aria-label="Go back"
+          >
+            <Icons.ChevronLeft className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
+          </TopBarButton>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Back {goBackHotkey}</TooltipContent>
+      </Tooltip>
 
       {/* Forward Navigation */}
-      <TopBarButton
-        onClick={onForward}
-        disabled={!canGoForward}
-        aria-label="Go forward"
-      >
-        <Icons.ChevronRight className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
-      </TopBarButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <TopBarButton
+            onClick={onForward}
+            disabled={!canGoForward}
+            aria-label="Go forward"
+          >
+            <Icons.ChevronRight className="h-[22px] w-[22px] text-foreground/70" strokeWidth={1.5} />
+          </TopBarButton>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Forward {goForwardHotkey}</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

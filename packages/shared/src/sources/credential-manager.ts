@@ -24,7 +24,7 @@ import {
 } from './types.ts';
 import type { CredentialId, StoredCredential } from '../credentials/types.ts';
 import { getCredentialManager } from '../credentials/index.ts';
-import { CraftOAuth, type OAuthCallbacks, type OAuthTokens } from '../auth/oauth.ts';
+import { CraftOAuth, getMcpBaseUrl, type OAuthCallbacks, type OAuthTokens } from '../auth/oauth.ts';
 import { type OAuthSessionContext } from '../auth/types.ts';
 import {
   startGoogleOAuth,
@@ -356,7 +356,6 @@ export class SourceCredentialManager {
     callbacks?: OAuthCallbacks,
     sessionContext?: OAuthSessionContext
   ): Promise<AuthResult> {
-    console.log('[SourceCredentialManager] authenticate called with sessionContext:', sessionContext);
     const defaultCallbacks: OAuthCallbacks = {
       onStatus: (msg) => debug(`[SourceCredentialManager] ${msg}`),
       onError: (err) => debug(`[SourceCredentialManager] Error: ${err}`),
@@ -850,6 +849,13 @@ export class SourceCredentialManager {
 /**
  * Check if a single source needs authentication.
  * Returns true if the source requires auth but isn't yet authenticated.
+ *
+ * This is the **inverse** of the auth portion of isSourceUsable().
+ * - isSourceUsable() → Is the source ready to use? (enabled AND auth OK)
+ * - sourceNeedsAuthentication() → Does the source need auth to become usable?
+ *
+ * Use this to prompt users for authentication, not for filtering sources.
+ * For filtering sources, use isSourceUsable() from storage.ts.
  *
  * This correctly handles:
  * - MCP sources with authType: "none" → never needs auth

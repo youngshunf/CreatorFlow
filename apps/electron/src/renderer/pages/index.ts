@@ -12,6 +12,7 @@ export {
   UserProfilePage,
   UserProfileEditPage,
   AppSettingsPage,
+  AiSettingsPage,
   AppearanceSettingsPage,
   InputSettingsPage,
   WorkspaceSettingsPage,

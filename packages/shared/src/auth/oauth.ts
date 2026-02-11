@@ -370,7 +370,7 @@ export class CraftOAuth {
             return;
           }
 
-          // Success! Include deeplink to return user to their chat session
+          // Success!
           res.writeHead(200, { 'Content-Type': 'text/html' });
           res.end(generateCallbackPage({
             title: 'Authorization Successful',
@@ -433,6 +433,19 @@ export class CraftOAuth {
   // Cancel the OAuth flow
   cancel(): void {
     this.stopServer();
+  }
+}
+
+/**
+ * Extract the origin (scheme + host + port) from an MCP URL.
+ * This is the base URL for OAuth discovery per RFC 8414.
+ */
+export function getMcpBaseUrl(mcpUrl: string): string {
+  try {
+    return new URL(mcpUrl).origin;
+  } catch {
+    // If URL parsing fails, return as-is and let caller handle it
+    return mcpUrl;
   }
 }
 
@@ -509,10 +522,11 @@ function isUrlSafeToFetch(urlString: string): { safe: boolean; reason?: string }
   // Block private IP ranges (basic check - covers most cases)
   // This catches: 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 169.254.x.x
   const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-  if (ipMatch && ipMatch[1] && ipMatch[2]) {
+  if (ipMatch) {
     const a = Number(ipMatch[1]);
     const b = Number(ipMatch[2]);
     if (
+      a === 0 ||                             // 0.0.0.0/8
       a === 10 ||                           // 10.0.0.0/8
       a === 127 ||                          // 127.0.0.0/8
       (a === 172 && b >= 16 && b <= 31) ||  // 172.16.0.0/12
@@ -625,11 +639,7 @@ async function fetchProtectedResourceMetadata(
       return null;
     }
 
-    const authServer = data.authorization_servers[0];
-    if (!authServer) {
-      onLog?.(`  ✗ Empty authorization server in metadata`);
-      return null;
-    }
+    const authServer = data.authorization_servers[0]!;
 
     // Validate the auth server URL too
     const authServerCheck = isUrlSafeToFetch(authServer);

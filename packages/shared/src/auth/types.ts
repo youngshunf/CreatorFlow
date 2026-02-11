@@ -70,6 +70,6 @@ export interface OAuthSessionContext {
  */
 export function buildOAuthDeeplinkUrl(ctx?: OAuthSessionContext): string | undefined {
   if (!ctx?.sessionId || !ctx?.deeplinkScheme) return undefined;
-  return `${ctx.deeplinkScheme}://allChats/chat/${ctx.sessionId}`;
+  return `${ctx.deeplinkScheme}://allSessions/session/${ctx.sessionId}`;
 }
 

@@ -28,7 +28,8 @@ export type ApiKeyStatus = 'idle' | 'validating' | 'success' | 'error'
 export interface ApiKeySubmitData {
   apiKey: string
   baseUrl?: string
-  customModel?: string
+  connectionDefaultModel?: string
+  models?: string[]
 }
 
 export interface ApiKeyInputProps {
@@ -42,9 +43,12 @@ export interface ApiKeyInputProps {
   formId?: string
   /** Disable the input (e.g. during validation) */
   disabled?: boolean
+  /** Provider type determines which presets and placeholders to show */
+  providerType?: 'anthropic' | 'openai'
 }
 
-type PresetKey = 'anthropic' | 'openrouter' | 'vercel' | 'ollama' | 'custom'
+// Preset key includes both provider defaults ('anthropic', 'openai') and third-party services
+type PresetKey = 'anthropic' | 'openai' | 'openrouter' | 'vercel' | 'ollama' | 'custom'
 
 interface Preset {
   key: PresetKey
@@ -52,7 +56,8 @@ interface Preset {
   url: string
 }
 
-const PRESETS: Preset[] = [
+// Anthropic provider presets - for Claude Code backend
+const ANTHROPIC_PRESETS: Preset[] = [
   { key: 'anthropic', label: 'Anthropic', url: 'https://api.anthropic.com' },
   { key: 'openrouter', label: 'OpenRouter', url: 'https://openrouter.ai/api' },
   { key: 'vercel', label: 'Vercel AI Gateway', url: 'https://ai-gateway.vercel.sh' },
@@ -60,9 +65,30 @@ const PRESETS: Preset[] = [
   { key: 'custom', label: 'Custom', url: '' },
 ]
 
-function getPresetForUrl(url: string): PresetKey {
-  const match = PRESETS.find(p => p.key !== 'custom' && p.url === url)
+// OpenAI provider presets - for Codex backend
+// Only direct OpenAI is supported; 3PP providers (OpenRouter, Vercel, Ollama) should be
+// configured via the Anthropic/Claude connection which routes through the Claude Agent SDK.
+const OPENAI_PRESETS: Preset[] = [
+  { key: 'openai', label: 'OpenAI', url: '' },
+]
+
+const COMPAT_ANTHROPIC_DEFAULTS = 'anthropic/claude-opus-4.6, anthropic/claude-sonnet-4.5, anthropic/claude-haiku-4.5'
+const COMPAT_OPENAI_DEFAULTS = 'openai/gpt-5.2-codex, openai/gpt-5.1-codex-mini'
+
+function getPresetsForProvider(providerType: 'anthropic' | 'openai'): Preset[] {
+  return providerType === 'openai' ? OPENAI_PRESETS : ANTHROPIC_PRESETS
+}
+
+function getPresetForUrl(url: string, presets: Preset[]): PresetKey {
+  const match = presets.find(p => p.key !== 'custom' && p.url === url)
   return match?.key ?? 'custom'
+}
+
+function parseModelList(value: string): string[] {
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
 }
 
 export function ApiKeyInput({
@@ -71,15 +97,27 @@ export function ApiKeyInput({
   onSubmit,
   formId = "api-key-form",
   disabled,
+  providerType = 'anthropic',
 }: ApiKeyInputProps) {
   const t = useT()
+  // Get presets based on provider type
+  const presets = getPresetsForProvider(providerType)
+  const defaultPreset = presets[0]
+
   const [apiKey, setApiKey] = useState('')
   const [showValue, setShowValue] = useState(false)
-  const [baseUrl, setBaseUrl] = useState(PRESETS[0].url)
-  const [activePreset, setActivePreset] = useState<PresetKey>('anthropic')
-  const [customModel, setCustomModel] = useState('')
+  const [baseUrl, setBaseUrl] = useState(defaultPreset.url)
+  const [activePreset, setActivePreset] = useState<PresetKey>(defaultPreset.key)
+  const [connectionDefaultModel, setConnectionDefaultModel] = useState('')
+  const [modelError, setModelError] = useState<string | null>(null)
 
   const isDisabled = disabled || status === 'validating'
+
+  // Determine if we're using the default provider preset (hide base URL field)
+  const isDefaultProviderPreset = activePreset === 'anthropic' || activePreset === 'openai'
+
+  // Provider-specific placeholders
+  const apiKeyPlaceholder = providerType === 'openai' ? 'sk-...' : 'sk-ant-...'
 
   const handlePresetSelect = (preset: Preset) => {
     setActivePreset(preset.key)
@@ -88,18 +126,32 @@ export function ApiKeyInput({
     } else {
       setBaseUrl(preset.url)
     }
+    setModelError(null)
     // Pre-fill recommended model for Ollama; clear for all others
-    // (Anthropic hides the field entirely, others default to Claude model IDs when empty)
+    // (Default provider presets hide the field entirely, others default to provider model IDs when empty)
     if (preset.key === 'ollama') {
-      setCustomModel('qwen3-coder')
+      setConnectionDefaultModel('qwen3-coder')
+    } else if (preset.key === 'openrouter' || preset.key === 'vercel') {
+      setConnectionDefaultModel(providerType === 'openai' ? COMPAT_OPENAI_DEFAULTS : COMPAT_ANTHROPIC_DEFAULTS)
+    } else if (preset.key === 'custom') {
+      setConnectionDefaultModel(providerType === 'openai' ? COMPAT_OPENAI_DEFAULTS : COMPAT_ANTHROPIC_DEFAULTS)
     } else {
-      setCustomModel('')
+      setConnectionDefaultModel('')
     }
   }
 
   const handleBaseUrlChange = (value: string) => {
     setBaseUrl(value)
-    setActivePreset(getPresetForUrl(value))
+    const presetKey = getPresetForUrl(value, presets)
+    setActivePreset(presetKey)
+    setModelError(null)
+    if (!connectionDefaultModel.trim()) {
+      if (presetKey === 'ollama') {
+        setConnectionDefaultModel('qwen3-coder')
+      } else if (presetKey === 'openrouter' || presetKey === 'vercel' || presetKey === 'custom') {
+        setConnectionDefaultModel(providerType === 'openai' ? COMPAT_OPENAI_DEFAULTS : COMPAT_ANTHROPIC_DEFAULTS)
+      }
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -107,11 +159,19 @@ export function ApiKeyInput({
     // Always call onSubmit — the hook decides whether an empty key is valid
     // (custom endpoints like Ollama don't require API keys)
     const effectiveBaseUrl = baseUrl.trim()
-    const isDefault = effectiveBaseUrl === PRESETS[0].url || !effectiveBaseUrl
+    const parsedModels = parseModelList(connectionDefaultModel)
+    const requiresModel = !isDefaultProviderPreset && !!effectiveBaseUrl
+    if (requiresModel && parsedModels.length === 0) {
+      setModelError('Default model is required for compatible endpoints.')
+      return
+    }
+    // For default provider presets, don't pass a baseUrl (use provider's default)
+    const isDefault = isDefaultProviderPreset || !effectiveBaseUrl
     onSubmit({
       apiKey: apiKey.trim(),
       baseUrl: isDefault ? undefined : effectiveBaseUrl,
-      customModel: customModel.trim() || undefined,
+      connectionDefaultModel: parsedModels[0],
+      models: parsedModels.length > 0 ? parsedModels : undefined,
     })
   }
 
@@ -129,7 +189,7 @@ export function ApiKeyInput({
             type={showValue ? 'text' : 'password'}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
+            placeholder={apiKeyPlaceholder}
             className={cn(
               "pr-10 border-0 bg-transparent shadow-none",
               status === 'error' && "focus-visible:ring-destructive"
@@ -152,7 +212,8 @@ export function ApiKeyInput({
         </div>
       </div>
 
-      {/* Base URL with Preset Dropdown */}
+      {/* Endpoint Preset Selector - hidden when only one preset (e.g. Codex/OpenAI direct) */}
+      {presets.length > 1 && (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="base-url">{t('基础 URL')}</Label>
@@ -161,11 +222,11 @@ export function ApiKeyInput({
               disabled={isDisabled}
               className="flex h-6 items-center gap-1 rounded-[6px] bg-background shadow-minimal pl-2.5 pr-2 text-[12px] font-medium text-foreground/50 hover:bg-foreground/5 hover:text-foreground focus:outline-none"
             >
-              {PRESETS.find(p => p.key === activePreset)?.label}
+              {presets.find(p => p.key === activePreset)?.label}
               <ChevronDown className="size-2.5 opacity-50" />
             </DropdownMenuTrigger>
             <StyledDropdownMenuContent align="end" className="z-floating-menu">
-              {PRESETS.map((preset) => (
+              {presets.map((preset) => (
                 <StyledDropdownMenuItem
                   key={preset.key}
                   onClick={() => handlePresetSelect(preset)}
@@ -178,46 +239,63 @@ export function ApiKeyInput({
             </StyledDropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className={cn(
-          "rounded-md shadow-minimal transition-colors",
-          "bg-foreground-2 focus-within:bg-background"
-        )}>
-          <Input
-            id="base-url"
-            type="text"
-            value={baseUrl}
-            onChange={(e) => handleBaseUrlChange(e.target.value)}
-            placeholder="https://your-api-endpoint.com"
-            className="border-0 bg-transparent shadow-none"
-            disabled={isDisabled}
-          />
-        </div>
-      </div>
-
-      {/* Custom Model (optional) — hidden for Anthropic since it uses its own model routing */}
-      {activePreset !== 'anthropic' && (
-        <div className="space-y-2">
-          <Label htmlFor="custom-model" className="text-muted-foreground font-normal">
-            {t('模型')} <span className="text-foreground/30">· {t('可选')}</span>
-          </Label>
+        {/* Base URL input - hidden for default provider presets (Anthropic/OpenAI) */}
+        {!isDefaultProviderPreset && (
           <div className={cn(
             "rounded-md shadow-minimal transition-colors",
             "bg-foreground-2 focus-within:bg-background"
           )}>
             <Input
-              id="custom-model"
+              id="base-url"
               type="text"
-              value={customModel}
-              onChange={(e) => setCustomModel(e.target.value)}
-              placeholder="e.g. openai/gpt-5, qwen3-coder"
+              value={baseUrl}
+              onChange={(e) => handleBaseUrlChange(e.target.value)}
+              placeholder="https://your-api-endpoint.com"
               className="border-0 bg-transparent shadow-none"
               disabled={isDisabled}
             />
           </div>
+        )}
+      </div>
+      )}
+
+      {/* Default Model (optional) — hidden for default provider presets since they use their own model routing */}
+      {!isDefaultProviderPreset && (
+        <div className="space-y-2">
+          <Label htmlFor="connection-default-model" className="text-muted-foreground font-normal">
+            {t('模型')}{' '}
+            <span className="text-foreground/30">
+              · {(!isDefaultProviderPreset && baseUrl.trim()) ? t('必填') : t('可选')}
+            </span>
+          </Label>
+          <div className={cn(
+            "rounded-md shadow-minimal transition-colors",
+            "bg-foreground-2 focus-within:bg-background",
+            modelError && "ring-1 ring-destructive/40"
+          )}>
+            <Input
+              id="connection-default-model"
+              type="text"
+              value={connectionDefaultModel}
+              onChange={(e) => {
+                setConnectionDefaultModel(e.target.value)
+                setModelError(null)
+              }}
+              placeholder={providerType === 'openai' ? "e.g. openai/gpt-5.2-codex, openai/gpt-5.1-codex-mini" : "e.g. anthropic/claude-opus-4.6, anthropic/claude-haiku-4.5"}
+              className="border-0 bg-transparent shadow-none"
+              disabled={isDisabled}
+            />
+          </div>
+          {modelError && (
+            <p className="text-xs text-destructive">{modelError}</p>
+          )}
+          <p className="text-xs text-foreground/30">
+            {t('逗号分隔列表。第一个模型为默认模型，最后一个用于摘要。')}
+          </p>
           {/* Contextual help links for providers that need model format guidance */}
           {activePreset === 'openrouter' && (
             <p className="text-xs text-foreground/30">
-              {t('Claude 模型请留空。仅在使用非 Claude 模型时设置。')}
+              {t('OpenRouter 兼容端点必填。')}
               <br />
               {t('格式：')}<code className="text-foreground/40">provider/model-name</code>{' '}
               <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-foreground/50 underline hover:text-foreground/70">
@@ -227,7 +305,7 @@ export function ApiKeyInput({
           )}
           {activePreset === 'vercel' && (
             <p className="text-xs text-foreground/30">
-              {t('Claude 模型请留空。仅在使用非 Claude 模型时设置。')}
+              {t('Vercel AI Gateway 端点必填。')}
               <br />
               {t('格式：')}<code className="text-foreground/40">provider/model-name</code>{' '}
               <a href="https://vercel.com/docs/ai-gateway" target="_blank" rel="noopener noreferrer" className="text-foreground/50 underline hover:text-foreground/70">
@@ -242,7 +320,7 @@ export function ApiKeyInput({
           )}
           {(activePreset === 'custom' || !activePreset) && (
             <p className="text-xs text-foreground/30">
-              {t('留空时默认使用 Anthropic 模型名称 (Opus, Sonnet, Haiku)')}
+              {t('自定义端点必填。请使用提供商特定的模型 ID。')}
             </p>
           )}
         </div>

@@ -7,8 +7,11 @@ import os from 'os'
  * Debug mode is enabled when running from source (not packaged) or with --debug flag.
  * - true: `bun run electron:start` or `electron .` or packaged app with `--debug`
  * - false: bundled .app/.exe release without --debug flag
+ *
+ * Note: We guard against app being undefined for build verification (node --check)
+ * which runs outside of Electron context.
  */
-export const isDebugMode = !app.isPackaged || process.argv.includes('--debug')
+export const isDebugMode = !app?.isPackaged || process.argv.includes('--debug')
 
 // Configure custom log path to use "智小芽" as the log directory name
 // This overrides the default behavior which uses package.json name (@sprouty-ai/electron)
