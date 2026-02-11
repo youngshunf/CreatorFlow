@@ -1,6 +1,6 @@
 import { app, ipcMain, nativeTheme, nativeImage, dialog, shell, BrowserWindow } from 'electron'
 import { readFile, readdir, stat, realpath, mkdir, writeFile, unlink, rm } from 'fs/promises'
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs'
 import { normalize, isAbsolute, join, basename, dirname, resolve, relative } from 'path'
 import { homedir, tmpdir } from 'os'
 import { randomUUID } from 'crypto'
@@ -101,17 +101,17 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   })
 
   // Create a new workspace at a folder path (Obsidian-style: folder IS the workspace)
-  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (_event, folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') => {
+  ipcMain.handle(IPC_CHANNELS.CREATE_WORKSPACE, async (event, folderPath: string, name: string, appId?: string, appSource?: 'bundled' | 'marketplace', installMode?: 'force' | 'merge') => {
     const rootPath = folderPath
     let appInstallError: string | undefined
     let existingApp: { name: string; version: string } | undefined
-    
+
     // Initialize workspace from app manifest if appId provided
     if (appId && appId !== 'app.general') {
       if (appSource === 'marketplace') {
         // Install marketplace app: download app package, install skills, copy to workspace
         const { installApp, checkInstalledApp } = await import('@sprouty-ai/shared/marketplace')
-        
+
         // Check if app already exists
         ipcLog.info(`[checkInstalledApp] Checking path: ${rootPath}`)
         const existing = checkInstalledApp(rootPath)
@@ -135,6 +135,10 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
                 merge: installMode === 'merge',
                 onProgress: (progress) => {
                   ipcLog.info(`[${appId}] ${progress.stage}: ${progress.message} (${progress.percent}%)`)
+                  // Forward progress to renderer for real-time UI updates
+                  if (!event.sender.isDestroyed()) {
+                    event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, progress)
+                  }
                 }
               }
             )
@@ -149,6 +153,66 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
                 if (failed.length > 0) {
                   ipcLog.warn(`Failed to install skills: ${failed.join(', ')}`)
                 }
+              }
+
+              // 补装：检查 manifest 中声明的技能是否全部安装
+              try {
+                const manifestPath = join(rootPath, '.sprouty-ai', 'app-manifest.json')
+                if (existsSync(manifestPath)) {
+                  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+                  const declaredSkills: string[] = manifest.capabilities?.skills || []
+
+                  if (declaredSkills.length > 0) {
+                    // 获取已安装的技能列表
+                    const installedSkillsDir = join(rootPath, '.sprouty-ai', 'skills')
+                    const installedSkills = existsSync(installedSkillsDir)
+                      ? readdirSync(installedSkillsDir).filter(f =>
+                          statSync(join(installedSkillsDir, f)).isDirectory()
+                        )
+                      : []
+
+                    // 找出缺失的技能（技能引用格式可能是 "skill-slug@version"）
+                    const missingSkills = declaredSkills.filter(s => !installedSkills.includes(s.split('@')[0]))
+
+                    if (missingSkills.length > 0) {
+                      ipcLog.info(`[${appId}] ${missingSkills.length} skills missing from manifest, supplementing from cloud: ${missingSkills.join(', ')}`)
+
+                      const { installSkillsFromCloud } = await import('@sprouty-ai/shared/apps')
+                      let supplementedCount = installedSkills.length
+
+                      for (let i = 0; i < missingSkills.length; i++) {
+                        const skillRef = missingSkills[i]
+                        const skillSlug = skillRef.split('@')[0]
+
+                        if (!event.sender.isDestroyed()) {
+                          event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, {
+                            stage: 'installing-skills',
+                            percent: 70 + Math.round((i / missingSkills.length) * 25),
+                            message: `正在补装技能 ${skillSlug}...`,
+                            currentSkill: skillSlug,
+                            totalSkills: declaredSkills.length,
+                            installedSkills: supplementedCount,
+                          })
+                        }
+
+                        const singleResult = await installSkillsFromCloud(rootPath, [skillRef])
+                        if (singleResult.installed.length > 0) {
+                          supplementedCount += singleResult.installed.length
+                          ipcLog.info(`[${appId}] Supplemented skill: ${singleResult.installed.join(', ')}`)
+                        }
+                        if (singleResult.failed.length > 0) {
+                          ipcLog.warn(`[${appId}] Failed to supplement skill: ${singleResult.failed.join(', ')}`)
+                        }
+                      }
+
+                      ipcLog.info(`[${appId}] Supplement complete: ${supplementedCount - installedSkills.length} installed out of ${missingSkills.length} missing`)
+                    } else {
+                      ipcLog.info(`[${appId}] All ${declaredSkills.length} declared skills are installed`)
+                    }
+                  }
+                }
+              } catch (supplementError) {
+                ipcLog.warn(`[${appId}] Failed to supplement missing skills:`, supplementError)
               }
             } else {
               appInstallError = result.error
@@ -165,6 +229,15 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         // Skip bundled skills and download from cloud instead
         const { initializeWorkspaceFromApp, installSkillsFromCloud, loadAppById } = await import('@sprouty-ai/shared/apps')
         try {
+          // 发送初始化进度
+          if (!event.sender.isDestroyed()) {
+            event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, {
+              stage: 'installing-app',
+              percent: 10,
+              message: '正在初始化工作区...',
+            })
+          }
+
           const result = initializeWorkspaceFromApp({
             name,
             rootPath,
@@ -179,18 +252,62 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
           // Download skills from cloud
           const app = loadAppById(appId)
-          if (app?.manifest.capabilities?.skills && app.manifest.capabilities.skills.length > 0) {
+          const skills = app?.manifest.capabilities?.skills
+          if (skills && skills.length > 0) {
             ipcLog.info(`Downloading skills from cloud for app "${appId}"...`)
-            const skillResult = await installSkillsFromCloud(
-              rootPath,
-              app.manifest.capabilities.skills,
-              app.path
-            )
-            if (skillResult.installed.length > 0) {
-              ipcLog.info(`Installed skills from cloud: ${skillResult.installed.join(', ')}`)
+
+            if (!event.sender.isDestroyed()) {
+              event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, {
+                stage: 'installing-skills',
+                percent: 20,
+                message: `正在安装技能 (0/${skills.length})...`,
+                totalSkills: skills.length,
+                installedSkills: 0,
+              })
             }
-            if (skillResult.failed.length > 0) {
-              ipcLog.warn(`Failed to install skills: ${skillResult.failed.join(', ')}`)
+
+            // 逐个安装技能并发送进度
+            const installed: string[] = []
+            const failed: string[] = []
+            for (let i = 0; i < skills.length; i++) {
+              const skillRef = skills[i]
+              const skillSlug = skillRef.split('@')[0]
+
+              if (!event.sender.isDestroyed()) {
+                event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, {
+                  stage: 'installing-skills',
+                  percent: 20 + Math.round((i / skills.length) * 70),
+                  message: `正在安装技能 ${skillSlug}...`,
+                  currentSkill: skillSlug,
+                  totalSkills: skills.length,
+                  installedSkills: installed.length,
+                })
+              }
+
+              const singleResult = await installSkillsFromCloud(rootPath, [skillRef], app.path)
+              if (singleResult.installed.length > 0) {
+                installed.push(...singleResult.installed)
+              }
+              if (singleResult.failed.length > 0) {
+                failed.push(...singleResult.failed)
+              }
+            }
+
+            if (installed.length > 0) {
+              ipcLog.info(`Installed skills from cloud: ${installed.join(', ')}`)
+            }
+            if (failed.length > 0) {
+              ipcLog.warn(`Failed to install skills: ${failed.join(', ')}`)
+            }
+
+            if (!event.sender.isDestroyed()) {
+              event.sender.send(IPC_CHANNELS.MARKETPLACE_INSTALL_PROGRESS, {
+                stage: 'finalizing',
+                percent: 95,
+                message: '正在完成...',
+                totalSkills: skills.length,
+                installedSkills: installed.length,
+              })
             }
           }
         } catch (error) {
@@ -205,6 +322,64 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     // Make it active
     setActiveWorkspace(workspace.id)
     ipcLog.info(`Created workspace "${name}" at ${rootPath}`)
+
+    // Always sync workspace name to folder config (single source of truth for getWorkspaces)
+    {
+      const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@sprouty-ai/shared/workspaces')
+      const wsConfig = loadWorkspaceConfig(rootPath)
+      if (wsConfig && wsConfig.name !== name) {
+        wsConfig.name = name
+        saveWorkspaceConfig(rootPath, wsConfig)
+        ipcLog.info(`Updated workspace folder config name to "${name}"`)
+      }
+    }
+
+    // Apply app manifest's defaultSettings to workspace config
+    if (appId && appId !== 'app.general') {
+      try {
+        const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@sprouty-ai/shared/workspaces')
+
+        const manifestPath = join(rootPath, '.sprouty-ai', 'app-manifest.json')
+        if (existsSync(manifestPath)) {
+          const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+          const wsConfig = loadWorkspaceConfig(rootPath)
+          if (wsConfig && manifest.workspace) {
+            const defaultSettings = manifest.workspace.defaultSettings
+            if (defaultSettings) {
+              if (!wsConfig.defaults) {
+                wsConfig.defaults = {}
+              }
+              // Apply manifest defaultSettings to workspace config defaults
+              if (defaultSettings.permissionMode) {
+                wsConfig.defaults.permissionMode = defaultSettings.permissionMode
+              }
+              if (defaultSettings.cyclablePermissionModes) {
+                wsConfig.defaults.cyclablePermissionModes = defaultSettings.cyclablePermissionModes
+              }
+              if (defaultSettings.thinkingLevel) {
+                wsConfig.defaults.thinkingLevel = defaultSettings.thinkingLevel
+              }
+              if (defaultSettings.defaultModel) {
+                wsConfig.defaults.model = defaultSettings.defaultModel
+              }
+            }
+            // Apply localMcpServers from manifest
+            if (manifest.workspace.localMcpServers) {
+              wsConfig.localMcpServers = manifest.workspace.localMcpServers
+            }
+            // Bind appId to workspace config
+            wsConfig.appId = appId
+            wsConfig.installedPluginApps = []
+            wsConfig.appSettings = {}
+
+            saveWorkspaceConfig(rootPath, wsConfig)
+            ipcLog.info(`Applied app manifest settings to workspace config for "${appId}"`)
+          }
+        }
+      } catch (error) {
+        ipcLog.warn(`Failed to apply app manifest settings:`, error)
+      }
+    }
 
     // 自媒体创作 APP: 初始化 SQLite 数据库
     if (appId === 'app.creator-media') {
@@ -226,6 +401,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     const workspacePath = join(defaultWorkspacesDir, slug)
     const exists = existsSync(workspacePath)
     return { exists, path: workspacePath }
+  })
+
+  // 检查工作区名称是否已存在（按名称匹配，不区分大小写）
+  ipcMain.handle(IPC_CHANNELS.CHECK_WORKSPACE_NAME, async (_event, name: string) => {
+    const workspaces = sessionManager.getWorkspaces()
+    const exists = workspaces.some(w => w.name.toLowerCase() === name.toLowerCase().trim())
+    return { exists }
   })
 
   // Delete a workspace (backup or permanently delete .sprouty-ai data)
@@ -2739,6 +2921,21 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // List bundled apps - returns empty array (bundled apps have been removed)
   ipcMain.handle(IPC_CHANNELS.APPS_LIST_BUNDLED, async () => {
     return []
+  })
+
+  // 获取 APP 视图配置（从工作区的 app-manifest.json 的 views 字段）
+  ipcMain.handle(IPC_CHANNELS.APP_GET_VIEWS, async (_event, workspaceId: string) => {
+    try {
+      const workspace = getWorkspaceByNameOrId(workspaceId)
+      if (!workspace) return null
+      const rootPath = workspace.rootPath.startsWith('~') ? workspace.rootPath.replace('~', homedir()) : workspace.rootPath
+      const manifestPath = join(rootPath, '.sprouty-ai', 'app-manifest.json')
+      if (!existsSync(manifestPath)) return null
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+      return manifest?.views ?? null
+    } catch {
+      return null
+    }
   })
 
   // ============================================================

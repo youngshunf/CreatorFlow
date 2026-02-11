@@ -53,6 +53,13 @@ export function WorkspaceCreationScreen({
   )
   const [isCreating, setIsCreating] = useState(false)
   const [creatingStage, setCreatingStage] = useState<string>('')
+  const [installProgress, setInstallProgress] = useState<{
+    percent: number
+    currentSkill?: string
+    totalSkills?: number
+    installedSkills?: number
+    message?: string
+  } | null>(null)
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })
   
   // State for existing app confirmation dialog
@@ -88,19 +95,34 @@ export function WorkspaceCreationScreen({
   const handleCreateWorkspace = useCallback(async (folderPath: string, name: string, installMode?: 'force' | 'merge') => {
     setIsCreating(true)
     setCreatingStage(t('正在创建工作区...'))
+
+    // Listen for real progress events from main process
+    const stageLabels: Record<string, string> = {
+      'downloading': t('正在下载应用...'),
+      'extracting': t('正在解压应用...'),
+      'installing-skills': t('正在安装技能...'),
+      'installing-app': t('正在安装应用...'),
+      'finalizing': t('正在初始化工作区...'),
+      'complete': t('完成！'),
+      'error': t('安装出错'),
+    }
+    const unsubscribe = window.electronAPI.onMarketplaceInstallProgress((progress) => {
+      const label = stageLabels[progress.stage] || progress.message
+      setCreatingStage(label)
+      setInstallProgress({
+        percent: progress.percent ?? 0,
+        currentSkill: progress.currentSkill,
+        totalSkills: progress.totalSkills,
+        installedSkills: progress.installedSkills,
+        message: progress.message,
+      })
+    })
+
     try {
       // For marketplace apps, extract the actual app ID
       const appId = selectedAppSource === 'marketplace'
         ? selectedAppId.replace('marketplace:', '')
         : selectedAppId
-
-      // Show different stages for marketplace apps
-      if (selectedAppSource === 'marketplace') {
-        setCreatingStage(t('正在下载应用...'))
-        // Simulate stage updates (since we don't have real progress events yet)
-        setTimeout(() => setCreatingStage(t('正在安装技能...')), 2000)
-        setTimeout(() => setCreatingStage(t('正在初始化工作区...')), 4000)
-      }
 
       // Pass the selected app ID and source to workspace creation
       const result = await window.electronAPI.createWorkspace(
@@ -128,8 +150,10 @@ export function WorkspaceCreationScreen({
         onWorkspaceCreated(result.workspace)
       }
     } finally {
+      unsubscribe()
       setIsCreating(false)
       setCreatingStage('')
+      setInstallProgress(null)
     }
   }, [onWorkspaceCreated, selectedAppId, selectedAppSource, t])
 
@@ -172,7 +196,7 @@ export function WorkspaceCreationScreen({
             onBack={() => setStep('choose-app')}
             onCreate={handleCreateWorkspace}
             isCreating={isCreating}
-            defaultName={selectedAppName}
+            appName={selectedAppName}
           />
         )
 
@@ -204,7 +228,7 @@ export function WorkspaceCreationScreen({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={overlayTransitionIn}
-        className="flex flex-col flex-1"
+        className="relative flex flex-col flex-1"
       >
         {/* Dithering shader background */}
         <motion.div
@@ -267,7 +291,7 @@ export function WorkspaceCreationScreen({
 
         {/* Existing App Confirmation Dialog */}
         {showExistingAppDialog && existingAppInfo && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-background/80 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -324,7 +348,7 @@ export function WorkspaceCreationScreen({
 
         {/* Creating Progress Overlay */}
         {isCreating && creatingStage && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-background/80 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -332,11 +356,44 @@ export function WorkspaceCreationScreen({
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="h-12 w-12 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
-                <div className="text-center">
+                <div className="text-center w-full">
                   <h3 className="text-lg font-semibold">{creatingStage}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t('请稍候，这可能需要几分钟...')}
-                  </p>
+
+                  {/* 进度条 */}
+                  {installProgress && installProgress.percent > 0 && (
+                    <div className="mt-4 w-full">
+                      <div className="h-2 w-full rounded-full bg-accent/10 overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-accent"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(installProgress.percent, 100)}%` }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          {installProgress.currentSkill
+                            ? `${t('正在安装')}: ${installProgress.currentSkill}`
+                            : installProgress.message || ''
+                          }
+                        </span>
+                        <span>{Math.round(installProgress.percent)}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 技能安装计数 */}
+                  {installProgress && installProgress.totalSkills != null && installProgress.totalSkills > 0 && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {t('技能')}: {installProgress.installedSkills ?? 0} / {installProgress.totalSkills}
+                    </p>
+                  )}
+
+                  {!installProgress && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {t('请稍候，这可能需要几分钟...')}
+                    </p>
+                  )}
                 </div>
               </div>
             </motion.div>
