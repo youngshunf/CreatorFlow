@@ -9,6 +9,10 @@
  * - Adds _intent and _displayName metadata to MCP tool schemas
  */
 
+// Re-export from interceptor-common for backward compatibility
+export { toolMetadataStore } from './interceptor-common.ts';
+export type { ToolMetadata } from './interceptor-common.ts';
+
 import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';

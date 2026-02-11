@@ -14,7 +14,7 @@ import type { LoadedSkill, LoadedSource } from '../../shared/types'
 import { getSourceIconSync, getSkillIconSync } from './icon-cache'
 
 // Import and re-export parsing functions from shared (pure string operations, no renderer deps)
-import { parseMentions, stripAllMentions, type ParsedMentions } from '@craft-agent/shared/mentions'
+import { parseMentions, stripAllMentions, type ParsedMentions } from '@sprouty-ai/shared/mentions'
 export { parseMentions, stripAllMentions, type ParsedMentions }
 
 // ============================================================================

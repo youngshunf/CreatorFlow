@@ -283,6 +283,7 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
   let detailsStartIndex: number
 
   switch (first) {
+    case 'allChats':
     case 'allSessions':
       sessionFilter = { kind: 'allSessions' }
       detailsStartIndex = 1
@@ -320,7 +321,7 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
   if (segments.length > detailsStartIndex) {
     const detailsType = segments[detailsStartIndex]
     const detailsId = segments[detailsStartIndex + 1]
-    if (detailsType === 'session' && detailsId) {
+    if ((detailsType === 'session' || detailsType === 'chat') && detailsId) {
       return {
         navigator: 'sessions',
         sessionFilter,
@@ -383,11 +384,11 @@ export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
   // Sessions navigator
   let base: string
   const filter = parsed.sessionFilter
-  if (!filter) return 'allSessions'
+  if (!filter) return 'allChats'
 
   switch (filter.kind) {
     case 'allSessions':
-      base = 'allSessions'
+      base = 'allChats'
       break
     case 'flagged':
       base = 'flagged'
@@ -405,11 +406,12 @@ export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
       base = `view/${encodeURIComponent(filter.viewId)}`
       break
     default:
-      base = 'allSessions'
+      base = 'allChats'
   }
 
   if (!parsed.details) return base
-  return `${base}/session/${parsed.details.id}`
+  const detailSegment = filter.kind === 'allSessions' ? 'chat' : 'session'
+  return `${base}/${detailSegment}/${parsed.details.id}`
 }
 
 // =============================================================================
@@ -916,7 +918,7 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
   let base: string
   switch (filter.kind) {
     case 'allSessions':
-      base = 'allSessions'
+      base = 'allChats'
       break
     case 'flagged':
       base = 'flagged'
@@ -936,7 +938,8 @@ export function buildRouteFromNavigationState(state: NavigationState): string {
   }
 
   if (state.details) {
-    return `${base}/session/${state.details.sessionId}`
+    const detailSegment = filter.kind === 'allSessions' ? 'chat' : 'session'
+    return `${base}/${detailSegment}/${state.details.sessionId}`
   }
   return base
 }

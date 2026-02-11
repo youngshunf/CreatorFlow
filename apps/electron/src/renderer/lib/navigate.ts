@@ -9,7 +9,7 @@
  *
  *   navigate(routes.tab.settings())
  *   navigate(routes.action.newChat({ agentId: 'claude' }))
- *   navigate(routes.view.allSessions())
+ *   navigate(routes.view.allChats())
  */
 
 import { routes, type Route } from '../../shared/routes'

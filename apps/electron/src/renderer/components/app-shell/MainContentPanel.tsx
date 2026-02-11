@@ -28,7 +28,6 @@ import { useT } from '@/context/LocaleContext'
 import {
   useNavigationState,
   useNavigation,
-  isChatsNavigation,
   isSessionsNavigation,
   isSourcesNavigation,
   isSettingsNavigation,
@@ -381,7 +380,7 @@ export function MainContentPanel({
   }
 
   // Chats navigator - show chat, multi-select panel, or empty state
-  if (isChatsNavigation(navState) || isSessionsNavigation(navState)) {
+  if (isSessionsNavigation(navState)) {
     // Multi-select mode: show batch actions panel
     if (isMultiSelectActive) {
       return wrapWithStoplight(

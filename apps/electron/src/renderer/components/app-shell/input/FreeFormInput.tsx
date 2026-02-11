@@ -53,9 +53,8 @@ import { cn } from '@/lib/utils'
 import { isMac, PATH_SEP, getPathBasename } from '@/lib/platform'
 import { applySmartTypography } from '@/lib/smart-typography'
 import { AttachmentPreview } from '../AttachmentPreview'
-import { MODELS as FALLBACK_MODELS, getModelShortName, getModelDisplayName, getModelContextWindow, isClaudeModel, isCodexModel, isCopilotModel } from '@config/models'
+import { ANTHROPIC_MODELS, getModelShortName, getModelDisplayName, getModelContextWindow, isClaudeModel, isCodexModel, isCopilotModel } from '@config/models'
 import { resolveEffectiveConnectionSlug, isCompatProvider } from '@config/llm-connections'
-import { useCloudModels } from '@/hooks/useCloudModels'
 import { useOptionalAppShellContext, useActiveWorkspace } from '@/context/AppShellContext'
 import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
@@ -363,10 +362,6 @@ export function FreeFormInput({
   // Access todoStates and onTodoStateChange from context for the # menu state picker
   const todoStates = appShellCtx?.todoStates ?? []
   const onTodoStateChange = appShellCtx?.onTodoStateChange
-  
-  // Get available models from cloud API (falls back to hardcoded MODELS if API fails)
-  const { models: cloudModels } = useCloudModels()
-  const availableModels = cloudModels.length > 0 ? cloudModels : FALLBACK_MODELS
 
   // Get locale-aware placeholders
   const defaultPlaceholders = t('你想做什么？') !== '你想做什么？'

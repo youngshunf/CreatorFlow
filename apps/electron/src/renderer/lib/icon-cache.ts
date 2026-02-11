@@ -318,7 +318,6 @@ export async function loadSkillIcon(
     skillIconCache.set(cacheKey, emojiMarker)
     return emojiMarker
   }
-  }
 
   // Priority 2: URL in metadata - return URL directly
   if (iconValue && (iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {

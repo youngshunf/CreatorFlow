@@ -12,4 +12,4 @@ export * from './microsoft-oauth.ts';
 export * from './github-oauth.ts';
 export * from './oauth.ts';
 export * from './pkce.ts';
-export { getAuthState, getSetupNeeds, type TokenResult, _resetRefreshMutex } from './state.ts';
+export * from './state.ts';

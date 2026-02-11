@@ -33,7 +33,7 @@ import type {
   AuthStatusChangeNotification,
   LoginChatGptCompleteNotification,
   SessionConfiguredNotification,
-} from '@craft-agent/codex-types';
+} from '@sprouty-ai/codex-types';
 
 import type {
   ThreadStartParams,
@@ -71,7 +71,7 @@ import type {
   TerminalInteractionNotification,
   ConfigWarningNotification,
   WindowsWorldWritableWarningNotification,
-} from '@craft-agent/codex-types/v2';
+} from '@sprouty-ai/codex-types/v2';
 
 // ============================================================
 // Types

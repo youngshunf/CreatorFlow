@@ -11,7 +11,7 @@
  * Usage:
  *   import { routes } from '@/shared/routes'
  *   navigate(routes.action.newSession())
- *   navigate(routes.view.allSessions())
+ *   navigate(routes.view.allChats())
  *   navigate(routes.view.settings('shortcuts'))
  */
 

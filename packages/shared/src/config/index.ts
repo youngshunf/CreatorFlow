@@ -1,4 +1,5 @@
 export * from './environments.ts';
+export * from './llm-connections.ts';
 export * from './models.ts';
 export * from './preferences.ts';
 export * from './storage.ts';

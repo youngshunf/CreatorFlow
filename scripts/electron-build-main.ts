@@ -295,6 +295,8 @@ async function main(): Promise<void> {
       // Remotion's internal dependencies that use require.resolve()
       "--external:esbuild",
       "--external:source-map",
+      "--external:playwright-core",
+      "--external:chromium-bidi",
       ...buildDefines,
     ],
     cwd: ROOT_DIR,

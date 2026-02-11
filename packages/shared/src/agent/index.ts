@@ -106,3 +106,6 @@ export {
 
 // Export LLM tool - secondary Claude calls for subtasks
 export { createLLMTool, type LLMToolOptions } from './llm-tool.ts';
+
+// Export PowerShell validator root setter (for Electron startup on Windows)
+export { setPowerShellValidatorRoot } from './powershell-validator.ts';

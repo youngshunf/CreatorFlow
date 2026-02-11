@@ -150,7 +150,6 @@ export default function AppSettingsPage() {
     onConfigSaved: refreshCustomModel,
     onComplete: () => {
       closeApiSetup()
-      loadConnectionInfo()
       apiSetupOnboarding.reset()
     },
     onDismiss: () => {
@@ -162,9 +161,8 @@ export default function AppSettingsPage() {
   // Called when user completes the wizard (clicks Finish on completion step)
   const handleApiSetupFinish = useCallback(() => {
     closeApiSetup()
-    loadConnectionInfo()
     apiSetupOnboarding.reset()
-  }, [closeApiSetup, loadConnectionInfo, apiSetupOnboarding])
+  }, [closeApiSetup, apiSetupOnboarding])
 
 
   const handleNotificationsEnabledChange = useCallback(async (enabled: boolean) => {
@@ -380,16 +378,7 @@ export default function AppSettingsPage() {
                       {t('重启并更新到')} v{updateChecker.updateInfo.latestVersion}
                     </Button>
                   </SettingsRow>
-                  {updateChecker.isReadyToInstall && (
-                    <SettingsRow label="Install update">
-                      <Button
-                        size="sm"
-                        onClick={updateChecker.installUpdate}
-                      >
-                        Restart to Update
-                      </Button>
-                    </SettingsRow>
-                  )}
+                )}
                 </SettingsCard>
               </SettingsSection>
             </div>

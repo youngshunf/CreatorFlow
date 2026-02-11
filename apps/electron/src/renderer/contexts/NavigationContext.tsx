@@ -17,7 +17,7 @@
  *   const { navigate } = useNavigation()
  *   const navState = useNavigationState()
  *
- *   navigate(routes.view.allSessions())
+ *   navigate(routes.view.allChats())
  *   navigate(routes.action.newChat())
  */
 
@@ -278,6 +278,7 @@ export function NavigationProvider({
       if (!workspaceId) return
 
       switch (parsed.name) {
+        case 'new-chat':
         case 'new-session': {
           // Create session with optional permission mode and working directory from params
           const createOptions: import('../../shared/types').CreateSessionOptions = {}
@@ -799,7 +800,7 @@ export function NavigationProvider({
     // Only initialize once
     if (historyStackRef.current.length === 0) {
       const params = new URLSearchParams(window.location.search)
-      const initialRoute = (params.get('route') || 'allSessions') as Route
+      const initialRoute = (params.get('route') || 'allChats') as Route
       historyStackRef.current = [initialRoute]
       historyIndexRef.current = 0
     }
@@ -954,14 +955,14 @@ export function NavigationProvider({
   // Navigate to a session while preserving the current filter type
   const navigateToSession = useCallback((sessionId: string) => {
     if (!isSessionsNavigation(navigationState)) {
-      navigate(routes.view.allSessions(sessionId))
+      navigate(routes.view.allChats(sessionId))
       return
     }
 
     const filter = navigationState.filter
     switch (filter.kind) {
       case 'allSessions':
-        navigate(routes.view.allSessions(sessionId))
+        navigate(routes.view.allChats(sessionId))
         break
       case 'flagged':
         navigate(routes.view.flagged(sessionId))
@@ -979,7 +980,7 @@ export function NavigationProvider({
         navigate(routes.view.view(filter.viewId, sessionId))
         break
       default:
-        navigate(routes.view.allSessions(sessionId))
+        navigate(routes.view.allChats(sessionId))
     }
   }, [navigationState, navigate])
 

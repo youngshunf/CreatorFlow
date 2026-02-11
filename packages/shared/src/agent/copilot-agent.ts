@@ -8,7 +8,7 @@
  * Auth is GitHub OAuth. Tokens stored at `llm_oauth::copilot`.
  */
 
-import type { AgentEvent } from '@craft-agent/core/types';
+import type { AgentEvent } from '@sprouty-ai/core/types';
 import type { FileAttachment } from '../utils/files.ts';
 import type { ThinkingLevel } from './thinking-levels.ts';
 import { type PermissionMode, shouldAllowToolInMode } from './mode-manager.ts';

@@ -114,7 +114,7 @@ export function parseDeepLink(url: string): DeepLinkTarget | null {
 
     // Compound route prefixes
     const COMPOUND_ROUTE_PREFIXES = [
-      'allSessions', 'flagged', 'state', 'sources', 'settings', 'skills'
+      'allChats', 'allSessions', 'flagged', 'state', 'sources', 'settings', 'skills'
     ]
 
     // sproutyai://allChats/..., sproutyai://settings/..., etc. (compound routes)

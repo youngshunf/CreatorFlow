@@ -5,6 +5,7 @@ import { getOrCreateLatestSession, type SessionConfig } from '../sessions/index.
 import {
   discoverWorkspacesInDefaultLocation,
   loadWorkspaceConfig,
+  saveWorkspaceConfig,
   createWorkspaceAtPath,
   isValidWorkspace,
 } from '../workspaces/storage.ts';
@@ -16,6 +17,9 @@ import type { StoredAttachment, StoredMessage } from '@sprouty-ai/core/types';
 import type { Plan } from '../agent/plan-types.ts';
 import type { PermissionMode } from '../agent/mode-manager.ts';
 import { BUNDLED_CONFIG_DEFAULTS, type ConfigDefaults } from './config-defaults-schema.ts';
+import type { LlmConnection } from './llm-connections.ts';
+import { isValidProviderAuthCombination, getDefaultModelsForConnection, getDefaultModelForConnection } from './llm-connections.ts';
+import { getModelProvider, isCodexModel } from './models.ts';
 
 // Re-export CONFIG_DIR for convenience (centralized in paths.ts)
 export { CONFIG_DIR } from './paths.ts';
@@ -40,6 +44,9 @@ export interface StoredConfig {
   activeWorkspaceId: string | null;
   activeSessionId: string | null;  // Currently active session (primary scope)
   model?: string;
+  // LLM Connections
+  llmConnections?: LlmConnection[];
+  defaultLlmConnection?: string;  // Slug of default connection for new sessions
   // Notifications
   notificationsEnabled?: boolean;  // Desktop notifications for task completion (default: true)
   // Appearance
@@ -1181,6 +1188,601 @@ export function resolveModelId(defaultModelId: string): string {
   const customModel = getCustomModel();
   if (customModel) return customModel;
   return defaultModelId;
+}
+
+// ============================================
+// LLM Connections
+// ============================================
+
+// Re-export types for convenience (imports are at top of file)
+export type {
+  LlmConnection,
+  LlmProviderType,
+  LlmAuthType,
+  LlmConnectionWithStatus,
+} from './llm-connections.ts';
+
+/**
+ * Backfill models and defaultModel on ALL connections.
+ */
+function backfillAllConnectionModels(config: StoredConfig): boolean {
+  if (!config.llmConnections) return false;
+  let changed = false;
+  for (const connection of config.llmConnections) {
+    const defaultModels = getDefaultModelsForConnection(connection.providerType);
+    const defaultModel = getDefaultModelForConnection(connection.providerType);
+
+    if (!connection.models || (Array.isArray(connection.models) && connection.models.length === 0)) {
+      connection.models = defaultModels;
+      changed = true;
+    }
+    if (!connection.defaultModel) {
+      connection.defaultModel = defaultModel;
+      changed = true;
+    }
+
+    if (connection.defaultModel && connection.models && Array.isArray(connection.models)) {
+      const modelIds = connection.models.map(m => typeof m === 'string' ? m : m.id);
+      if (!modelIds.includes(connection.defaultModel)) {
+        const firstModelId = modelIds[0];
+        if (firstModelId) {
+          connection.defaultModel = firstModelId;
+        }
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+/**
+ * Migrate Opus 4.5 to Opus 4.6 for direct Anthropic connections.
+ */
+function migrateOpus45ToOpus46(config: StoredConfig): boolean {
+  if (!config.llmConnections) return false;
+
+  const OPUS_45_ID = 'claude-opus-4-5-20251101';
+  const OPUS_46_ID = 'claude-opus-4-6';
+
+  let changed = false;
+
+  for (const connection of config.llmConnections) {
+    if (connection.providerType !== 'anthropic') continue;
+
+    if (connection.defaultModel === OPUS_45_ID) {
+      connection.defaultModel = OPUS_46_ID;
+      changed = true;
+    }
+
+    if (connection.models && Array.isArray(connection.models)) {
+      for (let i = 0; i < connection.models.length; i++) {
+        const model = connection.models[i];
+        if (typeof model === 'string' && model === OPUS_45_ID) {
+          connection.models[i] = OPUS_46_ID;
+          changed = true;
+        } else if (typeof model === 'object' && model.id === OPUS_45_ID) {
+          model.id = OPUS_46_ID;
+          if (model.name?.includes('4.5')) {
+            model.name = model.name.replace('4.5', '4.6');
+          }
+          changed = true;
+        }
+      }
+    }
+  }
+
+  return changed;
+}
+
+/**
+ * Migrate Opus 4.5 to Opus 4.6 in workspace default models.
+ */
+function migrateWorkspaceOpus45ToOpus46(config: StoredConfig): void {
+  if (!config.workspaces) return;
+
+  const OPUS_45_ID = 'claude-opus-4-5-20251101';
+  const OPUS_46_ID = 'claude-opus-4-6';
+
+  for (const workspace of config.workspaces) {
+    const wsConfig = loadWorkspaceConfig(workspace.rootPath);
+    if (!wsConfig?.defaults?.model) continue;
+
+    if (wsConfig.defaults.model === OPUS_45_ID) {
+      wsConfig.defaults.model = OPUS_46_ID;
+      saveWorkspaceConfig(workspace.rootPath, wsConfig);
+    }
+  }
+}
+
+/**
+ * Migrate modelDefaults onto connection.defaultModel, then delete modelDefaults.
+ */
+function migrateModelDefaultsToConnections(config: StoredConfig): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const configAny = config as any;
+  if (!configAny.modelDefaults || !config.llmConnections) return false;
+  let changed = false;
+
+  if (configAny.modelDefaults.anthropic) {
+    const defaultSlug = config.defaultLlmConnection;
+    const anthropicConn = config.llmConnections.find(c =>
+      c.slug === defaultSlug && (c.providerType === 'anthropic' || c.providerType === 'anthropic_compat')
+    ) || config.llmConnections.find(c =>
+      c.providerType === 'anthropic' || c.providerType === 'anthropic_compat'
+    );
+    if (anthropicConn) {
+      anthropicConn.defaultModel = configAny.modelDefaults.anthropic;
+      changed = true;
+    }
+  }
+
+  if (configAny.modelDefaults.openai) {
+    const openaiConn = config.llmConnections.find(c =>
+      c.providerType === 'openai' || c.providerType === 'openai_compat'
+    );
+    if (openaiConn) {
+      openaiConn.defaultModel = configAny.modelDefaults.openai;
+      changed = true;
+    }
+  }
+
+  delete configAny.modelDefaults;
+  changed = true;
+
+  return changed;
+}
+
+/**
+ * Migrate legacy auth config to LLM connections.
+ * Call this on app startup before any getLlmConnections() calls.
+ */
+export function migrateLegacyLlmConnectionsConfig(): void {
+  const config = loadStoredConfig();
+  if (!config) return;
+
+  const normalizeModelList = (models?: Array<{ id: string } | string>): string[] => {
+    if (!models) return [];
+    return models
+      .map(model => (typeof model === 'string' ? model : model.id))
+      .filter(Boolean);
+  };
+
+  const applyCompatDefaults = (target: StoredConfig): boolean => {
+    if (!target.llmConnections) return false;
+    let changed = false;
+    for (const connection of target.llmConnections) {
+      if (connection.providerType !== 'anthropic_compat' && connection.providerType !== 'openai_compat') {
+        continue;
+      }
+      const compatDefaults = getDefaultModelsForConnection(connection.providerType).map(
+        m => typeof m === 'string' ? m : m.id
+      );
+      const normalizedModels = normalizeModelList(connection.models);
+      if (normalizedModels.length === 0) {
+        connection.models = [...compatDefaults];
+        changed = true;
+      } else if (normalizedModels.length !== (connection.models?.length ?? 0)) {
+        connection.models = [...normalizedModels];
+        changed = true;
+      }
+      let currentModels = normalizeModelList(connection.models);
+      for (const defaultModel of compatDefaults) {
+        if (!currentModels.includes(defaultModel)) {
+          currentModels = [...currentModels, defaultModel];
+          changed = true;
+        }
+      }
+      if (changed) {
+        connection.models = currentModels;
+      }
+      const currentDefault = connection.defaultModel?.trim();
+      if (!currentDefault) {
+        connection.defaultModel = (normalizeModelList(connection.models)[0] ?? compatDefaults[0]);
+        changed = true;
+      } else if (!normalizeModelList(connection.models).includes(currentDefault)) {
+        connection.models = [currentDefault, ...normalizeModelList(connection.models).filter(m => m !== currentDefault)];
+        changed = true;
+      }
+    }
+    return changed;
+  };
+
+  // Already migrated - llmConnections array exists
+  if (config.llmConnections !== undefined) {
+    let needsSave = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const configAny = config as any;
+    if ('authType' in config) {
+      delete configAny.authType;
+      needsSave = true;
+    }
+    if ('anthropicBaseUrl' in config) {
+      delete configAny.anthropicBaseUrl;
+      needsSave = true;
+    }
+    if ('customModel' in config) {
+      delete configAny.customModel;
+      needsSave = true;
+    }
+    if ('model' in config) {
+      const legacyModel = configAny.model as string | undefined;
+      if (legacyModel) {
+        const provider = getModelProvider(legacyModel) ?? (isCodexModel(legacyModel) ? 'openai' : 'anthropic');
+        configAny.modelDefaults = { ...(configAny.modelDefaults ?? {}), [provider]: legacyModel };
+      }
+      delete configAny.model;
+      needsSave = true;
+    }
+
+    if (backfillAllConnectionModels(config)) {
+      needsSave = true;
+    }
+    if (migrateModelDefaultsToConnections(config)) {
+      needsSave = true;
+    }
+    if (migrateOpus45ToOpus46(config)) {
+      needsSave = true;
+    }
+    migrateWorkspaceOpus45ToOpus46(config);
+
+    if (needsSave) {
+      saveConfig(config);
+    }
+    return;
+  }
+
+  // Initialize empty array
+  config.llmConnections = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const configAny = config as any;
+  const legacyAuthType = configAny.authType as AuthType | undefined;
+  const legacyBaseUrl = configAny.anthropicBaseUrl as string | undefined;
+  const legacyCustomModel = configAny.customModel as string | undefined;
+  const legacyModel = configAny.model as string | undefined;
+
+  if (legacyAuthType) {
+    let migrated: LlmConnection | null = null;
+
+    if (legacyAuthType === 'oauth_token') {
+      migrated = {
+        slug: 'claude-max',
+        name: 'Claude Max',
+        providerType: 'anthropic',
+        authType: 'oauth',
+        models: getDefaultModelsForConnection('anthropic'),
+        createdAt: Date.now(),
+      };
+    } else if (legacyAuthType === 'codex_oauth') {
+      migrated = {
+        slug: 'codex',
+        name: 'Codex (ChatGPT Plus)',
+        providerType: 'openai',
+        authType: 'oauth',
+        models: getDefaultModelsForConnection('openai'),
+        createdAt: Date.now(),
+      };
+    } else if (legacyAuthType === 'codex_api_key') {
+      const hasCustomEndpoint = !!legacyBaseUrl;
+      migrated = {
+        slug: 'codex-api',
+        name: hasCustomEndpoint ? 'Codex (Custom Endpoint)' : 'Codex (OpenAI API Key)',
+        providerType: 'openai_compat',
+        authType: hasCustomEndpoint ? 'api_key_with_endpoint' : 'api_key',
+        models: getDefaultModelsForConnection('openai_compat'),
+        createdAt: Date.now(),
+      };
+    } else if (legacyAuthType === 'api_key') {
+      const hasCustomEndpoint = !!legacyBaseUrl;
+      const providerType = hasCustomEndpoint ? 'anthropic_compat' as const : 'anthropic' as const;
+      migrated = {
+        slug: 'anthropic-api',
+        name: hasCustomEndpoint ? 'Custom Anthropic-Compatible' : 'Anthropic (API Key)',
+        providerType,
+        authType: hasCustomEndpoint ? 'api_key_with_endpoint' : 'api_key',
+        models: getDefaultModelsForConnection(providerType),
+        createdAt: Date.now(),
+      };
+    }
+
+    if (migrated) {
+      if (!isValidProviderAuthCombination(migrated.providerType, migrated.authType)) {
+        console.warn(
+          `[config] Legacy migration created invalid provider/auth combination: ` +
+          `providerType=${migrated.providerType}, authType=${migrated.authType} ` +
+          `(slug: ${migrated.slug}). Skipping migration for this connection.`
+        );
+      } else {
+        if (legacyBaseUrl) {
+          migrated.baseUrl = legacyBaseUrl;
+        }
+        if (legacyCustomModel) {
+          migrated.defaultModel = legacyCustomModel;
+        }
+        config.llmConnections.push(migrated);
+        config.defaultLlmConnection = migrated.slug;
+      }
+    }
+  }
+
+  delete configAny.authType;
+  delete configAny.anthropicBaseUrl;
+  delete configAny.customModel;
+  delete configAny.model;
+
+  if (legacyModel) {
+    const provider = getModelProvider(legacyModel) ?? (isCodexModel(legacyModel) ? 'openai' : 'anthropic');
+    configAny.modelDefaults = { ...(configAny.modelDefaults ?? {}), [provider]: legacyModel };
+  }
+
+  backfillAllConnectionModels(config);
+  migrateModelDefaultsToConnections(config);
+
+  saveConfig(config);
+}
+
+/**
+ * Fix defaultLlmConnection references that point to non-existent connections.
+ */
+export function migrateOrphanedDefaultConnections(): void {
+  const config = loadStoredConfig();
+  if (!config) return;
+  if (!config.llmConnections || config.llmConnections.length === 0) return;
+
+  let changed = false;
+
+  if (ensureDefaultLlmConnection(config)) {
+    changed = true;
+  }
+
+  try {
+    const workspaces = getWorkspaces();
+    for (const ws of workspaces) {
+      const wsConfig = loadWorkspaceConfig(ws.rootPath);
+      if (wsConfig?.defaults?.defaultLlmConnection) {
+        const exists = config.llmConnections.some(
+          c => c.slug === wsConfig.defaults!.defaultLlmConnection
+        );
+        if (!exists) {
+          delete wsConfig.defaults.defaultLlmConnection;
+          saveWorkspaceConfig(ws.rootPath, wsConfig);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to clean up workspace default connection references:', error);
+  }
+
+  if (changed) {
+    saveConfig(config);
+  }
+}
+
+function ensureDefaultLlmConnection(config: StoredConfig): boolean {
+  if (!config.llmConnections || config.llmConnections.length === 0) {
+    return false;
+  }
+
+  const defaultExists = config.llmConnections.some(c => c.slug === config.defaultLlmConnection);
+  if (!config.defaultLlmConnection || !defaultExists) {
+    config.defaultLlmConnection = config.llmConnections[0]!.slug;
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Migrate legacy global credentials to LLM connection-scoped credentials.
+ */
+export async function migrateLegacyCredentials(): Promise<void> {
+  const manager = getCredentialManager();
+
+  const legacyClaudeOAuth = await manager.getClaudeOAuthCredentials();
+  if (legacyClaudeOAuth?.accessToken) {
+    const existingLlmOAuth = await manager.getLlmOAuth('claude-max');
+    if (!existingLlmOAuth) {
+      await manager.setLlmOAuth('claude-max', {
+        accessToken: legacyClaudeOAuth.accessToken,
+        refreshToken: legacyClaudeOAuth.refreshToken,
+        expiresAt: legacyClaudeOAuth.expiresAt,
+      });
+      try {
+        await manager.delete({ type: 'claude_oauth' });
+      } catch (error) {
+        console.error('[storage] Failed to delete legacy claude_oauth::global:', error);
+      }
+    }
+  }
+
+  const legacyApiKey = await manager.getApiKey();
+  if (legacyApiKey) {
+    const existingLlmApiKey = await manager.getLlmApiKey('anthropic-api');
+    if (!existingLlmApiKey) {
+      await manager.setLlmApiKey('anthropic-api', legacyApiKey);
+      try {
+        await manager.delete({ type: 'anthropic_api_key' });
+      } catch (error) {
+        console.error('[storage] Failed to delete legacy anthropic_api_key::global:', error);
+      }
+    }
+  }
+}
+
+/**
+ * Get all LLM connections.
+ */
+export function getLlmConnections(): LlmConnection[] {
+  const config = loadStoredConfig();
+  if (!config) return [];
+  return config.llmConnections || [];
+}
+
+/**
+ * Get a specific LLM connection by slug.
+ */
+export function getLlmConnection(slug: string): LlmConnection | null {
+  const connections = getLlmConnections();
+  return connections.find(c => c.slug === slug) || null;
+}
+
+/**
+ * Add a new LLM connection.
+ */
+export function addLlmConnection(connection: LlmConnection): boolean {
+  const config = loadStoredConfig();
+  if (!config) return false;
+
+  if (!config.llmConnections) {
+    config.llmConnections = [];
+  }
+
+  if (config.llmConnections.some(c => c.slug === connection.slug)) {
+    return false;
+  }
+
+  config.llmConnections.push({
+    ...connection,
+    createdAt: connection.createdAt || Date.now(),
+  });
+
+  ensureDefaultLlmConnection(config);
+  saveConfig(config);
+  return true;
+}
+
+/**
+ * Update an existing LLM connection.
+ */
+export function updateLlmConnection(slug: string, updates: Partial<Omit<LlmConnection, 'slug'>>): boolean {
+  const config = loadStoredConfig();
+  if (!config) return false;
+
+  if (!config.llmConnections || config.llmConnections.length === 0) {
+    return false;
+  }
+
+  const connections = config.llmConnections;
+  const index = connections.findIndex(c => c.slug === slug);
+  if (index === -1) return false;
+
+  const existing = connections[index]!;
+  connections[index] = {
+    slug: existing.slug,
+    name: updates.name ?? existing.name,
+    providerType: updates.providerType ?? existing.providerType,
+    type: updates.type ?? existing.type,
+    authType: updates.authType ?? existing.authType,
+    createdAt: updates.createdAt ?? existing.createdAt,
+    baseUrl: updates.baseUrl !== undefined ? updates.baseUrl : existing.baseUrl,
+    models: updates.models !== undefined ? updates.models : existing.models,
+    defaultModel: updates.defaultModel !== undefined ? updates.defaultModel : existing.defaultModel,
+    codexPath: updates.codexPath !== undefined ? updates.codexPath : existing.codexPath,
+    awsRegion: updates.awsRegion !== undefined ? updates.awsRegion : existing.awsRegion,
+    gcpProjectId: updates.gcpProjectId !== undefined ? updates.gcpProjectId : existing.gcpProjectId,
+    gcpRegion: updates.gcpRegion !== undefined ? updates.gcpRegion : existing.gcpRegion,
+    lastUsedAt: updates.lastUsedAt !== undefined ? updates.lastUsedAt : existing.lastUsedAt,
+  };
+
+  saveConfig(config);
+  return true;
+}
+
+/**
+ * Delete an LLM connection.
+ */
+export function deleteLlmConnection(slug: string): boolean {
+  const config = loadStoredConfig();
+  if (!config) return false;
+
+  if (!config.llmConnections || config.llmConnections.length === 0) {
+    return false;
+  }
+
+  const connections = config.llmConnections;
+  const index = connections.findIndex(c => c.slug === slug);
+  if (index === -1) return false;
+
+  connections.splice(index, 1);
+
+  if (config.defaultLlmConnection === slug) {
+    config.defaultLlmConnection = connections.length > 0 ? connections[0]!.slug : undefined;
+  }
+
+  saveConfig(config);
+
+  try {
+    const workspaces = getWorkspaces();
+    for (const ws of workspaces) {
+      const wsConfig = loadWorkspaceConfig(ws.rootPath);
+      if (wsConfig?.defaults?.defaultLlmConnection === slug) {
+        wsConfig.defaults.defaultLlmConnection = undefined;
+        saveWorkspaceConfig(ws.rootPath, wsConfig);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to clean up workspace references:', error);
+  }
+
+  const credentialManager = getCredentialManager();
+  credentialManager.delete({ type: 'llm_api_key', connectionSlug: slug }).catch((error) => {
+    console.error(`[storage] Failed to delete API key credential for connection '${slug}':`, error);
+  });
+  credentialManager.delete({ type: 'llm_oauth', connectionSlug: slug }).catch((error) => {
+    console.error(`[storage] Failed to delete OAuth credential for connection '${slug}':`, error);
+  });
+
+  return true;
+}
+
+/**
+ * Get the default LLM connection slug.
+ */
+export function getDefaultLlmConnection(): string | null {
+  const config = loadStoredConfig();
+  if (!config) return null;
+
+  if (!config.llmConnections || config.llmConnections.length === 0) {
+    return null;
+  }
+
+  return config.defaultLlmConnection || config.llmConnections[0]?.slug || null;
+}
+
+/**
+ * Set the default LLM connection.
+ */
+export function setDefaultLlmConnection(slug: string): boolean {
+  const config = loadStoredConfig();
+  if (!config) return false;
+
+  if (!config.llmConnections || config.llmConnections.length === 0) {
+    return false;
+  }
+
+  if (!config.llmConnections.some(c => c.slug === slug)) {
+    return false;
+  }
+
+  config.defaultLlmConnection = slug;
+  saveConfig(config);
+  return true;
+}
+
+/**
+ * Update the lastUsedAt timestamp for a connection.
+ */
+export function touchLlmConnection(slug: string): void {
+  const config = loadStoredConfig();
+  if (!config) return;
+
+  if (!config.llmConnections) return;
+
+  const connection = config.llmConnections.find(c => c.slug === slug);
+  if (connection) {
+    connection.lastUsedAt = Date.now();
+    saveConfig(config);
+  }
 }
 
 // ============================================

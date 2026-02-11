@@ -431,7 +431,7 @@ export default function App() {
   // Notification system - shows native OS notifications and badge count
   const handleNavigateToSession = useCallback((sessionId: string) => {
     // Navigate to the session via central routing (uses allSessions filter)
-    navigate(routes.view.allSessions(sessionId))
+    navigate(routes.view.allChats(sessionId))
   }, [])
 
   const { isWindowFocused, showSessionNotification } = useNotifications({
@@ -474,7 +474,7 @@ export default function App() {
       if (initialSessionId && windowWorkspaceId) {
         const session = loadedSessions.find(s => s.id === initialSessionId)
         if (session) {
-          navigate(routes.view.allSessions(session.id))
+          navigate(routes.view.allChats(session.id))
         }
       } else if (windowWorkspaceId) {
         // Auto-select the most recent session for the current workspace
@@ -1100,7 +1100,7 @@ export default function App() {
     }
 
     // Navigate to the chat view - this sets both selectedSession and activeView
-    navigate(routes.view.allSessions(session.id))
+    navigate(routes.view.allChats(session.id))
 
     // Pre-fill input if provided (after a small delay to ensure component is mounted)
     if (params.input) {
@@ -1306,7 +1306,7 @@ export default function App() {
 
       // 9. Navigate to allSessions view without a specific session selected
       // This ensures the UI is in a clean state for the new workspace
-      navigate(routes.view.allSessions())
+      navigate(routes.view.allChats())
 
       // Note: Navigation state (details) will be cleared by NavigationProvider
       // when it detects workspaceId change. Sessions and theme will reload automatically

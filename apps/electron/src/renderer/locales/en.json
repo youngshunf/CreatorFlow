@@ -4122,5 +4122,21 @@
   [
     "开始导出",
     "Start Export"
+  ],
+  [
+    "已允许",
+    "Allowed"
+  ],
+  [
+    "已阻止",
+    "Blocked"
+  ],
+  [
+    "需询问",
+    "Ask"
+  ],
+  [
+    "没有可用的工具",
+    "No tools available"
   ]
 ]

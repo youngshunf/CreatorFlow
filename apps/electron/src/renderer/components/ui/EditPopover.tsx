@@ -105,15 +105,15 @@ export interface EditConfig {
 const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   'workspace-permissions': (location) => ({
     context: {
-      label: 'Permission Settings',
+      label: '权限设置',
       filePath: `${location}/.sprouty-ai/permissions.json`,
       context:
-        'The user is on the Settings Screen and pressed the edit button on Workspace Permission settings. ' +
-        'Their intent is likely to update the setting immediately unless otherwise specified. ' +
-        'The permissions.json file configures Explore mode rules. It can contain: allowedBashPatterns, ' +
-        'allowedMcpPatterns, allowedApiEndpoints, blockedTools, and allowedWritePaths. ' +
-        'After editing, call config_validate with target "permissions" to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户在设置页面点击了工作区权限设置的编辑按钮。' +
+        '除非另有说明，用户的意图很可能是立即更新设置。' +
+        'permissions.json 文件配置探索模式规则，可包含：allowedBashPatterns、' +
+        'allowedMcpPatterns、allowedApiEndpoints、blockedTools 和 allowedWritePaths。' +
+        '编辑后，调用 config_validate（target 为 "permissions"）验证更改。' +
+        '完成后明确确认。',
     },
     example: '在探索模式中允许运行 make build',
     model: 'sonnet',
@@ -123,16 +123,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'default-permissions': (location) => ({
     context: {
-      label: 'Default Permissions',
-      filePath: location, // location is the full path for default permissions
+      label: '默认权限',
+      filePath: location,
       context:
-        'The user is editing app-level default permissions (~/.sprouty-ai/permissions/default.json). ' +
-        'This file configures Explore mode rules that apply to ALL workspaces. ' +
-        'It can contain: allowedBashPatterns, allowedMcpPatterns, allowedApiEndpoints, blockedTools, and allowedWritePaths. ' +
-        'Each pattern can be a string or an object with pattern and comment fields. ' +
-        'Be careful - these are app-wide defaults. ' +
-        'After editing, call config_validate with target "permissions" to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑应用级默认权限（~/.sprouty-ai/permissions/default.json）。' +
+        '此文件配置适用于所有工作区的探索模式规则。' +
+        '可包含：allowedBashPatterns、allowedMcpPatterns、allowedApiEndpoints、blockedTools 和 allowedWritePaths。' +
+        '每个模式可以是字符串或包含 pattern 和 comment 字段的对象。' +
+        '请谨慎操作——这些是应用级全局默认值。' +
+        '编辑后，调用 config_validate（target 为 "permissions"）验证更改。' +
+        '完成后明确确认。',
     },
     example: '允许 git fetch 命令',
     model: 'sonnet',
@@ -143,15 +143,15 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Skill editing contexts
   'skill-instructions': (location) => ({
     context: {
-      label: 'Skill Instructions',
+      label: '技能指令',
       filePath: `${location}/SKILL.md`,
       context:
-        'The user is editing skill instructions in SKILL.md. ' +
-        'IMPORTANT: Preserve the YAML frontmatter (between --- markers) at the top of the file. ' +
-        'Focus on editing the markdown content after the frontmatter. ' +
-        'The skill instructions guide the AI on how to use this skill. ' +
-        'After editing, call skill_validate with the skill slug to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑 SKILL.md 中的技能指令。' +
+        '重要：保留文件顶部的 YAML frontmatter（--- 标记之间的内容）。' +
+        '专注于编辑 frontmatter 之后的 markdown 内容。' +
+        '技能指令指导 AI 如何使用此技能。' +
+        '编辑后，调用 skill_validate 并传入技能 slug 验证更改。' +
+        '完成后明确确认。',
     },
     example: '添加错误处理指南',
     model: 'haiku',
@@ -161,14 +161,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'skill-metadata': (location) => ({
     context: {
-      label: 'Skill Metadata',
+      label: '技能元数据',
       filePath: `${location}/SKILL.md`,
       context:
-        'The user is editing skill metadata in the YAML frontmatter of SKILL.md. ' +
-        'Frontmatter fields: name (required), description (required), globs (optional array), alwaysAllow (optional array). ' +
-        'Keep the content after the frontmatter unchanged unless specifically requested. ' +
-        'After editing, call skill_validate with the skill slug to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑 SKILL.md 的 YAML frontmatter 中的技能元数据。' +
+        'Frontmatter 字段：name（必填）、description（必填）、globs（可选数组）、alwaysAllow（可选数组）。' +
+        '除非特别要求，保持 frontmatter 之后的内容不变。' +
+        '编辑后，调用 skill_validate 并传入技能 slug 验证更改。' +
+        '完成后明确确认。',
     },
     example: '更新技能描述',
     model: 'haiku',
@@ -179,13 +179,13 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Source editing contexts
   'source-guide': (location) => ({
     context: {
-      label: 'Source Documentation',
+      label: '数据源文档',
       filePath: `${location}/guide.md`,
       context:
-        'The user is editing source documentation (guide.md). ' +
-        'This file provides context to the AI about how to use this source - rate limits, API patterns, best practices. ' +
-        'Keep content clear and actionable. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑数据源文档（guide.md）。' +
+        '此文件为 AI 提供关于如何使用此数据源的上下文——速率限制、API 模式、最佳实践等。' +
+        '保持内容清晰且可操作。' +
+        '完成后明确确认。',
     },
     example: '补充限流文档',
     model: 'haiku',
@@ -195,14 +195,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'source-config': (location) => ({
     context: {
-      label: 'Source Configuration',
+      label: '数据源配置',
       filePath: `${location}/config.json`,
       context:
-        'The user is editing source configuration (config.json). ' +
-        'Be careful with JSON syntax. Fields include: type, slug, name, tagline, iconUrl, and transport-specific settings (mcp, api, local). ' +
-        'Do NOT modify the slug unless explicitly requested. ' +
-        'After editing, call source_test with the source slug to verify the configuration. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑数据源配置（config.json）。' +
+        '注意 JSON 语法。字段包括：type、slug、name、tagline、iconUrl，以及传输相关设置（mcp、api、local）。' +
+        '除非明确要求，不要修改 slug。' +
+        '编辑后，调用 source_test 并传入数据源 slug 验证配置。' +
+        '完成后明确确认。',
     },
     example: '更新显示名称',
     model: 'sonnet',
@@ -212,14 +212,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'source-permissions': (location) => ({
     context: {
-      label: 'Source Permissions',
+      label: '数据源权限',
       filePath: `${location}/permissions.json`,
       context:
-        'The user is editing source-level permissions (permissions.json). ' +
-        'These rules are auto-scoped to this source - write simple patterns without prefixes. ' +
-        'For MCP: use allowedMcpPatterns (e.g., "list", "get"). For API: use allowedApiEndpoints. ' +
-        'After editing, call config_validate with target "permissions" and the source slug to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑数据源级权限（permissions.json）。' +
+        '这些规则自动限定在此数据源范围内——编写简单模式即可，无需前缀。' +
+        'MCP 类型：使用 allowedMcpPatterns（如 "list"、"get"）。API 类型：使用 allowedApiEndpoints。' +
+        '编辑后，调用 config_validate（target 为 "permissions"）并传入数据源 slug 验证更改。' +
+        '完成后明确确认。',
     },
     example: '探索模式允许 list 操作',
     model: 'sonnet',
@@ -229,16 +229,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'source-tool-permissions': (location) => ({
     context: {
-      label: 'Tool Permissions',
+      label: '工具权限',
       filePath: `${location}/permissions.json`,
       context:
-        'The user is viewing the Tools list for an MCP source and wants to modify tool permissions. ' +
-        'Edit the permissions.json file to control which tools are allowed in Explore mode. ' +
-        'Use allowedMcpPatterns to allow specific tools (e.g., ["list_*", "get_*"] for read-only). ' +
-        'Use blockedTools to explicitly block specific tools. ' +
-        'Patterns are auto-scoped to this source. ' +
-        'After editing, call config_validate with target "permissions" and the source slug to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在查看 MCP 数据源的工具列表，想要修改工具权限。' +
+        '编辑 permissions.json 文件来控制探索模式下允许使用的工具。' +
+        '使用 allowedMcpPatterns 允许特定工具（如 ["list_*", "get_*"] 表示只读）。' +
+        '使用 blockedTools 明确阻止特定工具。' +
+        '模式自动限定在此数据源范围内。' +
+        '编辑后，调用 config_validate（target 为 "permissions"）并传入数据源 slug 验证更改。' +
+        '完成后明确确认。',
     },
     example: '仅允许只读操作（list、get、search）',
     model: 'sonnet',
@@ -249,14 +249,14 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Preferences editing context
   'preferences-notes': (location) => ({
     context: {
-      label: 'Preferences Notes',
-      filePath: location, // location is the full path for preferences
+      label: '偏好备注',
+      filePath: location,
       context:
-        'The user is editing the notes field in their preferences (~/.sprouty-ai/preferences.json). ' +
-        'This is a JSON file. Only modify the "notes" field unless explicitly asked otherwise. ' +
-        'The notes field is free-form text that provides context about the user to the AI. ' +
-        'After editing, call config_validate with target "preferences" to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户正在编辑偏好设置中的备注字段（~/.sprouty-ai/preferences.json）。' +
+        '这是一个 JSON 文件。除非明确要求，只修改 "notes" 字段。' +
+        'notes 字段是自由格式文本，为 AI 提供关于用户的上下文信息。' +
+        '编辑后，调用 config_validate（target 为 "preferences"）验证更改。' +
+        '完成后明确确认。',
     },
     example: '添加编码风格偏好',
     model: 'haiku',
@@ -267,15 +267,15 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Add new source/skill contexts - use overridePlaceholder for inspiring, contextual prompts
   'add-source': (location) => ({
     context: {
-      label: 'Add Source',
-      filePath: `${location}/.sprouty-ai/sources/`, // location is the workspace root path
+      label: '添加数据源',
+      filePath: `${location}/.sprouty-ai/sources/`,
       context:
-        'The user wants to add a new source to their workspace. ' +
-        'Sources can be MCP servers (HTTP/SSE or stdio), REST APIs, or local filesystems. ' +
-        'Ask clarifying questions if needed: What service? MCP or API? Auth type? ' +
-        'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
-        'After creating the source, call source_test with the source slug to verify the configuration.',
+        '用户想要向工作区添加新的数据源。' +
+        '数据源可以是 MCP 服务器（HTTP/SSE 或 stdio）、REST API 或本地文件系统。' +
+        '如有需要可询问澄清问题：什么服务？MCP 还是 API？认证类型？' +
+        '在工作区 .sprouty-ai/sources/ 目录中创建数据源文件夹和 config.json。' +
+        '参照 ~/.sprouty-ai/docs/sources.md 中的模式。' +
+        '创建后，调用 source_test 并传入数据源 slug 验证配置。',
     },
     example: '连接我的 Craft 空间',
     overridePlaceholder: '你想连接什么？',
@@ -284,16 +284,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Filter-specific add-source contexts: user is viewing a filtered list and wants to add that type
   'add-source-api': (location) => ({
     context: {
-      label: 'Add API',
+      label: '添加 API',
       filePath: `${location}/.sprouty-ai/sources/`,
       context:
-        'The user is viewing API sources and wants to add a new REST API. ' +
-        'Default to creating an API source (type: "api") unless they specify otherwise. ' +
-        'APIs connect to REST endpoints with authentication (bearer, header, basic, or query). ' +
-        'Ask about the API endpoint URL and auth type. ' +
-        'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
-        'After creating the source, call source_test with the source slug to verify the configuration.',
+        '用户正在查看 API 数据源列表，想要添加新的 REST API。' +
+        '默认创建 API 数据源（type: "api"），除非用户另有说明。' +
+        'API 通过 REST 端点连接，支持认证方式：bearer、header、basic 或 query。' +
+        '询问 API 端点 URL 和认证类型。' +
+        '在工作区 .sprouty-ai/sources/ 目录中创建数据源文件夹和 config.json。' +
+        '参照 ~/.sprouty-ai/docs/sources.md 中的模式。' +
+        '创建后，调用 source_test 并传入数据源 slug 验证配置。',
     },
     example: '连接 OpenAI API',
     overridePlaceholder: '你想连接哪个 API？',
@@ -301,16 +301,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'add-source-mcp': (location) => ({
     context: {
-      label: 'Add MCP Server',
+      label: '添加 MCP 服务器',
       filePath: `${location}/.sprouty-ai/sources/`,
       context:
-        'The user is viewing MCP sources and wants to add a new MCP server. ' +
-        'Default to creating an MCP source (type: "mcp") unless they specify otherwise. ' +
-        'MCP servers can use HTTP/SSE transport (remote) or stdio transport (local subprocess). ' +
-        'Ask about the service they want to connect to and whether it\'s a remote URL or local command. ' +
-        'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
-        'After creating the source, call source_test with the source slug to verify the configuration.',
+        '用户正在查看 MCP 数据源列表，想要添加新的 MCP 服务器。' +
+        '默认创建 MCP 数据源（type: "mcp"），除非用户另有说明。' +
+        'MCP 服务器可使用 HTTP/SSE 传输（远程）或 stdio 传输（本地子进程）。' +
+        '询问用户想连接的服务以及是远程 URL 还是本地命令。' +
+        '在工作区 .sprouty-ai/sources/ 目录中创建数据源文件夹和 config.json。' +
+        '参照 ~/.sprouty-ai/docs/sources.md 中的模式。' +
+        '创建后，调用 source_test 并传入数据源 slug 验证配置。',
     },
     example: '连接 Linear',
     overridePlaceholder: '你想连接哪个 MCP 服务器？',
@@ -318,17 +318,17 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'add-source-local': (location) => ({
     context: {
-      label: 'Add Local Folder',
+      label: '添加本地文件夹',
       filePath: `${location}/.sprouty-ai/sources/`,
       context:
-        'The user wants to add a local folder source. ' +
-        'First, look up the guide: mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" }). ' +
-        'Local folders are bookmarks - use type: "local" with a local.path field. ' +
-        'They use existing Read, Write, Glob, Grep tools - no MCP server needed. ' +
-        'If unclear, ask about the folder path they want to connect. ' +
-        'Create the source folder and config.json in the workspace sources directory. ' +
-        'Follow the patterns in ~/.sprouty-ai/docs/sources.md. ' +
-        'After creating the source, call source_test with the source slug to verify the configuration.',
+        '用户想要添加本地文件夹数据源。' +
+        '首先查阅指南：mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" })。' +
+        '本地文件夹是书签——使用 type: "local" 并设置 local.path 字段。' +
+        '它们使用现有的 Read、Write、Glob、Grep 工具——不需要 MCP 服务器。' +
+        '如不确定，询问用户想连接的文件夹路径。' +
+        '在工作区 .sprouty-ai/sources/ 目录中创建数据源文件夹和 config.json。' +
+        '参照 ~/.sprouty-ai/docs/sources.md 中的模式。' +
+        '创建后，调用 source_test 并传入数据源 slug 验证配置。',
     },
     example: '连接我的 Obsidian 知识库',
     overridePlaceholder: '你想连接哪个本地文件夹？',
@@ -336,15 +336,15 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'add-skill': (location) => ({
     context: {
-      label: 'Add Skill',
-      filePath: `${location}/.sprouty-ai/skills/`, // location is the workspace root path
+      label: '添加技能',
+      filePath: `${location}/.sprouty-ai/skills/`,
       context:
-        'The user wants to add a new skill to their workspace. ' +
-        'Skills are specialized instructions with a SKILL.md file containing YAML frontmatter (name, description) and markdown instructions. ' +
-        'Ask clarifying questions if needed: What should the skill do? When should it trigger? ' +
-        'Create the skill folder and SKILL.md in the workspace skills directory. ' +
-        'Follow the patterns in ~/.sprouty-ai/docs/skills.md. ' +
-        'After creating the skill, call skill_validate with the skill slug to verify the SKILL.md file.',
+        '用户想要向工作区添加新技能。' +
+        '技能是包含 SKILL.md 文件的专用指令，文件包含 YAML 前置元数据（name、description）和 Markdown 指令。' +
+        '如有需要可询问澄清问题：技能做什么？何时触发？' +
+        '在工作区 .sprouty-ai/skills/ 目录中创建技能文件夹和 SKILL.md。' +
+        '参照 ~/.sprouty-ai/docs/skills.md 中的模式。' +
+        '创建后，调用 skill_validate 并传入技能 slug 验证 SKILL.md 文件。',
     },
     example: '按照代码规范审查 PR',
     overridePlaceholder: '要让我学会做什么？',
@@ -353,16 +353,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Status configuration context
   'edit-statuses': (location) => ({
     context: {
-      label: 'Status Configuration',
+      label: '状态配置',
       filePath: `${location}/.sprouty-ai/statuses/config.json`,
       context:
-        'The user wants to customize session statuses (workflow states). ' +
-        'Statuses are stored in statuses/config.json with fields: id, label, icon, category (open/closed), order, isFixed, isDefault. ' +
-        'Fixed statuses (todo, done, cancelled) cannot be deleted but can be reordered or have their label changed. ' +
-        'Icon can be { type: "file", value: "name.svg" } for custom icons in statuses/icons/ or { type: "lucide", value: "icon-name" } for Lucide icons. ' +
-        'Category "open" shows in inbox, "closed" shows in archive. ' +
-        'After editing, call config_validate with target "statuses" to verify the changes. ' +
-        'Confirm clearly when done.',
+        '用户想要自定义会话状态（工作流状态）。' +
+        '状态存储在 .sprouty-ai/statuses/config.json 中，字段包括：id、label、icon、category（open/closed）、order、isFixed、isDefault。' +
+        '固定状态（todo、done、cancelled）不能删除，但可以重新排序或修改标签。' +
+        'icon 可以是 { type: "file", value: "name.svg" }（自定义图标在 .sprouty-ai/statuses/icons/ 中）或 { type: "lucide", value: "icon-name" }（Lucide 图标）。' +
+        'category 为 "open" 显示在收件箱，"closed" 显示在归档。' +
+        '编辑后，调用 config_validate（target 为 "statuses"）验证更改。' +
+        '完成后明确确认。',
     },
     example: '添加"阻塞"状态',
     model: 'haiku',
@@ -373,17 +373,17 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Label configuration context
   'edit-labels': (location) => ({
     context: {
-      label: 'Label Configuration',
+      label: '标签配置',
       filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
-        'The user wants to customize session labels (tagging/categorization). ' +
-        'Labels are stored in labels/config.json as a hierarchical tree. ' +
-        'Each label has: id (slug, globally unique), name (display), color (optional EntityColor), children (sub-labels array). ' +
-        'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
-        'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
-        'Children form a recursive tree structure — array position determines display order. ' +
-        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
-        'Confirm clearly when done.',
+        '用户想要自定义会话标签（分类/标记）。' +
+        '标签存储在 .sprouty-ai/labels/config.json 中，以层级树结构组织。' +
+        '每个标签包含：id（slug，全局唯一）、name（显示名称）、color（可选 EntityColor）、children（子标签数组）。' +
+        '颜色使用 EntityColor 格式：字符串简写（如 "blue"）或 { light, dark } 对象用于主题感知颜色。' +
+        '标签仅有颜色（无图标）——在 UI 中渲染为彩色圆点。' +
+        'children 形成递归树结构——数组位置决定显示顺序。' +
+        '参阅 ~/.sprouty-ai/docs/labels.md 获取完整格式参考。' +
+        '完成后明确确认。',
     },
     example: '添加"缺陷"标签（红色）',
     model: 'haiku',
@@ -394,16 +394,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Auto-label rules context (focused on regex patterns within labels)
   'edit-auto-rules': (location) => ({
     context: {
-      label: 'Auto-Apply Rules',
+      label: '自动应用规则',
       filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
-        'The user wants to edit auto-apply rules (regex patterns that auto-tag sessions). ' +
-        'Rules live inside the autoRules array on individual labels in labels/config.json. ' +
-        'Each rule has: pattern (regex with capture groups), flags (default "gi"), valueTemplate ($1/$2 substitution), description. ' +
-        'Multiple rules on the same label = multiple ways to trigger. The "g" flag is always enforced. ' +
-        'Avoid catastrophic backtracking patterns (e.g., (a+)+). ' +
-        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
-        'Confirm clearly when done.',
+        '用户想要编辑自动应用规则（自动标记会话的正则表达式模式）。' +
+        '规则位于 .sprouty-ai/labels/config.json 中各标签的 autoRules 数组内。' +
+        '每条规则包含：pattern（带捕获组的正则）、flags（默认 "gi"）、valueTemplate（$1/$2 替换）、description。' +
+        '同一标签上的多条规则 = 多种触发方式。"g" 标志始终强制启用。' +
+        '避免灾难性回溯模式（如 (a+)+）。' +
+        '参阅 ~/.sprouty-ai/docs/labels.md 获取完整格式参考。' +
+        '完成后明确确认。',
     },
     example: '添加检测 GitHub Issue 链接的规则',
     model: 'haiku',
@@ -414,16 +414,16 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Add new label context (triggered from the # menu when no labels match)
   'add-label': (location) => ({
     context: {
-      label: 'Add Label',
+      label: '添加标签',
       filePath: `${location}/.sprouty-ai/labels/config.json`,
       context:
-        'The user wants to create a new label from the # inline menu. ' +
-        'Labels are stored in labels/config.json as a hierarchical tree. ' +
-        'Each label has: id (slug, globally unique), name (display), color (optional EntityColor), children (sub-labels array). ' +
-        'Colors use EntityColor format: string shorthand (e.g. "blue") or { light, dark } object for theme-aware colors. ' +
-        'Labels are color-only (no icons) — rendered as colored circles in the UI. ' +
-        'Read ~/.sprouty-ai/docs/labels.md for full format reference. ' +
-        'Confirm clearly when done.',
+        '用户想要从 # 内联菜单创建新标签。' +
+        '标签存储在 .sprouty-ai/labels/config.json 中，以层级树结构组织。' +
+        '每个标签包含：id（slug，全局唯一）、name（显示名称）、color（可选 EntityColor）、children（子标签数组）。' +
+        '颜色使用 EntityColor 格式：字符串简写（如 "blue"）或 { light, dark } 对象用于主题感知颜色。' +
+        '标签仅有颜色（无图标）——在 UI 中渲染为彩色圆点。' +
+        '参阅 ~/.sprouty-ai/docs/labels.md 获取完整格式参考。' +
+        '完成后明确确认。',
     },
     example: '一个红色的"缺陷"标签',
     overridePlaceholder: '你想创建什么标签？',
@@ -435,17 +435,17 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Views configuration context
   'edit-views': (location) => ({
     context: {
-      label: 'Views Configuration',
+      label: '视图配置',
       filePath: `${location}/.sprouty-ai/views.json`,
       context:
-        'The user wants to edit views (dynamic, expression-based filters). ' +
-        'Views are stored in views.json at the workspace root under a "views" array. ' +
-        'Each view has: id (unique slug), name (display text), description (optional), color (optional EntityColor), expression (Filtrex string). ' +
-        'Expressions are evaluated against session context fields: name, preview, todoState, permissionMode, model, lastMessageRole, ' +
-        'lastUsedAt, createdAt, messageCount, labelCount, isFlagged, hasUnread, isProcessing, hasPendingPlan, tokenUsage.*, labels. ' +
-        'Available functions: daysSince(timestamp), contains(array, value). ' +
-        'Colors use EntityColor format: string shorthand (e.g. "orange") or { light, dark } object. ' +
-        'Confirm clearly when done.',
+        '用户想要编辑视图（基于表达式的动态过滤器）。' +
+        '视图存储在工作区 .sprouty-ai/views.json 中的 "views" 数组内。' +
+        '每个视图包含：id（唯一 slug）、name（显示文本）、description（可选）、color（可选 EntityColor）、expression（Filtrex 字符串）。' +
+        '表达式基于会话上下文字段求值：name、preview、todoState、permissionMode、model、lastMessageRole、' +
+        'lastUsedAt、createdAt、messageCount、labelCount、isFlagged、hasUnread、isProcessing、hasPendingPlan、tokenUsage.*、labels。' +
+        '可用函数：daysSince(timestamp)、contains(array, value)。' +
+        '颜色使用 EntityColor 格式：字符串简写（如 "orange"）或 { light, dark } 对象。' +
+        '完成后明确确认。',
     },
     example: '添加"过期"视图（7 天未活跃）',
     model: 'haiku',
@@ -456,17 +456,17 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
   // Tool icons configuration context
   'edit-tool-icons': (location) => ({
     context: {
-      label: 'Tool Icons',
-      filePath: location, // location is the full path to tool-icons.json
+      label: '工具图标',
+      filePath: location,
       context:
-        'The user wants to edit CLI tool icon mappings. ' +
-        'The file is tool-icons.json in ~/.sprouty-ai/tool-icons/. Icon image files live in the same directory. ' +
-        'Schema: { version: 1, tools: [{ id, displayName, icon, commands }] }. ' +
-        'Each tool has: id (unique slug), displayName (shown in UI), icon (filename like "git.ico"), commands (array of CLI command names). ' +
-        'Supported icon formats: .png, .ico, .svg, .jpg. Icons display at 20x20px. ' +
-        'Read ~/.sprouty-ai/docs/tool-icons.md for full format reference. ' +
-        'After editing, call config_validate with target "tool-icons" to verify the changes are valid. ' +
-        'Confirm clearly when done.',
+        '用户想要编辑 CLI 工具图标映射。' +
+        '文件是 ~/.sprouty-ai/tool-icons/ 中的 tool-icons.json。图标图片文件在同一目录中。' +
+        'Schema：{ version: 1, tools: [{ id, displayName, icon, commands }] }。' +
+        '每个工具包含：id（唯一 slug）、displayName（UI 中显示）、icon（文件名如 "git.ico"）、commands（CLI 命令名数组）。' +
+        '支持的图标格式：.png、.ico、.svg、.jpg。图标显示尺寸为 20x20px。' +
+        '参阅 ~/.sprouty-ai/docs/tool-icons.md 获取完整格式参考。' +
+        '编辑后，调用 config_validate（target 为 "tool-icons"）验证更改。' +
+        '完成后明确确认。',
     },
     example: '为我的自定义 CLI 工具 "deploy" 添加图标',
     model: 'haiku',

@@ -8,7 +8,7 @@
  * which provide more granular control than the previous ThreadEvent format.
  */
 
-import type { AgentEvent, AgentEventUsage } from '@craft-agent/core/types';
+import type { AgentEvent, AgentEventUsage } from '@sprouty-ai/core/types';
 import { createLogger } from '../../../utils/debug.ts';
 
 import { parseReadCommand, type ReadCommandInfo } from './read-patterns';
@@ -32,7 +32,7 @@ import type {
   McpToolCallProgressNotification,
   ConfigWarningNotification,
   WindowsWorldWritableWarningNotification,
-} from '@craft-agent/codex-types/v2';
+} from '@sprouty-ai/codex-types/v2';
 
 // Simplified notification types for delta events
 interface OutputDeltaNotification {

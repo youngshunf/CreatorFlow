@@ -1273,12 +1273,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Release notes
   ipcMain.handle(IPC_CHANNELS.GET_RELEASE_NOTES, () => {
-    const { getCombinedReleaseNotes } = require('@craft-agent/shared/release-notes') as typeof import('@craft-agent/shared/release-notes')
+    const { getCombinedReleaseNotes } = require('@sprouty-ai/shared/release-notes') as typeof import('@sprouty-ai/shared/release-notes')
     return getCombinedReleaseNotes()
   })
 
   ipcMain.handle(IPC_CHANNELS.GET_LATEST_RELEASE_VERSION, () => {
-    const { getLatestReleaseVersion } = require('@craft-agent/shared/release-notes') as typeof import('@craft-agent/shared/release-notes')
+    const { getLatestReleaseVersion } = require('@sprouty-ai/shared/release-notes') as typeof import('@sprouty-ai/shared/release-notes')
     return getLatestReleaseVersion()
   })
 
@@ -2348,7 +2348,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
         // Validate by attempting to refresh tokens
         try {
-          const { refreshChatGptTokens } = await import('@craft-agent/shared/auth/chatgpt-oauth')
+          const { refreshChatGptTokens } = await import('@sprouty-ai/shared/auth/chatgpt-oauth')
           const refreshed = await refreshChatGptTokens(oauth.refreshToken)
 
           // Store the refreshed tokens
@@ -2467,7 +2467,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       // refreshed successfully, without making an API call.
       const isAnthropicProvider = connection.providerType === 'anthropic' || connection.providerType === 'anthropic_compat'
       if (isAnthropicProvider && connection.authType === 'oauth') {
-        const { getValidClaudeOAuthToken } = await import('@craft-agent/shared/auth/state')
+        const { getValidClaudeOAuthToken } = await import('@sprouty-ai/shared/auth/state')
         const tokenResult = await getValidClaudeOAuthToken(slug)
 
         if (!tokenResult.accessToken) {
@@ -2673,7 +2673,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         }
       }
 
-      const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@craft-agent/shared/workspaces')
+      const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@sprouty-ai/shared/workspaces')
       const config = loadWorkspaceConfig(workspace.rootPath)
       if (!config) {
         return { success: false, error: 'Failed to load workspace config' }
@@ -2707,7 +2707,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     error?: string
   }> => {
     try {
-      const { startChatGptOAuth, exchangeChatGptCode } = await import('@craft-agent/shared/auth')
+      const { startChatGptOAuth, exchangeChatGptCode } = await import('@sprouty-ai/shared/auth')
       const credentialManager = getCredentialManager()
 
       ipcLog.info(`Starting ChatGPT OAuth flow for connection: ${connectionSlug}`)
@@ -2745,7 +2745,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Cancel ongoing ChatGPT OAuth flow
   ipcMain.handle(IPC_CHANNELS.CHATGPT_CANCEL_OAUTH, async (): Promise<{ success: boolean }> => {
     try {
-      const { cancelChatGptOAuth } = await import('@craft-agent/shared/auth')
+      const { cancelChatGptOAuth } = await import('@sprouty-ai/shared/auth')
       cancelChatGptOAuth()
       ipcLog.info('ChatGPT OAuth cancelled')
       return { success: true }
@@ -2806,7 +2806,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     error?: string
   }> => {
     try {
-      const { startGithubOAuth } = await import('@craft-agent/shared/auth')
+      const { startGithubOAuth } = await import('@sprouty-ai/shared/auth')
       const credentialManager = getCredentialManager()
 
       ipcLog.info(`Starting GitHub OAuth device flow for connection: ${connectionSlug}`)
@@ -2841,7 +2841,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Cancel ongoing GitHub OAuth flow
   ipcMain.handle(IPC_CHANNELS.COPILOT_CANCEL_OAUTH, async (): Promise<{ success: boolean }> => {
     try {
-      const { cancelGithubOAuth } = await import('@craft-agent/shared/auth')
+      const { cancelGithubOAuth } = await import('@sprouty-ai/shared/auth')
       cancelGithubOAuth()
       ipcLog.info('GitHub OAuth cancelled')
       return { success: true }
@@ -3076,7 +3076,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     deleteSource(workspace.rootPath, sourceSlug)
 
     // Clean up stale slug from workspace default sources
-    const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@craft-agent/shared/workspaces')
+    const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@sprouty-ai/shared/workspaces')
     const config = loadWorkspaceConfig(workspace.rootPath)
     if (config?.defaults?.enabledSourceSlugs?.includes(sourceSlug)) {
       config.defaults.enabledSourceSlugs = config.defaults.enabledSourceSlugs.filter(s => s !== sourceSlug)
@@ -3882,13 +3882,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Get keep awake while running setting
   ipcMain.handle(IPC_CHANNELS.POWER_GET_KEEP_AWAKE, async () => {
-    const { getKeepAwakeWhileRunning } = await import('@craft-agent/shared/config/storage')
+    const { getKeepAwakeWhileRunning } = await import('@sprouty-ai/shared/config/storage')
     return getKeepAwakeWhileRunning()
   })
 
   // Set keep awake while running setting
   ipcMain.handle(IPC_CHANNELS.POWER_SET_KEEP_AWAKE, async (_event, enabled: boolean) => {
-    const { setKeepAwakeWhileRunning } = await import('@craft-agent/shared/config/storage')
+    const { setKeepAwakeWhileRunning } = await import('@sprouty-ai/shared/config/storage')
     const { setKeepAwakeSetting } = await import('./power-manager')
     // Save to config
     setKeepAwakeWhileRunning(enabled)
@@ -3898,13 +3898,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
   // Get rich tool descriptions setting
   ipcMain.handle(IPC_CHANNELS.APPEARANCE_GET_RICH_TOOL_DESCRIPTIONS, async () => {
-    const { getRichToolDescriptions } = await import('@craft-agent/shared/config/storage')
+    const { getRichToolDescriptions } = await import('@sprouty-ai/shared/config/storage')
     return getRichToolDescriptions()
   })
 
   // Set rich tool descriptions setting
   ipcMain.handle(IPC_CHANNELS.APPEARANCE_SET_RICH_TOOL_DESCRIPTIONS, async (_event, enabled: boolean) => {
-    const { setRichToolDescriptions } = await import('@craft-agent/shared/config/storage')
+    const { setRichToolDescriptions } = await import('@sprouty-ai/shared/config/storage')
     setRichToolDescriptions(enabled)
   })
 

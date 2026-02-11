@@ -14,11 +14,11 @@
  * for UI events and server requests for approval prompts.
  */
 
-import type { AgentEvent } from '@craft-agent/core/types';
+import type { AgentEvent } from '@sprouty-ai/core/types';
 import type { FileAttachment } from '../utils/files.ts';
 import { extractWorkspaceSlug } from '../utils/workspace.ts';
 import type { ThinkingLevel } from './thinking-levels.ts';
-import type { AuthRequest } from '@craft-agent/session-tools-core';
+import type { AuthRequest } from '@sprouty-ai/session-tools-core';
 import { type PermissionMode, shouldAllowToolInMode } from './mode-manager.ts';
 import type { LoadedSource } from '../sources/types.ts';
 
@@ -90,7 +90,7 @@ import {
 import type {
   RequestId,
   ReasoningEffort,
-} from '@craft-agent/codex-types';
+} from '@sprouty-ai/codex-types';
 import type {
   AskForApproval,
   SandboxMode,
@@ -98,7 +98,7 @@ import type {
   CommandExecutionApprovalDecision,
   FileChangeApprovalDecision,
   ThreadTokenUsageUpdatedNotification,
-} from '@craft-agent/codex-types/v2';
+} from '@sprouty-ai/codex-types/v2';
 
 // ============================================================
 // Constants

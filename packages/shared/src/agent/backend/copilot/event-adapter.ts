@@ -7,7 +7,7 @@
  * The Copilot SDK uses SessionEvent types with discriminated unions on the `type` field.
  */
 
-import type { AgentEvent, TypedError } from '@craft-agent/core/types';
+import type { AgentEvent, TypedError } from '@sprouty-ai/core/types';
 import type { SessionEvent } from '@github/copilot-sdk';
 import { parseReadCommand, type ReadCommandInfo } from '../codex/read-patterns.ts';
 import { createLogger } from '../../../utils/debug.ts';

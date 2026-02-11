@@ -99,7 +99,7 @@ export class HookSystem implements HooksConfigProvider {
    * Load hooks configuration from hooks.json.
    */
   private loadConfig(): void {
-    const configPath = join(this.options.workspaceRootPath, 'hooks.json');
+    const configPath = join(this.options.workspaceRootPath, '.sprouty-ai', 'hooks.json');
 
     if (!existsSync(configPath)) {
       log.debug(`[HookSystem] No hooks.json found at ${configPath}`);
@@ -132,7 +132,7 @@ export class HookSystem implements HooksConfigProvider {
    * Call this when hooks.json changes.
    */
   reloadConfig(): { success: boolean; hookCount: number; errors: string[] } {
-    const configPath = join(this.options.workspaceRootPath, 'hooks.json');
+    const configPath = join(this.options.workspaceRootPath, '.sprouty-ai', 'hooks.json');
 
     if (!existsSync(configPath)) {
       this.config = { hooks: {} };

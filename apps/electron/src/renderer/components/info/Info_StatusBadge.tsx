@@ -6,13 +6,14 @@
 
 import * as React from 'react'
 import { Info_Badge, type BadgeColor } from './Info_Badge'
+import { useT } from '@/context/LocaleContext'
 
 type PermissionStatus = 'allowed' | 'blocked' | 'requires-permission'
 
-const statusConfig: Record<PermissionStatus, { label: string; color: BadgeColor }> = {
-  allowed: { label: 'Allowed', color: 'success' },
-  blocked: { label: 'Blocked', color: 'destructive' },
-  'requires-permission': { label: 'Ask', color: 'warning' },
+const statusConfig: Record<PermissionStatus, { labelKey: string; color: BadgeColor }> = {
+  allowed: { labelKey: '已允许', color: 'success' },
+  blocked: { labelKey: '已阻止', color: 'destructive' },
+  'requires-permission': { labelKey: '需询问', color: 'warning' },
 }
 
 export interface Info_StatusBadgeProps
@@ -28,9 +29,10 @@ export function Info_StatusBadge({
   label,
   ...props
 }: Info_StatusBadgeProps) {
+  const t = useT()
   const key: PermissionStatus = status ?? 'allowed'
-  const config: { label: string; color: BadgeColor } = statusConfig[key]
-  const displayLabel = label ?? config.label
+  const config = statusConfig[key]
+  const displayLabel = label ?? t(config.labelKey)
 
   return (
     <Info_Badge {...props} color={config.color}>

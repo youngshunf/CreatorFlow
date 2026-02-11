@@ -313,7 +313,7 @@ async function writeFileSecure(targetPath: string, content: string, mode: number
 async function setupCodexSessionConfig(
   sessionPath: string,
   sources: LoadedSource[],
-  mcpServerConfigs: Record<string, import('@craft-agent/shared/agent/backend').SdkMcpServerConfig>,
+  mcpServerConfigs: Record<string, import('@sprouty-ai/shared/agent/backend').SdkMcpServerConfig>,
   sessionId?: string,
   workspaceRootPath?: string
 ): Promise<string> {
@@ -506,7 +506,7 @@ function resolveToolDisplayMeta(
           'update_user_preferences': 'Update Preferences',
         },
         'craft-agents-docs': {
-          'SearchCraftAgents': 'Search Docs',
+          'SearchSproutyAgents': 'Search Docs',
         },
       }
 
@@ -624,8 +624,8 @@ function resolveToolDisplayMeta(
   return undefined
 }
 
-/** Agent type - CraftAgent for Claude, CodexBackend for Codex, CopilotAgent for Copilot */
-type AgentInstance = CraftAgent | CodexBackend | CopilotAgent
+/** Agent type - SproutyAgent for Claude, CodexBackend for Codex, CopilotAgent for Copilot */
+type AgentInstance = SproutyAgent | CodexBackend | CopilotAgent
 
 interface ManagedSession {
   id: string
@@ -2430,7 +2430,7 @@ export class SessionManager {
 
   /**
    * Get or create agent for a session (lazy loading)
-   * Creates CraftAgent for Claude or CodexBackend for Codex based on LLM connection.
+   * Creates SproutyAgent for Claude or CodexBackend for Codex based on LLM connection.
    *
    * Provider resolution order:
    * 1. session.llmConnection (locked after first message)
@@ -2737,7 +2737,7 @@ export class SessionManager {
 
         // Model resolution: session > connection default (connection always has defaultModel via backfill)
         const resolvedModel = managed.model || connection?.defaultModel || DEFAULT_MODEL
-        managed.agent = new CraftAgent({
+        managed.agent = new SproutyAgent({
           workspace: managed.workspace,
           model: resolvedModel,
           // Initialize thinking level at construction to avoid race conditions
@@ -3178,7 +3178,7 @@ export class SessionManager {
     }
 
     // Validate connection exists
-    const { getLlmConnection } = await import('@craft-agent/shared/config/storage')
+    const { getLlmConnection } = await import('@sprouty-ai/shared/config/storage')
     const connection = getLlmConnection(connectionSlug)
     if (!connection) {
       sessionLog.warn(`setSessionConnection: connection "${connectionSlug}" not found`)

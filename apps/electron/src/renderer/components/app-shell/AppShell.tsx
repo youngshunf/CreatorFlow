@@ -1586,7 +1586,7 @@ function AppShellContent({
     // so there should be no intermediate render with stale session data.
     if (result && wasSelected) {
       if (!sessionFilter || sessionFilter.kind === 'allSessions') {
-        contextNavigate(routes.view.allSessions())
+        contextNavigate(routes.view.allChats())
       } else if (sessionFilter.kind === 'flagged') {
         contextNavigate(routes.view.flagged())
       } else if (sessionFilter.kind === 'state') {
@@ -1596,7 +1596,7 @@ function AppShellContent({
       } else if (sessionFilter.kind === 'view') {
         contextNavigate(routes.view.view(sessionFilter.viewId))
       } else {
-        contextNavigate(routes.view.allSessions())
+        contextNavigate(routes.view.allChats())
       }
     }
     return result
@@ -1716,8 +1716,7 @@ function AppShellContent({
   }, [])
 
   const handleAllSessionsClick = useCallback(() => {
-    navigate(routes.view.allSessions())
-  }, [])
+    navigate(routes.view.allChats())
   }, [])
 
   const handleFlaggedClick = useCallback(() => {
@@ -1929,7 +1928,7 @@ function AppShellContent({
 
     const newSession = await onCreateSession(activeWorkspace.id)
     // Navigate to the new session via central routing
-    navigate(routes.view.allSessions(newSession.id))
+    navigate(routes.view.allChats(newSession.id))
 
     // Focus the chat input after navigation completes
     setTimeout(() => focusZone('chat', { intent: 'programmatic' }), 50)
@@ -3268,7 +3267,7 @@ function AppShellContent({
                     }}
                     onNavigateToView={(view) => {
                       if (view === 'allSessions') {
-                        navigate(routes.view.allSessions())
+                        navigate(routes.view.allChats())
                       } else if (view === 'flagged') {
                         navigate(routes.view.flagged())
                       }
@@ -3632,8 +3631,6 @@ function AppShellContent({
           />
         </>
       )}
-
-      </TooltipProvider>
 
       {/* Workspace Manager Overlay */}
       <WorkspaceManagerScreen

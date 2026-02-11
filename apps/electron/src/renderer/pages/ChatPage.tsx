@@ -311,7 +311,7 @@ const ChatPage = React.memo(function ChatPage({ sessionId }: ChatPageProps) {
   }, [sessionId, onDeleteSession])
 
   const handleOpenInNewWindow = React.useCallback(async () => {
-    const route = routes.view.allSessions(sessionId)
+    const route = routes.view.allChats(sessionId)
     const separator = route.includes('?') ? '&' : '?'
     const url = `sproutyai://${route}${separator}window=focused`
     try {
