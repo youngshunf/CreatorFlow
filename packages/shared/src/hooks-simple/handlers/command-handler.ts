@@ -95,10 +95,37 @@ export class CommandHandler implements HookHandler {
           } else {
             log.debug(`[CommandHandler] Success: ${command.command} (${durationMs}ms)`);
           }
+
+          // 记录执行结果到 events.jsonl
+          this.options.eventLogger?.logResult({
+            event,
+            hookType: 'command',
+            command: command.command,
+            success: result.success,
+            stdout: result.stdout,
+            stderr: result.stderr,
+            blocked: result.blocked,
+            durationMs,
+            workspaceId: (payload as any).workspaceId,
+            sessionId: payload.sessionId,
+          });
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
+          const durationMs = Date.now() - startTime;
           log.error(`[CommandHandler] Error executing ${command.command}:`, err);
           this.options.onError?.(event, err);
+
+          // 记录失败结果
+          this.options.eventLogger?.logResult({
+            event,
+            hookType: 'command',
+            command: command.command,
+            success: false,
+            stderr: err.message,
+            durationMs,
+            workspaceId: (payload as any).workspaceId,
+            sessionId: payload.sessionId,
+          });
         }
       })
     );

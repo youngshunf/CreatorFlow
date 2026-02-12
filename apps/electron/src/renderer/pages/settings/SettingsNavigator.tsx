@@ -21,7 +21,7 @@ import { useT } from '@/context/LocaleContext'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 import type { SettingsSubpage } from '../../../shared/types'
 import { SETTINGS_ITEMS } from '../../../shared/menu-schema'
-import { SETTINGS_ICONS } from '@/components/icons/SettingsIcons'
+import { SETTINGS_ICONS, AiSettingsIcon } from '@/components/icons/SettingsIcons'
 
 export const meta: DetailsPageMeta = {
   navigator: 'settings',
@@ -246,6 +246,12 @@ export default function SettingsNavigator({
       label: t('应用'),
       icon: AppSettingsIcon,
       description: t('外观、通知、API 连接'),
+    },
+    {
+      id: 'ai',
+      label: t('AI'),
+      icon: AiSettingsIcon,
+      description: t('模型、推理深度、连接管理'),
     },
     {
       id: 'input',

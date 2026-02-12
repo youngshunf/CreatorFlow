@@ -716,6 +716,8 @@ const api: ElectronAPI = {
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_IGNORE, workspaceId, topicId),
       batchIgnore: (workspaceId: string, topicIds: string[]) =>
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_BATCH_IGNORE, workspaceId, topicIds),
+      readMd: (workspaceId: string, mdFilePath: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_READ_MD, workspaceId, mdFilePath) as Promise<string | null>,
     },
     topicSchedule: {
       get: (workspaceId: string) =>
@@ -723,19 +725,15 @@ const api: ElectronAPI = {
       update: (workspaceId: string, config: unknown) =>
         ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE, workspaceId, config),
     },
-    scheduledTasks: {
-      list: (workspaceId: string, filter?: unknown) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_LIST, workspaceId, filter),
-      get: (workspaceId: string, id: string) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_GET, workspaceId, id),
-      create: (workspaceId: string, data: unknown) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_CREATE, workspaceId, data),
-      update: (workspaceId: string, id: string, data: unknown) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE, workspaceId, id, data),
-      delete: (workspaceId: string, id: string) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_DELETE, workspaceId, id),
-      toggle: (workspaceId: string, id: string, enabled: boolean) =>
-        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE, workspaceId, id, enabled),
+    hooks: {
+      read: (workspaceId: string) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOOKS_READ, workspaceId),
+      write: (workspaceId: string, config: unknown) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOOKS_WRITE, workspaceId, config),
+    },
+    hookEvents: {
+      list: (workspaceId: string, options?: { limit?: number; eventType?: string }) =>
+        ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_HOOK_EVENTS_LIST, workspaceId, options),
     },
     reviewTasksAll: {
       list: (workspaceId: string) =>

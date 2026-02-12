@@ -3,12 +3,13 @@
  */
 
 import type { CreatorMediaDB } from '../connection.ts';
-import type { HotTopic, CreateHotTopic } from '../types.ts';
+import type { HotTopic, CreateHotTopic, HotTopicFetchSource } from '../types.ts';
 
 /** 热榜列表过滤条件 */
 export interface HotTopicFilters {
   platformId?: string;
   batchDate?: string;
+  fetchSource?: HotTopicFetchSource;
   limit?: number;
 }
 
@@ -65,6 +66,11 @@ export function listByFilters(db: CreatorMediaDB, filters?: HotTopicFilters): Ho
   if (filters?.batchDate) {
     sql += ' AND batch_date = ?';
     params.push(filters.batchDate);
+  }
+
+  if (filters?.fetchSource) {
+    sql += ' AND fetch_source = ?';
+    params.push(filters.fetchSource);
   }
 
   sql += ' ORDER BY rank ASC, heat_score DESC';

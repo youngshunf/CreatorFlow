@@ -37,7 +37,7 @@ import {
 } from '@/contexts/NavigationContext'
 import { isMarketplaceNavigation, isAppViewNavigation, isVideoNavigation } from '../../../shared/types'
 import { APP_VIEW_REGISTRY } from '../../pages/creator-media/registry'
-import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage, SourcesSettingsPage, SkillsSettingsPage } from '@/pages'
+import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AiSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage, SourcesSettingsPage, SkillsSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
 import { FileManager } from '@/components/file-manager'
@@ -249,6 +249,12 @@ export function MainContentPanel({
         return wrapWithStoplight(
           <Panel variant="grow" className={className}>
             <SubscriptionSettingsPage />
+          </Panel>
+        )
+      case 'ai':
+        return wrapWithStoplight(
+          <Panel variant="grow" className={className}>
+            <AiSettingsPage />
           </Panel>
         )
       case 'app':

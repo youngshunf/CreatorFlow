@@ -55,7 +55,7 @@ export class HookEventLogger {
   onEventLost?: (events: string[], error: Error) => void;
 
   constructor(workspaceRootPath: string) {
-    this.logPath = join(workspaceRootPath, 'events.jsonl');
+    this.logPath = join(workspaceRootPath, '.sprouty-ai', 'events.jsonl');
   }
 
   /**
@@ -73,6 +73,41 @@ export class HookEventLogger {
       time: new Date().toISOString(),
       source: 'craft-agent/hooks',
       ...event,
+    };
+    this.buffer.push(JSON.stringify(entry));
+    this.scheduleFlush();
+  }
+
+  /**
+   * 记录 hook 执行结果（独立条目，type 为 HookResult）
+   */
+  logResult(input: {
+    parentEventId?: string
+    event: string
+    hookType: 'command' | 'prompt'
+    command?: string
+    prompt?: string
+    success: boolean
+    stdout?: string
+    stderr?: string
+    blocked?: boolean
+    durationMs: number
+    sessionId?: string
+    workspaceId?: string
+  }): void {
+    if (this.isDisposed) return;
+
+    const { sessionId, workspaceId, ...data } = input;
+    const entry: LoggedHookEvent = {
+      id: randomUUID(),
+      type: 'HookResult',
+      time: new Date().toISOString(),
+      source: 'craft-agent/hooks',
+      sessionId,
+      workspaceId,
+      data,
+      results: [],
+      durationMs: input.durationMs,
     };
     this.buffer.push(JSON.stringify(entry));
     this.scheduleFlush();

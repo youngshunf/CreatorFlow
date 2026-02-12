@@ -5,6 +5,9 @@
  */
 
 import { ipcMain } from 'electron';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import type { WindowManager } from './window-manager';
 import { getCreatorMediaDB } from './creator-media-db';
 import { IPC_CHANNELS } from '../shared/types';
@@ -25,7 +28,6 @@ import * as publishQueueRepo from '@sprouty-ai/shared/db/repositories/publish-qu
 import * as draftsRepo from '@sprouty-ai/shared/db/repositories/drafts';
 import * as mediaFilesRepo from '@sprouty-ai/shared/db/repositories/media-files';
 import * as hotTopicsRepo from '@sprouty-ai/shared/db/repositories/hot-topics';
-import * as scheduledTasksRepo from '@sprouty-ai/shared/db/repositories/scheduled-tasks';
 import { HotTopicService } from '@sprouty-ai/shared/services/hot-topic-service';
 import { TopicRecommendService } from '@sprouty-ai/shared/services/topic-recommend-service';
 import { generateProjectContext } from '@sprouty-ai/shared/db';
@@ -654,43 +656,40 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
   });
 
   // ============================================================
-  // 定时任务
+  // Hooks（读写 hooks.json）
   // ============================================================
 
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_LIST, async (_event, workspaceId: string, filter?: unknown) => {
+  /** 展开 ~ 为用户主目录 */
+  function resolveWorkspacePath(rootPath: string): string {
+    if (rootPath.startsWith('~/') || rootPath === '~') {
+      return path.join(os.homedir(), rootPath.slice(1));
+    }
+    return rootPath;
+  }
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOOKS_READ, async (_event, workspaceId: string) => {
     const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.listScheduledTasks(db, filter as any);
+    const hooksPath = path.join(resolveWorkspacePath(ws.rootPath), '.sprouty-ai', 'hooks.json');
+    try {
+      const raw = fs.readFileSync(hooksPath, 'utf-8');
+      return JSON.parse(raw);
+    } catch {
+      return { hooks: {} };
+    }
   });
 
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_GET, async (_event, workspaceId: string, id: string) => {
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOOKS_WRITE, async (_event, workspaceId: string, config: unknown) => {
     const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.getScheduledTask(db, id) ?? null;
-  });
-
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_CREATE, async (_event, workspaceId: string, data: unknown) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.createScheduledTask(db, data as any);
-  });
-
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE, async (_event, workspaceId: string, id: string, data: unknown) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.updateScheduledTask(db, id, data as any) ?? null;
-  });
-
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_DELETE, async (_event, workspaceId: string, id: string) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.deleteScheduledTask(db, id);
-  });
-
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE, async (_event, workspaceId: string, id: string, enabled: boolean) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return scheduledTasksRepo.toggleEnabled(db, id, enabled) ?? null;
+    const resolved = resolveWorkspacePath(ws.rootPath);
+    const hooksDir = path.join(resolved, '.sprouty-ai');
+    const hooksPath = path.join(hooksDir, 'hooks.json');
+    // 确保目录存在
+    if (!fs.existsSync(hooksDir)) {
+      fs.mkdirSync(hooksDir, { recursive: true });
+    }
+    fs.writeFileSync(hooksPath, JSON.stringify(config, null, 2), 'utf-8');
+    // ConfigWatcher 会自动检测文件变更并调用 hookSystem.reloadConfig()
+    return { success: true };
   });
 
   // 采集调度任务 — 全量只读查看（定时任务视图用）
@@ -698,6 +697,97 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
     const ws = getWorkspaceOrThrow(workspaceId);
     const db = getCreatorMediaDB(ws.rootPath);
     return db.prepare('SELECT * FROM review_tasks ORDER BY scheduled_at DESC').all();
+  });
+
+  // ============================================================
+  // Hook 执行记录（读取 events.jsonl）
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOOK_EVENTS_LIST, async (_event, workspaceId: string, options?: { limit?: number; eventType?: string }) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const resolved = resolveWorkspacePath(ws.rootPath);
+    const eventsPath = path.join(resolved, '.sprouty-ai', 'events.jsonl');
+
+    if (!fs.existsSync(eventsPath)) return [];
+
+    const limit = options?.limit ?? 50;
+    const eventType = options?.eventType;
+
+    try {
+      // 从文件末尾反向读取，避免加载整个大文件
+      const stat = fs.statSync(eventsPath);
+      const CHUNK_SIZE = 64 * 1024; // 64KB
+      const fd = fs.openSync(eventsPath, 'r');
+      const results: any[] = [];
+
+      let position = stat.size;
+      let remainder = '';
+
+      try {
+        while (position > 0 && results.length < limit) {
+          const readSize = Math.min(CHUNK_SIZE, position);
+          position -= readSize;
+          const buf = Buffer.alloc(readSize);
+          fs.readSync(fd, buf, 0, readSize, position);
+          const chunk = buf.toString('utf-8') + remainder;
+          const lines = chunk.split('\n');
+
+          // 第一个元素可能是不完整的行，保留到下一轮
+          remainder = lines.shift() || '';
+
+          // 从后往前解析
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            try {
+              const record = JSON.parse(line);
+              if (eventType && record.type !== eventType) continue;
+              results.push(record);
+              if (results.length >= limit) break;
+            } catch {
+              // 跳过无法解析的行
+            }
+          }
+        }
+
+        // 处理最后剩余的行
+        if (remainder.trim() && results.length < limit) {
+          try {
+            const record = JSON.parse(remainder.trim());
+            if (!eventType || record.type === eventType) {
+              results.push(record);
+            }
+          } catch {
+            // 跳过
+          }
+        }
+      } finally {
+        fs.closeSync(fd);
+      }
+
+      return results;
+    } catch (err) {
+      ipcLog.warn('[creator-media-ipc] 读取 events.jsonl 失败:', err);
+      return [];
+    }
+  });
+
+  // ============================================================
+  // 选题推荐 — 读取 Markdown 详情文件
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_TOPICS_READ_MD, async (_event, workspaceId: string, mdFilePath: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    // 安全校验：确保路径在工作区目录内，防止路径穿越
+    const resolved = path.resolve(ws.rootPath, mdFilePath);
+    if (!resolved.startsWith(path.resolve(ws.rootPath))) {
+      throw new Error('路径不在工作区目录内');
+    }
+    try {
+      return fs.readFileSync(resolved, 'utf-8');
+    } catch {
+      return null;
+    }
   });
 
   ipcLog.info('[creator-media-ipc] 已注册所有 creatorMedia IPC 通道');

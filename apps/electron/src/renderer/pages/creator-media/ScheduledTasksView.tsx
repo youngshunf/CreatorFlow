@@ -1,190 +1,244 @@
 /**
- * 定时任务管理视图
+ * 定时任务管理视图（Hooks 卡片视图 + 执行记录）
  *
- * 支持查看/管理 scheduled_tasks（通用定时任务）和 review_tasks（采集调度任务，只读）
+ * 直接读取并展示工作区 hooks.json 的内容，以卡片视图呈现
+ * 同时支持查看 events.jsonl 中的 hook 执行记录
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useT } from '@/context/LocaleContext'
 import { useActiveWorkspace } from '@/context/AppShellContext'
-import { useCreatorMedia } from './hooks/useCreatorMedia'
-import { ProjectSwitcher } from './components/ProjectSwitcher'
-import { ScheduledTaskDialog } from './components/ScheduledTaskDialog'
 import { EditPopover, EditButton, getEditConfig } from '@/components/ui/EditPopover'
-import type { ScheduledTask, ScheduledTaskType, ScheduledTaskStatus, ReviewTask } from '@sprouty-ai/shared/db/types'
+import type { HookEventRecord } from '../../../shared/types'
 
-/** Tab 定义 */
-type TabId = 'all' | 'review' | 'publish' | 'custom'
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'all', label: '全部' },
-  { id: 'review', label: '采集任务' },
-  { id: 'publish', label: '发布任务' },
-  { id: 'custom', label: '自定义' },
-]
-
-/** 任务类型 badge 配置 */
-const TASK_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
-  review: { label: '采集', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  publish: { label: '发布', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  collect: { label: '采集', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  custom: { label: '自定义', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400' },
+/** hooks.json 中单个 hook 定义 */
+interface HookDefinition {
+  type: 'command' | 'prompt'
+  command?: string
+  prompt?: string
+  timeout?: number
 }
 
-/** 状态指示器配置 */
-const STATUS_CONFIG: Record<string, { label: string; dotClass: string }> = {
-  active: { label: '运行中', dotClass: 'bg-green-500' },
-  paused: { label: '已暂停', dotClass: 'bg-yellow-500' },
-  error: { label: '错误', dotClass: 'bg-red-500' },
-  completed: { label: '已完成', dotClass: 'bg-gray-400' },
-  // review_tasks 状态
-  pending: { label: '待执行', dotClass: 'bg-yellow-500' },
-  executing: { label: '执行中', dotClass: 'bg-blue-500' },
-  failed: { label: '失败', dotClass: 'bg-red-500' },
-  cancelled: { label: '已取消', dotClass: 'bg-gray-400' },
+/** hooks.json 中的 matcher 条目 */
+interface HookMatcher {
+  matcher?: string
+  cron?: string
+  timezone?: string
+  permissionMode?: string
+  labels?: string[]
+  enabled?: boolean
+  hooks: HookDefinition[]
 }
 
-/** 调度描述可读化 */
-function describeSchedule(task: ScheduledTask): string {
-  if (task.schedule_mode === 'cron' && task.cron_expression) {
-    return `cron: ${task.cron_expression}`
-  }
-  if (task.schedule_mode === 'interval' && task.interval_seconds) {
-    const secs = task.interval_seconds
-    if (secs >= 3600) return `每 ${secs / 3600} 小时`
-    if (secs >= 60) return `每 ${secs / 60} 分钟`
-    return `每 ${secs} 秒`
-  }
-  if (task.schedule_mode === 'once' && task.scheduled_at) {
-    return `单次: ${formatTime(task.scheduled_at)}`
-  }
-  return '-'
+/** hooks.json 顶层结构 */
+interface HooksConfig {
+  hooks: Record<string, HookMatcher[]>
 }
 
-/** 格式化时间 */
-function formatTime(dateStr: string | null): string {
-  if (!dateStr) return '-'
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return dateStr
-  }
+/** 扁平化后的卡片数据 */
+interface HookCard {
+  eventName: string
+  matcherIndex: number
+  matcher: HookMatcher
 }
 
-/** 统一行数据类型 */
-interface TaskRow {
-  id: string
-  name: string
-  taskType: string
-  schedule: string
-  status: string
-  enabled: boolean
-  lastRunAt: string | null
-  nextRunAt: string | null
-  isReviewTask: boolean
-  raw: ScheduledTask | ReviewTask
+/** 事件名称的可读标签 */
+const EVENT_LABELS: Record<string, string> = {
+  SchedulerTick: '定时调度',
+  UserPromptSubmit: '用户提交',
+  SessionStart: '会话开始',
+  SessionEnd: '会话结束',
+  LabelAdd: '标签添加',
+  LabelRemove: '标签移除',
+  PreToolUse: '工具调用前',
+  PostToolUse: '工具调用后',
+  Stop: '会话停止',
+}
+
+/** 事件名称的颜色配置 */
+const EVENT_COLORS: Record<string, string> = {
+  SchedulerTick: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  UserPromptSubmit: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  SessionStart: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  SessionEnd: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  LabelAdd: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  LabelRemove: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+}
+
+const DEFAULT_EVENT_COLOR = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+
+/** 执行结果状态 */
+function getResultStatus(event: HookEventRecord): 'success' | 'fail' | 'none' {
+  if (event.type !== 'HookResult') return 'none'
+  if (event.data.blocked) return 'fail'
+  return event.data.success ? 'success' : 'fail'
+}
+
+const RESULT_COLORS = {
+  success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  fail: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  none: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+}
+
+const RESULT_LABELS = { success: '成功', fail: '失败', none: '事件' }
+
+/** 格式化为相对时间 */
+function formatRelativeTime(isoTime: string): string {
+  const diff = Date.now() - new Date(isoTime).getTime()
+  if (diff < 0) return '刚刚'
+  const seconds = Math.floor(diff / 1000)
+  if (seconds < 60) return '刚刚'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}分钟前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}小时前`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}天前`
+  return new Date(isoTime).toLocaleDateString()
+}
+
+/** Hook type 标签 */
+const TYPE_COLORS: Record<string, string> = {
+  command: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  prompt: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+}
+
+/** 获取 hook 内容摘要 */
+function getHookSummary(hooks: HookDefinition[]): string {
+  if (!hooks.length) return '-'
+  const first = hooks[0]
+  const text = first.type === 'command' ? first.command : first.prompt
+  const summary = text && text.length > 60 ? text.slice(0, 60) + '...' : text || '-'
+  return hooks.length > 1 ? `${summary} (+${hooks.length - 1})` : summary
 }
 
 export default function ScheduledTasksView() {
   const t = useT()
   const activeWorkspace = useActiveWorkspace()
   const workspaceId = activeWorkspace?.id || ''
-  const { projects, activeProject, loading, switchProject } = useCreatorMedia()
 
-  const [activeTab, setActiveTab] = useState<TabId>('all')
-  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([])
-  const [reviewTasks, setReviewTasks] = useState<ReviewTask[]>([])
-  const [dataLoading, setDataLoading] = useState(false)
-  const [showDialog, setShowDialog] = useState(false)
-  const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null)
+  const [config, setConfig] = useState<HooksConfig>({ hooks: {} })
+  const [loading, setLoading] = useState(true)
 
-  /** 加载数据 */
-  const loadData = useCallback(async () => {
+  // Tab 切换 + 执行记录状态
+  const [activeTab, setActiveTab] = useState<'config' | 'logs'>('config')
+  const [events, setEvents] = useState<HookEventRecord[]>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [eventTypeFilter, setEventTypeFilter] = useState('')
+
+  /** 加载 hooks.json */
+  const loadHooks = useCallback(async () => {
     if (!workspaceId) return
-    setDataLoading(true)
+    setLoading(true)
     try {
-      const [tasks, reviews] = await Promise.all([
-        window.electronAPI.creatorMedia.scheduledTasks.list(workspaceId),
-        window.electronAPI.creatorMedia.reviewTasksAll.list(workspaceId),
-      ])
-      setScheduledTasks(tasks as ScheduledTask[])
-      setReviewTasks(reviews as ReviewTask[])
+      const data = await window.electronAPI.creatorMedia.hooks.read(workspaceId)
+      setConfig(data as HooksConfig)
     } catch {
-      setScheduledTasks([])
-      setReviewTasks([])
+      setConfig({ hooks: {} })
     } finally {
-      setDataLoading(false)
+      setLoading(false)
     }
   }, [workspaceId])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => { loadHooks() }, [loadHooks])
 
-  /** 合并为统一行数据 */
-  const allRows: TaskRow[] = [
-    ...scheduledTasks.map((task): TaskRow => ({
-      id: task.id,
-      name: task.name,
-      taskType: task.task_type,
-      schedule: describeSchedule(task),
-      status: task.status,
-      enabled: task.enabled === 1,
-      lastRunAt: task.last_run_at,
-      nextRunAt: task.next_run_at,
-      isReviewTask: false,
-      raw: task,
-    })),
-    ...reviewTasks.map((rt): TaskRow => ({
-      id: rt.id,
-      name: `采集 #${rt.publish_record_id.slice(0, 8)} (${rt.review_type})`,
-      taskType: 'review',
-      schedule: formatTime(rt.scheduled_at),
-      status: rt.status,
-      enabled: rt.status === 'pending',
-      lastRunAt: rt.executed_at,
-      nextRunAt: rt.status === 'pending' ? rt.scheduled_at : null,
-      isReviewTask: true,
-      raw: rt,
-    })),
-  ]
-
-  /** Tab 过滤 */
-  const filteredRows = allRows.filter((row) => {
-    if (activeTab === 'all') return true
-    if (activeTab === 'review') return row.taskType === 'review'
-    if (activeTab === 'publish') return row.taskType === 'publish'
-    if (activeTab === 'custom') return row.taskType === 'custom' || row.taskType === 'collect'
-    return true
-  })
-
-  /** 创建/更新任务 */
-  const handleSave = useCallback(async (data: Partial<ScheduledTask> & { id: string; name: string }) => {
+  /** 加载执行记录 */
+  const loadEvents = useCallback(async () => {
     if (!workspaceId) return
-    if (editingTask) {
-      await window.electronAPI.creatorMedia.scheduledTasks.update(workspaceId, data.id, data)
-    } else {
-      await window.electronAPI.creatorMedia.scheduledTasks.create(workspaceId, {
-        ...data,
-        project_id: activeProject?.id || null,
-      })
+    setEventsLoading(true)
+    try {
+      const data = await window.electronAPI.creatorMedia.hookEvents.list(
+        workspaceId,
+        { limit: 50, eventType: eventTypeFilter || undefined }
+      )
+      setEvents(data as HookEventRecord[])
+    } catch {
+      setEvents([])
+    } finally {
+      setEventsLoading(false)
     }
-    await loadData()
-  }, [workspaceId, editingTask, activeProject, loadData])
+  }, [workspaceId, eventTypeFilter])
 
-  /** 切换启用/禁用 */
-  const handleToggle = useCallback(async (task: ScheduledTask) => {
-    if (!workspaceId) return
-    await window.electronAPI.creatorMedia.scheduledTasks.toggle(workspaceId, task.id, task.enabled !== 1)
-    await loadData()
-  }, [workspaceId, loadData])
+  // 切换到执行记录 Tab 时自动加载
+  useEffect(() => {
+    if (activeTab === 'logs') loadEvents()
+  }, [activeTab, loadEvents])
 
-  /** 删除任务 */
-  const handleDelete = useCallback(async (task: ScheduledTask) => {
+  /** 保存 hooks.json */
+  const saveHooks = useCallback(async (newConfig: HooksConfig) => {
     if (!workspaceId) return
-    const confirmed = window.confirm(t(`确定要删除任务 "${task.name}" 吗？此操作不可撤销。`))
+    await window.electronAPI.creatorMedia.hooks.write(workspaceId, newConfig)
+    setConfig(newConfig)
+  }, [workspaceId])
+
+  /** 编辑中的卡片 */
+  const [editingCard, setEditingCard] = useState<HookCard | null>(null)
+  const [editJson, setEditJson] = useState('')
+  const [editError, setEditError] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  /** 打开编辑弹窗 */
+  const handleEdit = useCallback((card: HookCard) => {
+    setEditingCard(card)
+    setEditJson(JSON.stringify(card.matcher, null, 2))
+    setEditError('')
+  }, [])
+
+  /** 保存编辑 */
+  const handleEditSave = useCallback(async () => {
+    if (!editingCard) return
+    let parsed: HookMatcher
+    try {
+      parsed = JSON.parse(editJson)
+    } catch {
+      setEditError('JSON 格式错误')
+      return
+    }
+    if (!parsed.hooks || !Array.isArray(parsed.hooks)) {
+      setEditError('缺少 hooks 数组')
+      return
+    }
+    const newConfig = structuredClone(config)
+    const matchers = newConfig.hooks[editingCard.eventName]
+    if (!matchers?.[editingCard.matcherIndex]) return
+    matchers[editingCard.matcherIndex] = parsed
+    await saveHooks(newConfig)
+    setEditingCard(null)
+  }, [editingCard, editJson, config, saveHooks])
+
+  /** 切换 enabled 状态 */
+  const handleToggle = useCallback(async (eventName: string, matcherIndex: number) => {
+    const newConfig = structuredClone(config)
+    const matchers = newConfig.hooks[eventName]
+    if (!matchers?.[matcherIndex]) return
+    const current = matchers[matcherIndex].enabled
+    matchers[matcherIndex].enabled = current === false ? true : false
+    await saveHooks(newConfig)
+  }, [config, saveHooks])
+
+  /** 删除 matcher */
+  const handleDelete = useCallback(async (eventName: string, matcherIndex: number) => {
+    const confirmed = window.confirm(t('确定要删除这个 Hook 吗？此操作不可撤销。'))
     if (!confirmed) return
-    await window.electronAPI.creatorMedia.scheduledTasks.delete(workspaceId, task.id)
-    await loadData()
-  }, [workspaceId, loadData, t])
+    const newConfig = structuredClone(config)
+    const matchers = newConfig.hooks[eventName]
+    if (!matchers) return
+    matchers.splice(matcherIndex, 1)
+    // 如果该事件下没有 matcher 了，移除整个事件 key
+    if (matchers.length === 0) {
+      delete newConfig.hooks[eventName]
+    }
+    await saveHooks(newConfig)
+  }, [config, saveHooks, t])
+
+  /** 扁平化为卡片列表 */
+  const cards: HookCard[] = []
+  for (const [eventName, matchers] of Object.entries(config.hooks)) {
+    if (!Array.isArray(matchers)) continue
+    matchers.forEach((matcher, index) => {
+      cards.push({ eventName, matcherIndex: index, matcher })
+    })
+  }
 
   // EditPopover 配置
   const editConfig = activeWorkspace
@@ -206,12 +260,36 @@ export default function ScheduledTasksView() {
         <div>
           <h1 className="text-base font-semibold text-foreground">{t('定时任务')}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {t('管理定时发布、采集和自定义任务')}
+            {t('管理工作区 Hooks 配置')}
           </p>
         </div>
+        {/* Tab 切换（居中） */}
+        <div className="titlebar-no-drag absolute left-1/2 -translate-x-1/2 flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('config')}
+            className={`rounded-md px-4 py-1 text-sm font-medium transition-colors ${
+              activeTab === 'config'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t('配置')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('logs')}
+            className={`rounded-md px-4 py-1 text-sm font-medium transition-colors ${
+              activeTab === 'logs'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t('执行记录')}
+          </button>
+        </div>
         <div className="titlebar-no-drag flex items-center gap-2">
-          {/* AI 辅助编辑 */}
-          {editConfig && (
+          {activeTab === 'config' && editConfig && (
             <EditPopover
               trigger={<EditButton />}
               context={editConfig.context}
@@ -219,140 +297,74 @@ export default function ScheduledTasksView() {
               model={editConfig.model}
               systemPromptPreset={editConfig.systemPromptPreset}
               inlineExecution={editConfig.inlineExecution}
+              overridePlaceholder={editConfig.overridePlaceholder}
             />
           )}
+          {/* 刷新按钮 */}
           <button
             type="button"
-            onClick={() => {
-              setEditingTask(null)
-              setShowDialog(true)
-            }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:bg-foreground/90 transition-colors"
+            onClick={activeTab === 'config' ? loadHooks : loadEvents}
+            className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title={t('刷新')}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
             </svg>
-            {t('新建任务')}
           </button>
-          <ProjectSwitcher projects={projects} activeProject={activeProject} onSwitch={switchProject} />
         </div>
       </div>
 
-      {/* Tab 栏 */}
-      <div className="px-6 pt-3">
-        <div className="flex gap-1 border-b border-border/30">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === tab.id
-                  ? 'border-foreground text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t(tab.label)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* 配置 Tab */}
+      {activeTab === 'config' && (
+        <div className="flex-1 overflow-auto px-6 py-4">
+          {cards.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {cards.map((card) => {
+                const { eventName, matcherIndex, matcher } = card
+                const isEnabled = matcher.enabled !== false
+                const hookType = matcher.hooks?.[0]?.type || 'command'
 
-      {/* 数据表 */}
-      <div className="flex-1 overflow-auto px-6 py-4">
-        {dataLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">{t('加载中...')}</p>
-          </div>
-        ) : filteredRows.length > 0 ? (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border/40 text-muted-foreground">
-                <th className="text-left py-2 pr-3 font-medium">{t('名称')}</th>
-                <th className="text-left py-2 pr-3 font-medium">{t('类型')}</th>
-                <th className="text-left py-2 pr-3 font-medium">{t('调度')}</th>
-                <th className="text-left py-2 pr-3 font-medium">{t('状态')}</th>
-                <th className="text-left py-2 pr-3 font-medium">{t('上次运行')}</th>
-                <th className="text-left py-2 pr-3 font-medium">{t('下次运行')}</th>
-                <th className="text-right py-2 font-medium">{t('操作')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row) => (
-                <tr key={row.id} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
-                  {/* 名称 */}
-                  <td className="py-2.5 pr-3">
-                    <span className="text-sm text-foreground">{row.name}</span>
-                  </td>
-                  {/* 类型 badge */}
-                  <td className="py-2.5 pr-3">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      TASK_TYPE_CONFIG[row.taskType]?.className || TASK_TYPE_CONFIG.custom.className
-                    }`}>
-                      {t(TASK_TYPE_CONFIG[row.taskType]?.label || row.taskType)}
-                    </span>
-                  </td>
-                  {/* 调度 */}
-                  <td className="py-2.5 pr-3 text-muted-foreground font-mono text-[11px]">
-                    {row.schedule}
-                  </td>
-                  {/* 状态 */}
-                  <td className="py-2.5 pr-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        STATUS_CONFIG[row.status]?.dotClass || 'bg-gray-400'
-                      }`} />
-                      <span className="text-muted-foreground">
-                        {t(STATUS_CONFIG[row.status]?.label || row.status)}
-                      </span>
-                    </div>
-                  </td>
-                  {/* 上次运行 */}
-                  <td className="py-2.5 pr-3 text-muted-foreground">
-                    {formatTime(row.lastRunAt)}
-                  </td>
-                  {/* 下次运行 */}
-                  <td className="py-2.5 pr-3 text-muted-foreground">
-                    {formatTime(row.nextRunAt)}
-                  </td>
-                  {/* 操作 */}
-                  <td className="py-2.5 text-right">
-                    {row.isReviewTask ? (
-                      <span className="text-[10px] text-muted-foreground/60">{t('只读')}</span>
-                    ) : (
-                      <div className="flex items-center justify-end gap-1">
-                        {/* 启用/禁用 */}
+                return (
+                  <div
+                    key={`${eventName}-${matcherIndex}`}
+                    className={`rounded-lg border bg-background/60 p-4 transition-colors cursor-pointer hover:border-accent/50 ${
+                      isEnabled ? 'border-border/60' : 'border-border/30 opacity-60'
+                    }`}
+                    onClick={() => handleEdit(card)}
+                  >
+                    {/* 卡片头部：事件标签 + type 标签 + 开关 */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          EVENT_COLORS[eventName] || DEFAULT_EVENT_COLOR
+                        }`}>
+                          {t(EVENT_LABELS[eventName] || eventName)}
+                        </span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          TYPE_COLORS[hookType] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {hookType}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        {/* 启用/禁用开关 */}
                         <button
                           type="button"
-                          onClick={() => handleToggle(row.raw as ScheduledTask)}
+                          onClick={() => handleToggle(eventName, matcherIndex)}
                           className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                            row.enabled ? 'bg-accent' : 'bg-muted'
+                            isEnabled ? 'bg-accent' : 'bg-muted'
                           }`}
-                          title={row.enabled ? t('禁用') : t('启用')}
+                          title={isEnabled ? t('禁用') : t('启用')}
                         >
                           <span className={`inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform ${
-                            row.enabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                            isEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
                           }`} />
-                        </button>
-                        {/* 编辑 */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingTask(row.raw as ScheduledTask)
-                            setShowDialog(true)
-                          }}
-                          className="rounded px-1.5 py-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                          title={t('编辑')}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-                          </svg>
                         </button>
                         {/* 删除 */}
                         <button
                           type="button"
-                          onClick={() => handleDelete(row.raw as ScheduledTask)}
-                          className="rounded px-1.5 py-0.5 text-red-500/70 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          onClick={() => handleDelete(eventName, matcherIndex)}
+                          className="rounded px-1 py-0.5 text-red-500/70 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           title={t('删除')}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -360,40 +372,221 @@ export default function ScheduledTasksView() {
                           </svg>
                         </button>
                       </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          /* 空状态 */
-          <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-12">
-            <div className="text-center space-y-3">
-              <svg className="mx-auto w-10 h-10 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t('还没有定时任务')}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t('创建定时任务来自动执行发布、采集等操作')}
-                </p>
+                    </div>
+
+                    {/* 调度信息 */}
+                    <div className="space-y-1.5 text-xs">
+                      {matcher.cron && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground w-12 shrink-0">cron</span>
+                          <code className="font-mono text-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded text-[11px]">
+                            {matcher.cron}
+                          </code>
+                          {matcher.timezone && (
+                            <span className="text-muted-foreground/60 text-[10px]">{matcher.timezone}</span>
+                          )}
+                        </div>
+                      )}
+                      {matcher.matcher && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground w-12 shrink-0">match</span>
+                          <code className="font-mono text-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded text-[11px]">
+                            {matcher.matcher}
+                          </code>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2">
+                        <span className="text-muted-foreground w-12 shrink-0">{hookType}</span>
+                        <span className="text-foreground/70 break-all leading-relaxed">
+                          {getHookSummary(matcher.hooks || [])}
+                        </span>
+                      </div>
+                      {matcher.labels && matcher.labels.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground w-12 shrink-0">labels</span>
+                          <div className="flex flex-wrap gap-1">
+                            {matcher.labels.map((label) => (
+                              <span key={label} className="text-[10px] bg-muted/60 px-1.5 py-0.5 rounded">
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            /* 空状态 */
+            <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-12">
+              <div className="text-center space-y-3">
+                <svg className="mx-auto w-10 h-10 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('还没有配置 Hook')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('点击右上角编辑按钮，通过 AI 助手快速创建')}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* 新建/编辑 Dialog */}
-      <ScheduledTaskDialog
-        open={showDialog}
-        onClose={() => {
-          setShowDialog(false)
-          setEditingTask(null)
-        }}
-        onSave={handleSave}
-        editingTask={editingTask}
-      />
+      {/* 执行记录 Tab */}
+      {activeTab === 'logs' && (
+        <div className="flex-1 overflow-auto px-6 py-4">
+          {/* 筛选栏 */}
+          <div className="flex items-center gap-2 mb-4">
+            <select
+              value={eventTypeFilter}
+              onChange={(e) => setEventTypeFilter(e.target.value)}
+              className="rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+            >
+              <option value="">{t('全部事件')}</option>
+              <option value="HookResult">{t('执行结果')}</option>
+              <option value="SchedulerTick">{t('定时调度')}</option>
+              <option value="UserPromptSubmit">{t('用户提交')}</option>
+              <option value="SessionStart">{t('会话开始')}</option>
+              <option value="SessionEnd">{t('会话结束')}</option>
+              <option value="LabelAdd">{t('标签添加')}</option>
+              <option value="LabelRemove">{t('标签移除')}</option>
+            </select>
+          </div>
+
+          {eventsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-muted-foreground">{t('加载中...')}</p>
+            </div>
+          ) : events.length > 0 ? (
+            <div className="space-y-2">
+              {events.map((evt) => {
+                const resultStatus = getResultStatus(evt)
+                const eventLabel = EVENT_LABELS[evt.data.event as string] || EVENT_LABELS[evt.type] || evt.type
+                const eventColor = EVENT_COLORS[evt.data.event as string] || EVENT_COLORS[evt.type] || DEFAULT_EVENT_COLOR
+                const commandOrPrompt = (evt.data.command as string) || (evt.data.prompt as string) || ''
+
+                return (
+                  <div
+                    key={evt.id}
+                    className="rounded-lg border border-border/60 bg-background/60 px-4 py-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${eventColor}`}>
+                          {t(eventLabel)}
+                        </span>
+                        {evt.type === 'HookResult' && (
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${RESULT_COLORS[resultStatus]}`}>
+                            {t(RESULT_LABELS[resultStatus])}
+                          </span>
+                        )}
+                        {evt.data.hookType && (
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            TYPE_COLORS[evt.data.hookType as string] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                          }`}>
+                            {evt.data.hookType as string}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        {evt.durationMs > 0 && <span>{evt.durationMs}ms</span>}
+                        <span>{formatRelativeTime(evt.time)}</span>
+                      </div>
+                    </div>
+                    {commandOrPrompt && (
+                      <div className="mt-2">
+                        <code className="text-[11px] font-mono text-foreground/70 bg-muted/40 px-2 py-1 rounded block break-all">
+                          {evt.data.hookType === 'command' ? '$ ' : ''}{commandOrPrompt.length > 120 ? commandOrPrompt.slice(0, 120) + '...' : commandOrPrompt}
+                        </code>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-12">
+              <div className="text-center space-y-3">
+                <svg className="mx-auto w-10 h-10 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('暂无执行记录')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('Hook 触发后，执行记录将显示在这里')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 编辑弹窗 */}
+      {editingCard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditingCard(null)}>
+          <div
+            className="bg-background border border-border rounded-xl shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 弹窗头部 */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-foreground">{t('编辑 Hook')}</h2>
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  EVENT_COLORS[editingCard.eventName] || DEFAULT_EVENT_COLOR
+                }`}>
+                  {t(EVENT_LABELS[editingCard.eventName] || editingCard.eventName)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCard(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {/* JSON 编辑区 */}
+            <div className="flex-1 overflow-auto px-5 py-4">
+              <textarea
+                ref={textareaRef}
+                value={editJson}
+                onChange={(e) => { setEditJson(e.target.value); setEditError('') }}
+                className="w-full h-64 font-mono text-xs bg-muted/30 border border-border/60 rounded-lg p-3 resize-y focus:outline-none focus:ring-1 focus:ring-accent/50 text-foreground"
+                spellCheck={false}
+              />
+              {editError && (
+                <p className="mt-2 text-xs text-red-500">{editError}</p>
+              )}
+            </div>
+            {/* 弹窗底部 */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border/40">
+              <button
+                type="button"
+                onClick={() => setEditingCard(null)}
+                className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                {t('取消')}
+              </button>
+              <button
+                type="button"
+                onClick={handleEditSave}
+                className="rounded-md px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
+              >
+                {t('保存')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -188,13 +188,22 @@ export class HookSystem implements HooksConfigProvider {
    * Create and register all handlers.
    */
   private createHandlers(): void {
-    // Command handler
+    // Event log handler (先创建，以便将 logger 传递给 CommandHandler)
+    this.eventLogHandler = new EventLogHandler({
+      workspaceRootPath: this.options.workspaceRootPath,
+      workspaceId: this.options.workspaceId,
+      onEventLost: this.options.onEventLost,
+    });
+    this.eventLogHandler.subscribe(this.eventBus);
+
+    // Command handler（注入 eventLogger 以记录执行结果）
     this.commandHandler = new CommandHandler(
       {
         workspaceRootPath: this.options.workspaceRootPath,
         workingDir: this.options.workingDir,
         activeSourceSlugs: this.options.activeSourceSlugs,
         onError: this.options.onError,
+        eventLogger: this.eventLogHandler.getLogger(),
       },
       this
     );
@@ -210,14 +219,6 @@ export class HookSystem implements HooksConfigProvider {
       this
     );
     this.promptHandler.subscribe(this.eventBus);
-
-    // Event log handler
-    this.eventLogHandler = new EventLogHandler({
-      workspaceRootPath: this.options.workspaceRootPath,
-      workspaceId: this.options.workspaceId,
-      onEventLost: this.options.onEventLost,
-    });
-    this.eventLogHandler.subscribe(this.eventBus);
 
     log.debug(`[HookSystem] Handlers created and subscribed`);
   }

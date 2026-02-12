@@ -580,31 +580,18 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
 
   'creator-media-edit-scheduled-task': (location) => ({
     context: {
-      label: '定时任务',
-      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      label: '定时任务 (Hooks)',
+      filePath: `${location}/.sprouty-ai/hooks.json`,
       context:
-        '用户想要通过 AI 辅助管理定时任务。\n\n' +
-        '操作步骤：\n' +
-        '1. 先读取当前定时任务列表：\n' +
-        '   sqlite3 -header -column .sprouty-ai/db/creator.db "SELECT id, name, task_type, schedule_mode, cron_expression, interval_seconds, enabled, status FROM scheduled_tasks ORDER BY created_at DESC;"\n' +
-        '2. 根据用户需求，使用 sqlite3 INSERT/UPDATE/DELETE 操作 scheduled_tasks 表\n\n' +
-        '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
-        '字段说明：\n' +
-        '- task_type：review / publish / collect / custom\n' +
-        '- schedule_mode：cron / interval / once\n' +
-        '- cron_expression：Cron 表达式（当 schedule_mode=cron 时）\n' +
-        '- interval_seconds：间隔秒数（当 schedule_mode=interval 时）\n' +
-        '- scheduled_at：执行时间（当 schedule_mode=once 时）\n' +
-        '- enabled：1=启用 0=禁用\n' +
-        '- status：active / paused / error / completed\n' +
-        '- payload：JSON 格式的任务配置\n\n' +
-        '重要：\n' +
-        '- 必须使用 sqlite3 命令操作数据库\n' +
-        '- 新建任务时 id 使用 UUID\n' +
-        '- 操作完成后告知用户',
+        '用户想要通过 AI 辅助管理工作区的 hooks.json 配置。\n\n' +
+        'hooks.json 结构：\n' +
+        '{\n  "hooks": {\n    "EventName": [{ matcher?, cron?, timezone?, enabled?, hooks: [{ type: "command"|"prompt", command?, prompt? }] }]\n  }\n}\n\n' +
+        '支持的事件：SchedulerTick, LabelAdd, LabelRemove, UserPromptSubmit, SessionStart, SessionEnd 等\n' +
+        '定时任务使用 SchedulerTick 事件 + cron 表达式\n\n' +
+        '操作：先 cat .sprouty-ai/hooks.json 查看当前配置，然后根据用户需求修改并写回文件',
     },
-    example: '创建一个每天早上8点执行的采集任务',
-    overridePlaceholder: '描述你想创建或修改的定时任务',
+    example: '创建一个每天早上9点检查热榜的定时任务',
+    overridePlaceholder: '描述你想创建或修改的 Hook',
     model: 'haiku',
     systemPromptPreset: 'default',
     inlineExecution: true,

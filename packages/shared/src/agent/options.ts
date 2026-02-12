@@ -1,7 +1,7 @@
 import type { Options } from "@anthropic-ai/claude-agent-sdk";
 import { join, dirname } from "path";
 import { homedir } from "os";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, mkdirSync, symlinkSync, lstatSync, readlinkSync } from "fs";
 import { debug } from "../utils/debug";
 
 declare const CREATOR_FLOW_CLI_VERSION: string | undefined;
@@ -184,6 +184,55 @@ function ensureSdkSkillsDir(): void {
             // If we can't create it (e.g., permission denied), let SDK fail with a better error
             debug(`[options] Failed to create SDK skills directory ${skillsDir}: ${err}`);
         }
+    }
+}
+
+/**
+ * Ensure the SDK can discover workspace skills stored in .sprouty-ai/skills/.
+ *
+ * The Claude Agent SDK hardcodes skill discovery to {pluginPath}/.claude/skills/.
+ * CreatorFlow stores skills in {workspace}/.sprouty-ai/skills/ instead.
+ * This function creates a symlink: .claude/skills → .sprouty-ai/skills
+ * so the SDK's native Skill tool can find and execute workspace skills.
+ *
+ * Safe to call multiple times — skips if symlink already points to the correct target.
+ */
+export function ensureWorkspaceSkillsSymlink(workspaceRootPath: string): void {
+    const sproutySkillsDir = join(workspaceRootPath, '.sprouty-ai', 'skills');
+    if (!existsSync(sproutySkillsDir)) return; // No skills to link
+
+    const claudeDir = join(workspaceRootPath, '.claude');
+    const claudeSkillsDir = join(claudeDir, 'skills');
+
+    try {
+        // Check if symlink already exists and points to the right target
+        if (existsSync(claudeSkillsDir)) {
+            try {
+                const stat = lstatSync(claudeSkillsDir);
+                if (stat.isSymbolicLink()) {
+                    const target = readlinkSync(claudeSkillsDir);
+                    if (target === sproutySkillsDir) return; // Already correct
+                    // Wrong target — remove and recreate
+                    unlinkSync(claudeSkillsDir);
+                } else {
+                    // It's a real directory — don't touch it
+                    debug(`[options] .claude/skills is a real directory, skipping symlink`);
+                    return;
+                }
+            } catch {
+                return; // Can't inspect, don't touch
+            }
+        }
+
+        // Ensure .claude/ directory exists
+        if (!existsSync(claudeDir)) {
+            mkdirSync(claudeDir, { recursive: true });
+        }
+
+        symlinkSync(sproutySkillsDir, claudeSkillsDir, 'dir');
+        debug(`[options] Created symlink: .claude/skills → .sprouty-ai/skills`);
+    } catch (err) {
+        debug(`[options] Failed to create skills symlink: ${err}`);
     }
 }
 

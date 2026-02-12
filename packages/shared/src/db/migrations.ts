@@ -158,6 +158,13 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type)');
     },
   },
+  {
+    version: 9,
+    description: '选题推荐表新增 md_file_path 字段',
+    up: (db) => {
+      db.exec('ALTER TABLE recommended_topics ADD COLUMN md_file_path TEXT');
+    },
+  },
 ];
 
 /**

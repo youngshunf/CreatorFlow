@@ -77,7 +77,7 @@ export function HotTopicsPanel() {
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-medium text-foreground">{t('热榜')}</h2>
           {batchInfo && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {new Date(batchInfo.fetchedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
@@ -87,7 +87,7 @@ export function HotTopicsPanel() {
           <select
             value={selectedPlatform}
             onChange={(e) => setSelectedPlatform(e.target.value)}
-            className="h-6 rounded border border-border/60 bg-background px-1.5 text-[11px] text-foreground outline-none focus:border-foreground/30"
+            className="h-6 rounded border border-border/60 bg-background px-1.5 text-xs text-foreground outline-none focus:border-foreground/30"
           >
             {PLATFORMS.map((p) => (
               <option key={p.id} value={p.id}>{t(p.name)}</option>
@@ -123,7 +123,7 @@ export function HotTopicsPanel() {
           /* 全部平台：按平台分组显示 */
           Object.entries(grouped).map(([platformId, items]) => (
             <div key={platformId} className="mb-3 last:mb-0">
-              <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">
                 {t(PLATFORMS.find(p => p.id === platformId)?.name ?? items[0]?.platform_name ?? platformId)}
               </p>
               <div className="space-y-0.5">
@@ -153,7 +153,7 @@ function TopicRow({ item }: { item: HotTopic }) {
   const inner = (
     <>
       {/* 排名 */}
-      <span className={`w-5 text-center text-[11px] font-semibold shrink-0 ${
+      <span className={`w-5 text-center text-xs font-semibold shrink-0 ${
         item.rank != null && item.rank <= 3 ? 'text-orange-500' : 'text-muted-foreground/60'
       }`}>
         {item.rank ?? '-'}
@@ -164,7 +164,7 @@ function TopicRow({ item }: { item: HotTopic }) {
       </span>
       {/* 热度 */}
       {item.heat_score != null && (
-        <span className="shrink-0 text-[10px] text-muted-foreground/70">
+        <span className="shrink-0 text-xs text-muted-foreground/70">
           {formatHeat(item.heat_score)}
         </span>
       )}

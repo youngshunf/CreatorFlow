@@ -1081,16 +1081,31 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_TOPIC_SCHEDULE_GET: 'creatorMedia:topicSchedule:get',
   CREATOR_MEDIA_TOPIC_SCHEDULE_UPDATE: 'creatorMedia:topicSchedule:update',
 
-  // 定时任务
-  CREATOR_MEDIA_SCHEDULED_TASKS_LIST: 'creatorMedia:scheduledTasks:list',
-  CREATOR_MEDIA_SCHEDULED_TASKS_GET: 'creatorMedia:scheduledTasks:get',
-  CREATOR_MEDIA_SCHEDULED_TASKS_CREATE: 'creatorMedia:scheduledTasks:create',
-  CREATOR_MEDIA_SCHEDULED_TASKS_UPDATE: 'creatorMedia:scheduledTasks:update',
-  CREATOR_MEDIA_SCHEDULED_TASKS_DELETE: 'creatorMedia:scheduledTasks:delete',
-  CREATOR_MEDIA_SCHEDULED_TASKS_TOGGLE: 'creatorMedia:scheduledTasks:toggle',
+  // Hooks（读写 hooks.json）
+  CREATOR_MEDIA_HOOKS_READ: 'creatorMedia:hooks:read',
+  CREATOR_MEDIA_HOOKS_WRITE: 'creatorMedia:hooks:write',
   // 采集调度任务（全量只读查看）
   CREATOR_MEDIA_REVIEW_TASKS_LIST_ALL: 'creatorMedia:reviewTasks:listAll',
+
+  // Hook 执行记录
+  CREATOR_MEDIA_HOOK_EVENTS_LIST: 'creatorMedia:hookEvents:list',
+
+  // 选题推荐 — 读取 Markdown 详情
+  CREATOR_MEDIA_TOPICS_READ_MD: 'creatorMedia:topics:readMd',
 } as const
+
+/** Hook 事件记录（events.jsonl 中的条目） */
+export interface HookEventRecord {
+  id: string
+  type: string
+  time: string
+  source: string
+  sessionId?: string
+  workspaceId?: string
+  data: Record<string, unknown>
+  results: unknown[]
+  durationMs: number
+}
 
 /**
  * Tool icon mapping for CLI command icons in chat activity
@@ -1558,7 +1573,7 @@ export interface ElectronAPI {
     }
     hotTopics: {
       fetch(workspaceId: string, platforms?: string[]): Promise<{ count: number; source: import('@sprouty-ai/shared/db/types').HotTopicFetchSource }>
-      list(workspaceId: string, filters?: { platformId?: string; batchDate?: string; limit?: number }): Promise<import('@sprouty-ai/shared/db/types').HotTopic[]>
+      list(workspaceId: string, filters?: { platformId?: string; batchDate?: string; fetchSource?: import('@sprouty-ai/shared/db/types').HotTopicFetchSource; limit?: number }): Promise<import('@sprouty-ai/shared/db/types').HotTopic[]>
       getLatestBatch(workspaceId: string): Promise<{ batchDate: string; fetchedAt: string; count: number } | null>
     }
     topics: {
@@ -1567,10 +1582,21 @@ export interface ElectronAPI {
       adopt(workspaceId: string, topicId: string, projectId: string, pipelineMode?: string): Promise<{ topic: import('@sprouty-ai/shared/db/types').RecommendedTopic; content: import('@sprouty-ai/shared/db/types').Content } | null>
       ignore(workspaceId: string, topicId: string): Promise<boolean>
       batchIgnore(workspaceId: string, topicIds: string[]): Promise<number>
+      readMd(workspaceId: string, mdFilePath: string): Promise<string | null>
     }
     topicSchedule: {
       get(workspaceId: string): Promise<{ hours: number[]; autoGenerate: boolean }>
       update(workspaceId: string, config: { hours?: number[]; autoGenerate?: boolean }): Promise<void>
+    }
+    hooks: {
+      read(workspaceId: string): Promise<unknown>
+      write(workspaceId: string, config: unknown): Promise<{ success: boolean }>
+    }
+    hookEvents: {
+      list(workspaceId: string, options?: { limit?: number; eventType?: string }): Promise<HookEventRecord[]>
+    }
+    reviewTasksAll: {
+      list(workspaceId: string): Promise<unknown[]>
     }
   }
 

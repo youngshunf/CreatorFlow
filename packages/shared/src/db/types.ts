@@ -469,7 +469,7 @@ export type CreateMediaFile = Omit<MediaFile, 'created_at'>;
 // ============================================================
 
 /** 热榜数据来源 */
-export type HotTopicFetchSource = 'newsnow' | 'self-hosted';
+export type HotTopicFetchSource = 'newsnow' | 'self-hosted' | 'ai-scout';
 
 /** hot_topics — 热榜快照表 */
 export interface HotTopic {
@@ -495,31 +495,19 @@ export type CreateHotTopic = Omit<HotTopic, 'created_at'>;
 /** 选题推荐状态: 0=待选 1=已采纳 2=已忽略 */
 export type TopicRecommendStatus = 0 | 1 | 2;
 
-/** recommended_topics — 选题推荐表 */
+/** recommended_topics — 选题推荐表（精简版，详情存 Markdown 文件） */
 export interface RecommendedTopic {
   id: string;
   project_id: string;
   title: string;
-  industry_id: number | null;
+  reason: string | null;             // 推荐理由
   potential_score: number;
   heat_index: number;
-  reason: string | null;
-  keywords: string | null;          // JSON
-  platform_heat: string | null;     // JSON
-  heat_sources: string | null;      // JSON
-  trend: string | null;             // JSON
-  industry_tags: string | null;     // JSON
-  target_audience: string | null;   // JSON
-  creative_angles: string | null;   // JSON
-  content_outline: string | null;   // JSON
-  format_suggestions: string | null; // JSON
-  material_clues: string | null;    // JSON
-  risk_notes: string | null;        // JSON
-  source_info: string | null;       // JSON
-  batch_date: string | null;
-  source_uid: string | null;
   status: TopicRecommendStatus;
   content_id: string | null;
+  md_file_path: string | null;      // Markdown 文件相对路径
+  source_uid: string | null;
+  batch_date: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -533,49 +521,6 @@ export type UpdateRecommendedTopic = Partial<Omit<RecommendedTopic, 'id' | 'proj
 
 /** 视频渲染状态 */
 export type VideoRenderStatus = 'not_started' | 'rendering' | 'completed' | 'failed';
-
-// ============================================================
-// 定时任务
-// ============================================================
-
-/** 定时任务类型 */
-export type ScheduledTaskType = 'review' | 'publish' | 'collect' | 'custom';
-
-/** 定时任务状态 */
-export type ScheduledTaskStatus = 'active' | 'paused' | 'error' | 'completed';
-
-/** 调度模式 */
-export type ScheduleMode = 'cron' | 'interval' | 'once';
-
-/** scheduled_tasks — 定时任务表 */
-export interface ScheduledTask {
-  id: string;
-  project_id: string | null;
-  name: string;
-  description: string | null;
-  task_type: ScheduledTaskType;
-  schedule_mode: ScheduleMode;
-  cron_expression: string | null;
-  interval_seconds: number | null;
-  scheduled_at: string | null;
-  enabled: number;                   // SQLite boolean: 0 | 1
-  status: ScheduledTaskStatus;
-  last_run_at: string | null;
-  next_run_at: string | null;
-  run_count: number;
-  last_error: string | null;
-  payload: string | null;            // JSON: 任务特定配置
-  created_at: string;
-  updated_at: string;
-}
-
-export type CreateScheduledTask = Omit<ScheduledTask, 'created_at' | 'updated_at' | 'run_count' | 'last_run_at' | 'last_error'> & {
-  run_count?: number;
-  last_run_at?: string | null;
-  last_error?: string | null;
-};
-
-export type UpdateScheduledTask = Partial<Omit<ScheduledTask, 'id' | 'created_at'>> & { updated_at?: string };
 
 /** 视频内容元数据 — 存储在 contents.metadata JSON 字段 */
 export interface ContentVideoMetadata {

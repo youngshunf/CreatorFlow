@@ -41,6 +41,8 @@ export interface CommandHandlerOptions {
   activeSourceSlugs?: string[];
   /** Called when a command execution fails */
   onError?: (event: HookEvent, error: Error) => void;
+  /** 事件日志记录器，用于记录命令执行结果 */
+  eventLogger?: import('../event-logger.ts').HookEventLogger;
 }
 
 /** Options for creating a PromptHandler */

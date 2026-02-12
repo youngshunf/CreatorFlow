@@ -3368,7 +3368,7 @@ function AppShellContent({
           {isSessionsNavigation(navState) && isFilePreviewVisible && (
           <div
             style={{ flex: filePreviewRatio }}
-            className="overflow-hidden min-w-0 h-full bg-foreground-2 shadow-middle rounded-[10px]"
+            className="overflow-hidden min-w-0 h-full bg-foreground-2 shadow-middle rounded-[10px] scenic-opaque"
           >
               <FilePreviewPanel
                 file={selectedFile}

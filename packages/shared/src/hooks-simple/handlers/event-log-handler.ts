@@ -63,6 +63,13 @@ export class EventLogHandler implements HookHandler {
   }
 
   /**
+   * 获取内部 HookEventLogger 实例（供 CommandHandler 记录执行结果）
+   */
+  getLogger(): HookEventLogger {
+    return this.logger;
+  }
+
+  /**
    * Get the path to the event log file.
    */
   getLogPath(): string {

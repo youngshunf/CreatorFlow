@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -309,31 +309,6 @@ CREATE TABLE IF NOT EXISTS media_files (
 CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id);
 CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type);
 
--- 定时任务表
-CREATE TABLE IF NOT EXISTS scheduled_tasks (
-  id                TEXT PRIMARY KEY,
-  project_id        TEXT REFERENCES projects(id) ON DELETE SET NULL,
-  name              TEXT NOT NULL,
-  description       TEXT,
-  task_type         TEXT NOT NULL DEFAULT 'custom',
-  schedule_mode     TEXT NOT NULL DEFAULT 'cron',
-  cron_expression   TEXT,
-  interval_seconds  INTEGER,
-  scheduled_at      DATETIME,
-  enabled           INTEGER DEFAULT 1,
-  status            TEXT DEFAULT 'active',
-  last_run_at       DATETIME,
-  next_run_at       DATETIME,
-  run_count         INTEGER DEFAULT 0,
-  last_error        TEXT,
-  payload           TEXT,
-  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_project ON scheduled_tasks(project_id);
-CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_next_run ON scheduled_tasks(next_run_at) WHERE enabled = 1;
-
 -- 热榜快照表
 CREATE TABLE IF NOT EXISTS hot_topics (
   id            TEXT PRIMARY KEY,
@@ -374,6 +349,7 @@ CREATE TABLE IF NOT EXISTS recommended_topics (
   material_clues    TEXT,
   risk_notes        TEXT,
   source_info       TEXT,
+  md_file_path      TEXT,
   batch_date        TEXT,
   source_uid        TEXT,
   status            INTEGER NOT NULL DEFAULT 0,
@@ -391,5 +367,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_rec_topics_dedup ON recommended_topics(sou
 /** 初始版本记录 SQL */
 export const INITIAL_VERSION_SQL = `
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (7, '新增热榜快照表与选题推荐表');
-INSERT OR IGNORE INTO schema_version (version, description) VALUES (8, '新增定时任务表');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (8, '移除定时任务表（迁移至 hooks.json）');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (9, '选题推荐表新增 md_file_path 字段');
 `;

@@ -95,8 +95,7 @@ export default function AppSettingsPage() {
   const loadSettings = useCallback(async () => {
     if (!window.electronAPI) return
     try {
-      const [billing, notificationsOn, keepAwakeOn, sub] = await Promise.all([
-        window.electronAPI.getApiSetup(),
+      const [notificationsOn, keepAwakeOn, sub] = await Promise.all([
         window.electronAPI.getNotificationsEnabled(),
         window.electronAPI.getKeepAwakeWhileRunning(),
         subscriptionApi.getInfo().catch(() => null),

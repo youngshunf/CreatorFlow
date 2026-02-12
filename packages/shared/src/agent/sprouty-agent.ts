@@ -1,5 +1,5 @@
 import { query, createSdkMcpServer, tool, AbortError, type Query, type SDKMessage, type SDKUserMessage, type SDKAssistantMessageError, type Options } from '@anthropic-ai/claude-agent-sdk';
-import { getDefaultOptions, resetClaudeConfigCheck } from './options.ts';
+import { getDefaultOptions, resetClaudeConfigCheck, ensureWorkspaceSkillsSymlink } from './options.ts';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources';
 import { z } from 'zod';
 import { getSystemPrompt } from '../prompts/system.ts';
@@ -719,6 +719,9 @@ export class SproutyAgent extends BaseAgent {
           systemPrompt: 'lean (no Claude Code preset)',
         });
       }
+
+      // Ensure SDK can discover workspace skills via .claude/skills → .sprouty-ai/skills symlink
+      ensureWorkspaceSkillsSymlink(this.workspaceRootPath);
 
       const options: Options = {
         ...getDefaultOptions(),
@@ -1824,6 +1827,15 @@ export class SproutyAgent extends BaseAgent {
 
     parts.push(...contextParts);
 
+    // SKILL INJECTION: Extract skill mentions from message and inject SKILL.md content.
+    // The SDK's native Skill tool discovers skills from .claude/skills/ (via symlink),
+    // but we also inject content directly for reliability — ensures the agent has
+    // full skill context even if SDK discovery fails.
+    const { skillContents, cleanMessage } = this.extractSkillContent(text);
+    if (skillContents.length > 0) {
+      parts.push(...skillContents);
+    }
+
     // Add file attachments with stored path info (agent uses Read tool to access content)
     // Text files are NOT embedded inline to prevent context overflow from large files
     if (attachments) {
@@ -1839,9 +1851,9 @@ export class SproutyAgent extends BaseAgent {
       }
     }
 
-    // Add user's message
-    if (text) {
-      parts.push(text);
+    // Add user's message (with skill mentions stripped)
+    if (cleanMessage) {
+      parts.push(cleanMessage);
     }
 
     return parts.join('\n\n');
@@ -1865,6 +1877,12 @@ export class SproutyAgent extends BaseAgent {
 
     for (const part of contextParts) {
       contentBlocks.push({ type: 'text', text: part });
+    }
+
+    // SKILL INJECTION: Same as buildTextPrompt — inject SKILL.md content for reliability
+    const { skillContents, cleanMessage } = this.extractSkillContent(text);
+    for (const skillContent of skillContents) {
+      contentBlocks.push({ type: 'text', text: skillContent });
     }
 
     // Add attachments - images/PDFs are uploaded inline, text files are path-only
@@ -1911,9 +1929,9 @@ export class SproutyAgent extends BaseAgent {
       }
     }
 
-    // Add user's text message
-    if (text.trim()) {
-      contentBlocks.push({ type: 'text', text });
+    // Add user's text message (with skill mentions stripped)
+    if (cleanMessage.trim()) {
+      contentBlocks.push({ type: 'text', text: cleanMessage });
     }
 
     return {
