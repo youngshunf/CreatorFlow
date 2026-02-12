@@ -212,9 +212,11 @@ export class HookSystem implements HooksConfigProvider {
     // Prompt handler
     this.promptHandler = new PromptHandler(
       {
+        workspaceRootPath: this.options.workspaceRootPath,
         workspaceId: this.options.workspaceId,
         onPromptsReady: this.options.onPromptsReady,
         onError: this.options.onError,
+        eventLogger: this.eventLogHandler.getLogger(),
       },
       this
     );

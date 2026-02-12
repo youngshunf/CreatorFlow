@@ -67,20 +67,20 @@ const EVENT_COLORS: Record<string, string> = {
 
 const DEFAULT_EVENT_COLOR = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
 
-/** 执行结果状态 */
-function getResultStatus(event: HookEventRecord): 'success' | 'fail' | 'none' {
-  if (event.type !== 'HookResult') return 'none'
-  if (event.data.blocked) return 'fail'
-  return event.data.success ? 'success' : 'fail'
-}
-
-const RESULT_COLORS = {
+/** 执行状态颜色 */
+const STATUS_COLORS = {
+  pending: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
+  running: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  fail: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  none: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 }
 
-const RESULT_LABELS = { success: '成功', fail: '失败', none: '事件' }
+const STATUS_LABELS = {
+  pending: '等待中',
+  running: '执行中',
+  success: '成功',
+  failed: '失败',
+}
 
 /** 格式化为相对时间 */
 function formatRelativeTime(isoTime: string): string {
@@ -124,7 +124,7 @@ export default function ScheduledTasksView() {
   const [activeTab, setActiveTab] = useState<'config' | 'logs'>('config')
   const [events, setEvents] = useState<HookEventRecord[]>([])
   const [eventsLoading, setEventsLoading] = useState(false)
-  const [eventTypeFilter, setEventTypeFilter] = useState('')
+  const [taskIdFilter, setTaskIdFilter] = useState('')
 
   /** 加载 hooks.json */
   const loadHooks = useCallback(async () => {
@@ -149,7 +149,7 @@ export default function ScheduledTasksView() {
     try {
       const data = await window.electronAPI.creatorMedia.hookEvents.list(
         workspaceId,
-        { limit: 50, eventType: eventTypeFilter || undefined }
+        { limit: 50, taskId: taskIdFilter || undefined }
       )
       setEvents(data as HookEventRecord[])
     } catch {
@@ -157,7 +157,7 @@ export default function ScheduledTasksView() {
     } finally {
       setEventsLoading(false)
     }
-  }, [workspaceId, eventTypeFilter])
+  }, [workspaceId, taskIdFilter])
 
   // 切换到执行记录 Tab 时自动加载
   useEffect(() => {
@@ -442,20 +442,19 @@ export default function ScheduledTasksView() {
         <div className="flex-1 overflow-auto px-6 py-4">
           {/* 筛选栏 */}
           <div className="flex items-center gap-2 mb-4">
-            <select
-              value={eventTypeFilter}
-              onChange={(e) => setEventTypeFilter(e.target.value)}
-              className="rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+            <input
+              type="text"
+              placeholder={t('按任务 ID 筛选...')}
+              value={taskIdFilter}
+              onChange={(e) => setTaskIdFilter(e.target.value)}
+              className="rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50 max-w-xs"
+            />
+            <button
+              onClick={loadEvents}
+              className="rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs text-foreground hover:bg-accent/50 transition-colors"
             >
-              <option value="">{t('全部事件')}</option>
-              <option value="HookResult">{t('执行结果')}</option>
-              <option value="SchedulerTick">{t('定时调度')}</option>
-              <option value="UserPromptSubmit">{t('用户提交')}</option>
-              <option value="SessionStart">{t('会话开始')}</option>
-              <option value="SessionEnd">{t('会话结束')}</option>
-              <option value="LabelAdd">{t('标签添加')}</option>
-              <option value="LabelRemove">{t('标签移除')}</option>
-            </select>
+              {t('刷新')}
+            </button>
           </div>
 
           {eventsLoading ? (
@@ -465,45 +464,62 @@ export default function ScheduledTasksView() {
           ) : events.length > 0 ? (
             <div className="space-y-2">
               {events.map((evt) => {
-                const resultStatus = getResultStatus(evt)
-                const eventLabel = EVENT_LABELS[evt.data.event as string] || EVENT_LABELS[evt.type] || evt.type
-                const eventColor = EVENT_COLORS[evt.data.event as string] || EVENT_COLORS[evt.type] || DEFAULT_EVENT_COLOR
-                const commandOrPrompt = (evt.data.command as string) || (evt.data.prompt as string) || ''
+                const statusColor = STATUS_COLORS[evt.status] || DEFAULT_EVENT_COLOR
+                const statusLabel = STATUS_LABELS[evt.status] || evt.status
 
                 return (
                   <div
                     key={evt.id}
-                    className="rounded-lg border border-border/60 bg-background/60 px-4 py-3"
+                    className="rounded-lg border border-border/60 bg-background/60 px-4 py-3 space-y-2"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${eventColor}`}>
-                          {t(eventLabel)}
-                        </span>
-                        {evt.type === 'HookResult' && (
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${RESULT_COLORS[resultStatus]}`}>
-                            {t(RESULT_LABELS[resultStatus])}
+                    {/* 头部：任务名称 + 状态 + 时间 */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm truncate">{evt.task_name}</span>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor}`}>
+                            {t(statusLabel)}
                           </span>
-                        )}
-                        {evt.data.hookType && (
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            TYPE_COLORS[evt.data.hookType as string] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                          }`}>
-                            {evt.data.hookType as string}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        {evt.durationMs > 0 && <span>{evt.durationMs}ms</span>}
-                        <span>{formatRelativeTime(evt.time)}</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <div>{t('触发事件')}: {evt.trigger_event}</div>
+                          <div>{t('触发时间')}: {new Date(evt.trigger_time).toLocaleString('zh-CN')}</div>
+                          {evt.completed_at && (
+                            <div>
+                              {t('完成时间')}: {new Date(evt.completed_at).toLocaleString('zh-CN')}
+                              {evt.duration_ms && ` (${t('耗时')} ${evt.duration_ms}ms)`}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {commandOrPrompt && (
-                      <div className="mt-2">
-                        <code className="text-[11px] font-mono text-foreground/70 bg-muted/40 px-2 py-1 rounded block break-all">
-                          {evt.data.hookType === 'command' ? '$ ' : ''}{commandOrPrompt.length > 120 ? commandOrPrompt.slice(0, 120) + '...' : commandOrPrompt}
-                        </code>
+
+                    {/* 结果摘要 */}
+                    {evt.result_summary && (
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">{t('结果')}: </span>
+                        <span>{evt.result_summary}</span>
                       </div>
+                    )}
+
+                    {/* 错误信息 */}
+                    {evt.error_message && (
+                      <div className="text-xs text-red-600 dark:text-red-400">
+                        <span className="font-medium">{t('错误')}: </span>
+                        <span>{evt.error_message}</span>
+                      </div>
+                    )}
+
+                    {/* 详细结果（可折叠） */}
+                    {evt.result_detail && (
+                      <details className="text-[11px]">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                          {t('查看详细结果')}
+                        </summary>
+                        <pre className="mt-2 p-2 bg-muted/40 rounded overflow-x-auto text-[10px] font-mono">
+                          {evt.result_detail}
+                        </pre>
+                      </details>
                     )}
                   </div>
                 )

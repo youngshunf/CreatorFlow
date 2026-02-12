@@ -47,6 +47,8 @@ export interface CommandHandlerOptions {
 
 /** Options for creating a PromptHandler */
 export interface PromptHandlerOptions {
+  /** Workspace root path for database access */
+  workspaceRootPath: string;
   /** Workspace ID */
   workspaceId: string;
   /** Session ID (if executing in a session context) */
@@ -55,6 +57,8 @@ export interface PromptHandlerOptions {
   onPromptsReady?: (prompts: PendingPrompt[]) => void;
   /** Called when a prompt execution fails */
   onError?: (event: HookEvent, error: Error) => void;
+  /** 事件日志记录器，用于记录 prompt 投递结果 */
+  eventLogger?: import('../event-logger.ts').HookEventLogger;
 }
 
 /** Options for creating an EventLogHandler */

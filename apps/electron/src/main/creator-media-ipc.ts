@@ -700,74 +700,37 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
   });
 
   // ============================================================
-  // Hook 执行记录（读取 events.jsonl）
+  // Hook 执行记录（从数据库读取）
   // ============================================================
 
-  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOOK_EVENTS_LIST, async (_event, workspaceId: string, options?: { limit?: number; eventType?: string }) => {
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_HOOK_EVENTS_LIST, async (_event, workspaceId: string, options?: { limit?: number; taskId?: string }) => {
     const ws = getWorkspaceOrThrow(workspaceId);
     const resolved = resolveWorkspacePath(ws.rootPath);
-    const eventsPath = path.join(resolved, '.sprouty-ai', 'events.jsonl');
+    const dbPath = path.join(resolved, '.sprouty-ai', 'db', 'creator.db');
 
-    if (!fs.existsSync(eventsPath)) return [];
+    if (!fs.existsSync(dbPath)) return [];
 
     const limit = options?.limit ?? 50;
-    const eventType = options?.eventType;
+    const taskId = options?.taskId;
 
     try {
-      // 从文件末尾反向读取，避免加载整个大文件
-      const stat = fs.statSync(eventsPath);
-      const CHUNK_SIZE = 64 * 1024; // 64KB
-      const fd = fs.openSync(eventsPath, 'r');
-      const results: any[] = [];
+      const { getCachedConnection } = await import('@sprouty-ai/shared/db');
+      const db = getCachedConnection(dbPath);
+      if (!db) return [];
 
-      let position = stat.size;
-      let remainder = '';
+      let sql = `
+        SELECT * FROM scheduled_task_executions
+        ${taskId ? 'WHERE task_id = ?' : ''}
+        ORDER BY trigger_time DESC
+        LIMIT ?
+      `;
 
-      try {
-        while (position > 0 && results.length < limit) {
-          const readSize = Math.min(CHUNK_SIZE, position);
-          position -= readSize;
-          const buf = Buffer.alloc(readSize);
-          fs.readSync(fd, buf, 0, readSize, position);
-          const chunk = buf.toString('utf-8') + remainder;
-          const lines = chunk.split('\n');
-
-          // 第一个元素可能是不完整的行，保留到下一轮
-          remainder = lines.shift() || '';
-
-          // 从后往前解析
-          for (let i = lines.length - 1; i >= 0; i--) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            try {
-              const record = JSON.parse(line);
-              if (eventType && record.type !== eventType) continue;
-              results.push(record);
-              if (results.length >= limit) break;
-            } catch {
-              // 跳过无法解析的行
-            }
-          }
-        }
-
-        // 处理最后剩余的行
-        if (remainder.trim() && results.length < limit) {
-          try {
-            const record = JSON.parse(remainder.trim());
-            if (!eventType || record.type === eventType) {
-              results.push(record);
-            }
-          } catch {
-            // 跳过
-          }
-        }
-      } finally {
-        fs.closeSync(fd);
-      }
+      const params = taskId ? [taskId, limit] : [limit];
+      const results = db.all(sql, params);
 
       return results;
     } catch (err) {
-      ipcLog.warn('[creator-media-ipc] 读取 events.jsonl 失败:', err);
+      ipcLog.warn('[creator-media-ipc] 读取执行记录失败:', err);
       return [];
     }
   });

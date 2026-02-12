@@ -1103,17 +1103,21 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_TOPICS_READ_MD: 'creatorMedia:topics:readMd',
 } as const
 
-/** Hook 事件记录（events.jsonl 中的条目） */
+/** Hook 事件记录（从 scheduled_task_executions 表读取） */
 export interface HookEventRecord {
   id: string
-  type: string
-  time: string
-  source: string
-  sessionId?: string
-  workspaceId?: string
-  data: Record<string, unknown>
-  results: unknown[]
-  durationMs: number
+  task_id: string
+  task_name: string
+  trigger_event: string
+  trigger_time: string
+  started_at: string
+  completed_at: string | null
+  status: 'pending' | 'running' | 'success' | 'failed'
+  result_summary: string | null
+  result_detail: string | null
+  error_message: string | null
+  duration_ms: number | null
+  created_at: string
 }
 
 /**
@@ -1621,7 +1625,7 @@ export interface ElectronAPI {
       write(workspaceId: string, config: unknown): Promise<{ success: boolean }>
     }
     hookEvents: {
-      list(workspaceId: string, options?: { limit?: number; eventType?: string }): Promise<HookEventRecord[]>
+      list(workspaceId: string, options?: { limit?: number; taskId?: string }): Promise<HookEventRecord[]>
     }
     reviewTasksAll: {
       list(workspaceId: string): Promise<unknown[]>

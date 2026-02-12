@@ -15,16 +15,20 @@ export interface ContentFilters {
 /** 创建内容 */
 export function createContent(db: CreatorMediaDB, data: CreateContent): Content {
   const stmt = db.prepare(`
-    INSERT INTO contents (id, project_id, title, topic, topic_source, source_topic_id, script_path, status, content_type, target_platforms, pipeline_mode, pipeline_state, viral_pattern_id, tags, scheduled_at, files, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO contents (id, project_id, title, content_type, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
-    data.id, data.project_id, data.title, data.topic,
-    data.topic_source, data.source_topic_id, data.script_path,
-    data.status ?? 'idea', data.content_type, data.target_platforms,
-    data.pipeline_mode ?? 'semi-auto', data.pipeline_state,
-    data.viral_pattern_id, data.tags, data.scheduled_at,
-    data.files, data.metadata,
+    data.id,
+    data.project_id,
+    data.title,
+    data.content_type,
+    data.status ?? 'idea',
+    data.target_platforms,
+    data.pipeline_mode ?? 'semi-auto',
+    data.content_dir_path,
+    data.viral_pattern_id,
+    data.metadata,
   );
   return getContent(db, data.id)!;
 }

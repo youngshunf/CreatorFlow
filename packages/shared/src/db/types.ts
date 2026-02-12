@@ -57,7 +57,7 @@ export type ContentStatus =
   | 'researching'
   | 'scripting'
   | 'creating'
-  | 'reviewing'
+  | 'adapting'
   | 'scheduled'
   | 'published'
   | 'archived';
@@ -225,21 +225,13 @@ export interface Content {
   id: string;
   project_id: string;
   title: string | null;
-  topic: string | null;
-  topic_source: TopicSource | null;
-  source_topic_id: string | null;
-  script_path: string | null;
-  status: ContentStatus;
   content_type: ContentType | null;
+  status: ContentStatus;
   target_platforms: string | null;  // JSON: string[]
   pipeline_mode: PipelineMode;
-  pipeline_state: string | null;    // JSON: 流水线状态快照
+  content_dir_path: string | null;  // 内容文件夹相对路径
   viral_pattern_id: string | null;
-  tags: string | null;              // JSON: string[]
-  scheduled_at: string | null;
-  files: string | null;             // JSON: string[]
   metadata: string | null;          // JSON: 扩展元数据
-  review_summary: string | null;    // JSON: 复盘摘要
   created_at: string;
   updated_at: string;
 }
@@ -351,6 +343,36 @@ export type CreateTopicCache = Omit<TopicCache, 'created_at'>;
 
 export type CreateReviewTask = Omit<ReviewTask, 'created_at' | 'updated_at'>;
 export type UpdateReviewTask = Partial<Omit<ReviewTask, 'id' | 'publish_record_id' | 'created_at'>> & { updated_at?: string };
+
+// ============================================================
+// 内容阶段产出
+// ============================================================
+
+/** 内容阶段类型 */
+export type ContentStage = 'topic_recommend' | 'research' | 'script' | 'draft' | 'platform_adapt';
+
+/** 阶段产出状态 */
+export type ContentStageStatus = 'draft' | 'completed' | 'revised';
+
+/** 阶段产出来源 */
+export type ContentStageSourceType = 'auto' | 'user_edit' | 'agent';
+
+/** content_stages — 内容阶段产出表 */
+export interface ContentStageRecord {
+  id: string;
+  content_id: string;
+  stage: ContentStage;
+  file_path: string;                    // 产出文件相对路径
+  status: ContentStageStatus;
+  version: number;                      // 同阶段多版本
+  source_type: ContentStageSourceType | null;
+  metadata: string | null;              // JSON: 阶段特有元数据
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateContentStage = Omit<ContentStageRecord, 'created_at' | 'updated_at'>;
+export type UpdateContentStage = Partial<Omit<ContentStageRecord, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
 
 // ============================================================
 // 内容版本管理
@@ -539,3 +561,24 @@ export interface ContentVideoMetadata {
   /** 视频分辨率 */
   video_resolution?: { width: number; height: number };
 }
+
+/** 定时任务执行状态 */
+export type TaskExecutionStatus = 'pending' | 'running' | 'success' | 'failed';
+
+/** 定时任务执行记录 */
+export interface ScheduledTaskExecution {
+  id: string;
+  task_id: string;
+  task_name: string;
+  trigger_event: string;
+  trigger_time: string;
+  started_at: string;
+  completed_at: string | null;
+  status: TaskExecutionStatus;
+  result_summary: string | null;
+  result_detail: string | null;
+  error_message: string | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+

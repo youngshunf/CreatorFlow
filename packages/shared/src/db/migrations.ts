@@ -165,6 +165,65 @@ const MIGRATIONS: Migration[] = [
       db.exec('ALTER TABLE recommended_topics ADD COLUMN md_file_path TEXT');
     },
   },
+  {
+    version: 11,
+    description: '内容工作流重构：精简 contents 表，新增 content_stages 表',
+    up: (db) => {
+      // 1. 创建新的 contents 表
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS contents_new (
+          id                TEXT PRIMARY KEY,
+          project_id        TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          title             TEXT,
+          content_type      TEXT,
+          status            TEXT NOT NULL DEFAULT 'idea',
+          target_platforms  TEXT,
+          pipeline_mode     TEXT DEFAULT 'semi-auto',
+          content_dir_path  TEXT,
+          viral_pattern_id  TEXT,
+          metadata          TEXT,
+          created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2. 迁移数据（保留核心字段）
+      db.exec(`
+        INSERT INTO contents_new (id, project_id, title, content_type, status, target_platforms, pipeline_mode, viral_pattern_id, metadata, created_at, updated_at)
+        SELECT id, project_id, title, content_type, status, target_platforms, pipeline_mode, viral_pattern_id, metadata, created_at, updated_at
+        FROM contents
+      `);
+
+      // 3. 删除旧表，重命名新表
+      db.exec('DROP TABLE contents');
+      db.exec('ALTER TABLE contents_new RENAME TO contents');
+
+      // 4. 重建索引
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)');
+
+      // 5. 创建 content_stages 表
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS content_stages (
+          id            TEXT PRIMARY KEY,
+          content_id    TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+          stage         TEXT NOT NULL,
+          file_path     TEXT NOT NULL,
+          status        TEXT DEFAULT 'draft',
+          version       INTEGER DEFAULT 1,
+          source_type   TEXT,
+          metadata      TEXT,
+          created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_stages_content_id ON content_stages(content_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_stages_stage ON content_stages(stage)');
+
+      // 6. 删除 content_versions 表（已废弃）
+      db.exec('DROP TABLE IF EXISTS content_versions');
+    },
+  },
 ];
 
 /**

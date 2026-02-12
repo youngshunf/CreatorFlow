@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -115,31 +115,22 @@ CREATE INDEX IF NOT EXISTS idx_competitor_project ON competitors(project_id);
 
 -- 内容创作表
 CREATE TABLE IF NOT EXISTS contents (
-  id              TEXT PRIMARY KEY,
-  project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  title           TEXT,
-  topic           TEXT,
-  topic_source    TEXT,
-  source_topic_id TEXT,
-  script_path     TEXT,
-  status          TEXT DEFAULT 'idea',
-  content_type    TEXT,
-  target_platforms TEXT,
-  pipeline_mode   TEXT DEFAULT 'semi-auto',
-  pipeline_state  TEXT,
-  viral_pattern_id TEXT,
-  tags            TEXT,
-  scheduled_at    DATETIME,
-  files           TEXT,
-  metadata        TEXT,
-  review_summary  TEXT,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+  id                TEXT PRIMARY KEY,
+  project_id        TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title             TEXT,
+  content_type      TEXT,
+  status            TEXT NOT NULL DEFAULT 'idea',
+  target_platforms  TEXT,
+  pipeline_mode     TEXT DEFAULT 'semi-auto',
+  content_dir_path  TEXT,
+  viral_pattern_id  TEXT,
+  metadata          TEXT,
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id);
 CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status);
-CREATE INDEX IF NOT EXISTS idx_content_scheduled ON contents(scheduled_at) WHERE scheduled_at IS NOT NULL;
 
 -- 发布记录表
 CREATE TABLE IF NOT EXISTS publish_records (
@@ -233,6 +224,41 @@ CREATE TABLE IF NOT EXISTS review_tasks (
 
 CREATE INDEX IF NOT EXISTS idx_review_scheduled ON review_tasks(scheduled_at) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS idx_review_publish ON review_tasks(publish_record_id);
+
+-- 内容阶段产出表
+CREATE TABLE IF NOT EXISTS content_stages (
+  id            TEXT PRIMARY KEY,
+  content_id    TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  stage         TEXT NOT NULL,
+  file_path     TEXT NOT NULL,
+  status        TEXT DEFAULT 'draft',
+  version       INTEGER DEFAULT 1,
+  source_type   TEXT,
+  metadata      TEXT,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_stages_content_id ON content_stages(content_id);
+CREATE INDEX IF NOT EXISTS idx_content_stages_stage ON content_stages(stage);
+
+-- 内容版本管理表
+CREATE TABLE IF NOT EXISTS content_versions (
+  id                 TEXT PRIMARY KEY,
+  content_id         TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  version_number     INTEGER NOT NULL,
+  stage              TEXT NOT NULL,
+  title              TEXT,
+  content_snapshot   TEXT NOT NULL,
+  files_snapshot     TEXT,
+  change_source      TEXT,
+  change_description TEXT,
+  created_by         TEXT DEFAULT 'system',
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_version_content ON content_versions(content_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_version_number ON content_versions(content_id, version_number);
 
 -- 内容版本管理表
 CREATE TABLE IF NOT EXISTS content_versions (
@@ -362,6 +388,26 @@ CREATE INDEX IF NOT EXISTS idx_rec_topics_project ON recommended_topics(project_
 CREATE INDEX IF NOT EXISTS idx_rec_topics_status ON recommended_topics(status);
 CREATE INDEX IF NOT EXISTS idx_rec_topics_batch ON recommended_topics(batch_date);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rec_topics_dedup ON recommended_topics(source_uid);
+
+-- 定时任务执行记录表
+CREATE TABLE IF NOT EXISTS scheduled_task_executions (
+  id              TEXT PRIMARY KEY,
+  task_id         TEXT NOT NULL,
+  task_name       TEXT NOT NULL,
+  trigger_event   TEXT NOT NULL,
+  trigger_time    DATETIME NOT NULL,
+  started_at      DATETIME NOT NULL,
+  completed_at    DATETIME,
+  status          TEXT NOT NULL,
+  result_summary  TEXT,
+  result_detail   TEXT,
+  error_message   TEXT,
+  duration_ms     INTEGER,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_execution_task ON scheduled_task_executions(task_id, trigger_time DESC);
+CREATE INDEX IF NOT EXISTS idx_execution_status ON scheduled_task_executions(status);
 `;
 
 /** 初始版本记录 SQL */
@@ -369,4 +415,6 @@ export const INITIAL_VERSION_SQL = `
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (7, '新增热榜快照表与选题推荐表');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (8, '移除定时任务表（迁移至 hooks.json）');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (9, '选题推荐表新增 md_file_path 字段');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (10, '新增定时任务执行记录表');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (11, '内容工作流重构：精简 contents 表，新增 content_stages 表');
 `;
