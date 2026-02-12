@@ -44,6 +44,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/context/LocaleContext'
 import { Markdown } from '@/components/markdown'
+import { ShikiCodeViewer } from '@/components/shiki/ShikiCodeViewer'
+import { ShikiCodeEditor } from '@/components/shiki/ShikiCodeEditor'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -88,24 +90,14 @@ function formatDate(timestamp?: number): string {
 function getFileType(file: FMFileEntry): 'text' | 'markdown' | 'image' | 'code' | 'video' | 'audio' | 'pdf' | 'office' | 'unknown' {
   const ext = file.name.split('.').pop()?.toLowerCase()
 
-  // Markdown types (从 text 中拆出)
+  // Markdown types
   if (['md', 'markdown', 'mdx'].includes(ext || '')) {
     return 'markdown'
-  }
-
-  // Text types
-  if (['txt', 'log', 'csv', 'ini', 'conf', 'cfg'].includes(ext || '')) {
-    return 'text'
   }
 
   // Image types
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp', 'tiff', 'tif'].includes(ext || '')) {
     return 'image'
-  }
-
-  // Code types
-  if (['ts', 'tsx', 'js', 'jsx', 'json', 'yaml', 'yml', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'css', 'scss', 'less', 'html', 'xml', 'sh', 'bash', 'zsh', 'vue', 'svelte', 'swift', 'kt', 'php', 'sql', 'graphql', 'toml', 'env', 'dockerfile', 'makefile'].includes(ext || '')) {
-    return 'code'
   }
 
   // Video types
@@ -128,7 +120,22 @@ function getFileType(file: FMFileEntry): 'text' | 'markdown' | 'image' | 'code' 
     return 'office'
   }
 
-  return 'unknown'
+  // Binary types that can't be previewed as text
+  if (['exe', 'dll', 'so', 'dylib', 'bin', 'dat', 'db', 'sqlite', 'sqlite3',
+       'zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar', 'dmg', 'iso',
+       'woff', 'woff2', 'ttf', 'otf', 'eot',
+       'class', 'o', 'a', 'lib', 'pyc', 'pyo', 'wasm',
+       'DS_Store', 'lock'].includes(ext || '')) {
+    return 'unknown'
+  }
+
+  // Plain text types (no syntax highlighting)
+  if (['txt', 'log', 'csv', 'ini', 'conf', 'cfg'].includes(ext || '')) {
+    return 'text'
+  }
+
+  // Everything else: treat as code (with syntax highlighting when available)
+  return 'code'
 }
 
 /**
@@ -150,6 +157,7 @@ function getLanguage(file: FMFileEntry): string {
     js: 'javascript',
     jsx: 'jsx',
     json: 'json',
+    jsonl: 'json',
     yaml: 'yaml',
     yml: 'yaml',
     py: 'python',
@@ -188,7 +196,6 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
   const [isTruncated, setIsTruncated] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const MAX_PREVIEW_SIZE = 100 * 1024 // 100KB limit for preview
 
@@ -229,7 +236,6 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
       setEditContent(content)
       setHasUnsavedChanges(false)
       setError(null)
-      setTimeout(() => textareaRef.current?.focus(), 50)
     }
     prevIsEditingRef.current = isEditing
   }, [isEditing, content])
@@ -267,6 +273,26 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
     }
   }, [handleSave, handleCancel])
 
+  const fileType = getFileType(file)
+  const language = getLanguage(file)
+
+  // JSON/JSONL 格式化
+  const displayContent = useMemo(() => {
+    if (!content) return ''
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'json') {
+      try { return JSON.stringify(JSON.parse(content), null, 2) } catch { return content }
+    }
+    if (ext === 'jsonl') {
+      try {
+        return content.split('\n').filter(Boolean).map(line => {
+          try { return JSON.stringify(JSON.parse(line), null, 2) } catch { return line }
+        }).join('\n')
+      } catch { return content }
+    }
+    return content
+  }, [content, file.name])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -286,9 +312,6 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
       </div>
     )
   }
-
-  const fileType = getFileType(file)
-  const language = getLanguage(file)
 
   // 编辑模式
   if (isEditing) {
@@ -316,21 +339,21 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
             </Button>
           </div>
         </div>
-        <textarea
-          ref={textareaRef}
-          value={editContent}
-          onChange={(e) => {
-            setEditContent(e.target.value)
-            setHasUnsavedChanges(true)
-          }}
-          className="flex-1 w-full p-4 text-sm font-mono bg-background resize-none outline-none border-none"
-          spellCheck={false}
-        />
+        <div className="flex-1 min-h-0">
+          <ShikiCodeEditor
+            value={editContent}
+            language={language}
+            onChange={(val) => {
+              setEditContent(val)
+              setHasUnsavedChanges(true)
+            }}
+            className="h-full"
+          />
+        </div>
       </div>
     )
   }
 
-  // 预览模式
   return (
     <div className="h-full flex flex-col">
       {isTruncated && (
@@ -339,16 +362,14 @@ function TextPreviewEdit({ file, isEditing, onEditingChange }: { file: FMFileEnt
           {t('文件过大，仅显示部分内容')}
         </div>
       )}
-      <ScrollArea className="flex-1">
-        <pre className={cn(
-          "p-4 text-sm font-mono whitespace-pre-wrap break-all",
-          fileType === 'code' && "bg-muted/30"
-        )}>
-          <code className={`language-${language}`}>
-            {content}
-          </code>
-        </pre>
-      </ScrollArea>
+      <div className="flex-1 min-h-0">
+        <ShikiCodeViewer
+          code={displayContent}
+          language={language}
+          filePath={file.name}
+          className="h-full"
+        />
+      </div>
     </div>
   )
 }
@@ -370,7 +391,6 @@ function MarkdownPreview({ file, isEditing, onEditingChange, onConvertRequest }:
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview')
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const loadContent = async () => {
@@ -394,7 +414,6 @@ function MarkdownPreview({ file, isEditing, onEditingChange, onConvertRequest }:
       setEditContent(content)
       setHasUnsavedChanges(false)
       setError(null)
-      setTimeout(() => textareaRef.current?.focus(), 50)
     }
     prevIsEditingRef.current = isEditing
   }, [isEditing, content])
@@ -476,16 +495,17 @@ function MarkdownPreview({ file, isEditing, onEditingChange, onConvertRequest }:
             </Button>
           </div>
         </div>
-        <textarea
-          ref={textareaRef}
-          value={editContent}
-          onChange={(e) => {
-            setEditContent(e.target.value)
-            setHasUnsavedChanges(true)
-          }}
-          className="flex-1 w-full p-4 text-sm font-mono bg-background resize-none outline-none border-none"
-          spellCheck={false}
-        />
+        <div className="flex-1 min-h-0">
+          <ShikiCodeEditor
+            value={editContent}
+            language="markdown"
+            onChange={(val) => {
+              setEditContent(val)
+              setHasUnsavedChanges(true)
+            }}
+            className="h-full"
+          />
+        </div>
       </div>
     )
   }

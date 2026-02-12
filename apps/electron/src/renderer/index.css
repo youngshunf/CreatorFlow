@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Override dark: variant to use .dark class instead of prefers-color-scheme media query.
+   The app controls theme via .dark class on <html>, not OS preference. */
+@custom-variant dark (&:is(.dark *));
+
 /* Tell Tailwind where to scan for utility classes */
 @source "../**/*.{tsx,ts,jsx,js}";
 @source "../../../../packages/ui/src/**/*.{tsx,ts,jsx,js}";

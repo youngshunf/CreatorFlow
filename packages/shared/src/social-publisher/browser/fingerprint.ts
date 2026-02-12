@@ -23,6 +23,9 @@ const PLATFORM_VIEWPORTS: Record<SocialPlatform, { width: number; height: number
   zhihu: { width: 1440, height: 900 },         // 桌面端
   weibo: { width: 1440, height: 900 },         // 桌面端
   x: { width: 1440, height: 900 },             // 桌面端
+  toutiao: { width: 1440, height: 900 },       // 桌面端
+  sina: { width: 1440, height: 900 },           // 桌面端
+  sohu: { width: 1440, height: 900 },           // 桌面端
 };
 
 /** 常见 Chrome 版本号（保持更新） */
