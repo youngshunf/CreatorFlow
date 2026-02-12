@@ -163,28 +163,61 @@ export default function App() {
     setIsLoggedIn(true)
   }, [])
 
+  // 启动时通过 IPC 检查云端认证状态（主进程从 credential manager 恢复）
+  useEffect(() => {
+    const checkCloudAuth = async () => {
+      try {
+        const status = await window.electronAPI.getCloudAuthStatus()
+        if (status.isLoggedIn && !isLoggedIn) {
+          setIsLoggedIn(true)
+        }
+      } catch (err) {
+        console.error('[App] Failed to check cloud auth status:', err)
+      }
+    }
+    checkCloudAuth()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 监听云端令牌刷新/过期事件
+  useEffect(() => {
+    const cleanup1 = window.electronAPI.onCloudTokenRefreshed(({ accessToken }) => {
+      localStorage.setItem('access_token', accessToken)
+    })
+    const cleanup2 = window.electronAPI.onCloudAuthExpired(() => {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('cloud_config')
+      setIsLoggedIn(false)
+    })
+    return () => { cleanup1(); cleanup2() }
+  }, [])
+
   // Restore cloud config to main process on app startup if user is already logged in
-  // This ensures SDK uses cloud gateway even after app restart
+  // 降级方案：如果主进程未能从 credential manager 恢复，从 localStorage 恢复
   useEffect(() => {
     const restoreCloudConfig = async () => {
+      // 先检查主进程是否已恢复
+      try {
+        const status = await window.electronAPI.getCloudAuthStatus()
+        if (status.isLoggedIn) return // 主进程已恢复，无需从 localStorage 恢复
+      } catch { /* continue with localStorage fallback */ }
+
       const cloudConfigStr = localStorage.getItem('cloud_config')
       if (!cloudConfigStr) return
-      
+
       try {
         const cloudConfig = JSON.parse(cloudConfigStr)
         if (cloudConfig.llmToken) {
           // IMPORTANT: Always use current environment's API URL, ignore saved URL
-          // This ensures production builds use production API, not leftover dev/staging URLs
           const { getCloudApiUrl } = await import('@sprouty-ai/shared/cloud')
           const currentApiUrl = getCloudApiUrl()
           const gatewayUrl = `${currentApiUrl.replace(/\/$/, '')}/llm/proxy`
-          
+
           await window.electronAPI.setCloudConfig({
             gatewayUrl,
             llmToken: cloudConfig.llmToken,
           })
-          console.log('[App] Restored cloud config to main process (env override):', gatewayUrl)
-          
+          console.log('[App] Restored cloud config to main process (localStorage fallback):', gatewayUrl)
+
           // Update localStorage to reflect current environment
           cloudConfig.apiBaseUrl = currentApiUrl
           localStorage.setItem('cloud_config', JSON.stringify(cloudConfig))
@@ -193,7 +226,7 @@ export default function App() {
         console.error('[App] Failed to restore cloud config:', err)
       }
     }
-    
+
     if (isLoggedIn) {
       restoreCloudConfig()
     }
@@ -1223,8 +1256,8 @@ export default function App() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('cloud_config')
-    // Clear cloud config from main process
-    window.electronAPI.clearCloudConfig()
+    // Clear cloud auth from main process (持久化凭证 + 内存状态)
+    window.electronAPI.clearCloudAuth()
     // Update state to show login screen
     setIsLoggedIn(false)
   }, [])

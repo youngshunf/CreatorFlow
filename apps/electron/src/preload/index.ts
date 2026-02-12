@@ -179,6 +179,32 @@ const api: ElectronAPI = {
   clearCloudConfig: () =>
     ipcRenderer.invoke(IPC_CHANNELS.CLOUD_CLEAR_CONFIG),
 
+  // 云端认证（持久化令牌 + 自动刷新）
+  setCloudAuth: (auth: {
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt?: number;
+    refreshExpiresAt?: number;
+  }) => ipcRenderer.invoke(IPC_CHANNELS.CLOUD_SET_AUTH, auth),
+  getCloudAuthStatus: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_GET_AUTH_STATUS) as Promise<{ isLoggedIn: boolean; expiresAt?: number; gatewayUrl?: string }>,
+  clearCloudAuth: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_CLEAR_AUTH),
+  onCloudTokenRefreshed: (callback: (data: { accessToken: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { accessToken: string }) => {
+      callback(data)
+    }
+    ipcRenderer.on(IPC_CHANNELS.CLOUD_TOKEN_REFRESHED, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.CLOUD_TOKEN_REFRESHED, handler)
+  },
+  onCloudAuthExpired: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.CLOUD_AUTH_EXPIRED, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.CLOUD_AUTH_EXPIRED, handler)
+  },
+
   // Credential health check (startup validation)
   getCredentialHealth: () => ipcRenderer.invoke(IPC_CHANNELS.CREDENTIAL_HEALTH_CHECK),
 

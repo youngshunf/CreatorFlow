@@ -71,6 +71,7 @@ export type LlmAuthType =
   | 'bearer_token'
   | 'service_account_file'
   | 'environment'
+  | 'cloud'
   | 'none';
 
 /**
@@ -242,6 +243,7 @@ export function authTypeToCredentialStorageType(authType: LlmAuthType): LlmCrede
     case 'api_key':
     case 'api_key_with_endpoint':
     case 'bearer_token':
+    case 'cloud':
       return 'api_key';
     case 'oauth':
       return 'oauth_token';
@@ -450,10 +452,10 @@ export function isValidProviderAuthCombination(
   authType: LlmAuthType
 ): boolean {
   const validCombinations: Record<LlmProviderType, LlmAuthType[]> = {
-    anthropic: ['api_key', 'oauth'],
+    anthropic: ['api_key', 'oauth', 'cloud'],
     anthropic_compat: ['api_key_with_endpoint'],
     openai: ['api_key', 'oauth'],
-    openai_compat: ['api_key_with_endpoint', 'none'],
+    openai_compat: ['api_key_with_endpoint', 'none', 'cloud'],
     bedrock: ['bearer_token', 'iam_credentials', 'environment'],
     vertex: ['oauth', 'service_account_file', 'environment'],
     copilot: ['oauth'],

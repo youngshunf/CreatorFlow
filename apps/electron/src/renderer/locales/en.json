@@ -12,6 +12,14 @@
     "\"Always Allow\" will remember this command for this session"
   ],
   [
+    "(JSON，可选)",
+    "(JSON, optional)"
+  ],
+  [
+    "{{count}} 个素材",
+    "{{count}} assets"
+  ],
+  [
     "{count}分钟前",
     "{count} minutes ago"
   ],
@@ -52,6 +60,10 @@
     "Installation Information"
   ],
   [
+    "按工作区覆盖默认设置。",
+    "Override default settings per workspace."
+  ],
+  [
     "按照代码规范审查 PR",
     "Review PRs following our code standards"
   ],
@@ -84,6 +96,30 @@
     "Included Skills"
   ],
   [
+    "保存",
+    "Save"
+  ],
+  [
+    "保存 API Key",
+    "Save API Key"
+  ],
+  [
+    "保存 API Key 失败",
+    "Failed to save API Key"
+  ],
+  [
+    "保存 Cookie",
+    "Save Cookie"
+  ],
+  [
+    "保存 Cookie 失败",
+    "Failed to save Cookie"
+  ],
+  [
+    "保存草稿",
+    "Save Draft"
+  ],
+  [
     "保存失败",
     "Save Failed"
   ],
@@ -92,12 +128,20 @@
     "Save Changes"
   ],
   [
+    "保存中...",
+    "Saving..."
+  ],
+  [
     "报告或过滤重复行",
     "Report or filter repeated lines"
   ],
   [
     "报告文件系统磁盘空间使用情况",
     "Report filesystem disk space usage"
+  ],
+  [
+    "爆款模式库",
+    "Viral Patterns Library"
   ],
   [
     "备份后删除",
@@ -136,12 +180,24 @@
     "Edit"
   ],
   [
+    "编辑爆款模式",
+    "Edit Viral Pattern"
+  ],
+  [
     "编辑笔记本",
     "Edit Notebook"
   ],
   [
     "编辑标签",
     "Edit Tags"
+  ],
+  [
+    "编辑定时任务",
+    "Edit Scheduled Task"
+  ],
+  [
+    "编辑画像",
+    "Edit Profile"
   ],
   [
     "编辑前提示",
@@ -158,6 +214,14 @@
   [
     "编辑文件",
     "Edit File"
+  ],
+  [
+    "编辑项目信息或删除项目",
+    "Edit project info or delete project"
+  ],
+  [
+    "编辑账号画像",
+    "Edit Account Profile"
   ],
   [
     "编辑资料",
@@ -208,12 +272,24 @@
     "Identifier"
   ],
   [
+    "标题",
+    "Title"
+  ],
+  [
     "标题已刷新",
     "Title Refreshed"
   ],
   [
     "标志",
     "Flag"
+  ],
+  [
+    "标准",
+    "Standard"
+  ],
+  [
+    "播放",
+    "Play"
   ],
   [
     "补充限流文档",
@@ -230,6 +306,26 @@
   [
     "裁剪图片失败",
     "Failed to Crop Image"
+  ],
+  [
+    "采纳",
+    "Accept"
+  ],
+  [
+    "采纳中...",
+    "Accepting..."
+  ],
+  [
+    "操作",
+    "Actions"
+  ],
+  [
+    "草稿",
+    "Draft"
+  ],
+  [
+    "草稿箱为空",
+    "Drafts box is empty"
   ],
   [
     "查看 Markdown",
@@ -268,6 +364,10 @@
     "Pondering..."
   ],
   [
+    "成功率",
+    "Success Rate"
+  ],
+  [
     "城市",
     "City"
   ],
@@ -288,6 +388,14 @@
     "Create"
   ],
   [
+    "创建第一个项目，开始管理你的自媒体内容",
+    "Create your first project to manage your content"
+  ],
+  [
+    "创建定时任务来自动执行发布、采集等操作",
+    "Create scheduled tasks to automate publishing, collection, etc."
+  ],
+  [
     "创建工作区",
     "Create workspace"
   ],
@@ -296,8 +404,28 @@
     "Failed to Create Session"
   ],
   [
+    "创建项目",
+    "Create Project"
+  ],
+  [
+    "创建新的内容选题",
+    "Create new content topic"
+  ],
+  [
     "创建中...",
     "Creating..."
+  ],
+  [
+    "创作工作台",
+    "Creation Workspace"
+  ],
+  [
+    "创作计划与发布记录",
+    "Creation plans & publish history"
+  ],
+  [
+    "创作面板",
+    "Creation Panel"
   ],
   [
     "此操作将删除所有会话、配置和数据。不会影响您的项目文件。",
@@ -328,12 +456,20 @@
     "File system path for this data source"
   ],
   [
+    "次",
+    "times"
+  ],
+  [
     "次下载",
     "Downloads"
   ],
   [
     "从空白工作区开始。",
     "Start with a blank workspace."
+  ],
+  [
+    "从浏览器开发者工具复制 Cookie 字符串...",
+    "Copy Cookie string from browser DevTools..."
   ],
   [
     "从浏览器页面复制授权码并粘贴到下方。",
@@ -352,6 +488,10 @@
     "Error"
   ],
   [
+    "打包中...",
+    "Bundling..."
+  ],
+  [
     "打开",
     "Open"
   ],
@@ -362,6 +502,10 @@
   [
     "打开工作区菜单",
     "Open workspace menu"
+  ],
+  [
+    "打开浏览器开发者工具 (F12) > Application > Cookies，复制所有 Cookie",
+    "Open browser DevTools (F12) > Application > Cookies, copy all Cookies"
   ],
   [
     "打开上下文菜单",
@@ -432,8 +576,20 @@
     "Todo List"
   ],
   [
+    "待发布",
+    "Pending"
+  ],
+  [
+    "待发布内容",
+    "Pending Content"
+  ],
+  [
     "当 AI 完成聊天任务时发送通知",
     "Send notification when AI completes chat task"
+  ],
+  [
+    "当前",
+    "Current"
   ],
   [
     "当前订阅",
@@ -444,12 +600,28 @@
     "Current Workspace"
   ],
   [
+    "当前项目未关联内容",
+    "No content linked to current project"
+  ],
+  [
+    "当日暂无内容",
+    "No content for today"
+  ],
+  [
     "当用户消息匹配正则模式时自动应用标签。",
     "Automatically apply tags when user message matches regex pattern."
   ],
   [
     "当用户消息匹配正则时自动应用标签，例如粘贴 Linear Issue 链接时自动标注项目与 Issue ID。",
     "Automatically apply labels when user messages match regex patterns, for example, automatically tag project and Issue ID when pasting Linear Issue links."
+  ],
+  [
+    "导出",
+    "Export"
+  ],
+  [
+    "导出视频",
+    "Export Video"
   ],
   [
     "导航",
@@ -464,8 +636,28 @@
     "Region Information"
   ],
   [
+    "的内容",
+    "'s content"
+  ],
+  [
+    "登录成功后将自动检测，剩余时间：",
+    "Will auto-detect after login, remaining time:"
+  ],
+  [
+    "登录失败",
+    "Login Failed"
+  ],
+  [
+    "登录失败，请重试",
+    "Login failed, please retry"
+  ],
+  [
     "等待当前操作完成",
     "Wait for current operation to complete"
+  ],
+  [
+    "等待确认...",
+    "Waiting for confirmation..."
   ],
   [
     "滴答中...",
@@ -476,8 +668,28 @@
     "No."
   ],
   [
+    "点击 + 创建新项目",
+    "Click + to create new project"
+  ],
+  [
+    "点击\"开始创作\"启动流水线",
+    "Click \"Start Creating\" to launch pipeline"
+  ],
+  [
     "点击上传或更换您的头像",
     "Click to upload or change your avatar"
+  ],
+  [
+    "点击上传头像",
+    "Click to upload avatar"
+  ],
+  [
+    "点击刷新按钮拉取最新热榜",
+    "Click refresh to fetch latest trending"
+  ],
+  [
+    "点击下方按钮启动反检测浏览器",
+    "Click the button below to launch anti-detect browser"
   ],
   [
     "点击压缩",
@@ -488,8 +700,24 @@
     "Clicking..."
   ],
   [
+    "点赞",
+    "Likes"
+  ],
+  [
+    "调度",
+    "Schedule"
+  ],
+  [
+    "调度模式",
+    "Schedule Mode"
+  ],
+  [
     "调试",
     "Debug"
+  ],
+  [
+    "调性",
+    "Tone"
   ],
   [
     "订阅",
@@ -500,6 +728,18 @@
     "Subscription & Credits"
   ],
   [
+    "定时采集",
+    "Scheduled Collect"
+  ],
+  [
+    "定时发布",
+    "Scheduled Publish"
+  ],
+  [
+    "定时任务",
+    "Scheduled Tasks"
+  ],
+  [
     "定位命令",
     "Locate a command"
   ],
@@ -508,16 +748,20 @@
     "Locate binary, source, manual for command"
   ],
   [
-    "定时任务",
-    "Scheduled Tasks"
+    "动图格式，无声音",
+    "Animated image, no audio"
   ],
   [
-    "定时发布",
-    "Scheduled Publish"
+    "逗号分隔",
+    "Comma separated"
   ],
   [
-    "定时采集",
-    "Scheduled Collect"
+    "逗号分隔，例如：产品测评,成分科普,护肤教程",
+    "Comma separated, e.g.: product review, ingredient guide, skincare tutorial"
+  ],
+  [
+    "逗号分隔，例如：护肤,成分,测评",
+    "Comma separated, e.g.: skincare, ingredients, reviews"
   ],
   [
     "读取",
@@ -526,6 +770,10 @@
   [
     "读取 GitHub CLI 配置",
     "Read GitHub CLI configuration"
+  ],
+  [
+    "对比当前",
+    "Compare with Current"
   ],
   [
     "对话已标记",
@@ -538,6 +786,46 @@
   [
     "对文本文件行进行排序",
     "Sort lines of text files"
+  ],
+  [
+    "多个关键词用逗号分隔",
+    "Separate multiple keywords with commas"
+  ],
+  [
+    "多个内容支柱用逗号分隔",
+    "Separate multiple content pillars with commas"
+  ],
+  [
+    "多平台分发",
+    "Multi-platform Distribution"
+  ],
+  [
+    "发布",
+    "Publish"
+  ],
+  [
+    "发布队列为空",
+    "Publish queue is empty"
+  ],
+  [
+    "发布工作台",
+    "Publish Workbench"
+  ],
+  [
+    "发布记录排行",
+    "Publish History Ranking"
+  ],
+  [
+    "发布频率",
+    "Publish Frequency"
+  ],
+  [
+    "发布时间",
+    "Publish Time"
+  ],
+  [
+    "发布数据与爆款模式",
+    "Publish data & viral patterns"
   ],
   [
     "发生了意外错误。",
@@ -576,6 +864,10 @@
     "Back to Plaza"
   ],
   [
+    "方形",
+    "Square"
+  ],
+  [
     "防火墙或 VPN 可能正在阻止连接",
     "Firewall or VPN may be blocking the connection"
   ],
@@ -600,6 +892,14 @@
     "m"
   ],
   [
+    "分辨率",
+    "Resolution"
+  ],
+  [
+    "分类",
+    "Category"
+  ],
+  [
     "分享",
     "Share"
   ],
@@ -618,6 +918,14 @@
   [
     "分支",
     "Branch"
+  ],
+  [
+    "粉丝",
+    "Followers"
+  ],
+  [
+    "风格参考",
+    "Style Reference"
   ],
   [
     "蜂鸣中...",
@@ -672,8 +980,20 @@
     "Just now"
   ],
   [
+    "高度",
+    "Height"
+  ],
+  [
     "高级",
     "Advanced"
+  ],
+  [
+    "高级配置",
+    "Advanced Settings"
+  ],
+  [
+    "高质量",
+    "High Quality"
   ],
   [
     "告诉我您想改什么",
@@ -682,6 +1002,10 @@
   [
     "格式：",
     "Format:"
+  ],
+  [
+    "格式：分 时 日 月 周，例如 \"0 */6 * * *\" 表示每6小时执行",
+    "Format: min hour day month week, e.g. \"0 */6 * * *\" means every 6 hours"
   ],
   [
     "个标签",
@@ -704,6 +1028,10 @@
     "files"
   ],
   [
+    "个账号已登录",
+    " accounts logged in"
+  ],
+  [
     "根据当前工作区的技能快速启动一个新的对话。",
     "Quickly start a new conversation based on the skills in the current workspace."
   ],
@@ -714,6 +1042,10 @@
   [
     "跟随系统",
     "Follow System"
+  ],
+  [
+    "更多",
+    "more"
   ],
   [
     "更改",
@@ -772,8 +1104,16 @@
     "Update settings"
   ],
   [
+    "更新时间",
+    "Updated At"
+  ],
+  [
     "更新显示名称",
     "Update the display name"
+  ],
+  [
+    "更新于",
+    "Updated at"
   ],
   [
     "工具",
@@ -786,6 +1126,10 @@
   [
     "工作区",
     "Workspace"
+  ],
+  [
+    "工作区覆盖",
+    "Workspace Overrides"
   ],
   [
     "工作区根目录",
@@ -824,6 +1168,10 @@
     "Working..."
   ],
   [
+    "共 {count} 个版本",
+    "{count} versions total"
+  ],
+  [
     "共{count}条记录",
     "{count} records in total"
   ],
@@ -844,6 +1192,10 @@
     "Close"
   ],
   [
+    "关闭 (Esc)",
+    "Close (Esc)"
+  ],
+  [
     "关闭侧边栏",
     "Close sidebar"
   ],
@@ -854,6 +1206,10 @@
   [
     "关闭搜索",
     "Close search"
+  ],
+  [
+    "关键词",
+    "Keywords"
   ],
   [
     "关于",
@@ -872,6 +1228,10 @@
     "Official"
   ],
   [
+    "管理定时发布、采集和自定义任务",
+    "Manage scheduled publishing, collection and custom tasks"
+  ],
+  [
     "管理工作区",
     "Manage Workspaces"
   ],
@@ -880,12 +1240,12 @@
     "Manage Workspaces..."
   ],
   [
-    "管理您的账号安全设置",
-    "Manage your account security settings"
+    "管理您的 AI 服务连接。",
+    "Manage your AI provider connections."
   ],
   [
-    "管理定时发布、采集和自定义任务",
-    "Manage scheduled publishing, collection and custom tasks"
+    "管理您的账号安全设置",
+    "Manage your account security settings"
   ],
   [
     "广场",
@@ -900,6 +1260,10 @@
     "No Content Available in Plaza"
   ],
   [
+    "归档",
+    "Archived"
+  ],
+  [
     "滚动中...",
     "Rolling..."
   ],
@@ -910,6 +1274,14 @@
   [
     "过滤中...",
     "Percolating..."
+  ],
+  [
+    "还没有定时任务",
+    "No scheduled tasks yet"
+  ],
+  [
+    "还没有添加平台账号",
+    "No platform accounts added yet"
   ],
   [
     "合并安装",
@@ -928,6 +1300,14 @@
     "Baking..."
   ],
   [
+    "后退1秒",
+    "Back 1 second"
+  ],
+  [
+    "忽略",
+    "Ignore"
+  ],
+  [
     "欢迎{name}",
     "Welcome {name}"
   ],
@@ -938,6 +1318,14 @@
   [
     "换行",
     "Line break"
+  ],
+  [
+    "回滚到此版本",
+    "Rollback to this version"
+  ],
+  [
+    "回滚中...",
+    "Rolling back..."
   ],
   [
     "回味中...",
@@ -952,6 +1340,10 @@
     "Session Expired"
   ],
   [
+    "活跃流水线",
+    "Active Pipelines"
+  ],
+  [
     "或使用其他账户登录",
     "Or sign in with another account"
   ],
@@ -962,6 +1354,10 @@
   [
     "获取验证码",
     "Get Verification Code"
+  ],
+  [
+    "获赞",
+    "Likes Received"
   ],
   [
     "积分。请升级订阅或购买积分包以继续使用。",
@@ -984,8 +1380,16 @@
     "Base URL"
   ],
   [
+    "基于你的账号关键词匹配热点选题",
+    "Match trending topics based on your account keywords"
+  ],
+  [
     "急速前进...",
     "Zooming..."
+  ],
+  [
+    "集中管理所有平台账号",
+    "Manage all platform accounts in one place"
   ],
   [
     "计费错误",
@@ -994,6 +1398,10 @@
   [
     "计划",
     "Plan"
+  ],
+  [
+    "计划发布时间",
+    "Scheduled Publish Time"
   ],
   [
     "计算中...",
@@ -1006,6 +1414,10 @@
   [
     "技能是可重复使用的指令，用于教导您的智能体专门化行为。",
     "Skills are reusable instructions that teach your agent specialized behaviors."
+  ],
+  [
+    "继承应用设置",
+    "Inherit from app settings"
   ],
   [
     "继续",
@@ -1028,6 +1440,10 @@
     "Failed to Load User Information"
   ],
   [
+    "加载账号...",
+    "Loading accounts..."
+  ],
+  [
     "加载中",
     "Loading"
   ],
@@ -1040,12 +1456,28 @@
     "Cut"
   ],
   [
+    "检测到来自其他设备的凭证，请在此设备上重新认证。",
+    "Credentials from another machine detected. Please re-authenticate on this device."
+  ],
+  [
+    "检测到凭证问题",
+    "Credential Issue Detected"
+  ],
+  [
+    "检测到凭证问题。",
+    "Credential issue detected."
+  ],
+  [
     "检查 API 端点是否可访问",
     "Check if the API endpoint is accessible"
   ],
   [
     "检查 GitHub 认证状态",
     "Check GitHub authentication status"
+  ],
+  [
+    "检查登录态",
+    "Check Login Status"
   ],
   [
     "检查更新",
@@ -1060,6 +1492,14 @@
     "Checking..."
   ],
   [
+    "简介",
+    "Bio"
+  ],
+  [
+    "简要描述项目定位...",
+    "Briefly describe project positioning..."
+  ],
+  [
     "键盘快捷键",
     "Keyboard Shortcuts"
   ],
@@ -1072,12 +1512,28 @@
     "Rename .sprouty-ai to .sprouty-ai-backup"
   ],
   [
+    "将创建一个新版本，内容恢复到 v{n} 的状态。此操作不会删除现有版本。",
+    "A new version will be created, restoring content to v{n}. Existing versions will not be deleted."
+  ],
+  [
+    "将调用 topic-generator 技能生成选题",
+    "Will invoke topic-generator skill to generate topics"
+  ],
+  [
+    "将内容状态推进到审核阶段",
+    "Advance content status to review stage"
+  ],
+  [
     "交互式进程查看器",
     "Interactive process viewer"
   ],
   [
     "搅动中...",
     "Stirring..."
+  ],
+  [
+    "教程",
+    "Tutorial"
   ],
   [
     "接受",
@@ -1116,6 +1572,22 @@
     "Only allow read operations (list, get, search)"
   ],
   [
+    "进行中",
+    "In Progress"
+  ],
+  [
+    "进行中的内容",
+    "Content In Progress"
+  ],
+  [
+    "禁忌话题",
+    "Forbidden Topics"
+  ],
+  [
+    "禁用",
+    "Disable"
+  ],
+  [
     "就快好了...",
     "Almost..."
   ],
@@ -1140,6 +1612,14 @@
     "Start"
   ],
   [
+    "开始导出",
+    "Start Export"
+  ],
+  [
+    "开始你的创作之旅",
+    "Start your creative journey"
+  ],
+  [
     "开始使用",
     "Get started"
   ],
@@ -1158,6 +1638,10 @@
   [
     "可选",
     "Optional"
+  ],
+  [
+    "可选：描述任务用途",
+    "Optional: describe task purpose"
   ],
   [
     "可由智能体创建，或编辑工作区中的 labels/config.json。",
@@ -1184,6 +1668,14 @@
     "Fast and user-friendly find alternative"
   ],
   [
+    "快速预览，低质量",
+    "Quick preview, low quality"
+  ],
+  [
+    "宽度",
+    "Width"
+  ],
+  [
     "扩展上述应用默认值的工作区级模式。",
     "Workspace-level patterns that extend the app defaults above."
   ],
@@ -1194,6 +1686,10 @@
   [
     "拉取的任何模型。无需 API 密钥。",
     "Any pulled model. No API key required."
+  ],
+  [
+    "来源",
+    "Source"
   ],
   [
     "了解更多",
@@ -1220,6 +1716,10 @@
     "Type"
   ],
   [
+    "立即发布",
+    "Publish Now"
+  ],
+  [
     "立即检查",
     "Check Now"
   ],
@@ -1232,12 +1732,40 @@
     "e.g."
   ],
   [
+    "例如：\n• 根据这个链接更新项目信息 https://...\n• 把定位改为科技数码测评\n• 增加 B站 和知乎作为分发平台",
+    "e.g.:\n• Update project info from this link https://...\n• Change positioning to tech reviews\n• Add Bilibili and Zhihu as distribution platforms"
+  ],
+  [
+    "例如：18-30岁女性",
+    "e.g.: Women aged 18-30"
+  ],
+  [
+    "例如：3秒悬念开头",
+    "e.g.: 3-second suspense opening"
+  ],
+  [
     "例如：互联网/科技",
     "For example: Internet/Technology"
   ],
   [
+    "例如：护肤成分",
+    "e.g.: skincare ingredients"
+  ],
+  [
+    "例如：美妆",
+    "e.g.: beauty"
+  ],
+  [
+    "例如：美妆、科技、美食",
+    "e.g.: beauty, tech, food"
+  ],
+  [
     "例如：上海",
     "e.g., Shanghai"
+  ],
+  [
+    "例如：我的小红书账号",
+    "e.g.: My Xiaohongshu account"
   ],
   [
     "例如：中国",
@@ -1246,6 +1774,18 @@
   [
     "例如：中文",
     "e.g., Chinese"
+  ],
+  [
+    "例如：专业、亲切",
+    "e.g.: professional, friendly"
+  ],
+  [
+    "例如：专业、亲切、幽默",
+    "e.g.: professional, friendly, humorous"
+  ],
+  [
+    "例如：专业测评博主",
+    "e.g.: Professional review blogger"
   ],
   [
     "例如：Asia/Shanghai",
@@ -1280,6 +1820,10 @@
     "Connection Error"
   ],
   [
+    "连接管理",
+    "Connections"
+  ],
+  [
     "连接类型",
     "Connection Type"
   ],
@@ -1298,6 +1842,10 @@
   [
     "连接详情",
     "Connection Details"
+  ],
+  [
+    "连接有效",
+    "Connection valid"
   ],
   [
     "连接中...",
@@ -1352,12 +1900,28 @@
     "List running processes"
   ],
   [
+    "领域",
+    "Niche"
+  ],
+  [
     "浏览",
     "Browse"
   ],
   [
     "浏览模型",
     "Browse Models"
+  ],
+  [
+    "浏览器窗口将自动打开平台登录页，请在 5 分钟内完成登录",
+    "Browser will open the platform login page, please complete login within 5 minutes"
+  ],
+  [
+    "浏览器指纹已生成",
+    "Browser fingerprint generated"
+  ],
+  [
+    "流水线驱动的创作流程",
+    "Pipeline-driven creation workflow"
   ],
   [
     "留空时默认使用 Anthropic 模型名称 (Opus, Sonnet, Haiku)",
@@ -1382,6 +1946,14 @@
   [
     "忙碌中...",
     "Busy busy..."
+  ],
+  [
+    "没有符合筛选条件的账号",
+    "No accounts match the filter"
+  ],
+  [
+    "没有可用的工具",
+    "No tools available"
   ],
   [
     "枚举",
@@ -1416,6 +1988,10 @@
     "Description"
   ],
   [
+    "描述你想要的修改",
+    "Describe the changes you want"
+  ],
+  [
     "描述您的更新",
     "Describe Your Update"
   ],
@@ -1424,8 +2000,20 @@
     "Describe what you'd like to change..."
   ],
   [
+    "描述修改内容或粘贴账号链接，AI 自动更新项目信息",
+    "Describe changes or paste account link, AI will auto-update project info"
+  ],
+  [
+    "描述选题方向和要点...",
+    "Describe topic direction and key points..."
+  ],
+  [
     "描述一下，剩下的交给我",
     "Just describe it — I'll handle the rest"
+  ],
+  [
+    "描述这个模式的特点和使用场景",
+    "Describe the characteristics and use cases of this pattern"
   ],
   [
     "秒",
@@ -1446,6 +2034,14 @@
   [
     "模式",
     "Pattern"
+  ],
+  [
+    "模式名称",
+    "Pattern Name"
+  ],
+  [
+    "模式模板，例如：[悬念问题] + [反转事实] + [引导互动]",
+    "Pattern template, e.g.: [Suspense Question] + [Plot Twist] + [Engagement CTA]"
   ],
   [
     "模式循环",
@@ -1492,12 +2088,40 @@
     "Default permissions should be at"
   ],
   [
+    "默认设置",
+    "Default"
+  ],
+  [
     "默认位置",
     "Default Location"
   ],
   [
+    "目标平台",
+    "Target Platform"
+  ],
+  [
+    "目标受众",
+    "Target Audience"
+  ],
+  [
     "男",
     "Male"
+  ],
+  [
+    "内容标题...",
+    "Content title..."
+  ],
+  [
+    "内容类型",
+    "Content Type"
+  ],
+  [
+    "内容日历",
+    "Content Calendar"
+  ],
+  [
+    "内容支柱",
+    "Content Pillars"
   ],
   [
     "内置应用",
@@ -1652,6 +2276,14 @@
     "Female"
   ],
   [
+    "排期",
+    "Scheduled"
+  ],
+  [
+    "排期发布的内容会出现在这里",
+    "Scheduled content will appear here"
+  ],
+  [
     "配置状态",
     "Configuration Status"
   ],
@@ -1676,6 +2308,26 @@
     "Rate limits reset after a short period"
   ],
   [
+    "平衡质量和大小",
+    "Balance quality and size"
+  ],
+  [
+    "平台",
+    "Platform"
+  ],
+  [
+    "平台账号管理",
+    "Platform Account Management"
+  ],
+  [
+    "评论",
+    "Comments"
+  ],
+  [
+    "凭证文件已损坏，请重新认证。",
+    "Credential file is corrupted. Please re-authenticate."
+  ],
+  [
     "凭证无效",
     "Invalid Credentials"
   ],
@@ -1692,16 +2344,40 @@
     "Local command to start this MCP server"
   ],
   [
+    "启动浏览器登录",
+    "Launch Browser Login"
+  ],
+  [
+    "启动浏览器失败",
+    "Failed to launch browser"
+  ],
+  [
     "启动中...",
     "Spinning up..."
+  ],
+  [
+    "启用",
+    "Enable"
   ],
   [
     "启用 stdio 子进程服务器",
     "Enable stdio subprocess server"
   ],
   [
+    "启用任务",
+    "Enable Task"
+  ],
+  [
     "启用天气、本地时间和地区上下文等位置感知响应",
     "Enable location-aware responses such as weather, local time, and regional context"
+  ],
+  [
+    "前进1秒",
+    "Forward 1 second"
+  ],
+  [
+    "潜力",
+    "Potential"
   ],
   [
     "浅色",
@@ -1804,6 +2480,30 @@
     "Please backup important data first!"
   ],
   [
+    "请先创建或选择一个项目",
+    "Please create or select a project first"
+  ],
+  [
+    "请先拉取热榜数据，系统将自动生成选题",
+    "Please fetch trending data first, topics will be auto-generated"
+  ],
+  [
+    "请先设置账号画像和关键词",
+    "Please set up account profile and keywords first"
+  ],
+  [
+    "请先选择或创建一个项目",
+    "Please select or create a project first"
+  ],
+  [
+    "请先选择视频内容或模板",
+    "Please select video content or template first"
+  ],
+  [
+    "请先选择项目",
+    "Please select a project first"
+  ],
+  [
     "请选择地区",
     "Please select region"
   ],
@@ -1814,6 +2514,10 @@
   [
     "请再次输入新密码",
     "Please enter the new password again"
+  ],
+  [
+    "请在弹出的浏览器窗口中完成登录",
+    "Please complete login in the browser window"
   ],
   [
     "请在设置中检查 API 密钥",
@@ -1836,8 +2540,16 @@
     "All"
   ],
   [
+    "全部平台",
+    "All Platforms"
+  ],
+  [
     "全部文档",
     "All Documents"
+  ],
+  [
+    "全部状态",
+    "All Status"
   ],
   [
     "全局",
@@ -1884,6 +2596,14 @@
     "Confirm"
   ],
   [
+    "确认回滚",
+    "Confirm Rollback"
+  ],
+  [
+    "确认删除",
+    "Confirm Delete"
+  ],
+  [
     "确认删除工作区",
     "Delete Workspace"
   ],
@@ -1908,12 +2628,40 @@
     "Let me see..."
   ],
   [
+    "热榜",
+    "Trending"
+  ],
+  [
+    "热点看板",
+    "Trending Board"
+  ],
+  [
+    "热点数据尚未加载",
+    "Trending data not loaded yet"
+  ],
+  [
+    "热度",
+    "Popularity"
+  ],
+  [
+    "人设",
+    "Persona"
+  ],
+  [
     "认证失败",
     "Authentication Failed"
   ],
   [
     "任何您希望智小芽了解的额外信息...",
     "Any additional information you'd like Zhixiaoya to know..."
+  ],
+  [
+    "任务类型",
+    "Task Type"
+  ],
+  [
+    "任务名称",
+    "Task Name"
   ],
   [
     "任务输出",
@@ -1968,6 +2716,14 @@
     "Failed to delete data source"
   ],
   [
+    "删除项目",
+    "Delete Project"
+  ],
+  [
+    "删除中...",
+    "Deleting..."
+  ],
+  [
     "上传失败",
     "Upload Failed"
   ],
@@ -1984,6 +2740,10 @@
     "Last tested"
   ],
   [
+    "上次运行",
+    "Last Run"
+  ],
+  [
     "上下文",
     "Context"
   ],
@@ -1992,8 +2752,20 @@
     "Context used"
   ],
   [
+    "上一步",
+    "Previous"
+  ],
+  [
     "上一级",
     "Parent Level"
+  ],
+  [
+    "上一帧",
+    "Previous frame"
+  ],
+  [
+    "尚未设置账号画像",
+    "Account profile not set up yet"
   ],
   [
     "稍等片刻...",
@@ -2002,6 +2774,10 @@
   [
     "稍候...",
     "Hang tight..."
+  ],
+  [
+    "设为默认",
+    "Set as default"
   ],
   [
     "设置",
@@ -2016,6 +2792,26 @@
     "Settings..."
   ],
   [
+    "设置画像",
+    "Set Profile"
+  ],
+  [
+    "设置账号定位和内容策略",
+    "Set account positioning and content strategy"
+  ],
+  [
+    "设置账号画像（可选）",
+    "Set account profile (optional)"
+  ],
+  [
+    "社交",
+    "Social"
+  ],
+  [
+    "社交媒体",
+    "Social Media"
+  ],
+  [
     "深度思考",
     "Deep Thinking"
   ],
@@ -2028,6 +2824,14 @@
     "Dark"
   ],
   [
+    "审核通过",
+    "Approved"
+  ],
+  [
+    "审核中",
+    "Under Review"
+  ],
+  [
     "升级订阅",
     "Upgrade Subscription"
   ],
@@ -2036,12 +2840,36 @@
     "Birthday"
   ],
   [
+    "失败",
+    "Failed"
+  ],
+  [
     "时",
     "h"
   ],
   [
     "时区",
     "Time zone"
+  ],
+  [
+    "时长",
+    "Duration"
+  ],
+  [
+    "时长(秒)",
+    "Duration (sec)"
+  ],
+  [
+    "时长(帧)",
+    "Duration (frames)"
+  ],
+  [
+    "实时热榜",
+    "Live Trending"
+  ],
+  [
+    "实时热点流与智能选题",
+    "Real-time trends & smart topic suggestions"
   ],
   [
     "使用",
@@ -2068,8 +2896,20 @@
     "Start a new conversation with this skill"
   ],
   [
+    "使用模板",
+    "Use Template"
+  ],
+  [
     "使用模式搜索文件内容",
     "Search file contents with patterns"
+  ],
+  [
+    "使用默认",
+    "Use default"
+  ],
+  [
+    "使用默认设置",
+    "Using defaults"
   ],
   [
     "使用默认应用打开",
@@ -2096,6 +2936,62 @@
     "Always Allow"
   ],
   [
+    "视频导出成功",
+    "Video exported successfully"
+  ],
+  [
+    "视频导出功能需要完整的 Electron 环境",
+    "Video export requires full Electron environment"
+  ],
+  [
+    "视频导出失败",
+    "Video export failed"
+  ],
+  [
+    "视频工作台",
+    "Video Studio"
+  ],
+  [
+    "视频模板",
+    "Video Templates"
+  ],
+  [
+    "视频内容",
+    "Video Content"
+  ],
+  [
+    "视频配置",
+    "Video Config"
+  ],
+  [
+    "视频审核",
+    "Video Review"
+  ],
+  [
+    "视频文件路径",
+    "Video file path"
+  ],
+  [
+    "视频项目",
+    "Video Project"
+  ],
+  [
+    "视频已完成",
+    "Video Completed"
+  ],
+  [
+    "视频制作完成，已进入审核阶段",
+    "Video production complete, entered review stage"
+  ],
+  [
+    "视频制作中",
+    "Video In Production"
+  ],
+  [
+    "视频组合",
+    "Video Composition"
+  ],
+  [
     "视图",
     "View"
   ],
@@ -2104,12 +3000,36 @@
     "Works best for complex, longer plans"
   ],
   [
+    "适用平台",
+    "Applicable Platforms"
+  ],
+  [
+    "收藏",
+    "Favorites"
+  ],
+  [
+    "收起",
+    "Collapse"
+  ],
+  [
+    "收起对比",
+    "Collapse Comparison"
+  ],
+  [
+    "手动编辑",
+    "Manual Edit"
+  ],
+  [
     "手机号",
     "Phone Number"
   ],
   [
     "授权码",
     "Authorization code"
+  ],
+  [
+    "输出格式",
+    "Output Format"
   ],
   [
     "输出环境变量值",
@@ -2128,12 +3048,20 @@
     "Input"
   ],
   [
+    "输入标签，回车添加",
+    "Enter tag, press Enter to add"
+  ],
+  [
     "输入答案",
     "Enter Answer"
   ],
   [
     "输入工作区名称...",
     "Enter workspace name..."
+  ],
+  [
+    "输入连接名称...",
+    "Enter connection name..."
   ],
   [
     "输入聊天名称...",
@@ -2148,8 +3076,20 @@
     "Enter a name and select a storage location for the workspace."
   ],
   [
+    "输入内容标题...",
+    "Enter content title..."
+  ],
+  [
     "输入您的 API 密钥。可选择性地配置 OpenRouter、Ollama 或兼容 API 的自定义端点。",
     "Enter your API key. Optionally configure OpenRouter, Ollama, or custom endpoints compatible with the API."
+  ],
+  [
+    "输入平台 API Key...",
+    "Enter platform API Key..."
+  ],
+  [
+    "输入任务名称",
+    "Enter task name"
   ],
   [
     "输入时为拼写错误的单词添加下划线。",
@@ -2172,12 +3112,28 @@
     "Input Behavior"
   ],
   [
+    "输入正文内容...",
+    "Enter body content..."
+  ],
+  [
     "输入值...",
     "Enter value..."
   ],
   [
+    "属性",
+    "Properties"
+  ],
+  [
+    "竖屏",
+    "Vertical"
+  ],
+  [
     "数据策略限制",
     "Data Policy Restriction"
+  ],
+  [
+    "数据复盘",
+    "Analytics Review"
   ],
   [
     "数据源",
@@ -2202,6 +3158,10 @@
   [
     "刷新标题失败",
     "Failed to refresh title"
+  ],
+  [
+    "思考",
+    "Thinking"
   ],
   [
     "思考级别",
@@ -2246,6 +3206,10 @@
   [
     "搜索数据源...",
     "Search data sources..."
+  ],
+  [
+    "素材",
+    "Assets"
   ],
   [
     "缩小",
@@ -2332,6 +3296,10 @@
     "d"
   ],
   [
+    "添加",
+    "Add"
+  ],
+  [
     "添加“过期”视图（7 天未活跃）",
     "Add a 'Stale' view for sessions inactive > 7 days"
   ],
@@ -2376,12 +3344,36 @@
     "Add a rule to detect GitHub issue URLs"
   ],
   [
+    "添加连接",
+    "Add Connection"
+  ],
+  [
+    "添加你的社交媒体账号，管理登录态并自动发布内容",
+    "Add your social media accounts, manage login status and auto-publish"
+  ],
+  [
+    "添加平台账号",
+    "Add Platform Account"
+  ],
+  [
     "添加数据源",
     "Add Data Source"
   ],
   [
+    "添加项目描述...",
+    "Add project description..."
+  ],
+  [
     "添加新标签",
     "Add New Label"
+  ],
+  [
+    "添加账号",
+    "Add Account"
+  ],
+  [
+    "填写项目基本信息",
+    "Fill in project basic info"
   ],
   [
     "条规则",
@@ -2390,6 +3382,14 @@
   [
     "跳到第一项",
     "Jump to First Item"
+  ],
+  [
+    "跳到结尾",
+    "Jump to end"
+  ],
+  [
+    "跳到开头",
+    "Jump to start"
   ],
   [
     "跳到最后一项",
@@ -2404,8 +3404,20 @@
     "Failed to stop sharing"
   ],
   [
+    "停止渲染",
+    "Stop Render"
+  ],
+  [
+    "通过 AI 创作的草稿会保存在这里",
+    "AI-created drafts will be saved here"
+  ],
+  [
     "通过 API 连接设置",
     "Connect via API Settings"
+  ],
+  [
+    "通过竞品分析或手动添加积累爆款模式",
+    "Accumulate viral patterns via competitor analysis or manual entry"
   ],
   [
     "通过手机验证码修改登录密码",
@@ -2418,6 +3430,10 @@
   [
     "通用读取操作",
     "Generic read operations"
+  ],
+  [
+    "通用格式，兼容性最好",
+    "Universal format, best compatibility"
   ],
   [
     "通用工作区",
@@ -2456,6 +3472,10 @@
     "Recommended workflow: Let the agent investigate in exploration mode first, review the proposed plan, then execute with confidence."
   ],
   [
+    "推荐选题",
+    "Recommended Topics"
+  ],
+  [
     "推理中...",
     "Reasoning..."
   ],
@@ -2472,12 +3492,28 @@
     "Exit Zhixiaoya"
   ],
   [
+    "退回修改",
+    "Return for Revision"
+  ],
+  [
     "外观",
     "Appearance"
   ],
   [
     "外观、通知、API 连接",
     "Appearance, notifications, API connection"
+  ],
+  [
+    "完成",
+    "Completed"
+  ],
+  [
+    "完成账号登录",
+    "Complete Account Login"
+  ],
+  [
+    "完成制作",
+    "Complete Production"
   ],
   [
     "完全自主执行",
@@ -2498,6 +3534,10 @@
   [
     "网络诊断工具",
     "Network diagnostic tool"
+  ],
+  [
+    "网页优化，文件较小",
+    "Web optimized, smaller file"
   ],
   [
     "危险操作",
@@ -2522,6 +3562,10 @@
   [
     "未命名",
     "Untitled"
+  ],
+  [
+    "未命名内容",
+    "Untitled Content"
   ],
   [
     "未配置",
@@ -2556,12 +3600,20 @@
     "No auto-apply rules configured"
   ],
   [
+    "未认证",
+    "Not authenticated"
+  ],
+  [
     "未设置",
     "Not Set"
   ],
   [
     "未设置（使用会话文件夹）",
     "Not set (use session folder)"
+  ],
+  [
+    "未设置工作区覆盖时，新对话使用的设置。",
+    "Settings for new chats when no workspace override is set."
   ],
   [
     "未提供指令",
@@ -2596,6 +3648,10 @@
     "No commands found"
   ],
   [
+    "未找到默认连接的凭证。",
+    "No credentials found for your default connection."
+  ],
+  [
     "未找到默认权限",
     "Default permissions not found"
   ],
@@ -2610,6 +3666,10 @@
   [
     "未找到文件夹",
     "No folders found"
+  ],
+  [
+    "未知",
+    "Unknown"
   ],
   [
     "未知错误",
@@ -2660,6 +3720,10 @@
     "My workspace"
   ],
   [
+    "无标题",
+    "Untitled"
+  ],
+  [
     "无法连接到 API 服务器，请检查网络连接。",
     "Unable to connect to the API server. Check your internet connection."
   ],
@@ -2704,6 +3768,10 @@
     "No search results"
   ],
   [
+    "无项目",
+    "No project"
+  ],
+  [
     "无效请求",
     "Invalid Request"
   ],
@@ -2716,8 +3784,20 @@
     "System Font"
   ],
   [
+    "细分领域",
+    "Sub-niche"
+  ],
+  [
+    "下次运行",
+    "Next Run"
+  ],
+  [
     "下一步",
     "Next"
+  ],
+  [
+    "下一帧",
+    "Next frame"
   ],
   [
     "显示 CPU 架构信息",
@@ -2772,8 +3852,36 @@
     "Item"
   ],
   [
+    "项目",
+    "Projects"
+  ],
+  [
+    "项目概览与内容管理",
+    "Project overview & content management"
+  ],
+  [
+    "项目名称",
+    "Project Name"
+  ],
+  [
+    "项目设置",
+    "Project Settings"
+  ],
+  [
+    "项目头像",
+    "Project Avatar"
+  ],
+  [
+    "项目信息",
+    "Project Info"
+  ],
+  [
     "消息发送",
     "Send Message"
+  ],
+  [
+    "肖像",
+    "Portrait"
   ],
   [
     "写入",
@@ -2788,12 +3896,28 @@
     "New Conversation"
   ],
   [
+    "新对话的推理深度",
+    "Reasoning depth for new chats"
+  ],
+  [
+    "新对话使用的 AI 模型",
+    "AI model for new chats"
+  ],
+  [
+    "新对话使用的 API 连接",
+    "API connection for new chats"
+  ],
+  [
     "新建",
     "New"
   ],
   [
     "新建窗口",
     "New window"
+  ],
+  [
+    "新建定时任务",
+    "New Scheduled Task"
   ],
   [
     "新建对话",
@@ -2804,8 +3928,20 @@
     "New chat"
   ],
   [
+    "新建内容",
+    "New Content"
+  ],
+  [
+    "新建任务",
+    "New Task"
+  ],
+  [
     "新建文件夹",
     "Create Folder"
+  ],
+  [
+    "新建项目",
+    "New Project"
   ],
   [
     "新聊天的 AI 模型",
@@ -2824,8 +3960,20 @@
     "New password must be at least 6 characters"
   ],
   [
+    "新视频项目",
+    "New Video Project"
+  ],
+  [
     "新文件夹",
     "New Folder"
+  ],
+  [
+    "新增爆款模式",
+    "Add Viral Pattern"
+  ],
+  [
+    "新增模式",
+    "Add Pattern"
   ],
   [
     "行业",
@@ -2850,6 +3998,10 @@
   [
     "虚拟内存统计",
     "Virtual memory statistics"
+  ],
+  [
+    "需询问",
+    "Ask"
   ],
   [
     "需要 Windows 设置",
@@ -2884,6 +4036,22 @@
     "Rotate 90°"
   ],
   [
+    "选题",
+    "Topics"
+  ],
+  [
+    "选题描述",
+    "Topic Description"
+  ],
+  [
+    "选题推荐",
+    "Topic Recommendations"
+  ],
+  [
+    "选择登录方式",
+    "Select Login Method"
+  ],
+  [
     "选择发送消息的方式。",
     "Select the way to send messages."
   ],
@@ -2902,6 +4070,10 @@
   [
     "选择您希望如何为 AI 智能体提供支持。",
     "Choose how you want to power your AI agent."
+  ],
+  [
+    "选择频率",
+    "Select Frequency"
   ],
   [
     "选择其他工作区",
@@ -2952,8 +4124,20 @@
     "Select an existing folder as a workspace."
   ],
   [
+    "选择项目",
+    "Select Project"
+  ],
+  [
     "选择新工作区的存储位置。",
     "Select a storage location for the new workspace."
+  ],
+  [
+    "选择需要同步分发的其他平台",
+    "Select other platforms for cross-posting"
+  ],
+  [
+    "选择要添加的社交媒体平台",
+    "Select social media platform to add"
   ],
   [
     "选择一个对话开始",
@@ -2962,6 +4146,26 @@
   [
     "选择一个技能开始对话",
     "Select a skill to start conversation"
+  ],
+  [
+    "选择一个项目查看属性",
+    "Select a project to view properties"
+  ],
+  [
+    "选择一个项目开始预览",
+    "Select a project to start preview"
+  ],
+  [
+    "选择预设",
+    "Select preset"
+  ],
+  [
+    "选择组件",
+    "Select Composition"
+  ],
+  [
+    "渲染中...",
+    "Rendering..."
   ],
   [
     "询问",
@@ -2984,8 +4188,16 @@
     "Color Theme"
   ],
   [
+    "验证连接",
+    "Validate Connection"
+  ],
+  [
     "验证码",
     "Verification Code"
+  ],
+  [
+    "验证失败",
+    "Validation failed"
   ],
   [
     "验证中...",
@@ -3040,6 +4252,10 @@
     "Marked"
   ],
   [
+    "已创建内容",
+    "Created Content"
+  ],
+  [
     "已从标记列表移除",
     "Removed from marked list"
   ],
@@ -3050,6 +4266,10 @@
   [
     "已断开",
     "Disconnected"
+  ],
+  [
+    "已发布",
+    "Published"
   ],
   [
     "已分享",
@@ -3070,6 +4290,10 @@
   [
     "已禁用",
     "Disabled"
+  ],
+  [
+    "已排期",
+    "Scheduled"
   ],
   [
     "已删除技能",
@@ -3096,6 +4320,14 @@
     "Sharing stopped"
   ],
   [
+    "已允许",
+    "Allowed"
+  ],
+  [
+    "已阻止",
+    "Blocked"
+  ],
+  [
     "已阻止 — 无论如何都会阻止写入工具",
     "Blocked — write tools will be blocked anyway"
   ],
@@ -3118,6 +4350,14 @@
   [
     "应用设置",
     "App settings"
+  ],
+  [
+    "营销",
+    "Marketing"
+  ],
+  [
+    "营销推广",
+    "Marketing"
   ],
   [
     "永久删除",
@@ -3152,6 +4392,10 @@
     "Right-click"
   ],
   [
+    "与当前版本 (v{n}) 对比",
+    "Compare with current version (v{n})"
+  ],
+  [
     "与智能体的对话将显示在这里。开始一个新对话吧。",
     "Conversations with agents will appear here. Start a new conversation."
   ],
@@ -3160,8 +4404,16 @@
     "Conversations with the assistant will appear here. Start a new conversation."
   ],
   [
+    "预览",
+    "Preview"
+  ],
+  [
     "预热中...",
     "Warming up..."
+  ],
+  [
+    "预设",
+    "Preset"
   ],
   [
     "元数据",
@@ -3174,6 +4426,14 @@
   [
     "月",
     "mo"
+  ],
+  [
+    "阅读",
+    "Reads"
+  ],
+  [
+    "云端",
+    "Cloud"
   ],
   [
     "允许",
@@ -3200,8 +4460,28 @@
     "Under .sprouty-ai folder"
   ],
   [
+    "在创作工作台新建视频类型内容",
+    "Create new video content in Creation Workspace"
+  ],
+  [
+    "在创作面板中编辑账号画像",
+    "Edit account profile in Creation Panel"
+  ],
+  [
     "在此处粘贴您的授权码",
     "Paste your authorization code here"
+  ],
+  [
+    "在对话中使用\"帮我找选题\"获取热点推荐",
+    "Use \"find me topics\" in chat to get trending recommendations"
+  ],
+  [
+    "在对话中说\"开始创作\"启动流水线",
+    "Say \"start creating\" in chat to launch pipeline"
+  ],
+  [
+    "在对话中说\"有什么热点\"或\"帮我找选题\"，AI 将通过 NewsNow 和 TrendRadar 获取实时热点",
+    "Say \"what's trending\" or \"find me topics\" in chat, AI will fetch real-time trends via NewsNow and TrendRadar"
   ],
   [
     "在访达中查看",
@@ -3228,6 +4508,10 @@
     "Search for files in directory hierarchy"
   ],
   [
+    "在平台开放平台获取 API Key，密钥将加密存储",
+    "Get API Key from platform's developer portal, keys will be encrypted"
+  ],
+  [
     "在区域之间移动（在列表中）",
     "Move between sections (in list)"
   ],
@@ -3252,6 +4536,18 @@
     "Write your bio here..."
   ],
   [
+    "暂停",
+    "Pause"
+  ],
+  [
+    "暂无版本记录",
+    "No version history"
+  ],
+  [
+    "暂无爆款模式",
+    "No viral patterns yet"
+  ],
+  [
     "暂无标记的对话",
     "No tagged conversations"
   ],
@@ -3260,12 +4556,32 @@
     "No conversations yet"
   ],
   [
+    "暂无发布记录",
+    "No publish history"
+  ],
+  [
     "暂无工作区",
     "No workspaces"
   ],
   [
+    "暂无活跃流水线",
+    "No active pipelines"
+  ],
+  [
+    "暂无连接配置，请添加连接以开始使用。",
+    "No connections configured. Add a connection to get started."
+  ],
+  [
     "暂无描述",
     "No description"
+  ],
+  [
+    "暂无模板",
+    "No templates"
+  ],
+  [
+    "暂无内容，开始创作吧",
+    "No content yet, start creating!"
   ],
   [
     "暂无配置的技能",
@@ -3276,12 +4592,40 @@
     "No data sources configured"
   ],
   [
+    "暂无热榜数据",
+    "No trending data"
+  ],
+  [
+    "暂无视频内容",
+    "No video content"
+  ],
+  [
+    "暂无视频项目",
+    "No video projects"
+  ],
+  [
+    "暂无素材",
+    "No assets"
+  ],
+  [
+    "暂无项目",
+    "No projects"
+  ],
+  [
+    "暂无选题推荐",
+    "No topic recommendations"
+  ],
+  [
     "暂无已配置的标签。",
     "No tags configured yet."
   ],
   [
     "粘贴",
     "Paste"
+  ],
+  [
+    "粘贴 Cookie",
+    "Paste Cookie"
   ],
   [
     "展开文件夹",
@@ -3298,6 +4642,22 @@
   [
     "账号操作",
     "Account Operations"
+  ],
+  [
+    "账号画像",
+    "Account Profile"
+  ],
+  [
+    "账号简介...",
+    "Account bio..."
+  ],
+  [
+    "账号添加成功",
+    "Account added successfully"
+  ],
+  [
+    "账号已就绪",
+    "Account Ready"
   ],
   [
     "找到现有的 Claude 令牌。使用它或使用其他账户登录。",
@@ -3320,8 +4680,20 @@
     "This may be a temporary issue"
   ],
   [
+    "帧",
+    "Frame"
+  ],
+  [
+    "帧率",
+    "Frame Rate"
+  ],
+  [
     "斟酌中...",
     "Deliberating..."
+  ],
+  [
+    "正文",
+    "Body"
   ],
   [
     "正在安装更新...",
@@ -3344,6 +4716,10 @@
     "Starting..."
   ],
   [
+    "正在启动浏览器...",
+    "Launching browser..."
+  ],
+  [
     "正在设置...",
     "Setting up..."
   ],
@@ -3360,16 +4736,32 @@
     "Preparing response..."
   ],
   [
+    "支持输入修改描述或账号链接，AI 将自动分析并更新项目",
+    "Enter change description or account link, AI will auto-analyze and update project"
+  ],
+  [
     "执行",
     "Execute"
+  ],
+  [
+    "执行间隔",
+    "Execution Interval"
   ],
   [
     "执行模式",
     "Execution Mode"
   ],
   [
+    "执行时间",
+    "Execution Time"
+  ],
+  [
     "职业信息",
     "Professional Information"
+  ],
+  [
+    "只读",
+    "Read Only"
   ],
   [
     "只读，不允许更改",
@@ -3382,6 +4774,14 @@
   [
     "指令",
     "Instructions"
+  ],
+  [
+    "指纹配置已保存，后续自动发布和数据采集将使用此指纹",
+    "Fingerprint config saved, will be used for auto-publishing and data collection"
+  ],
+  [
+    "质量预设",
+    "Quality Preset"
   ],
   [
     "智能体的上下文和指南",
@@ -3428,6 +4828,10 @@
     "Rename Session"
   ],
   [
+    "重命名连接",
+    "Rename Connection"
+  ],
+  [
     "重命名聊天",
     "Rename Chat"
   ],
@@ -3450,6 +4854,14 @@
   [
     "重新安装",
     "Reinstall"
+  ],
+  [
+    "重新登录",
+    "Re-login"
+  ],
+  [
+    "重新登录成功",
+    "Re-login successful"
   ],
   [
     "重新认证",
@@ -3484,8 +4896,16 @@
     "w"
   ],
   [
+    "主平台",
+    "Primary Platform"
+  ],
+  [
     "主题模式",
     "Theme Mode"
+  ],
+  [
+    "主账号",
+    "Primary Account"
   ],
   [
     "注释",
@@ -3502,6 +4922,10 @@
   [
     "状态",
     "Status"
+  ],
+  [
+    "状态更新失败",
+    "Status update failed"
   ],
   [
     "追踪到主机的路径",
@@ -3568,8 +4992,36 @@
     "Free-form context to help Zhixiaoya understand your preferences"
   ],
   [
+    "总点赞",
+    "Total Likes"
+  ],
+  [
+    "总评论",
+    "Total Comments"
+  ],
+  [
+    "总收藏",
+    "Total Favorites"
+  ],
+  [
+    "总阅读",
+    "Total Reads"
+  ],
+  [
     "最大化",
     "Maximize"
+  ],
+  [
+    "最佳发布时间",
+    "Best Publish Time"
+  ],
+  [
+    "最佳质量，文件较大",
+    "Best quality, larger file"
+  ],
+  [
+    "最近内容",
+    "Recent Content"
   ],
   [
     "最快的快速回答",
@@ -3612,6 +5064,14 @@
     "Ack - grep-like tool for programmers"
   ],
   [
+    "AI 编辑",
+    "AI Edit"
+  ],
+  [
+    "AI 创建",
+    "AI Create"
+  ],
+  [
     "AI 代理连接语言模型的方式",
     "How AI agents connect to language models"
   ],
@@ -3624,8 +5084,36 @@
     "The AI service is temporarily unavailable."
   ],
   [
+    "AI 更新",
+    "AI Update"
+  ],
+  [
+    "AI 生成",
+    "AI Generate"
+  ],
+  [
     "AI 响应语言",
     "AI Response Language"
+  ],
+  [
+    "AI 新建",
+    "AI New"
+  ],
+  [
+    "AI 智能编辑",
+    "AI Smart Edit"
+  ],
+  [
+    "Anthropic 订阅",
+    "Anthropic Subscription"
+  ],
+  [
+    "Anthropic 兼容",
+    "Anthropic Compatible"
+  ],
+  [
+    "Anthropic 云端",
+    "Anthropic Cloud"
   ],
   [
     "API 服务",
@@ -3688,6 +5176,10 @@
     "Composer read operations: show packages, licenses"
   ],
   [
+    "Cron 表达式",
+    "Cron Expression"
+  ],
+  [
     "DNS 查询工具",
     "DNS lookup utility"
   ],
@@ -3726,6 +5218,10 @@
   [
     "Go 读取操作：列出模块、依赖图",
     "Go read operations: list modules, dependency graph"
+  ],
+  [
+    "hours",
+    "hours"
   ],
   [
     "I/O 统计",
@@ -3768,6 +5264,10 @@
     "Search operations across MCP sources"
   ],
   [
+    "minutes",
+    "minutes"
+  ],
+  [
     "Node.js 版本",
     "Node.js version"
   ],
@@ -3778,6 +5278,22 @@
   [
     "npm 读取操作：列出包、查看信息、检查过时包",
     "npm read operations: list packages, view info, check outdated"
+  ],
+  [
+    "OpenAI 订阅",
+    "OpenAI Subscription"
+  ],
+  [
+    "OpenAI 兼容",
+    "OpenAI Compatible"
+  ],
+  [
+    "OpenAI 兼容 云端",
+    "OpenAI Compatible Cloud"
+  ],
+  [
+    "OpenAI 云端",
+    "OpenAI Cloud"
   ],
   [
     "OpenRouter 因数据策略设置阻止了此请求。请在 openrouter.ai/settings/privacy 配置隐私设置以允许此模型。",
@@ -3848,6 +5364,10 @@
     "The SDK requires a directory that doesn't exist: {path} — Create this folder, then restart the app."
   ],
   [
+    "seconds",
+    "seconds"
+  ],
+  [
     "sed 仅打印模式（不编辑）",
     "sed in print-only mode (no editing)"
   ],
@@ -3876,1379 +5396,55 @@
     "Yarn read operations: list packages, check outdated"
   ],
   [
-    "项目",
-    "Projects"
+    "无云端凭证，请先登录",
+    "No cloud credentials. Please log in first."
   ],
   [
-    "新建项目",
-    "New Project"
+    "云端刷新令牌已过期，请重新登录",
+    "Cloud refresh token expired. Please log in again."
   ],
   [
-    "新建任务",
-    "New Task"
+    "云端令牌刷新失败",
+    "Cloud token refresh failed"
   ],
   [
-    "新建定时任务",
-    "New Scheduled Task"
+    "未配置凭证",
+    "No credentials configured"
   ],
   [
-    "新视频项目",
-    "New Video Project"
+    "OpenAI 兼容提供商需要默认模型",
+    "Default model is required for OpenAI-compatible providers"
   ],
   [
-    "选择一个项目开始预览",
-    "Select a project to start preview"
+    "无刷新令牌，请重新认证",
+    "No refresh token available. Please re-authenticate."
   ],
   [
-    "请先选择或创建一个项目",
-    "Please select or create a project first"
+    "OAuth 认证已过期，请重新认证",
+    "OAuth authentication expired. Please re-authenticate."
   ],
   [
-    "属性",
-    "Properties"
+    "无法连接到 API 服务器，请检查 URL 并确保服务器正在运行",
+    "Cannot connect to API server. Check the URL and ensure the server is running."
   ],
   [
-    "导出",
-    "Export"
+    "未找到端点，请确保服务器支持 Anthropic Messages API",
+    "Endpoint not found. Ensure the server supports the Anthropic Messages API."
   ],
   [
-    "暂无视频项目",
-    "No video projects"
+    "认证失败，请检查您的 API 密钥或 OAuth 令牌",
+    "Authentication failed. Check your API key or OAuth token."
   ],
   [
-    "点击 + 创建新项目",
-    "Click + to create new project"
+    "速率受限或配额超限，请稍后重试",
+    "Rate limited or quota exceeded. Try again later."
   ],
   [
-    "项目信息",
-    "Project Info"
+    "账单问题，请检查您的账户余额或付款方式",
+    "Billing issue. Check your account credits or payment method."
   ],
   [
-    "添加项目描述...",
-    "Add project description..."
-  ],
-  [
-    "视频配置",
-    "Video Config"
-  ],
-  [
-    "预设",
-    "Preset"
-  ],
-  [
-    "选择预设",
-    "Select preset"
-  ],
-  [
-    "竖屏",
-    "Vertical"
-  ],
-  [
-    "方形",
-    "Square"
-  ],
-  [
-    "肖像",
-    "Portrait"
-  ],
-  [
-    "宽度",
-    "Width"
-  ],
-  [
-    "高度",
-    "Height"
-  ],
-  [
-    "帧率",
-    "Frame Rate"
-  ],
-  [
-    "时长(帧)",
-    "Duration (frames)"
-  ],
-  [
-    "时长(秒)",
-    "Duration (sec)"
-  ],
-  [
-    "素材",
-    "Assets"
-  ],
-  [
-    "暂无素材",
-    "No assets"
-  ],
-  [
-    "{{count}} 个素材",
-    "{{count}} assets"
-  ],
-  [
-    "更多",
-    "more"
-  ],
-  [
-    "导出视频",
-    "Export Video"
-  ],
-  [
-    "选择一个项目查看属性",
-    "Select a project to view properties"
-  ],
-  [
-    "无项目",
-    "No project"
-  ],
-  [
-    "跳到开头",
-    "Jump to start"
-  ],
-  [
-    "后退1秒",
-    "Back 1 second"
-  ],
-  [
-    "上一帧",
-    "Previous frame"
-  ],
-  [
-    "暂停",
-    "Pause"
-  ],
-  [
-    "播放",
-    "Play"
-  ],
-  [
-    "下一帧",
-    "Next frame"
-  ],
-  [
-    "前进1秒",
-    "Forward 1 second"
-  ],
-  [
-    "跳到结尾",
-    "Jump to end"
-  ],
-  [
-    "帧",
-    "Frame"
-  ],
-  [
-    "社交媒体",
-    "Social Media"
-  ],
-  [
-    "营销推广",
-    "Marketing"
-  ],
-  [
-    "教程",
-    "Tutorial"
-  ],
-  [
-    "社交",
-    "Social"
-  ],
-  [
-    "营销",
-    "Marketing"
-  ],
-  [
-    "暂无模板",
-    "No templates"
-  ],
-  [
-    "使用模板",
-    "Use Template"
-  ],
-  [
-    "选择组件",
-    "Select Composition"
-  ],
-  [
-    "输出格式",
-    "Output Format"
-  ],
-  [
-    "通用格式，兼容性最好",
-    "Universal format, best compatibility"
-  ],
-  [
-    "网页优化，文件较小",
-    "Web optimized, smaller file"
-  ],
-  [
-    "动图格式，无声音",
-    "Animated image, no audio"
-  ],
-  [
-    "质量预设",
-    "Quality Preset"
-  ],
-  [
-    "草稿",
-    "Draft"
-  ],
-  [
-    "快速预览，低质量",
-    "Quick preview, low quality"
-  ],
-  [
-    "标准",
-    "Standard"
-  ],
-  [
-    "平衡质量和大小",
-    "Balance quality and size"
-  ],
-  [
-    "高质量",
-    "High Quality"
-  ],
-  [
-    "最佳质量，文件较大",
-    "Best quality, larger file"
-  ],
-  [
-    "分辨率",
-    "Resolution"
-  ],
-  [
-    "时长",
-    "Duration"
-  ],
-  [
-    "打包中...",
-    "Bundling..."
-  ],
-  [
-    "准备中...",
-    "Preparing..."
-  ],
-  [
-    "渲染中...",
-    "Rendering..."
-  ],
-  [
-    "完成",
-    "Completed"
-  ],
-  [
-    "失败",
-    "Failed"
-  ],
-  [
-    "停止渲染",
-    "Stop Render"
-  ],
-  [
-    "开始导出",
-    "Start Export"
-  ],
-  [
-    "已允许",
-    "Allowed"
-  ],
-  [
-    "已阻止",
-    "Blocked"
-  ],
-  [
-    "需询问",
-    "Ask"
-  ],
-  [
-    "没有可用的工具",
-    "No tools available"
-  ],
-  [
-    "(JSON，可选)",
-    "(JSON, optional)"
-  ],
-  [
-    "AI 编辑",
-    "AI Edit"
-  ],
-  [
-    "AI 创建",
-    "AI Create"
-  ],
-  [
-    "AI 更新",
-    "AI Update"
-  ],
-  [
-    "AI 生成",
-    "AI Generate"
-  ],
-  [
-    "AI 新建",
-    "AI New"
-  ],
-  [
-    "AI 智能编辑",
-    "AI Smart Edit"
-  ],
-  [
-    "Cron 表达式",
-    "Cron Expression"
-  ],
-  [
-    "hours",
-    "hours"
-  ],
-  [
-    "minutes",
-    "minutes"
-  ],
-  [
-    "seconds",
-    "seconds"
-  ],
-  [
-    "保存",
-    "Save"
-  ],
-  [
-    "保存 API Key",
-    "Save API Key"
-  ],
-  [
-    "保存 API Key 失败",
-    "Failed to save API Key"
-  ],
-  [
-    "保存 Cookie",
-    "Save Cookie"
-  ],
-  [
-    "保存 Cookie 失败",
-    "Failed to save Cookie"
-  ],
-  [
-    "保存草稿",
-    "Save Draft"
-  ],
-  [
-    "保存中...",
-    "Saving..."
-  ],
-  [
-    "爆款模式库",
-    "Viral Patterns Library"
-  ],
-  [
-    "编辑爆款模式",
-    "Edit Viral Pattern"
-  ],
-  [
-    "编辑定时任务",
-    "Edit Scheduled Task"
-  ],
-  [
-    "编辑画像",
-    "Edit Profile"
-  ],
-  [
-    "编辑项目信息或删除项目",
-    "Edit project info or delete project"
-  ],
-  [
-    "编辑账号画像",
-    "Edit Account Profile"
-  ],
-  [
-    "标题",
-    "Title"
-  ],
-  [
-    "采纳",
-    "Accept"
-  ],
-  [
-    "采纳中...",
-    "Accepting..."
-  ],
-  [
-    "操作",
-    "Actions"
-  ],
-  [
-    "草稿箱为空",
-    "Drafts box is empty"
-  ],
-  [
-    "成功率",
-    "Success Rate"
-  ],
-  [
-    "创建第一个项目，开始管理你的自媒体内容",
-    "Create your first project to manage your content"
-  ],
-  [
-    "创建定时任务来自动执行发布、采集等操作",
-    "Create scheduled tasks to automate publishing, collection, etc."
-  ],
-  [
-    "创建项目",
-    "Create Project"
-  ],
-  [
-    "创建新的内容选题",
-    "Create new content topic"
-  ],
-  [
-    "创作工作台",
-    "Creation Workspace"
-  ],
-  [
-    "创作计划与发布记录",
-    "Creation plans & publish history"
-  ],
-  [
-    "创作面板",
-    "Creation Panel"
-  ],
-  [
-    "次",
-    "times"
-  ],
-  [
-    "从浏览器开发者工具复制 Cookie 字符串...",
-    "Copy Cookie string from browser DevTools..."
-  ],
-  [
-    "打开浏览器开发者工具 (F12) > Application > Cookies，复制所有 Cookie",
-    "Open browser DevTools (F12) > Application > Cookies, copy all Cookies"
-  ],
-  [
-    "待发布",
-    "Pending"
-  ],
-  [
-    "待发布内容",
-    "Pending Content"
-  ],
-  [
-    "当前",
-    "Current"
-  ],
-  [
-    "当前项目未关联内容",
-    "No content linked to current project"
-  ],
-  [
-    "当日暂无内容",
-    "No content for today"
-  ],
-  [
-    "的内容",
-    "'s content"
-  ],
-  [
-    "登录成功后将自动检测，剩余时间：",
-    "Will auto-detect after login, remaining time:"
-  ],
-  [
-    "登录失败",
-    "Login Failed"
-  ],
-  [
-    "登录失败，请重试",
-    "Login failed, please retry"
-  ],
-  [
-    "等待确认...",
-    "Waiting for confirmation..."
-  ],
-  [
-    "点击\"开始创作\"启动流水线",
-    "Click \"Start Creating\" to launch pipeline"
-  ],
-  [
-    "点击上传头像",
-    "Click to upload avatar"
-  ],
-  [
-    "点击刷新按钮拉取最新热榜",
-    "Click refresh to fetch latest trending"
-  ],
-  [
-    "点击下方按钮启动反检测浏览器",
-    "Click the button below to launch anti-detect browser"
-  ],
-  [
-    "点赞",
-    "Likes"
-  ],
-  [
-    "调度",
-    "Schedule"
-  ],
-  [
-    "调度模式",
-    "Schedule Mode"
-  ],
-  [
-    "调性",
-    "Tone"
-  ],
-  [
-    "逗号分隔",
-    "Comma separated"
-  ],
-  [
-    "逗号分隔，例如：产品测评,成分科普,护肤教程",
-    "Comma separated, e.g.: product review, ingredient guide, skincare tutorial"
-  ],
-  [
-    "逗号分隔，例如：护肤,成分,测评",
-    "Comma separated, e.g.: skincare, ingredients, reviews"
-  ],
-  [
-    "对比当前",
-    "Compare with Current"
-  ],
-  [
-    "多个关键词用逗号分隔",
-    "Separate multiple keywords with commas"
-  ],
-  [
-    "多个内容支柱用逗号分隔",
-    "Separate multiple content pillars with commas"
-  ],
-  [
-    "多平台分发",
-    "Multi-platform Distribution"
-  ],
-  [
-    "发布",
-    "Publish"
-  ],
-  [
-    "发布队列为空",
-    "Publish queue is empty"
-  ],
-  [
-    "发布工作台",
-    "Publish Workbench"
-  ],
-  [
-    "发布记录排行",
-    "Publish History Ranking"
-  ],
-  [
-    "发布频率",
-    "Publish Frequency"
-  ],
-  [
-    "发布时间",
-    "Publish Time"
-  ],
-  [
-    "发布数据与爆款模式",
-    "Publish data & viral patterns"
-  ],
-  [
-    "分类",
-    "Category"
-  ],
-  [
-    "粉丝",
-    "Followers"
-  ],
-  [
-    "风格参考",
-    "Style Reference"
-  ],
-  [
-    "高级配置",
-    "Advanced Settings"
-  ],
-  [
-    "格式：分 时 日 月 周，例如 \"0 */6 * * *\" 表示每6小时执行",
-    "Format: min hour day month week, e.g. \"0 */6 * * *\" means every 6 hours"
-  ],
-  [
-    "个账号已登录",
-    " accounts logged in"
-  ],
-  [
-    "更新时间",
-    "Updated At"
-  ],
-  [
-    "更新于",
-    "Updated at"
-  ],
-  [
-    "共 {count} 个版本",
-    "{count} versions total"
-  ],
-  [
-    "关键词",
-    "Keywords"
-  ],
-  [
-    "归档",
-    "Archived"
-  ],
-  [
-    "还没有定时任务",
-    "No scheduled tasks yet"
-  ],
-  [
-    "还没有添加平台账号",
-    "No platform accounts added yet"
-  ],
-  [
-    "忽略",
-    "Ignore"
-  ],
-  [
-    "回滚到此版本",
-    "Rollback to this version"
-  ],
-  [
-    "回滚中...",
-    "Rolling back..."
-  ],
-  [
-    "活跃流水线",
-    "Active Pipelines"
-  ],
-  [
-    "获赞",
-    "Likes Received"
-  ],
-  [
-    "基于你的账号关键词匹配热点选题",
-    "Match trending topics based on your account keywords"
-  ],
-  [
-    "集中管理所有平台账号",
-    "Manage all platform accounts in one place"
-  ],
-  [
-    "计划发布时间",
-    "Scheduled Publish Time"
-  ],
-  [
-    "加载账号...",
-    "Loading accounts..."
-  ],
-  [
-    "检查登录态",
-    "Check Login Status"
-  ],
-  [
-    "简介",
-    "Bio"
-  ],
-  [
-    "简要描述项目定位...",
-    "Briefly describe project positioning..."
-  ],
-  [
-    "将创建一个新版本，内容恢复到 v{n} 的状态。此操作不会删除现有版本。",
-    "A new version will be created, restoring content to v{n}. Existing versions will not be deleted."
-  ],
-  [
-    "将调用 topic-generator 技能生成选题",
-    "Will invoke topic-generator skill to generate topics"
-  ],
-  [
-    "将内容状态推进到审核阶段",
-    "Advance content status to review stage"
-  ],
-  [
-    "进行中",
-    "In Progress"
-  ],
-  [
-    "进行中的内容",
-    "Content In Progress"
-  ],
-  [
-    "禁忌话题",
-    "Forbidden Topics"
-  ],
-  [
-    "禁用",
-    "Disable"
-  ],
-  [
-    "开始你的创作之旅",
-    "Start your creative journey"
-  ],
-  [
-    "可选：描述任务用途",
-    "Optional: describe task purpose"
-  ],
-  [
-    "来源",
-    "Source"
-  ],
-  [
-    "立即发布",
-    "Publish Now"
-  ],
-  [
-    "例如：\n• 根据这个链接更新项目信息 https://...\n• 把定位改为科技数码测评\n• 增加 B站 和知乎作为分发平台",
-    "e.g.:\n• Update project info from this link https://...\n• Change positioning to tech reviews\n• Add Bilibili and Zhihu as distribution platforms"
-  ],
-  [
-    "例如：18-30岁女性",
-    "e.g.: Women aged 18-30"
-  ],
-  [
-    "例如：3秒悬念开头",
-    "e.g.: 3-second suspense opening"
-  ],
-  [
-    "例如：护肤成分",
-    "e.g.: skincare ingredients"
-  ],
-  [
-    "例如：美妆",
-    "e.g.: beauty"
-  ],
-  [
-    "例如：美妆、科技、美食",
-    "e.g.: beauty, tech, food"
-  ],
-  [
-    "例如：我的小红书账号",
-    "e.g.: My Xiaohongshu account"
-  ],
-  [
-    "例如：专业测评博主",
-    "e.g.: Professional review blogger"
-  ],
-  [
-    "例如：专业、亲切",
-    "e.g.: professional, friendly"
-  ],
-  [
-    "例如：专业、亲切、幽默",
-    "e.g.: professional, friendly, humorous"
-  ],
-  [
-    "领域",
-    "Niche"
-  ],
-  [
-    "浏览器窗口将自动打开平台登录页，请在 5 分钟内完成登录",
-    "Browser will open the platform login page, please complete login within 5 minutes"
-  ],
-  [
-    "浏览器指纹已生成",
-    "Browser fingerprint generated"
-  ],
-  [
-    "流水线驱动的创作流程",
-    "Pipeline-driven creation workflow"
-  ],
-  [
-    "没有符合筛选条件的账号",
-    "No accounts match the filter"
-  ],
-  [
-    "描述你想要的修改",
-    "Describe the changes you want"
-  ],
-  [
-    "描述修改内容或粘贴账号链接，AI 自动更新项目信息",
-    "Describe changes or paste account link, AI will auto-update project info"
-  ],
-  [
-    "描述选题方向和要点...",
-    "Describe topic direction and key points..."
-  ],
-  [
-    "描述这个模式的特点和使用场景",
-    "Describe the characteristics and use cases of this pattern"
-  ],
-  [
-    "模式名称",
-    "Pattern Name"
-  ],
-  [
-    "模式模板，例如：[悬念问题] + [反转事实] + [引导互动]",
-    "Pattern template, e.g.: [Suspense Question] + [Plot Twist] + [Engagement CTA]"
-  ],
-  [
-    "目标平台",
-    "Target Platform"
-  ],
-  [
-    "目标受众",
-    "Target Audience"
-  ],
-  [
-    "内容标题...",
-    "Content title..."
-  ],
-  [
-    "内容类型",
-    "Content Type"
-  ],
-  [
-    "内容日历",
-    "Content Calendar"
-  ],
-  [
-    "内容支柱",
-    "Content Pillars"
-  ],
-  [
-    "排期",
-    "Scheduled"
-  ],
-  [
-    "排期发布的内容会出现在这里",
-    "Scheduled content will appear here"
-  ],
-  [
-    "平台",
-    "Platform"
-  ],
-  [
-    "平台账号管理",
-    "Platform Account Management"
-  ],
-  [
-    "评论",
-    "Comments"
-  ],
-  [
-    "启动浏览器登录",
-    "Launch Browser Login"
-  ],
-  [
-    "启动浏览器失败",
-    "Failed to launch browser"
-  ],
-  [
-    "启用",
-    "Enable"
-  ],
-  [
-    "启用任务",
-    "Enable Task"
-  ],
-  [
-    "潜力",
-    "Potential"
-  ],
-  [
-    "请先创建或选择一个项目",
-    "Please create or select a project first"
-  ],
-  [
-    "请先拉取热榜数据，系统将自动生成选题",
-    "Please fetch trending data first, topics will be auto-generated"
-  ],
-  [
-    "请先设置账号画像和关键词",
-    "Please set up account profile and keywords first"
-  ],
-  [
-    "请先选择视频内容或模板",
-    "Please select video content or template first"
-  ],
-  [
-    "请先选择项目",
-    "Please select a project first"
-  ],
-  [
-    "请在弹出的浏览器窗口中完成登录",
-    "Please complete login in the browser window"
-  ],
-  [
-    "全部平台",
-    "All Platforms"
-  ],
-  [
-    "全部状态",
-    "All Status"
-  ],
-  [
-    "确认回滚",
-    "Confirm Rollback"
-  ],
-  [
-    "确认删除",
-    "Confirm Delete"
-  ],
-  [
-    "热榜",
-    "Trending"
-  ],
-  [
-    "热点看板",
-    "Trending Board"
-  ],
-  [
-    "热点数据尚未加载",
-    "Trending data not loaded yet"
-  ],
-  [
-    "热度",
-    "Popularity"
-  ],
-  [
-    "人设",
-    "Persona"
-  ],
-  [
-    "任务类型",
-    "Task Type"
-  ],
-  [
-    "任务名称",
-    "Task Name"
-  ],
-  [
-    "删除项目",
-    "Delete Project"
-  ],
-  [
-    "删除中...",
-    "Deleting..."
-  ],
-  [
-    "上次运行",
-    "Last Run"
-  ],
-  [
-    "上一步",
-    "Previous"
-  ],
-  [
-    "尚未设置账号画像",
-    "Account profile not set up yet"
-  ],
-  [
-    "设置画像",
-    "Set Profile"
-  ],
-  [
-    "设置账号定位和内容策略",
-    "Set account positioning and content strategy"
-  ],
-  [
-    "设置账号画像（可选）",
-    "Set account profile (optional)"
-  ],
-  [
-    "审核通过",
-    "Approved"
-  ],
-  [
-    "审核中",
-    "Under Review"
-  ],
-  [
-    "实时热榜",
-    "Live Trending"
-  ],
-  [
-    "实时热点流与智能选题",
-    "Real-time trends & smart topic suggestions"
-  ],
-  [
-    "视频导出成功",
-    "Video exported successfully"
-  ],
-  [
-    "视频导出功能需要完整的 Electron 环境",
-    "Video export requires full Electron environment"
-  ],
-  [
-    "视频导出失败",
-    "Video export failed"
-  ],
-  [
-    "视频工作台",
-    "Video Studio"
-  ],
-  [
-    "视频模板",
-    "Video Templates"
-  ],
-  [
-    "视频内容",
-    "Video Content"
-  ],
-  [
-    "视频审核",
-    "Video Review"
-  ],
-  [
-    "视频文件路径",
-    "Video file path"
-  ],
-  [
-    "视频项目",
-    "Video Project"
-  ],
-  [
-    "视频已完成",
-    "Video Completed"
-  ],
-  [
-    "视频制作完成，已进入审核阶段",
-    "Video production complete, entered review stage"
-  ],
-  [
-    "视频制作中",
-    "Video In Production"
-  ],
-  [
-    "视频组合",
-    "Video Composition"
-  ],
-  [
-    "适用平台",
-    "Applicable Platforms"
-  ],
-  [
-    "收藏",
-    "Favorites"
-  ],
-  [
-    "收起",
-    "Collapse"
-  ],
-  [
-    "收起对比",
-    "Collapse Comparison"
-  ],
-  [
-    "手动编辑",
-    "Manual Edit"
-  ],
-  [
-    "输入标签，回车添加",
-    "Enter tag, press Enter to add"
-  ],
-  [
-    "输入内容标题...",
-    "Enter content title..."
-  ],
-  [
-    "输入平台 API Key...",
-    "Enter platform API Key..."
-  ],
-  [
-    "输入任务名称",
-    "Enter task name"
-  ],
-  [
-    "输入正文内容...",
-    "Enter body content..."
-  ],
-  [
-    "数据复盘",
-    "Analytics Review"
-  ],
-  [
-    "添加",
-    "Add"
-  ],
-  [
-    "添加你的社交媒体账号，管理登录态并自动发布内容",
-    "Add your social media accounts, manage login status and auto-publish"
-  ],
-  [
-    "添加平台账号",
-    "Add Platform Account"
-  ],
-  [
-    "添加账号",
-    "Add Account"
-  ],
-  [
-    "填写项目基本信息",
-    "Fill in project basic info"
-  ],
-  [
-    "通过 AI 创作的草稿会保存在这里",
-    "AI-created drafts will be saved here"
-  ],
-  [
-    "通过竞品分析或手动添加积累爆款模式",
-    "Accumulate viral patterns via competitor analysis or manual entry"
-  ],
-  [
-    "推荐选题",
-    "Recommended Topics"
-  ],
-  [
-    "退回修改",
-    "Return for Revision"
-  ],
-  [
-    "完成账号登录",
-    "Complete Account Login"
-  ],
-  [
-    "完成制作",
-    "Complete Production"
-  ],
-  [
-    "未命名内容",
-    "Untitled Content"
-  ],
-  [
-    "无标题",
-    "Untitled"
-  ],
-  [
-    "细分领域",
-    "Sub-niche"
-  ],
-  [
-    "下次运行",
-    "Next Run"
-  ],
-  [
-    "项目概览与内容管理",
-    "Project overview & content management"
-  ],
-  [
-    "项目名称",
-    "Project Name"
-  ],
-  [
-    "项目设置",
-    "Project Settings"
-  ],
-  [
-    "项目头像",
-    "Project Avatar"
-  ],
-  [
-    "新建内容",
-    "New Content"
-  ],
-  [
-    "新增爆款模式",
-    "Add Viral Pattern"
-  ],
-  [
-    "新增模式",
-    "Add Pattern"
-  ],
-  [
-    "选题",
-    "Topics"
-  ],
-  [
-    "选题描述",
-    "Topic Description"
-  ],
-  [
-    "选题推荐",
-    "Topic Recommendations"
-  ],
-  [
-    "选择登录方式",
-    "Select Login Method"
-  ],
-  [
-    "选择频率",
-    "Select Frequency"
-  ],
-  [
-    "选择项目",
-    "Select Project"
-  ],
-  [
-    "选择需要同步分发的其他平台",
-    "Select other platforms for cross-posting"
-  ],
-  [
-    "选择要添加的社交媒体平台",
-    "Select social media platform to add"
-  ],
-  [
-    "已创建内容",
-    "Created Content"
-  ],
-  [
-    "已发布",
-    "Published"
-  ],
-  [
-    "已排期",
-    "Scheduled"
-  ],
-  [
-    "与当前版本 (v{n}) 对比",
-    "Compare with current version (v{n})"
-  ],
-  [
-    "预览",
-    "Preview"
-  ],
-  [
-    "阅读",
-    "Reads"
-  ],
-  [
-    "在创作工作台新建视频类型内容",
-    "Create new video content in Creation Workspace"
-  ],
-  [
-    "在创作面板中编辑账号画像",
-    "Edit account profile in Creation Panel"
-  ],
-  [
-    "在对话中使用\"帮我找选题\"获取热点推荐",
-    "Use \"find me topics\" in chat to get trending recommendations"
-  ],
-  [
-    "在对话中说\"开始创作\"启动流水线",
-    "Say \"start creating\" in chat to launch pipeline"
-  ],
-  [
-    "在对话中说\"有什么热点\"或\"帮我找选题\"，AI 将通过 NewsNow 和 TrendRadar 获取实时热点",
-    "Say \"what's trending\" or \"find me topics\" in chat, AI will fetch real-time trends via NewsNow and TrendRadar"
-  ],
-  [
-    "在平台开放平台获取 API Key，密钥将加密存储",
-    "Get API Key from platform's developer portal, keys will be encrypted"
-  ],
-  [
-    "暂无版本记录",
-    "No version history"
-  ],
-  [
-    "暂无爆款模式",
-    "No viral patterns yet"
-  ],
-  [
-    "暂无发布记录",
-    "No publish history"
-  ],
-  [
-    "暂无活跃流水线",
-    "No active pipelines"
-  ],
-  [
-    "暂无内容，开始创作吧",
-    "No content yet, start creating!"
-  ],
-  [
-    "暂无热榜数据",
-    "No trending data"
-  ],
-  [
-    "暂无视频内容",
-    "No video content"
-  ],
-  [
-    "暂无项目",
-    "No projects"
-  ],
-  [
-    "暂无选题推荐",
-    "No topic recommendations"
-  ],
-  [
-    "粘贴 Cookie",
-    "Paste Cookie"
-  ],
-  [
-    "账号画像",
-    "Account Profile"
-  ],
-  [
-    "账号简介...",
-    "Account bio..."
-  ],
-  [
-    "账号添加成功",
-    "Account added successfully"
-  ],
-  [
-    "账号已就绪",
-    "Account Ready"
-  ],
-  [
-    "正文",
-    "Body"
-  ],
-  [
-    "正在启动浏览器...",
-    "Launching browser..."
-  ],
-  [
-    "支持输入修改描述或账号链接，AI 将自动分析并更新项目",
-    "Enter change description or account link, AI will auto-analyze and update project"
-  ],
-  [
-    "执行间隔",
-    "Execution Interval"
-  ],
-  [
-    "执行时间",
-    "Execution Time"
-  ],
-  [
-    "只读",
-    "Read Only"
-  ],
-  [
-    "指纹配置已保存，后续自动发布和数据采集将使用此指纹",
-    "Fingerprint config saved, will be used for auto-publishing and data collection"
-  ],
-  [
-    "重新登录",
-    "Re-login"
-  ],
-  [
-    "重新登录成功",
-    "Re-login successful"
-  ],
-  [
-    "主平台",
-    "Primary Platform"
-  ],
-  [
-    "主账号",
-    "Primary Account"
-  ],
-  [
-    "状态更新失败",
-    "Status update failed"
-  ],
-  [
-    "总点赞",
-    "Total Likes"
-  ],
-  [
-    "总评论",
-    "Total Comments"
-  ],
-  [
-    "总收藏",
-    "Total Favorites"
-  ],
-  [
-    "总阅读",
-    "Total Reads"
-  ],
-  [
-    "最佳发布时间",
-    "Best Publish Time"
-  ],
-  [
-    "最近内容",
-    "Recent Content"
+    "未找到模型，请检查连接配置",
+    "Model not found. Check the connection configuration."
   ]
 ]

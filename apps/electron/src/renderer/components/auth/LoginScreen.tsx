@@ -104,16 +104,16 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     if (res.llm_token) {
       localStorage.setItem('llm_token', res.llm_token)
     }
-    
+
     // Enable cloud mode for LLM calls
     if (res.llm_token) {
       // Get API URL from environment configuration
       const apiBaseUrl = getCloudApiUrl()
-      
+
       if (isDebugMode()) {
         console.log(`[Login] Environment: ${getCurrentEnv()}, API URL: ${apiBaseUrl}`)
       }
-      
+
       const cloudConfig: CloudConfig = {
         apiBaseUrl,
         accessToken: res.access_token,
@@ -122,23 +122,28 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       }
       // Save to localStorage for renderer access
       enableCloudMode(cloudConfig)
-      
+
       // Notify main process to use cloud gateway for SDK
       // Build full gateway URL: apiBaseUrl + /llm/proxy
       const gatewayUrl = `${apiBaseUrl.replace(/\/$/, '')}/llm/proxy`
       try {
-        await window.electronAPI.setCloudConfig({
-          gatewayUrl,
+        // 使用新版 setCloudAuth 传递完整令牌（含 refreshToken）
+        await window.electronAPI.setCloudAuth({
+          accessToken: res.access_token,
+          refreshToken: res.refresh_token,
           llmToken: res.llm_token,
+          gatewayUrl,
+          expiresAt: res.access_token_expire_time ? new Date(res.access_token_expire_time).getTime() : undefined,
+          refreshExpiresAt: res.refresh_token_expire_time ? new Date(res.refresh_token_expire_time).getTime() : undefined,
         })
         if (isDebugMode()) {
-          console.log(`[Login] Cloud config set in main process: ${gatewayUrl}`)
+          console.log(`[Login] Cloud auth set in main process: ${gatewayUrl}`)
         }
       } catch (err) {
-        console.error('[Login] Failed to set cloud config in main process:', err)
+        console.error('[Login] Failed to set cloud auth in main process:', err)
       }
     }
-    
+
     onLoginSuccess()
   }
 

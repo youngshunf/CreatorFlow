@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/styled-dropdown'
 import { cn } from '@/lib/utils'
 import { ConnectionIcon } from '@/components/icons/ConnectionIcon'
+import { useT } from '@/context/LocaleContext'
 
 import {
   SettingsSection,
@@ -49,6 +50,7 @@ import { RenameDialog } from '@/components/ui/rename-dialog'
 import { useAppShellContext } from '@/context/AppShellContext'
 import { getModelShortName, type ModelDefinition } from '@config/models'
 import { getModelsForProviderType } from '@config/llm-connections'
+import { subscriptionApi, type SubscriptionInfo } from '@/api/subscription'
 
 /**
  * Derive model dropdown options from a connection's models array,
@@ -90,16 +92,16 @@ export const meta: DetailsPageMeta = {
 // ============================================
 
 /** Get user-friendly message for credential health issue */
-function getHealthIssueMessage(issue: CredentialHealthIssue): string {
+function getHealthIssueMessage(issue: CredentialHealthIssue, t: (key: string) => string): string {
   switch (issue.type) {
     case 'file_corrupted':
-      return 'Credential file is corrupted. Please re-authenticate.'
+      return t('凭证文件已损坏，请重新认证。')
     case 'decryption_failed':
-      return 'Credentials from another machine detected. Please re-authenticate on this device.'
+      return t('检测到来自其他设备的凭证，请在此设备上重新认证。')
     case 'no_default_credentials':
-      return 'No credentials found for your default connection.'
+      return t('未找到默认连接的凭证。')
     default:
-      return issue.message || 'Credential issue detected.'
+      return issue.message || t('检测到凭证问题。')
   }
 }
 
@@ -109,6 +111,7 @@ interface CredentialHealthBannerProps {
 }
 
 function CredentialHealthBanner({ issues, onReauthenticate }: CredentialHealthBannerProps) {
+  const t = useT()
   if (issues.length === 0) return null
 
   return (
@@ -117,10 +120,10 @@ function CredentialHealthBanner({ issues, onReauthenticate }: CredentialHealthBa
         <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400">
-            Credential Issue Detected
+            {t('检测到凭证问题')}
           </h4>
           <p className="mt-1 text-sm text-amber-600 dark:text-amber-300/80">
-            {getHealthIssueMessage(issues[0])}
+            {getHealthIssueMessage(issues[0], t)}
           </p>
         </div>
         <Button
@@ -129,7 +132,7 @@ function CredentialHealthBanner({ issues, onReauthenticate }: CredentialHealthBa
           onClick={onReauthenticate}
           className="flex-shrink-0 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
         >
-          Re-authenticate
+          {t('重新认证')}
         </Button>
       </div>
     </div>
@@ -156,33 +159,56 @@ interface ConnectionRowProps {
 
 function ConnectionRow({ connection, isLastConnection, onRenameClick, onDelete, onSetDefault, onValidate, onReauthenticate, validationState, validationError }: ConnectionRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const t = useT()
+
+  // Translate error codes to user-friendly messages
+  const translateErrorCode = (errorCode: string): string => {
+    const errorMap: Record<string, string> = {
+      'cloud_no_credentials': '无云端凭证，请先登录',
+      'cloud_refresh_expired': '云端刷新令牌已过期，请重新登录',
+      'cloud_refresh_failed': '云端令牌刷新失败',
+      'no_credentials': '未配置凭证',
+      'openai_compat_no_model': 'OpenAI 兼容提供商需要默认模型',
+      'oauth_no_refresh_token': '无刷新令牌，请重新认证',
+      'oauth_expired': 'OAuth 认证已过期，请重新认证',
+      'connection_failed': '无法连接到 API 服务器，请检查 URL 并确保服务器正在运行',
+      'endpoint_not_found': '未找到端点，请确保服务器支持 Anthropic Messages API',
+      'auth_failed': '认证失败，请检查您的 API 密钥或 OAuth 令牌',
+      'rate_limited': '速率受限或配额超限，请稍后重试',
+      'billing_issue': '账单问题，请检查您的账户余额或付款方式',
+      'model_not_found': '未找到模型，请检查连接配置',
+    }
+    return t(errorMap[errorCode] || errorCode)
+  }
 
   // Build description with provider, default indicator, auth status, and validation state
   const getDescription = () => {
     // Show validation state if not idle
-    if (validationState === 'validating') return 'Validating...'
-    if (validationState === 'success') return 'Connection valid'
-    if (validationState === 'error') return validationError || 'Validation failed'
+    if (validationState === 'validating') return t('验证中...')
+    if (validationState === 'success') return t('连接有效')
+    if (validationState === 'error') return validationError ? translateErrorCode(validationError) : t('验证失败')
 
     const parts: string[] = []
 
     // Provider type (fall back to legacy 'type' field if providerType missing)
-    // OAuth = subscription (Pro/Plus/Max), API key = API
+    // OAuth = subscription (Pro/Plus/Max), cloud = 云端, API key = API
     const provider = connection.providerType || connection.type
     const isSubscription = connection.authType === 'oauth'
+    const isCloud = connection.authType === 'cloud'
     switch (provider) {
-      case 'anthropic': parts.push(isSubscription ? 'Anthropic Subscription' : 'Anthropic API'); break
-      case 'anthropic_compat': parts.push('Anthropic Compatible'); break
-      case 'openai': parts.push(isSubscription ? 'OpenAI Subscription' : 'OpenAI API'); break
+      case 'anthropic': parts.push(isCloud ? t('Anthropic 云端') : isSubscription ? t('Anthropic 订阅') : 'Anthropic API'); break
+      case 'anthropic_compat': parts.push(t('Anthropic 兼容')); break
+      case 'openai': parts.push(isCloud ? t('OpenAI 云端') : isSubscription ? t('OpenAI 订阅') : 'OpenAI API'); break
       case 'copilot': parts.push('GitHub Copilot'); break
-      case 'openai_compat': parts.push('OpenAI Compatible'); break
+      case 'openai_compat': parts.push(isCloud ? t('OpenAI 兼容 云端') : t('OpenAI 兼容')); break
       case 'bedrock': parts.push('AWS Bedrock'); break
       case 'vertex': parts.push('Google Vertex'); break
-      default: parts.push(provider || 'Unknown')
+      default: parts.push(provider || t('未知'))
     }
 
     // Base URL for API key connections (show custom endpoint or default for provider)
-    if (connection.authType !== 'oauth') {
+    // Skip for cloud and oauth connections
+    if (connection.authType !== 'oauth' && connection.authType !== 'cloud') {
       let endpoint = connection.baseUrl
       // Use default endpoints for standard providers if no custom baseUrl
       if (!endpoint) {
@@ -201,10 +227,12 @@ function ConnectionRow({ connection, isLastConnection, onRenameClick, onDelete, 
     }
 
     // Auth status
-    if (!connection.isAuthenticated) parts.push('Not authenticated')
+    if (!connection.isAuthenticated) parts.push(t('未认证'))
 
     return parts.join(' · ')
   }
+
+  const isCloud = connection.authType === 'cloud'
 
   return (
     <SettingsRow
@@ -214,7 +242,12 @@ function ConnectionRow({ connection, isLastConnection, onRenameClick, onDelete, 
           <span>{connection.name}</span>
           {connection.isDefault && (
             <span className="inline-flex items-center h-5 px-2 text-[11px] font-medium rounded-[4px] bg-background shadow-minimal text-foreground/60">
-              Default
+              {t('默认')}
+            </span>
+          )}
+          {isCloud && (
+            <span className="inline-flex items-center h-5 px-2 text-[11px] font-medium rounded-[4px] bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              {t('云端')}
             </span>
           )}
         </div>
@@ -233,36 +266,42 @@ function ConnectionRow({ connection, isLastConnection, onRenameClick, onDelete, 
         <StyledDropdownMenuContent align="end">
           <StyledDropdownMenuItem onClick={onRenameClick}>
             <Pencil className="h-3.5 w-3.5" />
-            <span>Rename</span>
+            <span>{t('重命名')}</span>
           </StyledDropdownMenuItem>
           {!connection.isDefault && (
             <StyledDropdownMenuItem onClick={onSetDefault}>
               <Star className="h-3.5 w-3.5" />
-              <span>Set as default</span>
+              <span>{t('设为默认')}</span>
             </StyledDropdownMenuItem>
           )}
-          <StyledDropdownMenuItem
-            onClick={onReauthenticate}
-          >
-            <RefreshCcw className="h-3.5 w-3.5" />
-            <span>Re-authenticate</span>
-          </StyledDropdownMenuItem>
+          {!isCloud && (
+            <StyledDropdownMenuItem
+              onClick={onReauthenticate}
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              <span>{t('重新认证')}</span>
+            </StyledDropdownMenuItem>
+          )}
           <StyledDropdownMenuItem
             onClick={onValidate}
             disabled={validationState === 'validating'}
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Validate Connection</span>
+            <span>{t('验证连接')}</span>
           </StyledDropdownMenuItem>
-          <StyledDropdownMenuSeparator />
-          <StyledDropdownMenuItem
-            onClick={onDelete}
-            variant="destructive"
-            disabled={isLastConnection}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Delete</span>
-          </StyledDropdownMenuItem>
+          {!isCloud && (
+            <>
+              <StyledDropdownMenuSeparator />
+              <StyledDropdownMenuItem
+                onClick={onDelete}
+                variant="destructive"
+                disabled={isLastConnection}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>{t('删除')}</span>
+              </StyledDropdownMenuItem>
+            </>
+          )}
         </StyledDropdownMenuContent>
       </DropdownMenu>
     </SettingsRow>
@@ -283,6 +322,7 @@ function WorkspaceOverrideCard({ workspace, llmConnections, onSettingsChange }: 
   const [isExpanded, setIsExpanded] = useState(false)
   const [settings, setSettings] = useState<WorkspaceSettings | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const t = useT()
 
   // Fetch workspace icon as data URL (file:// URLs don't work in renderer)
   const iconUrl = useWorkspaceIcon(workspace)
@@ -351,7 +391,7 @@ function WorkspaceOverrideCard({ workspace, llmConnections, onSettingsChange }: 
 
   // Get summary text for collapsed state
   const getSummary = () => {
-    if (!hasOverrides) return 'Using defaults'
+    if (!hasOverrides) return t('使用默认设置')
     const parts: string[] = []
     if (settings?.defaultLlmConnection) {
       const conn = llmConnections.find(c => c.slug === settings.defaultLlmConnection)
@@ -392,7 +432,7 @@ function WorkspaceOverrideCard({ workspace, llmConnections, onSettingsChange }: 
           <div className="text-left">
             <div className="text-sm font-medium">{workspace.name}</div>
             <div className="text-xs text-muted-foreground">
-              {isLoading ? 'Loading...' : getSummary()}
+              {isLoading ? t('加载中...') : getSummary()}
             </div>
           </div>
         </div>
@@ -414,39 +454,39 @@ function WorkspaceOverrideCard({ workspace, llmConnections, onSettingsChange }: 
           >
             <div className="border-t border-border/50 px-4 py-2">
               <SettingsMenuSelectRow
-                label="Connection"
-                description="API connection for new chats"
+                label={t('连接')}
+                description={t('新对话使用的 API 连接')}
                 value={currentConnection}
                 onValueChange={handleConnectionChange}
                 options={[
-                  { value: 'global', label: 'Use default', description: 'Inherit from app settings' },
+                  { value: 'global', label: t('使用默认'), description: t('继承应用设置') },
                   ...llmConnections.map((conn) => ({
                     value: conn.slug,
                     label: conn.name,
                     description: conn.providerType === 'anthropic' ? 'Anthropic' :
                                  conn.providerType === 'openai' ? 'OpenAI' :
                                  conn.providerType === 'copilot' ? 'GitHub Copilot' :
-                                 conn.providerType || 'Unknown',
+                                 conn.providerType || t('未知'),
                   })),
                 ]}
               />
               <SettingsMenuSelectRow
-                label="Model"
-                description="AI model for new chats"
+                label={t('模型')}
+                description={t('新对话使用的 AI 模型')}
                 value={currentModel}
                 onValueChange={handleModelChange}
                 options={[
-                  { value: 'global', label: 'Use default', description: 'Inherit from app settings' },
+                  { value: 'global', label: t('使用默认'), description: t('继承应用设置') },
                   ...getModelOptionsForConnection(workspaceEffectiveConnection),
                 ]}
               />
               <SettingsMenuSelectRow
-                label="Thinking"
-                description="Reasoning depth for new chats"
+                label={t('思考')}
+                description={t('新对话的推理深度')}
                 value={currentThinking}
                 onValueChange={handleThinkingChange}
                 options={[
-                  { value: 'global', label: 'Use default', description: 'Inherit from app settings' },
+                  { value: 'global', label: t('使用默认'), description: t('继承应用设置') },
                   ...THINKING_LEVELS.map(({ id, name, description }) => ({
                     value: id,
                     label: name,
@@ -468,6 +508,7 @@ function WorkspaceOverrideCard({ workspace, llmConnections, onSettingsChange }: 
 
 export default function AiSettingsPage() {
   const { llmConnections, refreshLlmConnections } = useAppShellContext()
+  const t = useT()
 
   // API Setup overlay state
   const [showApiSetup, setShowApiSetup] = useState(false)
@@ -494,19 +535,29 @@ export default function AiSettingsPage() {
   const [renamingConnection, setRenamingConnection] = useState<{ slug: string; name: string } | null>(null)
   const [renameValue, setRenameValue] = useState('')
 
+  // Subscription state — add connection button requires ultra yearly
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+  const isUltraYearly = subscription?.tier === 'ultra' && subscription?.subscription_type === 'yearly'
+
   // Load workspaces, default settings, and credential health
   useEffect(() => {
     const load = async () => {
       if (!window.electronAPI) return
       try {
-        const ws = await window.electronAPI.getWorkspaces()
+        const [ws, health, sub] = await Promise.all([
+          window.electronAPI.getWorkspaces(),
+          window.electronAPI.getCredentialHealth(),
+          subscriptionApi.getInfo().catch(() => null),
+        ])
         setWorkspaces(ws)
 
         // Check credential health for potential issues (corruption, machine migration)
-        const health = await window.electronAPI.getCredentialHealth()
         if (!health.healthy) {
           setCredentialHealthIssues(health.issues)
         }
+
+        // Set subscription info
+        if (sub) setSubscription(sub)
       } catch (error) {
         console.error('Failed to load settings:', error)
       }
@@ -604,6 +655,9 @@ export default function AiSettingsPage() {
   }, [renamingConnection, renameValue, refreshLlmConnections])
 
   const handleReauthenticateConnection = useCallback((connection: LlmConnectionWithStatus) => {
+    // 云端连接不支持手动重新认证，凭证由登录流程管理
+    if (connection.authType === 'cloud') return
+
     openApiSetup(connection.slug)
     apiSetupOnboarding.reset()
 
@@ -657,7 +711,7 @@ export default function AiSettingsPage() {
     } catch (error) {
       setValidationStates(prev => ({
         ...prev,
-        [slug]: { state: 'error', error: 'Validation failed' }
+        [slug]: { state: 'error', error: '验证失败' }
       }))
       setTimeout(() => {
         setValidationStates(prev => ({ ...prev, [slug]: { state: 'idle' } }))
@@ -723,11 +777,11 @@ export default function AiSettingsPage() {
             <div className="space-y-8">
               {/* Default Settings - only show if connections exist */}
               {llmConnections.length > 0 && (
-              <SettingsSection title="Default" description="Settings for new chats when no workspace override is set.">
+              <SettingsSection title={t('默认设置')} description={t('未设置工作区覆盖时，新对话使用的设置。')}>
                 <SettingsCard>
                   <SettingsMenuSelectRow
-                    label="Connection"
-                    description="API connection for new chats"
+                    label={t('连接')}
+                    description={t('新对话使用的 API 连接')}
                     value={defaultConnection?.slug || ''}
                     onValueChange={handleSetDefaultConnection}
                     options={llmConnections.map((conn) => ({
@@ -736,22 +790,22 @@ export default function AiSettingsPage() {
                       description: conn.providerType === 'anthropic' ? 'Anthropic API' :
                                    conn.providerType === 'openai' ? 'OpenAI API' :
                                    conn.providerType === 'copilot' ? 'GitHub Copilot' :
-                                   conn.providerType === 'openai_compat' ? 'OpenAI Compatible' :
+                                   conn.providerType === 'openai_compat' ? t('OpenAI 兼容') :
                                    conn.providerType === 'bedrock' ? 'AWS Bedrock' :
                                    conn.providerType === 'vertex' ? 'Google Vertex' :
-                                   conn.providerType || 'Unknown',
+                                   conn.providerType || t('未知'),
                     }))}
                   />
                   <SettingsMenuSelectRow
-                    label="Model"
-                    description="AI model for new chats"
+                    label={t('模型')}
+                    description={t('新对话使用的 AI 模型')}
                     value={defaultModel}
                     onValueChange={handleDefaultModelChange}
                     options={getModelOptionsForConnection(defaultConnection)}
                   />
                   <SettingsMenuSelectRow
-                    label="Thinking"
-                    description="Reasoning depth for new chats"
+                    label={t('思考')}
+                    description={t('新对话的推理深度')}
                     value={defaultThinking}
                     onValueChange={(v) => handleDefaultThinkingChange(v as ThinkingLevel)}
                     options={THINKING_LEVELS.map(({ id, name, description }) => ({
@@ -766,7 +820,7 @@ export default function AiSettingsPage() {
 
               {/* Workspace Overrides - only show if connections exist */}
               {workspaces.length > 0 && llmConnections.length > 0 && (
-                <SettingsSection title="Workspace Overrides" description="Override default settings per workspace.">
+                <SettingsSection title={t('工作区覆盖')} description={t('按工作区覆盖默认设置。')}>
                   <div className="space-y-2">
                     {workspaces.map((workspace) => (
                       <WorkspaceOverrideCard
@@ -781,11 +835,11 @@ export default function AiSettingsPage() {
               )}
 
               {/* Connections Management */}
-              <SettingsSection title="Connections" description="Manage your AI provider connections.">
+              <SettingsSection title={t('连接管理')} description={t('管理您的 AI 服务连接。')}>
                 <SettingsCard>
                   {llmConnections.length === 0 ? (
                     <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      No connections configured. Add a connection to get started.
+                      {t('暂无连接配置，请添加连接以开始使用。')}
                     </div>
                   ) : (
                     [...llmConnections]
@@ -810,14 +864,16 @@ export default function AiSettingsPage() {
                     ))
                   )}
                 </SettingsCard>
-                <div className="pt-0">
-                  <button
-                    onClick={() => openApiSetup()}
-                    className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors"
-                  >
-                    + Add Connection
-                  </button>
-                </div>
+                {isUltraYearly && (
+                  <div className="pt-0">
+                    <button
+                      onClick={() => openApiSetup()}
+                      className="inline-flex items-center h-8 px-3 text-sm rounded-lg bg-background shadow-minimal hover:bg-foreground/[0.02] transition-colors"
+                    >
+                      + {t('添加连接')}
+                    </button>
+                  </div>
+                )}
               </SettingsSection>
 
               {/* API Setup Fullscreen Overlay */}
@@ -847,7 +903,7 @@ export default function AiSettingsPage() {
                   <button
                     onClick={handleCloseApiSetup}
                     className="p-1.5 rounded-[6px] transition-all bg-background shadow-minimal text-muted-foreground/50 hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    title="Close (Esc)"
+                    title={t('关闭 (Esc)')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -858,11 +914,11 @@ export default function AiSettingsPage() {
               <RenameDialog
                 open={renameDialogOpen}
                 onOpenChange={setRenameDialogOpen}
-                title="Rename Connection"
+                title={t('重命名连接')}
                 value={renameValue}
                 onValueChange={setRenameValue}
                 onSubmit={handleRenameSubmit}
-                placeholder="Enter connection name..."
+                placeholder={t('输入连接名称...')}
               />
             </div>
           </div>

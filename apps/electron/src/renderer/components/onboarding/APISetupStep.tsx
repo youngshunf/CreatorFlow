@@ -21,9 +21,9 @@ const BetaBadge = () => (
 )
 
 const SEGMENT_DESCRIPTIONS: Record<ProviderSegment, React.ReactNode> = {
-  anthropic: <>Use Claude Agent SDK as the main agent.<br />Configure with your Claude subscription or API key.</>,
-  openai: <>Use Codex CLI as the main agent.<BetaBadge /><br />Configure with your ChatGPT subscription or OpenAI API key.</>,
-  copilot: <>Use Copilot Agent as the main agent.<BetaBadge /><br />Configure with your GitHub Copilot subscription.</>,
+  anthropic: <>使用 Claude Agent SDK 作为主要智能体。<br />通过您的 Claude 订阅或 API Key 配置。</>,
+  openai: <>使用 Codex CLI 作为主要智能体。<BetaBadge /><br />通过您的 ChatGPT 订阅或 OpenAI API Key 配置。</>,
+  copilot: <>使用 Copilot Agent 作为主要智能体。<BetaBadge /><br />通过您的 GitHub Copilot 订阅配置。</>,
 }
 
 /**
@@ -84,21 +84,21 @@ const API_SETUP_OPTIONS: ApiSetupOption[] = [
   {
     id: 'chatgpt_oauth',
     name: 'Codex · ChatGPT Plus/Pro',
-    description: 'Use your ChatGPT Plus or Pro subscription with Codex.',
+    description: '使用您的 ChatGPT Plus 或 Pro 订阅配合 Codex。',
     icon: <Cpu className="size-4" />,
     providerType: 'openai',
   },
   {
     id: 'openai_api_key',
     name: 'Codex · OpenAI API Key',
-    description: 'Pay-as-you-go via the OpenAI Platform API.',
+    description: '通过 OpenAI Platform API 按量付费。',
     icon: <Key className="size-4" />,
     providerType: 'openai',
   },
   {
     id: 'copilot_oauth',
     name: 'Copilot · GitHub',
-    description: 'Use your GitHub Copilot subscription.',
+    description: '使用您的 GitHub Copilot 订阅。',
     icon: <Cpu className="size-4" />,
     providerType: 'copilot',
   },

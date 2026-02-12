@@ -57,6 +57,8 @@ export interface StoredConfig {
   autoCapitalisation?: boolean;  // Auto-capitalize first letter when typing (default: true)
   sendMessageKey?: 'enter' | 'cmd-enter';  // Key to send messages (default: 'enter')
   spellCheck?: boolean;  // Enable spell check in input (default: false)
+  keepAwakeWhileRunning?: boolean;  // Keep screen awake while sessions are running (default: false)
+  richToolDescriptions?: boolean;  // Show rich tool descriptions in chat (default: true)
   // Git Bash path (Windows only)
   gitBashPath?: string;  // Custom path to bash.exe for Git Bash on Windows
 }
@@ -330,6 +332,42 @@ export function setSpellCheck(enabled: boolean): void {
   const config = loadStoredConfig();
   if (!config) return;
   config.spellCheck = enabled;
+  saveConfig(config);
+}
+
+/**
+ * Get whether to keep screen awake while sessions are running.
+ */
+export function getKeepAwakeWhileRunning(): boolean {
+  const config = loadStoredConfig();
+  return config?.keepAwakeWhileRunning ?? false;
+}
+
+/**
+ * Set whether to keep screen awake while sessions are running.
+ */
+export function setKeepAwakeWhileRunning(enabled: boolean): void {
+  const config = loadStoredConfig();
+  if (!config) return;
+  config.keepAwakeWhileRunning = enabled;
+  saveConfig(config);
+}
+
+/**
+ * Get whether rich tool descriptions are enabled.
+ */
+export function getRichToolDescriptions(): boolean {
+  const config = loadStoredConfig();
+  return config?.richToolDescriptions ?? true;
+}
+
+/**
+ * Set whether rich tool descriptions are enabled.
+ */
+export function setRichToolDescriptions(enabled: boolean): void {
+  const config = loadStoredConfig();
+  if (!config) return;
+  config.richToolDescriptions = enabled;
   saveConfig(config);
 }
 

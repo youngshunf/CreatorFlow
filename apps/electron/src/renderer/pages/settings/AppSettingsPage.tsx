@@ -6,7 +6,6 @@
  * Settings:
  * - Appearance (Theme, Font)
  * - Notifications
- * - API Connection (opens OnboardingWizard for editing)
  * - About (version, updates)
  *
  * Note: AI settings (connections, model, thinking) have been moved to AiSettingsPage.
@@ -25,7 +24,6 @@ import { Monitor, Sun, Moon, X, Globe } from 'lucide-react'
 import { Spinner, FullscreenOverlayBase } from '@sprouty-ai/ui'
 import { useSetAtom } from 'jotai'
 import { fullscreenOverlayOpenAtom } from '@/atoms/overlay'
-import type { AuthType } from '../../../shared/types'
 import type { DetailsPageMeta } from '@/lib/navigation-registry'
 
 import {
@@ -37,10 +35,7 @@ import {
   SettingsMenuSelect,
 } from '@/components/settings'
 import { useUpdateChecker } from '@/hooks/useUpdateChecker'
-import { useOnboarding } from '@/hooks/useOnboarding'
-import { OnboardingWizard } from '@/components/onboarding'
 import { useAppShellContext } from '@/context/AppShellContext'
-import { subscriptionApi, type SubscriptionInfo } from '@/api/subscription'
 import type { PresetTheme } from '@config/theme'
 
 export const meta: DetailsPageMeta = {
@@ -61,13 +56,6 @@ export default function AppSettingsPage() {
   // Preset themes state
   const [presetThemes, setPresetThemes] = useState<PresetTheme[]>([])
 
-  // API Connection state (read-only display — editing is done via OnboardingWizard overlay)
-  const [authType, setAuthType] = useState<AuthType>('api_key')
-  const [hasCredential, setHasCredential] = useState(false)
-  const [showApiSetup, setShowApiSetup] = useState(false)
-  const setFullscreenOverlayOpen = useSetAtom(fullscreenOverlayOpenAtom)
-
-
   // Notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
 
@@ -77,10 +65,6 @@ export default function AppSettingsPage() {
   // Auto-update state
   const updateChecker = useUpdateChecker()
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false)
-
-  // Subscription state — custom API connection requires ultra yearly
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
-  const isUltraYearly = subscription?.tier === 'ultra' && subscription?.subscription_type === 'yearly'
 
   const handleCheckForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true)
@@ -95,13 +79,11 @@ export default function AppSettingsPage() {
   const loadSettings = useCallback(async () => {
     if (!window.electronAPI) return
     try {
-      const [notificationsOn, keepAwakeOn, sub] = await Promise.all([
+      const [notificationsOn, keepAwakeOn] = await Promise.all([
         window.electronAPI.getNotificationsEnabled(),
         window.electronAPI.getKeepAwakeWhileRunning(),
-        subscriptionApi.getInfo().catch(() => null),
       ])
       setNotificationsEnabled(notificationsOn)
-      if (sub) setSubscription(sub)
       setKeepAwakeEnabled(keepAwakeOn)
     } catch (error) {
       console.error('Failed to load settings:', error)
@@ -112,7 +94,6 @@ export default function AppSettingsPage() {
     loadSettings()
   }, [])
 
-  // Load preset themes when workspace changes (themes are workspace-scoped)
   // Load preset themes (app-level, no workspace dependency)
   useEffect(() => {
     const loadThemes = async () => {
@@ -130,39 +111,6 @@ export default function AppSettingsPage() {
     }
     loadThemes()
   }, [])
-
-  // Helpers to open/close the fullscreen API setup overlay
-  const openApiSetup = useCallback(() => {
-    setShowApiSetup(true)
-    setFullscreenOverlayOpen(true)
-  }, [setFullscreenOverlayOpen])
-
-  const closeApiSetup = useCallback(() => {
-    setShowApiSetup(false)
-    setFullscreenOverlayOpen(false)
-  }, [setFullscreenOverlayOpen])
-
-  // OnboardingWizard hook for editing API connection (starts at api-setup step).
-  // onConfigSaved fires immediately when billing is persisted, updating the model UI instantly.
-  const apiSetupOnboarding = useOnboarding({
-    initialStep: 'api-setup',
-    onConfigSaved: refreshCustomModel,
-    onComplete: () => {
-      closeApiSetup()
-      apiSetupOnboarding.reset()
-    },
-    onDismiss: () => {
-      closeApiSetup()
-      apiSetupOnboarding.reset()
-    },
-  })
-
-  // Called when user completes the wizard (clicks Finish on completion step)
-  const handleApiSetupFinish = useCallback(() => {
-    closeApiSetup()
-    apiSetupOnboarding.reset()
-  }, [closeApiSetup, apiSetupOnboarding])
-
 
   const handleNotificationsEnabledChange = useCallback(async (enabled: boolean) => {
     setNotificationsEnabled(enabled)
@@ -257,67 +205,6 @@ export default function AppSettingsPage() {
                 />
               </SettingsCard>
             </SettingsSection>
-
-            {/* API Connection */}
-            <SettingsSection title={t('API 连接')} description={t('AI 代理连接语言模型的方式')}>
-              <SettingsCard>
-                <SettingsRow
-                  label={t('连接类型')}
-                  description={
-                    !isUltraYearly
-                      ? t('需要旗舰版年度订阅才能使用自定义 API 连接')
-                      : authType === 'oauth_token' && hasCredential
-                        ? t('Claude Pro/Max — 使用您的 Claude 订阅')
-                        : authType === 'api_key' && hasCredential
-                          ? t('API Key — Anthropic、OpenRouter 或兼容 API')
-                          : t('未配置')
-                  }
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={openApiSetup}
-                    disabled={!isUltraYearly}
-                  >
-                    {t('编辑')}
-                  </Button>
-                </SettingsRow>
-              </SettingsCard>
-            </SettingsSection>
-
-            {/* API Setup Fullscreen Overlay — reuses the OnboardingWizard starting at the api-setup step */}
-            <FullscreenOverlayBase
-              isOpen={showApiSetup}
-              onClose={closeApiSetup}
-              className="z-splash flex flex-col bg-foreground-2"
-            >
-              <OnboardingWizard
-                state={apiSetupOnboarding.state}
-                onContinue={apiSetupOnboarding.handleContinue}
-                onBack={apiSetupOnboarding.handleBack}
-                onSelectApiSetupMethod={apiSetupOnboarding.handleSelectApiSetupMethod}
-                onSubmitCredential={apiSetupOnboarding.handleSubmitCredential}
-                onStartOAuth={apiSetupOnboarding.handleStartOAuth}
-                onFinish={handleApiSetupFinish}
-                isWaitingForCode={apiSetupOnboarding.isWaitingForCode}
-                onSubmitAuthCode={apiSetupOnboarding.handleSubmitAuthCode}
-                onCancelOAuth={apiSetupOnboarding.handleCancelOAuth}
-                className="h-full"
-              />
-              {/* Close button — rendered AFTER the wizard so it paints above its titlebar-drag-region */}
-              <div
-                className="fixed top-0 right-0 h-[50px] flex items-center pr-5 [-webkit-app-region:no-drag]"
-                style={{ zIndex: 'var(--z-fullscreen, 350)' }}
-              >
-                <button
-                  onClick={closeApiSetup}
-                  className="p-1.5 rounded-[6px] transition-all bg-background shadow-minimal text-muted-foreground/50 hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  title="Close (Esc)"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </FullscreenOverlayBase>
 
             {/* About */}
             <SettingsSection title={t('关于')}>

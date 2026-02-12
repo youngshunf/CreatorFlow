@@ -382,7 +382,7 @@ export class CodexAgent extends BaseAgent {
           // Don't throw here - let the chat() method handle auth requirements
           // via the onChatGptAuthRequired callback when the server responds with 401
         }
-      } else if (normalizedAuthType === 'api_key' || normalizedAuthType === 'api_key_with_endpoint') {
+      } else if (normalizedAuthType === 'api_key' || normalizedAuthType === 'api_key_with_endpoint' || normalizedAuthType === 'cloud') {
         this.debug('Injecting stored API key for new client...');
         await this.tryInjectStoredApiKey();
       }
@@ -2227,7 +2227,7 @@ export class CodexAgent extends BaseAgent {
             return;
           }
           this.debug('ChatGPT token injection succeeded before thread resume');
-        } else if (normalizedAuthType === 'api_key' || normalizedAuthType === 'api_key_with_endpoint') {
+        } else if (normalizedAuthType === 'api_key' || normalizedAuthType === 'api_key_with_endpoint' || normalizedAuthType === 'cloud') {
           this.debug('Attempting API key injection before thread resume...');
           const injected = await this.tryInjectStoredApiKey();
           if (!injected) {

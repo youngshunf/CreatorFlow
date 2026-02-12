@@ -893,6 +893,8 @@ export class SessionManager {
    * When set, SDK uses cloud gateway instead of direct Anthropic API.
    */
   private cloudConfig: { gatewayUrl: string; llmToken: string } | null = null
+  /** 云端令牌自动刷新定时器 */
+  private cloudRefreshTimer: ReturnType<typeof setInterval> | null = null
   /** Resolved path to @github/copilot CLI entry point (for CopilotAgent) */
   copilotCliPath: string | undefined
   /** Resolved path to Copilot network interceptor (for tool metadata capture) */
@@ -913,37 +915,238 @@ export class SessionManager {
   }
 
   /**
-   * Set cloud LLM gateway configuration.
-   * Called by renderer after user logs in to cloud service.
-   * This enables SDK to use cloud gateway instead of direct Anthropic API.
+   * Set cloud auth credentials (login).
+   * Persists tokens to credential manager, creates cloud connections, starts refresh timer.
    */
-  async setCloudConfig(config: { gatewayUrl: string; llmToken: string }): Promise<void> {
-    // Validate config to prevent undefined URL errors in SDK
-    if (!config.gatewayUrl || !config.llmToken) {
-      sessionLog.error('Invalid cloud config - missing gatewayUrl or llmToken:', config)
-      throw new Error('Invalid cloud config: gatewayUrl and llmToken are required')
+  async setCloudAuth(auth: {
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt?: number;
+    refreshExpiresAt?: number;
+  }): Promise<void> {
+    // Validate
+    if (!auth.gatewayUrl || !auth.llmToken) {
+      sessionLog.error('Invalid cloud auth - missing gatewayUrl or llmToken')
+      throw new Error('Invalid cloud auth: gatewayUrl and llmToken are required')
     }
-    sessionLog.info(`Setting cloud config: ${config.gatewayUrl}`)
-    this.cloudConfig = config
-    // Reinitialize auth to pick up cloud gateway
+    sessionLog.info(`Setting cloud auth: ${auth.gatewayUrl}`)
+
+    // 1. 持久化到 credential manager
+    const manager = getCredentialManager()
+    await manager.setCloudAuth({
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+      llmToken: auth.llmToken,
+      gatewayUrl: auth.gatewayUrl,
+      expiresAt: auth.expiresAt ?? (Date.now() + 24 * 60 * 60 * 1000),
+      refreshExpiresAt: auth.refreshExpiresAt ?? (Date.now() + 7 * 24 * 60 * 60 * 1000),
+    })
+
+    // 2. 设置内存缓存
+    this.cloudConfig = { gatewayUrl: auth.gatewayUrl, llmToken: auth.llmToken }
+
+    // 3. 确保云端连接存在于 config.json
+    await this.ensureCloudConnections()
+
+    // 4. 同步 llmToken 到各连接的 credential manager
+    await this.syncCloudCredentials(auth.llmToken)
+
+    // 5. 启动/重置刷新定时器
+    this.startCloudTokenRefreshTimer()
+
+    // 6. 设置环境变量
     await this.reinitializeAuth()
   }
 
   /**
-   * Get current cloud configuration.
+   * Get current cloud configuration (for backward compatibility).
    */
   getCloudConfig(): { gatewayUrl: string; llmToken: string } | null {
     return this.cloudConfig
   }
 
   /**
-   * Clear cloud LLM gateway configuration (logout).
+   * Get cloud auth status (for renderer to check login state).
    */
-  async clearCloudConfig(): Promise<void> {
-    sessionLog.info('Clearing cloud config')
+  async getCloudAuthStatus(): Promise<{ isLoggedIn: boolean; expiresAt?: number; gatewayUrl?: string }> {
+    const manager = getCredentialManager()
+    const auth = await manager.getCloudAuth()
+    if (!auth) return { isLoggedIn: false }
+
+    // 检查 refresh_token 是否已过期
+    const { isRefreshTokenExpired } = await import('@sprouty-ai/shared/auth/cloud-token-refresh')
+    if (isRefreshTokenExpired(auth.refreshExpiresAt)) {
+      return { isLoggedIn: false }
+    }
+
+    return {
+      isLoggedIn: true,
+      expiresAt: auth.expiresAt,
+      gatewayUrl: auth.gatewayUrl,
+    }
+  }
+
+  /**
+   * Clear cloud auth credentials (logout).
+   */
+  async clearCloudAuth(): Promise<void> {
+    sessionLog.info('Clearing cloud auth')
+    this.stopCloudTokenRefreshTimer()
     this.cloudConfig = null
+
+    const manager = getCredentialManager()
+    await manager.deleteCloudAuth()
+    // 清除各云端连接的凭证
+    for (const slug of ['cloud-anthropic', 'cloud-openai']) {
+      try { await manager.deleteLlmCredentials(slug) } catch { /* ignore */ }
+    }
+
     // Reinitialize auth to revert to local credentials
     await this.reinitializeAuth()
+  }
+
+  /**
+   * APP 启动时恢复云端认证状态。
+   * 从 credential manager 读取持久化的令牌，检查有效性，必要时刷新。
+   */
+  async restoreCloudAuth(): Promise<boolean> {
+    const manager = getCredentialManager()
+    const auth = await manager.getCloudAuth()
+    if (!auth || !auth.refreshToken) {
+      return false
+    }
+
+    const { isRefreshTokenExpired, isTokenExpiringSoon, refreshCloudToken } = await import('@sprouty-ai/shared/auth/cloud-token-refresh')
+
+    // 检查 refresh_token 是否已过期
+    if (isRefreshTokenExpired(auth.refreshExpiresAt)) {
+      sessionLog.info('Cloud refresh token expired, need re-login')
+      await manager.deleteCloudAuth()
+      return false
+    }
+
+    // 检查 access_token 是否需要刷新
+    if (isTokenExpiringSoon(auth.expiresAt)) {
+      try {
+        const result = await refreshCloudToken(auth.gatewayUrl, auth.refreshToken)
+        auth.accessToken = result.accessToken
+        auth.expiresAt = result.expiresAt
+        await manager.setCloudAuth(auth)
+        sessionLog.info('Cloud access token refreshed on startup')
+      } catch (err) {
+        sessionLog.error('Failed to refresh cloud token on startup:', err)
+        await manager.deleteCloudAuth()
+        return false
+      }
+    }
+
+    // 恢复内存状态
+    this.cloudConfig = { gatewayUrl: auth.gatewayUrl, llmToken: auth.llmToken }
+
+    // 确保云端连接存在
+    await this.ensureCloudConnections()
+    await this.syncCloudCredentials(auth.llmToken)
+
+    // 启动刷新定时器
+    this.startCloudTokenRefreshTimer()
+
+    sessionLog.info(`Cloud auth restored: ${auth.gatewayUrl}`)
+    return true
+  }
+
+  /**
+   * 确保 cloud-anthropic 和 cloud-openai 连接存在于 config.json。
+   */
+  private async ensureCloudConnections(): Promise<void> {
+    const { addLlmConnection, getLlmConnection, getDefaultModelsForConnection, getDefaultModelForConnection } = await import('@sprouty-ai/shared/config')
+
+    for (const slug of ['cloud-anthropic', 'cloud-openai'] as const) {
+      if (!getLlmConnection(slug)) {
+        const isAnthropic = slug === 'cloud-anthropic'
+        const providerType = isAnthropic ? 'anthropic' as const : 'openai_compat' as const
+        addLlmConnection({
+          slug,
+          name: isAnthropic ? 'Claude (云端)' : 'Codex (云端)',
+          providerType,
+          authType: 'cloud',
+          models: getDefaultModelsForConnection(providerType),
+          defaultModel: getDefaultModelForConnection(providerType),
+          createdAt: Date.now(),
+        })
+        sessionLog.info(`Created cloud connection: ${slug}`)
+      }
+    }
+
+    // 如果没有默认连接，设置 cloud-anthropic 为默认
+    const { getDefaultLlmConnection: getDefault, setDefaultLlmConnection: setDefault } = await import('@sprouty-ai/shared/config')
+    if (!getDefault()) {
+      setDefault('cloud-anthropic')
+      sessionLog.info('Set cloud-anthropic as default LLM connection')
+    }
+  }
+
+  /**
+   * 同步 llmToken 到各云端连接的 credential manager。
+   */
+  private async syncCloudCredentials(llmToken: string): Promise<void> {
+    const manager = getCredentialManager()
+    for (const slug of ['cloud-anthropic', 'cloud-openai']) {
+      await manager.setLlmApiKey(slug, llmToken)
+    }
+    sessionLog.info('Synced cloud credentials to connection stores')
+  }
+
+  /**
+   * 启动云端令牌自动刷新定时器（每 30 分钟检查一次）。
+   */
+  private startCloudTokenRefreshTimer(): void {
+    this.stopCloudTokenRefreshTimer()
+    this.cloudRefreshTimer = setInterval(() => this.tryRefreshCloudToken(), 30 * 60 * 1000)
+  }
+
+  /**
+   * 停止云端令牌刷新定时器。
+   */
+  private stopCloudTokenRefreshTimer(): void {
+    if (this.cloudRefreshTimer) {
+      clearInterval(this.cloudRefreshTimer)
+      this.cloudRefreshTimer = null
+    }
+  }
+
+  /**
+   * 尝试刷新云端 access_token。
+   */
+  private async tryRefreshCloudToken(): Promise<void> {
+    try {
+      const manager = getCredentialManager()
+      const auth = await manager.getCloudAuth()
+      if (!auth) return
+
+      const { isRefreshTokenExpired, isTokenExpiringSoon, refreshCloudToken } = await import('@sprouty-ai/shared/auth/cloud-token-refresh')
+
+      if (isRefreshTokenExpired(auth.refreshExpiresAt)) {
+        // refresh_token 过期，通知 renderer 需要重新登录
+        sessionLog.info('Cloud refresh token expired, notifying renderer')
+        this.windowManager?.broadcastToAll(IPC_CHANNELS.CLOUD_AUTH_EXPIRED)
+        this.stopCloudTokenRefreshTimer()
+        return
+      }
+
+      if (isTokenExpiringSoon(auth.expiresAt)) {
+        const result = await refreshCloudToken(auth.gatewayUrl, auth.refreshToken)
+        auth.accessToken = result.accessToken
+        auth.expiresAt = result.expiresAt
+        await manager.setCloudAuth(auth)
+        // 通知 renderer 更新 access_token
+        this.windowManager?.broadcastToAll(IPC_CHANNELS.CLOUD_TOKEN_REFRESHED, { accessToken: result.accessToken })
+        sessionLog.info('Cloud access token refreshed by timer')
+      }
+    } catch (err) {
+      sessionLog.error('Cloud token refresh failed:', err)
+    }
   }
 
   /**
@@ -1316,7 +1519,7 @@ export class SessionManager {
 
         // Set credentials based on connection auth type
         // Note: slug is guaranteed non-null here since connection was found
-        if (connection.authType === 'api_key' || connection.authType === 'api_key_with_endpoint' || connection.authType === 'bearer_token') {
+        if (connection.authType === 'api_key' || connection.authType === 'api_key_with_endpoint' || connection.authType === 'bearer_token' || connection.authType === 'cloud') {
           const apiKey = await manager.getLlmApiKey(slug!)
           if (apiKey) {
             process.env.ANTHROPIC_API_KEY = apiKey
@@ -1496,6 +1699,12 @@ export class SessionManager {
     // Migrate legacy credentials to LLM connection format (one-time migration)
     // This ensures credentials saved before LLM connections are available via the new system
     await migrateLegacyCredentials()
+
+    // 尝试恢复云端认证状态（从 credential manager 读取持久化令牌）
+    const cloudRestored = await this.restoreCloudAuth()
+    if (cloudRestored) {
+      sessionLog.info('Cloud auth restored from credential manager')
+    }
 
     // Set up authentication environment variables (critical for SDK to work)
     await this.reinitializeAuth()

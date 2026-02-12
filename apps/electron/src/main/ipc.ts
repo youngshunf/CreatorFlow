@@ -14,7 +14,7 @@ import { registerCreatorMediaIpc } from './creator-media-ipc'
 import { IPC_CHANNELS, type FileAttachment, type StoredAttachment, type AuthType, type SendMessageOptions, type LlmConnectionSetup } from '../shared/types'
 import { readFileAttachment, perf, validateImageForClaudeAPI, IMAGE_LIMITS } from '@sprouty-ai/shared/utils'
 import { safeJsonParse } from '@sprouty-ai/shared/utils/files'
-import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, resolveModelId, type Workspace, SUMMARIZATION_MODEL, getLlmConnections, getLlmConnection, addLlmConnection, updateLlmConnection, deleteLlmConnection, getDefaultLlmConnection, setDefaultLlmConnection, touchLlmConnection, isCompatProvider, isAnthropicProvider, isOpenAIProvider, isCopilotProvider, getDefaultModelsForConnection, getDefaultModelForConnection, type LlmConnection, type LlmConnectionWithStatus } from '@sprouty-ai/shared/config'
+import { getAuthType, setAuthType, getPreferencesPath, getCustomModel, setCustomModel, getModel, setModel, getSessionDraft, setSessionDraft, deleteSessionDraft, getAllSessionDrafts, getWorkspaceByNameOrId, addWorkspace, setActiveWorkspace, getAnthropicBaseUrl, setAnthropicBaseUrl, loadStoredConfig, saveConfig, resolveModelId, type Workspace, getLlmConnections, getLlmConnection, addLlmConnection, updateLlmConnection, deleteLlmConnection, getDefaultLlmConnection, setDefaultLlmConnection, touchLlmConnection, isCompatProvider, isAnthropicProvider, isOpenAIProvider, isCopilotProvider, getDefaultModelsForConnection, getDefaultModelForConnection, type LlmConnection, type LlmConnectionWithStatus } from '@sprouty-ai/shared/config'
 import { getSessionAttachmentsPath, validateSessionId } from '@sprouty-ai/shared/sessions'
 import { loadWorkspaceSources, getSourcesBySlugs, type LoadedSource } from '@sprouty-ai/shared/sources'
 import { isValidThinkingLevel } from '@sprouty-ai/shared/agent/thinking-levels'
@@ -91,6 +91,16 @@ const BUILT_IN_CONNECTION_TEMPLATES: Record<string, {
     name: 'GitHub Copilot',
     providerType: 'copilot',
     authType: 'oauth',
+  },
+  'cloud-anthropic': {
+    name: 'Claude (云端)',
+    providerType: 'anthropic',
+    authType: 'cloud',
+  },
+  'cloud-openai': {
+    name: 'Codex (云端)',
+    providerType: 'openai_compat',
+    authType: 'cloud',
   },
 }
 
@@ -1694,7 +1704,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       })
 
       // Clear cloud config on logout
-      await sessionManager.clearCloudConfig()
+      await sessionManager.clearCloudAuth()
 
       ipcLog.info('Logout complete - cleared all credentials and config')
     } catch (error) {
@@ -1707,21 +1717,49 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Cloud LLM Gateway
   // ============================================================
 
-  // Set cloud LLM gateway configuration (called by renderer after login)
-  ipcMain.handle(IPC_CHANNELS.CLOUD_SET_CONFIG, async (_event, config: { gatewayUrl: string; llmToken: string }) => {
-    ipcLog.info('Setting cloud LLM config:', config.gatewayUrl)
-    await sessionManager.setCloudConfig(config)
+  // 新版：云端认证（持久化令牌 + 自动刷新）
+  ipcMain.handle(IPC_CHANNELS.CLOUD_SET_AUTH, async (_event, auth: {
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt?: number;
+    refreshExpiresAt?: number;
+  }) => {
+    ipcLog.info('Setting cloud auth:', auth.gatewayUrl)
+    await sessionManager.setCloudAuth(auth)
   })
 
-  // Get current cloud configuration
+  ipcMain.handle(IPC_CHANNELS.CLOUD_GET_AUTH_STATUS, async () => {
+    return sessionManager.getCloudAuthStatus()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.CLOUD_CLEAR_AUTH, async () => {
+    ipcLog.info('Clearing cloud auth')
+    await sessionManager.clearCloudAuth()
+  })
+
+  // 旧版兼容：Set cloud LLM gateway configuration (called by renderer after login)
+  ipcMain.handle(IPC_CHANNELS.CLOUD_SET_CONFIG, async (_event, config: { gatewayUrl: string; llmToken: string }) => {
+    ipcLog.info('Setting cloud LLM config (legacy):', config.gatewayUrl)
+    // 转发到新版 setCloudAuth（不含 refresh token，仅内存模式）
+    await sessionManager.setCloudAuth({
+      accessToken: '',
+      refreshToken: '',
+      llmToken: config.llmToken,
+      gatewayUrl: config.gatewayUrl,
+    })
+  })
+
+  // Get current cloud configuration (legacy)
   ipcMain.handle(IPC_CHANNELS.CLOUD_GET_CONFIG, () => {
     return sessionManager.getCloudConfig()
   })
 
-  // Clear cloud LLM gateway configuration (logout)
+  // Clear cloud LLM gateway configuration (legacy)
   ipcMain.handle(IPC_CHANNELS.CLOUD_CLEAR_CONFIG, async () => {
-    ipcLog.info('Clearing cloud LLM config')
-    await sessionManager.clearCloudConfig()
+    ipcLog.info('Clearing cloud LLM config (legacy)')
+    await sessionManager.clearCloudAuth()
   })
 
   // Credential health check - validates credential store is readable and usable
@@ -2327,9 +2365,58 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
       // Check if connection has valid credentials
       const credentialManager = getCredentialManager()
+
+      // Cloud auth: credentials are stored under 'cloud-auth', not the connection slug
+      if (connection.authType === 'cloud') {
+        const cloudAuth = await credentialManager.getCloudAuth()
+        if (!cloudAuth?.llmToken) {
+          return { success: false, error: 'cloud_no_credentials' }
+        }
+
+        // Lightweight validation: check token expiry instead of making an API call
+        const { isRefreshTokenExpired, isTokenExpiringSoon } = await import('@sprouty-ai/shared/auth/cloud-token-refresh')
+
+        if (isRefreshTokenExpired(cloudAuth.refreshExpiresAt)) {
+          return { success: false, error: 'cloud_refresh_expired' }
+        }
+
+        if (isTokenExpiringSoon(cloudAuth.expiresAt, 0)) {
+          // Access token expired but refresh token is still valid — try refresh
+          try {
+            const { refreshCloudToken } = await import('@sprouty-ai/shared/auth/cloud-token-refresh')
+            const { getCloudApiUrl } = await import('@sprouty-ai/shared/config/environments')
+            const apiBaseUrl = getCloudApiUrl()
+            const refreshed = await refreshCloudToken(apiBaseUrl, cloudAuth.refreshToken)
+
+            // Store refreshed tokens
+            await credentialManager.setCloudAuth({
+              accessToken: refreshed.accessToken,
+              refreshToken: refreshed.refreshToken,
+              llmToken: refreshed.llmToken,
+              gatewayUrl: refreshed.gatewayUrl,
+              expiresAt: refreshed.expiresAt,
+              refreshExpiresAt: refreshed.refreshExpiresAt,
+            })
+
+            ipcLog.info(`LLM connection validated (cloud token refreshed): ${slug}`)
+            touchLlmConnection(slug)
+            return { success: true }
+          } catch (refreshError) {
+            const msg = refreshError instanceof Error ? refreshError.message : String(refreshError)
+            ipcLog.info(`[LLM_CONNECTION_TEST] Cloud token refresh failed for ${slug}: ${msg}`)
+            return { success: false, error: 'cloud_refresh_failed' }
+          }
+        }
+
+        // Token is valid and not expired
+        ipcLog.info(`LLM connection validated (cloud credentials valid): ${slug}`)
+        touchLlmConnection(slug)
+        return { success: true }
+      }
+
       const hasCredentials = await credentialManager.hasLlmCredentials(slug, connection.authType)
       if (!hasCredentials && connection.authType !== 'none') {
-        return { success: false, error: 'No credentials configured' }
+        return { success: false, error: 'no_credentials' }
       }
 
       // ========================================
@@ -2337,13 +2424,13 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       // ========================================
       const isOpenAiProvider = connection.providerType === 'openai' || connection.providerType === 'openai_compat'
       if (connection.providerType === 'openai_compat' && !connection.defaultModel) {
-        return { success: false, error: 'Default model is required for OpenAI-compatible providers.' }
+        return { success: false, error: 'openai_compat_no_model' }
       }
       if (isOpenAiProvider && connection.authType === 'oauth') {
         // Get stored ChatGPT tokens
         const oauth = await credentialManager.getLlmOAuth(slug)
         if (!oauth?.refreshToken) {
-          return { success: false, error: 'No refresh token available. Please re-authenticate.' }
+          return { success: false, error: 'oauth_no_refresh_token' }
         }
 
         // Validate by attempting to refresh tokens
@@ -2365,7 +2452,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         } catch (refreshError) {
           const msg = refreshError instanceof Error ? refreshError.message : String(refreshError)
           ipcLog.info(`[LLM_CONNECTION_TEST] ChatGPT OAuth refresh failed for ${slug}: ${msg}`)
-          return { success: false, error: 'ChatGPT authentication expired. Please re-authenticate.' }
+          return { success: false, error: 'oauth_expired' }
         }
       }
 
@@ -2611,32 +2698,32 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
 
       // Connection errors — server unreachable
       if (lowerMsg.includes('econnrefused') || lowerMsg.includes('enotfound') || lowerMsg.includes('fetch failed')) {
-        return { success: false, error: 'Cannot connect to API server. Check the URL and ensure the server is running.' }
+        return { success: false, error: 'connection_failed' }
       }
 
       // 404 on endpoint
       if (lowerMsg.includes('404') && !lowerMsg.includes('model')) {
-        return { success: false, error: 'Endpoint not found. Ensure the server supports the Anthropic Messages API.' }
+        return { success: false, error: 'endpoint_not_found' }
       }
 
       // Auth errors
       if (lowerMsg.includes('401') || lowerMsg.includes('unauthorized') || lowerMsg.includes('authentication')) {
-        return { success: false, error: 'Authentication failed. Check your API key or OAuth token.' }
+        return { success: false, error: 'auth_failed' }
       }
 
       // Rate limit / quota errors
       if (lowerMsg.includes('429') || lowerMsg.includes('rate limit') || lowerMsg.includes('quota')) {
-        return { success: false, error: 'Rate limited or quota exceeded. Try again later.' }
+        return { success: false, error: 'rate_limited' }
       }
 
       // Credit/billing errors
       if (lowerMsg.includes('credit') || lowerMsg.includes('billing') || lowerMsg.includes('insufficient')) {
-        return { success: false, error: 'Billing issue. Check your account credits or payment method.' }
+        return { success: false, error: 'billing_issue' }
       }
 
       // Model not found
       if (lowerMsg.includes('model not found') || lowerMsg.includes('invalid model')) {
-        return { success: false, error: 'Model not found. Check the connection configuration.' }
+        return { success: false, error: 'model_not_found' }
       }
 
       // Fallback

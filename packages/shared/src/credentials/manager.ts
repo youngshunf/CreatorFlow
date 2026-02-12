@@ -346,6 +346,74 @@ export class CredentialManager {
   }
 
   // ============================================================
+  // Cloud Auth Credentials (云端登录令牌)
+  // ============================================================
+
+  /**
+   * 云端认证令牌接口
+   */
+  static readonly CLOUD_AUTH_KEY = 'cloud_auth' as const;
+
+  /**
+   * 保存云端认证令牌（整体存取）
+   */
+  async setCloudAuth(auth: {
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt: number;
+    refreshExpiresAt: number;
+  }): Promise<void> {
+    // 使用 llm_api_key 类型存储，connectionSlug 为 'cloud-auth'
+    // value 存 accessToken，其他字段用 refreshToken/expiresAt 等
+    await this.set(
+      { type: 'llm_api_key', connectionSlug: 'cloud-auth' },
+      {
+        value: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        // 复用 idToken 字段存储 llmToken
+        idToken: auth.llmToken,
+        // 复用 tokenType 字段存储 gatewayUrl
+        tokenType: auth.gatewayUrl,
+        expiresAt: auth.expiresAt,
+        // 复用 clientId 字段存储 refreshExpiresAt
+        clientId: String(auth.refreshExpiresAt),
+      }
+    );
+  }
+
+  /**
+   * 获取云端认证令牌
+   */
+  async getCloudAuth(): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt: number;
+    refreshExpiresAt: number;
+  } | null> {
+    const cred = await this.get({ type: 'llm_api_key', connectionSlug: 'cloud-auth' });
+    if (!cred || !cred.value || !cred.idToken || !cred.tokenType) return null;
+    return {
+      accessToken: cred.value,
+      refreshToken: cred.refreshToken || '',
+      llmToken: cred.idToken,
+      gatewayUrl: cred.tokenType,
+      expiresAt: cred.expiresAt || 0,
+      refreshExpiresAt: cred.clientId ? Number(cred.clientId) : 0,
+    };
+  }
+
+  /**
+   * 删除云端认证令牌
+   */
+  async deleteCloudAuth(): Promise<void> {
+    await this.delete({ type: 'llm_api_key', connectionSlug: 'cloud-auth' });
+  }
+
+  // ============================================================
   // IAM Credentials (AWS Bedrock)
   // ============================================================
 
@@ -461,6 +529,7 @@ export class CredentialManager {
       case 'api_key':
       case 'api_key_with_endpoint':
       case 'bearer_token':
+      case 'cloud':
         return this.hasLlmApiKeyCredential(connectionSlug);
 
       // OAuth - browser flow

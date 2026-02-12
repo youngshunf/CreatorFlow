@@ -753,9 +753,18 @@ export const IPC_CHANNELS = {
   SHOW_DELETE_SESSION_CONFIRMATION: 'auth:showDeleteSessionConfirmation',
 
   // Cloud LLM Gateway
+  CLOUD_SET_AUTH: 'cloud:setAuth',
+  CLOUD_GET_AUTH_STATUS: 'cloud:getAuthStatus',
+  CLOUD_CLEAR_AUTH: 'cloud:clearAuth',
+  /** @deprecated 使用 CLOUD_SET_AUTH 代替 */
   CLOUD_SET_CONFIG: 'cloud:setConfig',
+  /** @deprecated 使用 CLOUD_GET_AUTH_STATUS 代替 */
   CLOUD_GET_CONFIG: 'cloud:getConfig',
+  /** @deprecated 使用 CLOUD_CLEAR_AUTH 代替 */
   CLOUD_CLEAR_CONFIG: 'cloud:clearConfig',
+  // 云端令牌事件（main → renderer）
+  CLOUD_AUTH_EXPIRED: 'cloud:auth-expired',
+  CLOUD_TOKEN_REFRESHED: 'cloud:token-refreshed',
 
   // Credential health check (startup validation)
   CREDENTIAL_HEALTH_CHECK: 'credentials:healthCheck',
@@ -1262,9 +1271,28 @@ export interface ElectronAPI {
   logout(): Promise<void>
 
   // Cloud LLM Gateway
+  /** @deprecated 使用 setCloudAuth 代替 */
   setCloudConfig(config: CloudLLMConfig): Promise<void>
+  /** @deprecated 使用 getCloudAuthStatus 代替 */
   getCloudConfig(): Promise<CloudLLMConfig | null>
+  /** @deprecated 使用 clearCloudAuth 代替 */
   clearCloudConfig(): Promise<void>
+
+  // 云端认证（持久化令牌 + 自动刷新）
+  setCloudAuth(auth: {
+    accessToken: string;
+    refreshToken: string;
+    llmToken: string;
+    gatewayUrl: string;
+    expiresAt?: number;
+    refreshExpiresAt?: number;
+  }): Promise<void>
+  getCloudAuthStatus(): Promise<{ isLoggedIn: boolean; expiresAt?: number; gatewayUrl?: string }>
+  clearCloudAuth(): Promise<void>
+  /** 监听云端令牌刷新事件 */
+  onCloudTokenRefreshed(callback: (data: { accessToken: string }) => void): () => void
+  /** 监听云端认证过期事件 */
+  onCloudAuthExpired(callback: () => void): () => void
 
   // Credential health check (startup validation)
   getCredentialHealth(): Promise<CredentialHealthStatus>

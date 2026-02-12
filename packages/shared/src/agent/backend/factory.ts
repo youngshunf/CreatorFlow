@@ -196,6 +196,7 @@ export function connectionAuthTypeToBackendAuthType(
     case 'bearer_token':
     case 'iam_credentials':
     case 'service_account_file':
+    case 'cloud':
       // Pass through auth types that the backend handles
       return authType;
     case 'none':
