@@ -1,0 +1,20 @@
+{
+  "id": "video-mcp_preset",
+  "name": "视频创作引擎",
+  "slug": "video-mcp",
+  "enabled": true,
+  "provider": "sprouty-video",
+  "type": "mcp",
+  "mcp": {
+    "command": "node",
+    "args": ["index.cjs"],
+    "cwd": "app:resources/video-mcp-server",
+    "transport": "stdio",
+    "env": {}
+  },
+  "icon": "🎬",
+  "tagline": "Remotion 视频创作 MCP 服务 — 模板管理、合成渲染、素材发现、项目管理",
+  "description": "基于 Remotion 的视频创作引擎，提供完整的视频项目管理、模板系统、素材管理和渲染能力。",
+  "categories": ["media", "video", "content-creation"],
+  "tags": ["remotion", "video", "rendering", "templates", "composition"]
+}
