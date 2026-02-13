@@ -250,6 +250,15 @@ export interface McpSourceConfig {
   args?: string[];
 
   /**
+   * Working directory for the spawned process.
+   * Supports special prefixes:
+   * - 'app:' - Relative to app installation directory (e.g., 'app:resources/video')
+   * - Absolute path - Used as-is
+   * - Relative path - Relative to workspace root
+   */
+  cwd?: string;
+
+  /**
    * Environment variables for the spawned process.
    */
   env?: Record<string, string>;
@@ -452,7 +461,7 @@ export interface LoadedSource {
   workspaceId: string;
 
   /**
-   * Whether this is a built-in source (e.g., creator-flows-docs).
+   * Whether this is a built-in source (e.g., sprouty-ai-docs).
    * Built-in sources are always available and not shown in the sources UI.
    */
   isBuiltin?: boolean;

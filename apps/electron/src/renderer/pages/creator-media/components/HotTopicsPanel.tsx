@@ -120,19 +120,17 @@ export function HotTopicsPanel() {
             <p className="mt-1 text-xs text-muted-foreground/70">{t('点击刷新按钮拉取最新热榜')}</p>
           </div>
         ) : selectedPlatform === 'all' ? (
-          /* 全部平台：按平台分组显示 */
-          Object.entries(grouped).map(([platformId, items]) => (
-            <div key={platformId} className="mb-3 last:mb-0">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                {t(PLATFORMS.find(p => p.id === platformId)?.name ?? items[0]?.platform_name ?? platformId)}
-              </p>
-              <div className="space-y-0.5">
-                {items.slice(0, 10).map((item) => (
-                  <TopicRow key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          ))
+          /* 全部平台：网格布局，按平台分组显示 */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.entries(grouped).map(([platformId, items]) => (
+              <PlatformCard
+                key={platformId}
+                platformId={platformId}
+                platformName={t(PLATFORMS.find(p => p.id === platformId)?.name ?? items[0]?.platform_name ?? platformId)}
+                items={items}
+              />
+            ))}
+          </div>
         ) : (
           /* 单平台列表 */
           <div className="space-y-0.5">
@@ -142,6 +140,69 @@ export function HotTopicsPanel() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/** 平台卡片 */
+function PlatformCard({ platformId, platformName, items }: { platformId: string; platformName: string; items: HotTopic[] }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-background/40 overflow-hidden">
+      {/* 平台标题 */}
+      <div className="px-3 py-2 border-b border-border/40 bg-muted/20">
+        <h3 className="text-sm font-medium text-foreground">{platformName}</h3>
+      </div>
+      {/* 热榜列表 */}
+      <div className="p-2 space-y-0.5">
+        {items.slice(0, 10).map((item) => (
+          <CompactTopicRow key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** 紧凑型热榜行（用于卡片内） */
+function CompactTopicRow({ item }: { item: HotTopic }) {
+  const displayTitle = item.title || item.platform_name || '-'
+
+  const inner = (
+    <>
+      {/* 排名 */}
+      <span className={`w-5 text-center text-sm font-semibold shrink-0 ${
+        item.rank != null && item.rank <= 3 ? 'text-orange-500' : 'text-muted-foreground'
+      }`}>
+        {item.rank ?? '-'}
+      </span>
+      {/* 标题 */}
+      <span className="flex-1 text-sm text-foreground truncate" title={displayTitle}>
+        {displayTitle}
+      </span>
+      {/* 热度 */}
+      {item.heat_score != null && (
+        <span className="shrink-0 text-xs text-foreground/60">
+          {formatHeat(item.heat_score)}
+        </span>
+      )}
+    </>
+  )
+
+  if (item.url) {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-muted/30 transition-colors cursor-pointer no-underline"
+      >
+        {inner}
+      </a>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-muted/30 transition-colors cursor-default">
+      {inner}
     </div>
   )
 }

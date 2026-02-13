@@ -756,6 +756,7 @@ export const IPC_CHANNELS = {
   CLOUD_SET_AUTH: 'cloud:setAuth',
   CLOUD_GET_AUTH_STATUS: 'cloud:getAuthStatus',
   CLOUD_CLEAR_AUTH: 'cloud:clearAuth',
+  CLOUD_UPDATE_CONNECTION_MODELS: 'cloud:updateConnectionModels',
   /** @deprecated 使用 CLOUD_SET_AUTH 代替 */
   CLOUD_SET_CONFIG: 'cloud:setConfig',
   /** @deprecated 使用 CLOUD_GET_AUTH_STATUS 代替 */
@@ -842,6 +843,8 @@ export const IPC_CHANNELS = {
   DEFAULT_PERMISSIONS_CHANGED: 'permissions:defaultsChanged',
   // MCP tools listing
   SOURCES_GET_MCP_TOOLS: 'sources:getMcpTools',
+  // MCP connection test
+  SOURCES_TEST_CONNECTION: 'sources:testConnection',
 
   // Session content search (full-text via ripgrep)
   SEARCH_SESSIONS: 'sessions:searchContent',
@@ -1015,6 +1018,13 @@ export const IPC_CHANNELS = {
   CREATOR_MEDIA_CONTENTS_UPDATE: 'creatorMedia:contents:update',
   CREATOR_MEDIA_CONTENTS_UPDATE_STATUS: 'creatorMedia:contents:updateStatus',
   CREATOR_MEDIA_CONTENTS_DELETE: 'creatorMedia:contents:delete',
+  // 内容阶段产出
+  CREATOR_MEDIA_CONTENT_STAGES_LIST: 'creatorMedia:contentStages:list',
+  CREATOR_MEDIA_CONTENT_STAGES_GET: 'creatorMedia:contentStages:get',
+  CREATOR_MEDIA_CONTENT_STAGES_GET_LATEST: 'creatorMedia:contentStages:getLatest',
+  CREATOR_MEDIA_CONTENT_STAGES_CREATE: 'creatorMedia:contentStages:create',
+  CREATOR_MEDIA_CONTENT_STAGES_UPDATE: 'creatorMedia:contentStages:update',
+  CREATOR_MEDIA_CONTENT_STAGES_DELETE: 'creatorMedia:contentStages:delete',
   // 发布记录
   CREATOR_MEDIA_PUBLISH_RECORDS_LIST: 'creatorMedia:publishRecords:list',
   CREATOR_MEDIA_PUBLISH_RECORDS_GET: 'creatorMedia:publishRecords:get',
@@ -1293,6 +1303,7 @@ export interface ElectronAPI {
   }): Promise<void>
   getCloudAuthStatus(): Promise<{ isLoggedIn: boolean; expiresAt?: number; gatewayUrl?: string }>
   clearCloudAuth(): Promise<void>
+  updateCloudConnectionModels(anthropicModel?: string, openaiModel?: string): Promise<void>
   /** 监听云端令牌刷新事件 */
   onCloudTokenRefreshed(callback: (data: { accessToken: string }) => void): () => void
   /** 监听云端认证过期事件 */
@@ -1369,6 +1380,7 @@ export interface ElectronAPI {
   getWorkspacePermissionsConfig(workspaceId: string): Promise<import('@sprouty-ai/shared/agent').PermissionsConfigFile | null>
   getDefaultPermissionsConfig(): Promise<{ config: import('@sprouty-ai/shared/agent').PermissionsConfigFile | null; path: string }>
   getMcpTools(workspaceId: string, sourceSlug: string): Promise<McpToolsResult>
+  testSourceConnection(workspaceId: string, sourceSlug: string): Promise<import('@sprouty-ai/shared/mcp').McpValidationResult>
 
   // Session content search (full-text search via ripgrep)
   searchSessionContent(workspaceId: string, query: string, searchId?: string): Promise<SessionSearchResult[]>
@@ -1544,6 +1556,14 @@ export interface ElectronAPI {
       update(workspaceId: string, contentId: string, data: import('@sprouty-ai/shared/db/types').UpdateContent): Promise<import('@sprouty-ai/shared/db/types').Content | null>
       updateStatus(workspaceId: string, contentId: string, status: string): Promise<import('@sprouty-ai/shared/db/types').Content | null>
       delete(workspaceId: string, contentId: string): Promise<boolean>
+    }
+    contentStages: {
+      list(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').ContentStageRecord[]>
+      get(workspaceId: string, id: string): Promise<import('@sprouty-ai/shared/db/types').ContentStageRecord | null>
+      getLatest(workspaceId: string, contentId: string, stage: import('@sprouty-ai/shared/db/types').ContentStage): Promise<import('@sprouty-ai/shared/db/types').ContentStageRecord | null>
+      create(workspaceId: string, data: import('@sprouty-ai/shared/db/types').CreateContentStage): Promise<import('@sprouty-ai/shared/db/types').ContentStageRecord>
+      update(workspaceId: string, id: string, data: import('@sprouty-ai/shared/db/types').UpdateContentStage): Promise<import('@sprouty-ai/shared/db/types').ContentStageRecord | null>
+      delete(workspaceId: string, id: string): Promise<boolean>
     }
     publishRecords: {
       list(workspaceId: string, contentId: string): Promise<import('@sprouty-ai/shared/db/types').PublishRecord[]>

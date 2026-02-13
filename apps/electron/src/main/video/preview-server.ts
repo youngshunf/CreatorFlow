@@ -312,7 +312,7 @@ export class PreviewServer implements IPreviewServer {
 
     // If no entry point found in project, use the video package's Root
     try {
-      const videoPackageRoot = require.resolve('@creator-flow/video');
+      const videoPackageRoot = require.resolve('@sprouty-ai/video');
       const videoPackageDir = dirname(videoPackageRoot);
       const defaultEntryPoint = join(videoPackageDir, 'Root.tsx');
       if (existsSync(defaultEntryPoint)) {

@@ -20,10 +20,10 @@ import * as profilesRepo from '@sprouty-ai/shared/db/repositories/profiles';
 import * as platformAccountsRepo from '@sprouty-ai/shared/db/repositories/platform-accounts';
 import * as competitorsRepo from '@sprouty-ai/shared/db/repositories/competitors';
 import * as contentsRepo from '@sprouty-ai/shared/db/repositories/contents';
+import * as contentStagesRepo from '@sprouty-ai/shared/db/repositories/content-stages';
 import * as publishRecordsRepo from '@sprouty-ai/shared/db/repositories/publish-records';
 import * as viralPatternsRepo from '@sprouty-ai/shared/db/repositories/viral-patterns';
 import * as reviewTasksRepo from '@sprouty-ai/shared/db/repositories/review-tasks';
-import * as contentVersionsRepo from '@sprouty-ai/shared/db/repositories/content-versions';
 import * as publishQueueRepo from '@sprouty-ai/shared/db/repositories/publish-queue';
 import * as draftsRepo from '@sprouty-ai/shared/db/repositories/drafts';
 import * as mediaFilesRepo from '@sprouty-ai/shared/db/repositories/media-files';
@@ -202,6 +202,46 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
   });
 
   // ============================================================
+  // 内容阶段产出
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_LIST, async (_event, workspaceId: string, contentId: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.listByContent(db, contentId);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_GET, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.getContentStage(db, id) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_GET_LATEST, async (_event, workspaceId: string, contentId: string, stage: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.getLatestStage(db, contentId, stage as any) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_CREATE, async (_event, workspaceId: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.createContentStage(db, data as any);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_UPDATE, async (_event, workspaceId: string, id: string, data: unknown) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.updateContentStage(db, id, data as any) ?? null;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_DELETE, async (_event, workspaceId: string, id: string) => {
+    const ws = getWorkspaceOrThrow(workspaceId);
+    const db = getCreatorMediaDB(ws.rootPath);
+    return contentStagesRepo.deleteContentStage(db, id);
+  });
+
+  // ============================================================
   // 发布记录
   // ============================================================
 
@@ -308,31 +348,25 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
   });
 
   // ============================================================
-  // 内容版本管理
+  // 内容版本管理（已废弃，使用 content_stages 表替代）
   // ============================================================
 
+  // 注意：content_versions 表已被 content_stages 表替代
+  // 以下 IPC handlers 保留以兼容旧代码，但返回空数据
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_LIST, async (_event, workspaceId: string, contentId: string) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return contentVersionsRepo.listByContent(db, contentId);
+    return [];
   });
 
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_GET, async (_event, workspaceId: string, id: string) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return contentVersionsRepo.getVersion(db, id) ?? null;
+    return null;
   });
 
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_CREATE, async (_event, workspaceId: string, data: unknown) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return contentVersionsRepo.createVersion(db, data as any);
+    throw new Error('content_versions table has been deprecated. Use content_stages instead.');
   });
 
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_VERSIONS_ROLLBACK, async (_event, workspaceId: string, contentId: string, versionNumber: number) => {
-    const ws = getWorkspaceOrThrow(workspaceId);
-    const db = getCreatorMediaDB(ws.rootPath);
-    return contentVersionsRepo.rollbackToVersion(db, contentId, versionNumber);
+    throw new Error('content_versions table has been deprecated. Use content_stages instead.');
   });
 
   // ============================================================

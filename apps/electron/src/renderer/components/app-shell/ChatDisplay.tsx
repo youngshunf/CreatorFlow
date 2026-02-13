@@ -1802,7 +1802,7 @@ interface MessageBubbleProps {
  */
 function ErrorMessage({ message }: { message: Message }) {
   const t = useT()
-  const hasDetails = (message.errorDetails && message.errorDetails.length > 0) || message.errorOriginal
+  const hasDetails = (message.errorDetails && message.errorDetails.length > 0) || message.errorOriginal || message.content
   const [detailsOpen, setDetailsOpen] = React.useState(false)
 
   // 检测是否为积分不足错误
@@ -1819,6 +1819,68 @@ function ErrorMessage({ message }: { message: Message }) {
 
   const handleNavigateToSubscription = () => {
     navigate(routes.view.settings('subscription'))
+  }
+
+  // 根据错误代码生成用户友好的错误消息
+  const getFriendlyErrorMessage = (): string => {
+    const errorCode = message.errorCode
+    const errorTitle = message.errorTitle
+    const content = message.content
+
+    // 对于 unknown_error，优先显示实际的错误内容
+    if (errorCode === 'unknown_error') {
+      // 如果有具体的错误内容，显示它
+      if (content && content !== 'Unknown error' && !content.startsWith('Failed to send message:')) {
+        return content
+      }
+      // 否则显示通用提示
+      return t('操作失败')
+    }
+
+    // 对于 rate_limited，优先使用后端返回的实际消息（如"今日额度已用完，请明天再来"）
+    if (errorCode === 'rate_limited' && content && content !== 'Unknown error') {
+      return content
+    }
+
+    // 如果有错误代码，使用错误代码映射
+    if (errorCode) {
+      const errorMap: Record<string, string> = {
+        'cloud_no_credentials': t('云端凭证缺失，请重新登录'),
+        'cloud_refresh_expired': t('云端登录已过期，请重新登录'),
+        'cloud_refresh_failed': t('云端令牌刷新失败，请重新登录'),
+        'no_credentials': t('未配置 API 凭证，请在设置中配置'),
+        'openai_compat_no_model': t('未设置默认模型，请在设置中配置'),
+        'oauth_no_refresh_token': t('OAuth 认证信息缺失，请重新认证'),
+        'oauth_expired': t('OAuth 认证已过期，请重新认证'),
+        'connection_failed': t('无法连接到 API 服务器，请检查网络连接和 API 地址'),
+        'endpoint_not_found': t('API 端点不存在，请检查 API 地址配置'),
+        'auth_failed': t('API 认证失败，请检查 API 密钥是否正确'),
+        'rate_limited': t('请求过于频繁，请稍后重试'),
+        'billing_issue': t('账户余额不足或订阅已过期，请充值或续费'),
+        'model_not_found': t('指定的模型不存在，请检查模型配置'),
+      }
+
+      if (errorMap[errorCode]) {
+        return errorMap[errorCode]
+      }
+    }
+
+    // 如果有错误标题，显示标题
+    if (errorTitle && errorTitle !== 'Error') {
+      // 如果内容包含有用的错误信息，也显示出来
+      if (content && content !== 'Unknown error' && !content.startsWith('Failed to send message:')) {
+        return `${errorTitle}：${content}`
+      }
+      return errorTitle
+    }
+
+    // 如果内容不是通用错误，显示内容
+    if (content && content !== 'Unknown error' && !content.startsWith('Failed to send message:')) {
+      return content
+    }
+
+    // 否则返回通用错误消息
+    return t('操作失败，请查看技术详情了解更多信息')
   }
 
   return (
@@ -1859,7 +1921,7 @@ function ErrorMessage({ message }: { message: Message }) {
             </div>
           </>
         ) : (
-          <p className="text-sm text-destructive">{message.content}</p>
+          <p className="text-sm text-destructive">{getFriendlyErrorMessage()}</p>
         )}
 
         {/* Collapsible Details Toggle */}
@@ -1878,8 +1940,11 @@ function ErrorMessage({ message }: { message: Message }) {
                 {message.errorDetails?.map((detail, i) => (
                   <div key={i}>{detail}</div>
                 ))}
-                {message.errorOriginal && !message.errorDetails?.some(d => d.includes('Raw error:')) && (
-                  <div className="mt-1">{t('原始错误')}: {message.errorOriginal.slice(0, 200)}{message.errorOriginal.length > 200 ? '...' : ''}</div>
+                {message.content && (
+                  <div className="mt-1">{t('原始错误')}: {message.content}</div>
+                )}
+                {message.errorOriginal && message.errorOriginal !== message.content && (
+                  <div className="mt-1">{t('详细信息')}: {message.errorOriginal.slice(0, 200)}{message.errorOriginal.length > 200 ? '...' : ''}</div>
                 )}
               </div>
             </AnimatedCollapsibleContent>

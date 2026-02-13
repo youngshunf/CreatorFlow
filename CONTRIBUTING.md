@@ -1,6 +1,6 @@
-# Contributing to CreatorFlow
+# Contributing to Sprouty AI
 
-Thank you for your interest in contributing to CreatorFlow! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Sprouty AI! This document provides guidelines and instructions for contributing.
 
 ## Getting Started
 

@@ -1,7 +1,7 @@
 {
   "name": "@sprouty-ai/viewer",
   "version": "0.3.5",
-  "description": "Web viewer for CreatorFlow sessions - upload and share session transcripts",
+  "description": "Web viewer for Sprouty AI sessions - upload and share session transcripts",
   "private": true,
   "type": "module",
   "scripts": {

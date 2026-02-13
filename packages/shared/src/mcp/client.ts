@@ -26,6 +26,7 @@ export interface StdioMcpClientConfig {
   command: string;
   args?: string[];
   env?: Record<string, string>;
+  cwd?: string;
 }
 
 /**
@@ -39,7 +40,7 @@ export type McpClientConfig = HttpMcpClientConfig | StdioMcpClientConfig;
  * and shouldn't have access to.
  */
 const BLOCKED_ENV_VARS = [
-  // CreatorFlow auth (set by the app itself)
+  // Sprouty AI auth (set by the app itself)
   'ANTHROPIC_API_KEY',
   'CLAUDE_CODE_OAUTH_TOKEN',
 
@@ -64,7 +65,7 @@ export class CraftMcpClient {
 
   constructor(config: McpClientConfig) {
     this.client = new Client({
-      name: 'creator-flow',
+      name: 'sprouty-ai',
       version: '1.0.0',
     });
 
@@ -82,6 +83,7 @@ export class CraftMcpClient {
         command: config.command,
         args: config.args,
         env: { ...processEnv, ...config.env },
+        cwd: config.cwd,
       });
     } else {
       // HTTP transport for remote MCP servers

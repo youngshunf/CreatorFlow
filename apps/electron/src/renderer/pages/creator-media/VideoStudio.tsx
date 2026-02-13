@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useT } from '@/context/LocaleContext'
 import { useActiveWorkspace } from '@/context/AppShellContext'
 import { useNavigation, routes } from '@/contexts/NavigationContext'
-import type { VideoProject, VideoTemplate } from '@creator-flow/video'
+import type { VideoProject, VideoTemplate } from '@sprouty-ai/video'
 import { VideoPreview } from '@/components/video/VideoPreview'
 import { VideoTimeline } from '@/components/video/VideoTimeline'
 import { VideoProperties } from '@/components/video/VideoProperties'
@@ -64,11 +64,23 @@ export default function VideoStudio() {
     updateContentStatus, createContent,
   } = useCreatorMedia()
 
-  // 筛选视频类型内容
+  // 筛选视频类型内容（通过 metadata 判断）
   const videoContents = useMemo(
-    () => contents.filter(c => c.content_type === 'video' || c.content_type === 'short-video'),
+    () => contents.filter(c => {
+      if (!c.metadata) return false
+      try {
+        const meta = JSON.parse(c.metadata)
+        return !!meta.video_project_id
+      } catch {
+        return false
+      }
+    }),
     [contents],
   )
+
+  // 从 URL 参数获取 contentId
+  const searchParams = new URLSearchParams(window.location.search)
+  const urlContentId = searchParams.get('contentId')
 
   // 状态
   const [activeContentId, setActiveContentId] = useState<string | null>(null)
@@ -283,19 +295,30 @@ export default function VideoStudio() {
     }
   }, [currentProject, t])
 
-  /** 完成制作 — 将关联的 content 状态推进到 reviewing */
+  /** 完成制作 — 将关联的 content 状态推进到 adapting */
   const handleFinishCreation = useCallback(async () => {
     if (!activeContentId) {
       toast.info(t('当前项目未关联内容'))
       return
     }
     try {
-      await updateContentStatus(activeContentId, 'reviewing')
-      toast.success(t('视频制作完成，已进入审核阶段'))
+      await updateContentStatus(activeContentId, 'adapting')
+      toast.success(t('视频制作完成，进入平台适配阶段'))
+      navigate(routes.view.appView('creator-media', 'dashboard'))
     } catch {
       toast.error(t('状态更新失败'))
     }
-  }, [activeContentId, updateContentStatus, t])
+  }, [activeContentId, updateContentStatus, navigate, t])
+
+  // 自动加载 URL 参数指定的内容
+  useEffect(() => {
+    if (urlContentId && videoContents.length > 0) {
+      const content = videoContents.find(c => c.id === urlContentId)
+      if (content) {
+        handleContentSelect(content)
+      }
+    }
+  }, [urlContentId, videoContents, handleContentSelect])
 
   // 同步播放器状态
   useEffect(() => {
@@ -421,7 +444,7 @@ export default function VideoStudio() {
                     {t('完成制作')}
                   </Button>
                   <p className="text-[10px] text-muted-foreground text-center mt-1">
-                    {t('将内容状态推进到审核阶段')}
+                    {t('将内容状态推进到平台适配阶段')}
                   </p>
                 </div>
               )}

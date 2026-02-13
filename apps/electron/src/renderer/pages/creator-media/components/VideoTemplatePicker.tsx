@@ -8,7 +8,7 @@
 import { useT } from '@/context/LocaleContext'
 import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
-import { ALL_TEMPLATES, type VideoTemplate } from '@creator-flow/video'
+import { ALL_TEMPLATES, type VideoTemplate } from '@sprouty-ai/video'
 
 interface VideoTemplatePickerProps {
   selected?: string

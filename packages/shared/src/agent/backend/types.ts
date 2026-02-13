@@ -117,7 +117,12 @@ export type SdkMcpServerConfig =
       env?: Record<string, string>;
       /** Environment variable names to forward from parent process (Codex-specific) */
       envVars?: string[];
-      /** Working directory for the server process (Codex-specific) */
+      /**
+       * Working directory for the server process.
+       * NOTE: Claude CLI's Zod schema strips this field, so for Claude backend
+       * the server-builder resolves args to absolute paths instead.
+       * Codex and Copilot backends may still use this field directly.
+       */
       cwd?: string;
     };
 

@@ -65,7 +65,7 @@ export async function createOrder(params: CreateOrderParams): Promise<CreateOrde
   const orderNo = generateOrderNo()
   const orderId = generateId()
   
-  const subject = `CreatorFlow ${planInfo.name} - ${period === 'monthly' ? '月度订阅' : '年度订阅'}`
+  const subject = `智小芽 ${planInfo.name} - ${period === 'monthly' ? '月度订阅' : '年度订阅'}`
   const expireMinutes = 30
   const expiredAt = new Date(Date.now() + expireMinutes * 60 * 1000)
   

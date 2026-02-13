@@ -16,7 +16,7 @@
 
 ### 1. 与 Claude 技能系统兼容
 - 使用相同的目录结构 `~/.creator-flow/skills/`
-- 如果用户已经有 Claude 技能，CreatorFlow 会自动识别和加载
+- 如果用户已经有 Claude 技能，Sprouty AI 会自动识别和加载
 - 首次启动时，只复制不存在的技能（不覆盖用户的 Claude 技能）
 
 ### 2. 技能加载优先级
@@ -24,7 +24,7 @@
 工作区技能（{workspace}/.creator-flow/skills/）
   ↓ 优先级最高
 全局技能（~/.creator-flow/skills/）
-  ↓ 包含 CreatorFlow 内置技能 + Claude 技能
+  ↓ 包含 Sprouty AI 内置技能 + Claude 技能
 内置技能（bundled-skills/）
   ↓ 仅作为复制源
 ```
@@ -36,7 +36,7 @@
 
 ### 4. 优势
 ✅ 与 Claude 技能系统无缝集成  
-✅ 用户可以在 CreatorFlow 中使用 Claude 技能  
+✅ 用户可以在 Sprouty AI 中使用 Claude 技能  
 ✅ 不会覆盖用户已有的技能  
 ✅ 统一的技能管理体验
 

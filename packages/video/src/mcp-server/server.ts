@@ -56,9 +56,9 @@ export const SERVER_VERSION = '0.1.0' as const;
  */
 export function createServer(): FastMCP {
   const mcp = new FastMCP({
-    name: 'creator-flow-video',
+    name: 'sprouty-ai-video',
     version: SERVER_VERSION,
-    instructions: 'CreatorFlow Video MCP Server - 提供视频创作能力，包括项目管理、素材管理、视频渲染和实时预览。',
+    instructions: 'Sprouty AI Video MCP Server - 提供视频创作能力，包括项目管理、素材管理、视频渲染和实时预览。',
   });
 
   // 注册所有工具
@@ -74,25 +74,33 @@ export function createServer(): FastMCP {
  * @requirements 8.5 - 启动时记录可用工具和传输配置
  */
 function printStartupInfo(config: ServerConfig): void {
-  console.log('');
-  console.log('╔════════════════════════════════════════════════════════════════╗');
-  console.log('║           CreatorFlow Video MCP Server                         ║');
-  console.log('╚════════════════════════════════════════════════════════════════╝');
-  console.log('');
+  // Skip startup info if SILENT mode is enabled
+  if (process.env.MCP_SILENT === 'true') {
+    return;
+  }
+
+  // Use stderr for all startup info — stdout is reserved for MCP stdio protocol
+  const log = console.error.bind(console);
+
+  log('');
+  log('╔════════════════════════════════════════════════════════════════╗');
+  log('║           Sprouty AI Video MCP Server                          ║');
+  log('╚════════════════════════════════════════════════════════════════╝');
+  log('');
 
   // 打印传输配置
-  console.log('📡 Transport Configuration:');
-  console.log(`   Mode: ${config.transport.toUpperCase()}`);
+  log('📡 Transport Configuration:');
+  log(`   Mode: ${config.transport.toUpperCase()}`);
   if (config.transport === 'http') {
-    console.log(`   Host: ${config.host}`);
-    console.log(`   Port: ${config.port}`);
-    console.log(`   Endpoint: ${config.endpoint}`);
-    console.log(`   URL:  http://${config.host}:${config.port}${config.endpoint}`);
+    log(`   Host: ${config.host}`);
+    log(`   Port: ${config.port}`);
+    log(`   Endpoint: ${config.endpoint}`);
+    log(`   URL:  http://${config.host}:${config.port}${config.endpoint}`);
   }
-  console.log('');
+  log('');
 
   // 打印可用工具
-  console.log('🔧 Available Tools:');
+  log('🔧 Available Tools:');
 
   // 按分类分组
   const toolsByCategory: Record<string, typeof TOOL_LIST[number][]> = {};
@@ -115,17 +123,17 @@ function printStartupInfo(config: ServerConfig): void {
   };
 
   for (const [category, tools] of Object.entries(toolsByCategory)) {
-    console.log(`   ${categoryNames[category] || category}:`);
+    log(`   ${categoryNames[category] || category}:`);
     for (const tool of tools) {
-      console.log(`     - ${tool.name}: ${tool.description}`);
+      log(`     - ${tool.name}: ${tool.description}`);
     }
   }
 
-  console.log('');
-  console.log(`📊 Total: ${TOOL_LIST.length} tools registered`);
-  console.log('');
-  console.log('═══════════════════════════════════════════════════════════════════');
-  console.log('');
+  log('');
+  log(`📊 Total: ${TOOL_LIST.length} tools registered`);
+  log('');
+  log('═══════════════════════════════════════════════════════════════════');
+  log('');
 }
 
 /**
@@ -144,14 +152,18 @@ export async function runServer(config: ServerConfig = DEFAULT_CONFIG): Promise<
 
   // 根据传输模式启动服务器
   if (config.transport === 'stdio') {
-    console.log('[MCP Video Server] Starting in stdio mode...');
+    if (process.env.MCP_SILENT !== 'true') {
+      console.error('[MCP Video Server] Starting in stdio mode...');
+    }
     await mcp.start({
       transportType: 'stdio',
     });
   } else {
     const port = config.port ?? DEFAULT_CONFIG.port!;
     const endpoint = config.endpoint ?? DEFAULT_CONFIG.endpoint!;
-    console.log(`[MCP Video Server] Starting HTTP server on ${config.host}:${port}${endpoint}...`);
+    if (process.env.MCP_SILENT !== 'true') {
+      console.error(`[MCP Video Server] Starting HTTP server on ${config.host}:${port}${endpoint}...`);
+    }
     await mcp.start({
       transportType: 'httpStream',
       httpStream: {
@@ -161,7 +173,9 @@ export async function runServer(config: ServerConfig = DEFAULT_CONFIG): Promise<
     });
   }
 
-  console.log('[MCP Video Server] Server started successfully');
+  if (process.env.MCP_SILENT !== 'true') {
+    console.error('[MCP Video Server] Server started successfully');
+  }
 }
 
 // ============================================================================

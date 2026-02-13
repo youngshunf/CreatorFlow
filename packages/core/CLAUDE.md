@@ -1,12 +1,12 @@
 # CLAUDE.md - Core Package
 
-This file provides guidance to Claude Code when working with the `@creator-flow/core` package.
+This file provides guidance to Claude Code when working with the `@sprouty-ai/core` package.
 
 **Important:** Keep this file and `README.md` up-to-date whenever functionality changes. After making changes to this package, update the documentation to reflect the current state.
 
 ## Overview
 
-The core package provides shared TypeScript types and utilities used by the Electron app and shared packages. It serves as the type definition layer for the CreatorFlow monorepo.
+The core package provides shared TypeScript types and utilities used by the Electron app and shared packages. It serves as the type definition layer for the Sprouty AI monorepo.
 
 **Current State:** This package currently only exports types and a debug utility stub. The actual implementation of storage, credentials, agent logic, auth, and MCP handling still lives in the root `src/` directory and is accessed via relative imports by the apps.
 
@@ -58,7 +58,7 @@ packages/core/
 | `MessageRole` | `user`, `assistant`, `tool`, `error`, `status`, `system`, `info`, `warning` |
 | `ToolStatus` | `pending`, `executing`, `completed`, `error` |
 | `TokenUsage` | Input/output/cache token counts and cost |
-| `AgentEvent` | Events from CreatorFlowAgent during chat (incl. task_backgrounded, shell_backgrounded, task_progress) |
+| `AgentEvent` | Events from SproutyAgent during chat (incl. task_backgrounded, shell_backgrounded, task_progress) |
 | `TypedError` | Structured error with code, title, canRetry |
 | `Question` | AskUserQuestion tool format |
 
@@ -71,13 +71,13 @@ import type {
   Session,
   Message,
   AgentEvent,
-} from '@creator-flow/core';
+} from '@sprouty-ai/core';
 
 // Import utilities
-import { generateMessageId, debug } from '@creator-flow/core';
+import { generateMessageId, debug } from '@sprouty-ai/core';
 
 // Or import from specific subpaths
-import type { Session } from '@creator-flow/core/types';
+import type { Session } from '@sprouty-ai/core/types';
 ```
 
 ## Key Design Decisions
@@ -106,7 +106,7 @@ const id = generateMessageId(); // "msg-1702736400000-a1b2c3"
 This package is designed to eventually contain more than just types. The migration plan:
 
 1. **Current:** Types only, implementation in root `src/`
-2. **Phase 2:** Move storage logic to `@creator-flow/core`
+2. **Phase 2:** Move storage logic to `@sprouty-ai/core`
 3. **Phase 3:** Move auth, credentials, MCP client
 4. **Phase 4:** Move agent logic, prompts
 

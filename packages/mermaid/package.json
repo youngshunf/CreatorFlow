@@ -15,7 +15,7 @@
     "dev": "bun run dev.ts",
     "bench": "bun run bench.ts",
     "build": "bun run index.ts && mkdir -p dist && mv index.html dist/ && cp -r public/* dist/",
-    "deploy": "bun run build && wrangler pages deploy dist --project-name creator-flow-mermaid"
+    "deploy": "bun run build && wrangler pages deploy dist --project-name sprouty-ai-mermaid"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8"

@@ -13,6 +13,7 @@ import { debug } from '../utils/debug.ts';
 import { getDefaultSummarizationModel } from '../config/models.ts';
 import { parseError, type AgentError } from '../agent/errors.ts';
 import { getLastApiError } from '../network-interceptor.ts';
+import { resolveCommand } from '../sources/server-builder.ts';
 
 export interface InvalidProperty {
   toolName: string;
@@ -342,6 +343,8 @@ export interface StdioValidationConfig {
   args?: string[];
   /** Environment variables for the spawned process */
   env?: Record<string, string>;
+  /** Working directory for the spawned process */
+  cwd?: string;
   /** Timeout in ms (default: 30000) */
   timeout?: number;
 }
@@ -355,9 +358,12 @@ export interface StdioValidationConfig {
 export async function validateStdioMcpConnection(
   config: StdioValidationConfig
 ): Promise<McpValidationResult> {
-  const { command, args = [], env = {}, timeout = 30000 } = config;
+  const { command, args = [], env = {}, cwd, timeout = 30000 } = config;
 
-  debug(`[stdio-validation] Spawning: ${command} ${args.join(' ')}`);
+  // Resolve command path (auto-detect bun, node, etc.)
+  const resolvedCommand = resolveCommand(command);
+  debug(`[stdio-validation] Resolved command: ${command} → ${resolvedCommand}`);
+  debug(`[stdio-validation] Spawning: ${resolvedCommand} ${args.join(' ')}`);
 
   // Dynamically import MCP SDK stdio transport
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
@@ -413,9 +419,10 @@ export async function validateStdioMcpConnection(
 
     // Spawn the process
     const spawnPromise = (async () => {
-      childProcess = spawn(command, args, {
+      childProcess = spawn(resolvedCommand, args, {
         env: { ...process.env, ...env },
         stdio: ['pipe', 'pipe', 'pipe'],
+        cwd,
       });
 
       // Capture stderr for error messages
@@ -453,14 +460,15 @@ export async function validateStdioMcpConnection(
         }
       }
       const transport = new StdioClientTransport({
-        command,
+        command: resolvedCommand,
         args,
         env: { ...processEnv, ...env },
+        cwd,
       });
 
       // Create MCP client
       client = new Client(
-        { name: 'creator-flow-validator', version: '1.0.0' },
+        { name: 'sprouty-ai-validator', version: '1.0.0' },
         { capabilities: {} }
       );
 

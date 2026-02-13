@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useT } from '@/context/LocaleContext';
-import type { VideoProject, OutputFormat, QualityPreset, RenderProgress } from '@creator-flow/video';
+import type { VideoProject, OutputFormat, QualityPreset, RenderProgress } from '@sprouty-ai/video';
 
 export interface VideoExportProps {
   /** Current video project */

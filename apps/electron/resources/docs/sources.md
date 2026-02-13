@@ -1,6 +1,6 @@
 # Sources Configuration Guide
 
-This guide explains how to configure sources (MCP servers, APIs, local filesystems) in CreatorFlow.
+This guide explains how to configure sources (MCP servers, APIs, local filesystems) in Sprouty AI.
 
 ## Source Setup Process
 
@@ -11,7 +11,7 @@ When a user wants to add a new source, follow this conversational setup process 
 **Before doing anything else**, search for a specialized guide using the creator-flow-docs MCP:
 
 ```
-mcp__creator-flow-docs__SearchCreatorFlow({ query: "{service} source setup" })
+mcp__creator-flow-docs__SearchSprouty AI({ query: "{service} source setup" })
 ```
 
 **Available guides:** GitHub, Linear, Slack, Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, Outlook, Microsoft Calendar, Teams, SharePoint, Craft, Filesystem, Brave Search, Memory
@@ -179,7 +179,7 @@ Concrete examples tailored to the user's workflow:
 User: I want to add Linear
 
 Agent: [FIRST: Searches for Linear guide]
-       mcp__creator-flow-docs__SearchCreatorFlow({ query: "linear source setup" })
+       mcp__creator-flow-docs__SearchSprouty AI({ query: "linear source setup" })
 
 Agent: I found the Linear setup guide! A few questions:
 1. What will you primarily use Linear for? (issue tracking, sprint planning, reporting?)

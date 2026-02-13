@@ -10,7 +10,7 @@ let cachedWindowManager: WindowManager | null = null
 
 /**
  * Creates and sets the application menu for macOS.
- * Includes only relevant items for the CreatorFlow app.
+ * Includes only relevant items for the Sprouty AI app.
  *
  * Call rebuildMenu() when update state changes to refresh the menu.
  */

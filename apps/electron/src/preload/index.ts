@@ -192,6 +192,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.CLOUD_GET_AUTH_STATUS) as Promise<{ isLoggedIn: boolean; expiresAt?: number; gatewayUrl?: string }>,
   clearCloudAuth: () =>
     ipcRenderer.invoke(IPC_CHANNELS.CLOUD_CLEAR_AUTH),
+  updateCloudConnectionModels: (anthropicModel?: string, openaiModel?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLOUD_UPDATE_CONNECTION_MODELS, anthropicModel, openaiModel),
   onCloudTokenRefreshed: (callback: (data: { accessToken: string }) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, data: { accessToken: string }) => {
       callback(data)
@@ -315,6 +317,8 @@ const api: ElectronAPI = {
   },
   getMcpTools: (workspaceId: string, sourceSlug: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SOURCES_GET_MCP_TOOLS, workspaceId, sourceSlug),
+  testSourceConnection: (workspaceId: string, sourceSlug: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SOURCES_TEST_CONNECTION, workspaceId, sourceSlug),
 
   // Session content search (full-text search via ripgrep)
   searchSessionContent: (workspaceId: string, query: string, searchId?: string) =>
@@ -650,6 +654,14 @@ const api: ElectronAPI = {
       update: (workspaceId: string, contentId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_UPDATE, workspaceId, contentId, data),
       updateStatus: (workspaceId: string, contentId: string, status: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_UPDATE_STATUS, workspaceId, contentId, status),
       delete: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_DELETE, workspaceId, contentId),
+    },
+    contentStages: {
+      list: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_LIST, workspaceId, contentId),
+      get: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_GET, workspaceId, id),
+      getLatest: (workspaceId: string, contentId: string, stage: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_GET_LATEST, workspaceId, contentId, stage),
+      create: (workspaceId: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_CREATE, workspaceId, data),
+      update: (workspaceId: string, id: string, data: unknown) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_UPDATE, workspaceId, id, data),
+      delete: (workspaceId: string, id: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_CONTENT_STAGES_DELETE, workspaceId, id),
     },
     publishRecords: {
       list: (workspaceId: string, contentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CREATOR_MEDIA_PUBLISH_RECORDS_LIST, workspaceId, contentId),

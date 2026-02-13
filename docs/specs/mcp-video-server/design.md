@@ -10,7 +10,7 @@ MCP Video Server 是一个独立的 MCP (Model Context Protocol) 服务器，为
 2. **MCP 兼容**: 支持 stdio 和 HTTP 两种传输模式
 3. **用户友好**: 项目文件使用中文命名，用户可直接查看和编辑
 4. **类型安全**: 使用 TypeScript 和 Zod 进行类型验证
-5. **复用现有代码**: 复用 @creator-flow/video 包的类型定义和模板
+5. **复用现有代码**: 复用 @sprouty-ai/video 包的类型定义和模板
 
 ## Architecture
 
@@ -34,7 +34,7 @@ graph TB
     
     subgraph "Dependencies"
         Remotion[Remotion API]
-        VideoPackage[@creator-flow/video]
+        VideoPackage[@sprouty-ai/video]
     end
     
     Agent -->|MCP Protocol| MCP
@@ -51,7 +51,7 @@ graph TB
 ### 目录结构
 
 ```
-CreatorFlow/apps/mcp-video/
+Sprouty AI/apps/mcp-video/
 ├── src/
 │   ├── index.ts              # 入口文件
 │   ├── server.ts             # FastMCP 服务器配置
@@ -91,7 +91,7 @@ interface ServerConfig {
 }
 
 // FastMCP 服务器实例
-const mcp = FastMCP('creator-flow-video');
+const mcp = FastMCP('sprouty-ai-video');
 
 // 启动服务器
 function runServer(config: ServerConfig): void;
@@ -420,7 +420,7 @@ const listTemplatesTool = {
 
 ## Data Models
 
-### VideoProject (复用 @creator-flow/video)
+### VideoProject (复用 @sprouty-ai/video)
 
 ```typescript
 interface VideoProject {
@@ -661,7 +661,7 @@ interface MCPError {
 ### Test File Structure
 
 ```
-CreatorFlow/apps/mcp-video/
+Sprouty AI/apps/mcp-video/
 └── tests/
     ├── unit/
     │   ├── project-store.test.ts

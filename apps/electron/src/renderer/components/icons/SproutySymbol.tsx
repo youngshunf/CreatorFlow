@@ -1,4 +1,4 @@
-interface CreatorFlowSymbolProps {
+interface SproutySymbolProps {
   className?: string
   size?: number
 }
@@ -6,7 +6,7 @@ interface CreatorFlowSymbolProps {
 /**
  * 智小芽图标 - 双叶片种子设计 (青紫渐变)
  */
-export function CreatorFlowSymbol({ className, size = 32 }: CreatorFlowSymbolProps) {
+export function SproutySymbol({ className, size = 32 }: SproutySymbolProps) {
   return (
     <svg
       width={size}

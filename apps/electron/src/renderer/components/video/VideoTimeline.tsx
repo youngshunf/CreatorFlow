@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useT } from '@/context/LocaleContext';
-import type { VideoProject } from '@creator-flow/video';
+import type { VideoProject } from '@sprouty-ai/video';
 
 export interface VideoTimelineProps {
   /** Current video project */

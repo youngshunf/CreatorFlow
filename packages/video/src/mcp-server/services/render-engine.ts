@@ -132,7 +132,7 @@ export class RenderEngine {
     // 记录开始时间
     const startTime = Date.now();
 
-    console.log(`[RenderEngine] Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}`);
+    console.error(`[RenderEngine] Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}`);
 
     try {
       // 报告 bundling 状态
@@ -157,7 +157,7 @@ export class RenderEngine {
 
       // 获取质量预设配置
       const presetConfig = this.getQualityConfig(quality);
-      console.log(`[RenderEngine] Using quality preset: crf=${presetConfig.crf}, scale=${presetConfig.scale}, fps=${presetConfig.fps}`);
+      console.error(`[RenderEngine] Using quality preset: crf=${presetConfig.crf}, scale=${presetConfig.scale}, fps=${presetConfig.fps}`);
 
       // 检查是否已取消
       if (this.isCancelled) {
@@ -195,7 +195,7 @@ export class RenderEngine {
         throw createCompositionNotFoundError(compositionId);
       }
 
-      console.log(`[RenderEngine] Selected composition: ${composition.id} (${composition.width}x${composition.height}, ${composition.fps}fps, ${composition.durationInFrames} frames)`);
+      console.error(`[RenderEngine] Selected composition: ${composition.id} (${composition.width}x${composition.height}, ${composition.fps}fps, ${composition.durationInFrames} frames)`);
 
       // 报告 preparing 完成
       this.reportProgress(onProgress, {
@@ -259,7 +259,7 @@ export class RenderEngine {
       // 获取文件大小
       const fileSize = this.getFileSize(finalOutputPath);
 
-      console.log(`[RenderEngine] Render completed: ${finalOutputPath} (${fileSize} bytes, ${duration}ms)`);
+      console.error(`[RenderEngine] Render completed: ${finalOutputPath} (${fileSize} bytes, ${duration}ms)`);
 
       // @requirements 5.5 - 返回输出文件路径和渲染统计
       return {
@@ -301,7 +301,7 @@ export class RenderEngine {
    * 取消当前渲染操作
    */
   cancel(): void {
-    console.log('[RenderEngine] Cancelling render...');
+    console.error('[RenderEngine] Cancelling render...');
     this.isCancelled = true;
     if (this.cancelHandle) {
       this.cancelHandle.cancel();
@@ -348,7 +348,7 @@ export class RenderEngine {
 
     // 查找入口文件
     const entryPoint = this.findEntryPoint(projectPath);
-    console.log(`[RenderEngine] Using entry point: ${entryPoint}`);
+    console.error(`[RenderEngine] Using entry point: ${entryPoint}`);
 
     // 构建 bundle
     const bundleLocation = await bundle({
@@ -363,7 +363,7 @@ export class RenderEngine {
       },
     });
 
-    console.log(`[RenderEngine] Bundle created at: ${bundleLocation}`);
+    console.error(`[RenderEngine] Bundle created at: ${bundleLocation}`);
     return bundleLocation;
   }
 
@@ -388,10 +388,10 @@ export class RenderEngine {
       }
     }
 
-    // 如果项目中没有找到入口文件，尝试使用 @creator-flow/video 包的 Root
+    // 如果项目中没有找到入口文件，尝试使用 @sprouty-ai/video 包的 Root
     // 这是使用模板的项目的默认情况
     try {
-      const videoPackageRoot = require.resolve('@creator-flow/video');
+      const videoPackageRoot = require.resolve('@sprouty-ai/video');
       const videoPackageDir = dirname(videoPackageRoot);
       const defaultEntryPoint = join(videoPackageDir, 'Root.tsx');
       if (existsSync(defaultEntryPoint)) {
@@ -484,7 +484,7 @@ export class RenderEngine {
     if (callback) {
       callback(progress);
     }
-    console.log(`[RenderEngine] Progress: ${progress.status} - ${progress.progress}%`);
+    console.error(`[RenderEngine] Progress: ${progress.status} - ${progress.progress}%`);
   }
 
   /**

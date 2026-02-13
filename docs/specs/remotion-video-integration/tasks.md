@@ -2,13 +2,13 @@
 
 ## Overview
 
-本实施计划将 Remotion 视频创作引擎集成到 CreatorFlow 桌面应用。采用分阶段实施策略，从基础架构开始，逐步构建渲染引擎、UI 组件和 AI 集成能力。
+本实施计划将 Remotion 视频创作引擎集成到 Sprouty AI 桌面应用。采用分阶段实施策略，从基础架构开始，逐步构建渲染引擎、UI 组件和 AI 集成能力。
 
 ## Tasks
 
-- [x] 1. 创建 @creator-flow/video 包基础架构
+- [x] 1. 创建 @sprouty-ai/video 包基础架构
   - [x] 1.1 初始化包结构和配置
-    - 在 `CreatorFlow/packages/video/` 创建目录结构
+    - 在 `Sprouty AI/packages/video/` 创建目录结构
     - 创建 `package.json`，添加 Remotion 依赖
     - 创建 `tsconfig.json`，配置 TypeScript
     - 创建 `remotion.config.ts`，配置 Remotion

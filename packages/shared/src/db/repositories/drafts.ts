@@ -8,15 +8,14 @@ import type { Draft, CreateDraft, UpdateDraft } from '../types.ts';
 /** 创建草稿 */
 export function createDraft(db: CreatorMediaDB, data: CreateDraft): Draft {
   const stmt = db.prepare(`
-    INSERT INTO drafts (id, project_id, title, content, content_type, media, tags, target_platforms, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO drafts (id, project_id, title, content, media, tags, target_platforms, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     data.id,
     data.project_id,
     data.title,
     data.content,
-    data.content_type,
     data.media ?? '[]',
     data.tags,
     data.target_platforms,

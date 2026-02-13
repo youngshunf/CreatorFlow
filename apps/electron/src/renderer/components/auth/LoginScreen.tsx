@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authApi, type LoginResult } from '@/api/auth'
+import { getUserLlmConfig } from '@/api/models'
 import { cn } from '@/lib/utils'
 import { enableCloudMode, type CloudConfig, getCloudApiUrl, getCurrentEnv, isDebugMode } from '@sprouty-ai/shared/cloud'
 import { toast } from 'sonner'
@@ -138,6 +139,23 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         })
         if (isDebugMode()) {
           console.log(`[Login] Cloud auth set in main process: ${gatewayUrl}`)
+        }
+
+        // 获取用户的 LLM 配置（包括默认模型）
+        try {
+          const userConfig = await getUserLlmConfig()
+          if (userConfig.default_anthropic_model || userConfig.default_openai_model) {
+            await window.electronAPI.updateCloudConnectionModels(
+              userConfig.default_anthropic_model,
+              userConfig.default_openai_model
+            )
+            if (isDebugMode()) {
+              console.log('[Login] Updated cloud connection models:', userConfig)
+            }
+          }
+        } catch (err) {
+          // 如果获取用户配置失败，不影响登录流程
+          console.warn('[Login] Failed to fetch user LLM config:', err)
         }
       } catch (err) {
         console.error('[Login] Failed to set cloud auth in main process:', err)

@@ -33,12 +33,13 @@ export interface TemplateProps {
   items?: Array<{
     title: string;
     description?: string;
+    /** Image path relative to public/ directory (e.g., 'images/slide1.jpg') */
     image?: string;
     icon?: string;
   }>;
   /** Color scheme */
   colors?: ColorSchemeConfig;
-  /** Logo image URL */
+  /** Logo image path relative to public/ directory (e.g., 'images/logo.png') */
   logo?: string;
   /** Call-to-action configuration */
   cta?: {

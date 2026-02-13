@@ -5,7 +5,7 @@
 import { Sun, Moon, X } from 'lucide-react'
 
 /**
- * SproutyAgentLogo - The CreatorFlow "C" logo
+ * SproutyAgentLogo - The Sprouty AI logo
  */
 function SproutyAgentLogo({ className }: { className?: string }) {
   return (
@@ -39,7 +39,7 @@ export function Header({ hasSession, sessionTitle, isDark, onToggleTheme, onClea
       {/* Logo */}
       <div
         className="hover:opacity-80 transition-opacity"
-        title="CreatorFlow"
+        title="Sprouty AI"
       >
         <SproutyAgentLogo className="w-6 h-6 text-[#9570BE]" />
       </div>

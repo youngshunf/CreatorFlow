@@ -1,7 +1,7 @@
 /**
- * @creator-flow/video
+ * @sprouty-ai/video
  *
- * Video creation engine for CreatorFlow - Remotion integration,
+ * Video creation engine for Sprouty AI - Remotion integration,
  * compositions, templates, and rendering capabilities.
  */
 

@@ -1,7 +1,7 @@
 /**
- * CreatorFlow Session Viewer
+ * Sprouty AI Session Viewer
  *
- * A minimal web app for viewing CreatorFlow session transcripts.
+ * A minimal web app for viewing Sprouty AI session transcripts.
  * Users can upload session JSON files or view shared sessions via URL.
  *
  * Routes:

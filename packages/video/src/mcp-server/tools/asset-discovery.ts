@@ -236,12 +236,12 @@ function matchesFilter(
  * 注册素材发现工具到 FastMCP 服务器
  */
 export function registerAssetDiscoveryTools(mcp: FastMCP): void {
-  mcp.tool(
-    'video_list_available_assets',
-    '列出工作区中可用的素材文件',
-    ListAvailableAssetsInputSchema,
-    handleListAvailableAssets
-  );
+  mcp.addTool({
+    name: 'video_list_available_assets',
+    description: '列出工作区中可用的素材文件',
+    parameters: ListAvailableAssetsInputSchema,
+    execute: handleListAvailableAssets,
+  });
 }
 
 // 导出处理函数供测试使用

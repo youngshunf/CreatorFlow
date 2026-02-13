@@ -4,27 +4,32 @@
 
 import type { CreatorMediaDB } from '../connection.ts';
 import type { Content, CreateContent, UpdateContent, ContentStatus, ContentVideoMetadata } from '../types.ts';
+import * as projectsRepo from './projects.ts';
 
 /** 内容列表过滤条件 */
 export interface ContentFilters {
   status?: ContentStatus | ContentStatus[];
-  content_type?: string;
   pipeline_mode?: string;
 }
 
 /** 创建内容 */
 export function createContent(db: CreatorMediaDB, data: CreateContent): Content {
+  // 如果未指定 target_platforms，从项目继承
+  let targetPlatforms = data.target_platforms;
+  if (!targetPlatforms && data.project_id) {
+    targetPlatforms = projectsRepo.getProjectTargetPlatforms(db, data.project_id);
+  }
+
   const stmt = db.prepare(`
-    INSERT INTO contents (id, project_id, title, content_type, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO contents (id, project_id, title, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     data.id,
     data.project_id,
     data.title,
-    data.content_type,
-    data.status ?? 'idea',
-    data.target_platforms,
+    data.status ?? 'researching',
+    targetPlatforms,
     data.pipeline_mode ?? 'semi-auto',
     data.content_dir_path,
     data.viral_pattern_id,
@@ -52,11 +57,6 @@ export function listByProject(db: CreatorMediaDB, projectId: string, filters?: C
       sql += ' AND status = ?';
       params.push(filters.status);
     }
-  }
-
-  if (filters?.content_type) {
-    sql += ' AND content_type = ?';
-    params.push(filters.content_type);
   }
 
   if (filters?.pipeline_mode) {
@@ -149,7 +149,8 @@ export function updateContentVideoMetadata(
   return getContent(db, contentId);
 }
 
-/** 判断是否为视频类型内容 */
+/** 判断是否为视频类型内容（通过 metadata 判断） */
 export function isVideoContent(content: Content): boolean {
-  return content.content_type === 'video' || content.content_type === 'short-video';
+  const metadata = parseContentMetadata(content);
+  return !!(metadata?.video_project_id);
 }

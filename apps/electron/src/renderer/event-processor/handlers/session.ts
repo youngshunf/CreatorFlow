@@ -112,6 +112,9 @@ export function handleError(
     role: 'error',
     content: event.error,
     timestamp: Date.now(),
+    errorCode: 'unknown_error',
+    errorTitle: '操作失败',
+    errorOriginal: event.error,
   }
 
   return {
@@ -147,9 +150,7 @@ export function handleTypedError(
   const errorMessage: Message = {
     id: generateMessageId(),
     role: 'error',
-    content: event.error.title
-      ? `${event.error.title}: ${event.error.message}`
-      : event.error.message,
+    content: event.error.message || 'Unknown error',
     timestamp: Date.now(),
     errorCode: event.error.code,
     errorTitle: event.error.title,

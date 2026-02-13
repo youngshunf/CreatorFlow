@@ -1,10 +1,10 @@
 # Theme Configuration Guide
 
-This guide explains how to customize the visual theme of CreatorFlow.
+This guide explains how to customize the visual theme of Sprouty AI.
 
 ## Overview
 
-CreatorFlow uses a 6-color theme system with support for both app-level defaults and per-workspace overrides.
+Sprouty AI uses a 6-color theme system with support for both app-level defaults and per-workspace overrides.
 
 ### Theme Hierarchy
 

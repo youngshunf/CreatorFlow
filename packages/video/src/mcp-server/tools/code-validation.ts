@@ -326,12 +326,12 @@ function validatePropsUsage(
  * 注册代码验证工具到 FastMCP 服务器
  */
 export function registerCodeValidationTools(mcp: FastMCP): void {
-  mcp.tool(
-    'video_validate_composition',
-    '验证 Remotion 组合代码的语法和正确性',
-    ValidateCompositionInputSchema,
-    handleValidateComposition
-  );
+  mcp.addTool({
+    name: 'video_validate_composition',
+    description: '验证 Remotion 组合代码的语法和正确性',
+    parameters: ValidateCompositionInputSchema,
+    execute: handleValidateComposition,
+  });
 }
 
 // 导出处理函数供测试使用

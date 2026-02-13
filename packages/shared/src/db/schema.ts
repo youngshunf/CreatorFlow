@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -118,8 +118,7 @@ CREATE TABLE IF NOT EXISTS contents (
   id                TEXT PRIMARY KEY,
   project_id        TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title             TEXT,
-  content_type      TEXT,
-  status            TEXT NOT NULL DEFAULT 'idea',
+  status            TEXT NOT NULL DEFAULT 'researching',
   target_platforms  TEXT,
   pipeline_mode     TEXT DEFAULT 'semi-auto',
   content_dir_path  TEXT,
@@ -304,7 +303,6 @@ CREATE TABLE IF NOT EXISTS drafts (
   project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title           TEXT,
   content         TEXT NOT NULL,
-  content_type    TEXT,
   media           TEXT NOT NULL DEFAULT '[]',
   tags            TEXT,
   target_platforms TEXT,
@@ -417,4 +415,5 @@ INSERT OR IGNORE INTO schema_version (version, description) VALUES (8, '移除�
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (9, '选题推荐表新增 md_file_path 字段');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (10, '新增定时任务执行记录表');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (11, '内容工作流重构：精简 contents 表，新增 content_stages 表');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (12, '删除 contents.content_type 字段，类型信息由 content_stages 管理');
 `;

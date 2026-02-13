@@ -108,45 +108,45 @@ import { registerRenderStatusTools } from './render-status';
  * @param mcp FastMCP 服务器实例
  */
 export function registerAllTools(mcp: FastMCP): void {
-  console.log('[MCP Video Server] Registering tools...');
+  console.error('[MCP Video Server] Registering tools...');
 
   // 注册项目管理工具
   registerProjectTools(mcp);
-  console.log('[MCP Video Server] - Project tools registered');
+  console.error('[MCP Video Server] - Project tools registered');
 
   // 注册素材管理工具
   registerAssetTools(mcp);
-  console.log('[MCP Video Server] - Asset tools registered');
+  console.error('[MCP Video Server] - Asset tools registered');
 
   // 注册组合管理工具
   registerCompositionTools(mcp);
-  console.log('[MCP Video Server] - Composition tools registered');
+  console.error('[MCP Video Server] - Composition tools registered');
 
   // 注册渲染工具
   registerRenderTools(mcp);
-  console.log('[MCP Video Server] - Render tools registered');
+  console.error('[MCP Video Server] - Render tools registered');
 
   // 注册预览工具
   registerPreviewTools(mcp);
-  console.log('[MCP Video Server] - Preview tools registered');
+  console.error('[MCP Video Server] - Preview tools registered');
 
   // 注册模板工具
   registerTemplateTools(mcp);
-  console.log('[MCP Video Server] - Template tools registered');
+  console.error('[MCP Video Server] - Template tools registered');
 
   // 注册素材发现工具
   registerAssetDiscoveryTools(mcp);
-  console.log('[MCP Video Server] - Asset discovery tools registered');
+  console.error('[MCP Video Server] - Asset discovery tools registered');
 
   // 注册代码验证工具
   registerCodeValidationTools(mcp);
-  console.log('[MCP Video Server] - Code validation tools registered');
+  console.error('[MCP Video Server] - Code validation tools registered');
 
   // 注册渲染状态工具
   registerRenderStatusTools(mcp);
-  console.log('[MCP Video Server] - Render status tools registered');
+  console.error('[MCP Video Server] - Render status tools registered');
 
-  console.log('[MCP Video Server] All tools registered successfully');
+  console.error('[MCP Video Server] All tools registered successfully');
 }
 
 /**

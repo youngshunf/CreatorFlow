@@ -2,11 +2,11 @@
 
 ## Overview
 
-本设计文档描述了将 Remotion 视频创作引擎集成到 CreatorFlow 桌面应用的技术架构和实现方案。
+本设计文档描述了将 Remotion 视频创作引擎集成到 Sprouty AI 桌面应用的技术架构和实现方案。
 
 ### 核心目标
 
-1. **创建独立的视频处理包** - `@creator-flow/video`，封装 Remotion 相关逻辑
+1. **创建独立的视频处理包** - `@sprouty-ai/video`，封装 Remotion 相关逻辑
 2. **实现完整的视频编辑器 UI** - 提供直观的视频创作界面
 3. **集成 AI Agent 能力** - 支持通过自然语言创建和编辑视频
 4. **提供本地渲染能力** - 支持多种格式和质量的视频导出
@@ -38,7 +38,7 @@ graph TB
         PS[Preview Server]
     end
     
-    subgraph "@creator-flow/video Package"
+    subgraph "@sprouty-ai/video Package"
         Root[RemotionRoot]
         Comp[Compositions]
         Tmpl[Templates]
@@ -67,9 +67,9 @@ graph TB
 ### 目录结构
 
 ```
-CreatorFlow/
+Sprouty AI/
 ├── packages/
-│   └── video/                          # @creator-flow/video
+│   └── video/                          # @sprouty-ai/video
 │       ├── package.json
 │       ├── tsconfig.json
 │       ├── remotion.config.ts
@@ -752,7 +752,7 @@ async function validateAsset(
 ### 3. 测试文件结构
 
 ```
-CreatorFlow/packages/video/
+Sprouty AI/packages/video/
 └── src/
     └── __tests__/
         ├── types.test.ts           # Schema 验证测试
@@ -760,7 +760,7 @@ CreatorFlow/packages/video/
         ├── templates.test.ts       # 模板单元测试
         └── templates.property.test.ts # 模板属性测试
 
-CreatorFlow/apps/electron/
+Sprouty AI/apps/electron/
 └── src/
     └── main/
         └── video/
@@ -849,7 +849,7 @@ describe('Feature: remotion-video-integration, Property 1: VideoProject Schema V
 // apps/electron/src/main/video/__tests__/project-manager.property.test.ts
 import { fc } from 'fast-check';
 import { ProjectManager } from '../project-manager';
-import { VideoProjectSchema } from '@creator-flow/video';
+import { VideoProjectSchema } from '@sprouty-ai/video';
 
 describe('Feature: remotion-video-integration, Property 2: Project Persistence Round-Trip', () => {
   let projectManager: ProjectManager;

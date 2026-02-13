@@ -4,7 +4,7 @@ const port = parseInt(process.env.PORT || '3000', 10)
 
 console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║                  CreatorFlow Cloud Server                  ║
+║                  Sprouty AI Cloud Server                    ║
 ╠═══════════════════════════════════════════════════════════╣
 ║  🚀 Server running on http://localhost:${port}               ║
 ║  📝 Health check: http://localhost:${port}/health            ║

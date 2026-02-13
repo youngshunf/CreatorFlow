@@ -2,13 +2,13 @@
 
 ## 概述
 
-本方案将 [Remotion](https://github.com/remotion-dev/remotion) 集成到 CreatorFlow 桌面端，实现 AI 驱动的程序化视频创作能力。
+本方案将 [Remotion](https://github.com/remotion-dev/remotion) 集成到 Sprouty AI 桌面端，实现 AI 驱动的程序化视频创作能力。
 
 ## 一、核心价值
 
 ### 为什么选择 Remotion？
 
-1. **React 生态兼容** - CreatorFlow 已使用 React，无缝集成
+1. **React 生态兼容** - Sprouty AI 已使用 React，无缝集成
 2. **AI 友好** - Remotion 官方提供 Claude Code Agent Skills，专为 AI 生成视频优化
 3. **程序化创作** - 代码即视频，完美契合 AI 生成场景
 4. **灵活渲染** - 支持本地渲染、服务端渲染、客户端渲染（实验性）
@@ -31,7 +31,7 @@ AI Agent:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CreatorFlow Desktop                          │
+│                    Sprouty AI Desktop                          │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │   AI Agent      │  │  Video Editor   │  │  Render Engine  │ │
@@ -40,7 +40,7 @@ AI Agent:
 │           │                    │                    │          │
 │           ▼                    ▼                    ▼          │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │              @creator-flow/video (新包)                     ││
+│  │              @sprouty-ai/video (新包)                     ││
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   ││
 │  │  │Templates │ │Compositions│ │ Renderer │ │ AI Skills    │   ││
 │  │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   ││
@@ -51,7 +51,7 @@ AI Agent:
 ### 目录结构
 
 ```
-CreatorFlow/
+Sprouty AI/
 ├── packages/
 │   └── video/                          # 新增：视频处理核心包
 │       ├── package.json
@@ -125,7 +125,7 @@ CreatorFlow/
 
 ```json
 {
-  "name": "@creator-flow/video",
+  "name": "@sprouty-ai/video",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -209,7 +209,7 @@ export type VideoProject = z.infer<typeof VideoProjectSchema>;
 
 ```typescript
 // packages/video/src/skills/video-creation.ts
-import type { Tool } from '@creator-flow/shared';
+import type { Tool } from '@sprouty-ai/shared';
 
 export const videoCreationTools: Tool[] = [
   {
@@ -343,7 +343,7 @@ export const videoCreationTools: Tool[] = [
 
 ## 概述
 
-本技能用于在 CreatorFlow 中使用 Remotion 创建程序化视频。
+本技能用于在 Sprouty AI 中使用 Remotion 创建程序化视频。
 
 ## Remotion 核心概念
 
@@ -486,7 +486,7 @@ import { VideoPreview } from './VideoPreview';
 import { VideoTimeline } from './VideoTimeline';
 import { VideoProperties } from './VideoProperties';
 import { VideoProjectList } from './VideoProjectList';
-import type { VideoProject } from '@creator-flow/video';
+import type { VideoProject } from '@sprouty-ai/video';
 
 interface VideoEditorProps {
   workspaceId: string;
@@ -730,7 +730,7 @@ export function registerVideoIpcHandlers(
 
 ### Phase 1: 基础架构（2 周）
 
-- [ ] 创建 `@creator-flow/video` 包
+- [ ] 创建 `@sprouty-ai/video` 包
 - [ ] 安装 Remotion 依赖
 - [ ] 实现基础 Composition 组件
 - [ ] 配置 Remotion Studio 开发环境
@@ -777,7 +777,7 @@ export function registerVideoIpcHandlers(
 
 ### 建议
 
-1. 在 CreatorFlow 设置中添加许可证配置选项
+1. 在 Sprouty AI 设置中添加许可证配置选项
 2. 首次使用时提示用户确认许可证状态
 3. 提供购买许可证的链接
 
@@ -804,7 +804,7 @@ export function registerVideoIpcHandlers(
 ### 9.1 安装依赖
 
 ```bash
-cd CreatorFlow
+cd Sprouty AI
 
 # 安装 Remotion 核心依赖
 bun add remotion @remotion/cli @remotion/player @remotion/renderer @remotion/bundler
@@ -869,7 +869,7 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
         defaultProps={{
-          title: 'CreatorFlow',
+          title: 'Sprouty AI',
           subtitle: 'AI 创作平台',
         }}
       />
@@ -914,7 +914,7 @@ export const HelloWorld: React.FC = () => {
           transform: `scale(${scale})`,
         }}
       >
-        Hello CreatorFlow
+        Hello Sprouty AI
       </h1>
     </AbsoluteFill>
   );
@@ -1174,7 +1174,7 @@ const CTASection: React.FC = () => {
 
 本方案提供了一个完整的 Remotion 集成路径，核心优势：
 
-1. **深度集成** - 作为 CreatorFlow 的原生功能，而非外部工具
+1. **深度集成** - 作为 Sprouty AI 的原生功能，而非外部工具
 2. **AI 驱动** - 利用 Claude Agent SDK 实现自然语言视频创作
 3. **模板系统** - 预设模板 + 自定义模板，降低使用门槛
 4. **渐进式实施** - 分阶段实施，快速验证价值

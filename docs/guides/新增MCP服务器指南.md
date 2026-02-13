@@ -1,6 +1,6 @@
 # 新增 MCP 服务器指南
 
-本文档以 `video-mcp` 为参考，说明如何在 CreatorFlow 中新增一个 MCP 服务器。
+本文档以 `video-mcp` 为参考，说明如何在 Sprouty AI 中新增一个 MCP 服务器。
 
 ## 目录结构
 
@@ -30,7 +30,7 @@ packages/my-tool/
 
 ```json
 {
-  "name": "@creator-flow/my-tool",
+  "name": "@sprouty-ai/my-tool",
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",

@@ -1042,6 +1042,7 @@ export default function App() {
       }
     } catch (error) {
       console.error('Failed to send message:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       updateSessionById(sessionId, (s) => ({
         isProcessing: false,
         messages: [
@@ -1049,7 +1050,9 @@ export default function App() {
           {
             id: generateMessageId(),
             role: 'error' as const,
-            content: `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            content: errorMessage,
+            errorTitle: '发送消息失败',
+            errorOriginal: errorMessage,
             timestamp: Date.now()
           }
         ]

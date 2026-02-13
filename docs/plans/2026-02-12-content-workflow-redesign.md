@@ -542,7 +542,7 @@ UPDATE contents SET status = '[下一状态]', updated_at = datetime('now') WHER
 
 ## 7. 需要改动的文件清单
 
-### 7.1 数据库层（CreatorFlow）
+### 7.1 数据库层（Sprouty AI）
 
 | 文件 | 改动 |
 |------|------|
@@ -553,7 +553,7 @@ UPDATE contents SET status = '[下一状态]', updated_at = datetime('now') WHER
 | `packages/shared/src/db/repositories/content-versions.ts` | 删除（废弃） |
 | 新增 `packages/shared/src/db/repositories/content-stages.ts` | content_stages 的 CRUD |
 
-### 7.2 服务层（CreatorFlow）
+### 7.2 服务层（Sprouty AI）
 
 | 文件 | 改动 |
 |------|------|

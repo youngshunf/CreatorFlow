@@ -13,13 +13,15 @@ import {
   useVideoConfig,
   interpolate,
   spring,
+  Img,
+  staticFile,
 } from 'remotion';
 import type { TemplateProps } from '../templates/types';
 
 /**
  * Props for TitleAnimation composition
  */
-export interface TitleAnimationProps extends TemplateProps {
+export type TitleAnimationProps = TemplateProps & {
   /** Main title text */
   title?: string;
   /** Subtitle text */
@@ -30,7 +32,7 @@ export interface TitleAnimationProps extends TemplateProps {
   titleFontSize?: number;
   /** Subtitle font size in pixels */
   subtitleFontSize?: number;
-}
+};
 
 /**
  * Default colors for the composition
@@ -184,8 +186,8 @@ export const TitleAnimation: React.FC<TitleAnimationProps> = ({
     >
       {/* Optional Logo */}
       {logo && (
-        <img
-          src={logo}
+        <Img
+          src={staticFile(logo)}
           alt="Logo"
           style={{
             position: 'absolute',

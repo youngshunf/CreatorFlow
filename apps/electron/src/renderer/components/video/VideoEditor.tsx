@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useT } from '@/context/LocaleContext';
-import type { VideoProject, VideoTemplate } from '@creator-flow/video';
+import type { VideoProject, VideoTemplate } from '@sprouty-ai/video';
 import { VideoPreview } from './VideoPreview';
 import { VideoTimeline } from './VideoTimeline';
 import { VideoProperties } from './VideoProperties';

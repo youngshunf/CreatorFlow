@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@sprouty-ai/ui"
-import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
+import { SproutySymbol } from "@/components/icons/SproutySymbol"
 import { StepFormLayout } from "./primitives"
 import { useT } from "@/context/LocaleContext"
 
@@ -33,7 +33,7 @@ export function CompletionStep({
         </div>
       ) : (
         <div className="flex size-16 items-center justify-center">
-          <CreatorFlowSymbol className="size-10 text-accent" />
+          <SproutySymbol className="size-10 text-accent" />
         </div>
       )}
       title={isSaving ? t('正在设置...') : t('一切就绪！')}

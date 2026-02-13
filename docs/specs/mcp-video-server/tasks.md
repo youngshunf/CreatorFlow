@@ -7,14 +7,14 @@
 ## Tasks
 
 - [x] 1. 项目初始化和基础设施
-  - [x] 1.1 创建 `CreatorFlow/apps/mcp-video/` 目录结构
+  - [x] 1.1 创建 `Sprouty AI/apps/mcp-video/` 目录结构
     - 创建 package.json，配置 Bun 运行时和依赖
     - 创建 tsconfig.json，配置 TypeScript
     - 添加依赖：fastmcp, zod, @remotion/bundler, @remotion/renderer
     - _Requirements: 8.1, 8.2_
   
   - [x] 1.2 创建类型定义 `src/types/index.ts`
-    - 复用 @creator-flow/video 的类型定义
+    - 复用 @sprouty-ai/video 的类型定义
     - 定义 MCP 响应类型（SuccessResponse, ErrorResponse）
     - 定义错误代码枚举
     - _Requirements: 8.4, 9.1_
@@ -136,7 +136,7 @@
 
   - [x] 9.6 实现模板工具 `src/tools/template.ts`
     - 实现 video_list_templates 工具
-    - 集成 @creator-flow/video 模板
+    - 集成 @sprouty-ai/video 模板
     - _Requirements: 10.1, 10.2, 10.3_
 
 - [x] 10. MCP 服务器集成

@@ -60,7 +60,7 @@ interface OnboardingWizardProps {
 /**
  * OnboardingWizard - Full-screen onboarding flow container
  *
- * Manages the step-by-step flow for setting up CreatorFlow:
+ * Manages the step-by-step flow for setting up Sprouty AI:
  * 1. Welcome
  * 2. API Setup (choose: API Key / Claude OAuth)
  * 3. Credentials (API Key or Claude OAuth)

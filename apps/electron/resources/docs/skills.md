@@ -1,6 +1,6 @@
 # Skills Configuration Guide
 
-This guide explains how to create and configure skills in CreatorFlow.
+This guide explains how to create and configure skills in Sprouty AI.
 
 ## What Are Skills?
 
@@ -14,13 +14,13 @@ Skills are specialized instructions that extend Claude's capabilities for specif
 
 ## Same Format as Claude Code SDK
 
-CreatorFlow uses **the identical SKILL.md format** as the Claude Code SDK. This means:
+Sprouty AI uses **the identical SKILL.md format** as the Claude Code SDK. This means:
 
-1. **Format compatibility**: Any skill written for Claude Code works in CreatorFlow
+1. **Format compatibility**: Any skill written for Claude Code works in Sprouty AI
 2. **Same frontmatter fields**: `name`, `description`, `globs`, `alwaysAllow`
 3. **Same content structure**: Markdown body with instructions for Claude
 
-**What CreatorFlow adds:**
+**What Sprouty AI adds:**
 - **Visual icons**: Display custom icons in the UI for each skill
 - **Workspace organization**: Skills are scoped to workspaces
 - **UI management**: Browse, edit, and validate skills through the interface

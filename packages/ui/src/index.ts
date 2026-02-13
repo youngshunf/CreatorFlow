@@ -1,5 +1,5 @@
 /**
- * @sprouty-ai/ui - Shared React UI components for CreatorFlow
+ * @sprouty-ai/ui - Shared React UI components for Sprouty AI
  *
  * This package provides platform-agnostic UI components that work in both:
  * - Electron desktop app (full interactive mode)

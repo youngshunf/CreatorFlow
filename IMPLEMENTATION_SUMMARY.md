@@ -8,7 +8,7 @@
 
 ## 修改概览
 
-本次实施解决了 CreatorFlow 视频集成中的三个关键问题：
+本次实施解决了 Sprouty AI 视频集成中的三个关键问题：
 
 1. **MCP Server 入口路径错误** - 已修复
 2. **项目存储路径冲突** - 已统一
@@ -77,7 +77,7 @@ import {
   OUTPUT_DIR_NAME,
   extractProjectName,
   getAssetRelativePath,
-} from '@creator-flow/video/mcp-server/utils/paths';
+} from '@sprouty-ai/video/mcp-server/utils/paths';
 ```
 
 2. **更新文档注释**:

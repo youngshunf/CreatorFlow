@@ -15,36 +15,38 @@ import {
   spring,
   Img,
   Sequence,
+  staticFile,
 } from 'remotion';
 import type { TemplateProps } from '../templates/types';
 
 /**
  * Feature item interface
  */
-export interface FeatureItem {
+export type FeatureItem = {
   title: string;
   description?: string;
   icon?: string;
+  /** Image path relative to public/ directory (e.g., 'images/feature.jpg') */
   image?: string;
-}
+};
 
 /**
  * Props for ProductShowcase composition
  */
-export interface ProductShowcaseProps extends TemplateProps {
+export type ProductShowcaseProps = TemplateProps & {
   /** Product name */
   title?: string;
   /** Product tagline */
   subtitle?: string;
   /** Product features */
   items?: FeatureItem[];
-  /** Product image URL */
+  /** Product image path relative to public/ directory (e.g., 'images/product.jpg') */
   productImage?: string;
   /** Layout style */
   layout?: 'centered' | 'split' | 'features-grid';
   /** Animation style */
   animationStyle?: 'fade' | 'slide' | 'zoom' | 'spring';
-}
+};
 
 /**
  * Default colors for the composition
@@ -195,7 +197,7 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({
           <span style={{ fontSize: 40 }}>{feature.icon}</span>
         ) : feature.image ? (
           <Img
-            src={feature.image}
+            src={staticFile(feature.image)}
             style={{
               width: 60,
               height: 60,
@@ -342,7 +344,7 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({
           }}
         >
           <Img
-            src={productImage}
+            src={staticFile(productImage)}
             style={{
               maxWidth: 600,
               maxHeight: 400,
@@ -390,7 +392,7 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({
       >
         {productImage ? (
           <Img
-            src={productImage}
+            src={staticFile(productImage)}
             style={{
               maxWidth: '80%',
               maxHeight: '80%',
@@ -631,8 +633,8 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({
 
       {/* Optional Logo */}
       {logo && (
-        <img
-          src={logo}
+        <Img
+          src={staticFile(logo)}
           alt="Logo"
           style={{
             position: 'absolute',

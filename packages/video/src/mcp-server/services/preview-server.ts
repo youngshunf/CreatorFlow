@@ -99,13 +99,13 @@ export class PreviewServerManager {
   async start(config: PreviewConfig): Promise<PreviewInstance> {
     const { projectPath, projectId, compositionId, port } = config;
 
-    console.log(`[PreviewServerManager] Starting preview server for project: ${projectId}`);
+    console.error(`[PreviewServerManager] Starting preview server for project: ${projectId}`);
 
     // 检查是否已有活跃的服务器
     // @requirements 6.5 - 防止重复启动
     const existingServer = this.activeServers.get(projectId);
     if (existingServer) {
-      console.log(`[PreviewServerManager] Returning existing server for project: ${projectId}`);
+      console.error(`[PreviewServerManager] Returning existing server for project: ${projectId}`);
       return this.toPublicInstance(existingServer);
     }
 
@@ -116,7 +116,7 @@ export class PreviewServerManager {
 
     // 查找可用端口
     const serverPort = port ?? await this.findAvailablePort(DEFAULT_START_PORT);
-    console.log(`[PreviewServerManager] Using port: ${serverPort}`);
+    console.error(`[PreviewServerManager] Using port: ${serverPort}`);
 
     try {
       // 启动 Remotion Studio
@@ -130,7 +130,7 @@ export class PreviewServerManager {
       // 保存到活跃服务器映射
       this.activeServers.set(projectId, instance);
 
-      console.log(`[PreviewServerManager] Preview server started: ${instance.url}`);
+      console.error(`[PreviewServerManager] Preview server started: ${instance.url}`);
 
       return this.toPublicInstance(instance);
     } catch (error) {
@@ -153,11 +153,11 @@ export class PreviewServerManager {
    * @requirements 6.3 - 优雅关闭服务器并释放端口
    */
   async stop(projectId: string): Promise<boolean> {
-    console.log(`[PreviewServerManager] Stopping preview server for project: ${projectId}`);
+    console.error(`[PreviewServerManager] Stopping preview server for project: ${projectId}`);
 
     const instance = this.activeServers.get(projectId);
     if (!instance) {
-      console.log(`[PreviewServerManager] No active server found for project: ${projectId}`);
+      console.error(`[PreviewServerManager] No active server found for project: ${projectId}`);
       return false;
     }
 
@@ -168,7 +168,7 @@ export class PreviewServerManager {
       // 从活跃服务器映射中移除
       this.activeServers.delete(projectId);
 
-      console.log(`[PreviewServerManager] Preview server stopped for project: ${projectId}`);
+      console.error(`[PreviewServerManager] Preview server stopped for project: ${projectId}`);
       return true;
     } catch (error) {
       console.error(`[PreviewServerManager] Error stopping server:`, error);
@@ -215,12 +215,12 @@ export class PreviewServerManager {
    * 用于清理资源
    */
   async stopAll(): Promise<void> {
-    console.log(`[PreviewServerManager] Stopping all preview servers...`);
+    console.error(`[PreviewServerManager] Stopping all preview servers...`);
 
     const projectIds = Array.from(this.activeServers.keys());
     await Promise.all(projectIds.map(id => this.stop(id)));
 
-    console.log(`[PreviewServerManager] All preview servers stopped`);
+    console.error(`[PreviewServerManager] All preview servers stopped`);
   }
 
   // ==========================================================================
@@ -290,7 +290,7 @@ export class PreviewServerManager {
     return new Promise((resolve, reject) => {
       // 查找入口文件
       const entryPoint = this.findEntryPoint(projectPath);
-      console.log(`[PreviewServerManager] Using entry point: ${entryPoint}`);
+      console.error(`[PreviewServerManager] Using entry point: ${entryPoint}`);
 
       // 构建命令参数
       const args = [
@@ -308,7 +308,7 @@ export class PreviewServerManager {
         args.push('--props', JSON.stringify({ compositionId }));
       }
 
-      console.log(`[PreviewServerManager] Starting: npx ${args.join(' ')}`);
+      console.error(`[PreviewServerManager] Starting: npx ${args.join(' ')}`);
 
       // 启动子进程
       const childProcess = spawn('npx', args, {
@@ -338,7 +338,7 @@ export class PreviewServerManager {
       childProcess.stdout?.on('data', (data: Buffer) => {
         const text = data.toString();
         output += text;
-        console.log(`[Remotion Studio] ${text.trim()}`);
+        console.error(`[Remotion Studio] ${text.trim()}`);
 
         // 检查是否启动成功
         // Remotion Studio 启动后会输出类似 "Server listening on port XXXX" 的信息
@@ -404,7 +404,7 @@ export class PreviewServerManager {
             process: childProcess,
           };
 
-          console.log(`[PreviewServerManager] Assuming server started (fallback)`);
+          console.error(`[PreviewServerManager] Assuming server started (fallback)`);
           resolve(instance);
         }
       }, 10000);
@@ -434,9 +434,9 @@ export class PreviewServerManager {
       }
     }
 
-    // 如果项目中没有找到入口文件，尝试使用 @creator-flow/video 包的 Root
+    // 如果项目中没有找到入口文件，尝试使用 @sprouty-ai/video 包的 Root
     try {
-      const videoPackageRoot = require.resolve('@creator-flow/video');
+      const videoPackageRoot = require.resolve('@sprouty-ai/video');
       const videoPackageDir = dirname(videoPackageRoot);
       const defaultEntryPoint = join(videoPackageDir, 'Root.tsx');
       if (existsSync(defaultEntryPoint)) {
@@ -510,7 +510,7 @@ export class PreviewServerManager {
   private setupCleanup(): void {
     // 在进程退出时停止所有服务器
     const cleanup = async () => {
-      console.log('[PreviewServerManager] Cleaning up...');
+      console.error('[PreviewServerManager] Cleaning up...');
       await this.stopAll();
     };
 

@@ -588,7 +588,7 @@ export function initializeWorkspaceFromApp(
   let workspaceRoot = options.rootPath;
   if (!workspaceRoot) {
     // Use app default directory or generate one
-    const defaultDir = manifest.workspace?.defaultDirectory || '~/CreatorFlow';
+    const defaultDir = manifest.workspace?.defaultDirectory || '~/SproutyAI';
     workspaceRoot = defaultDir.replace('~', process.env.HOME || '');
     workspaceRoot = join(workspaceRoot, options.name.replace(/[^a-zA-Z0-9-_]/g, '-'));
   }
@@ -600,7 +600,7 @@ export function initializeWorkspaceFromApp(
     // Model configuration
     model: appSettings?.defaultModel as string | undefined,
     workingDirectory: workspaceRoot,
-    enabledSourceSlugs: [],
+    enabledSourceSlugs: appSettings?.enabledSourceSlugs ?? [],
     
     // Permission configuration from app manifest
     permissionMode: appSettings?.permissionMode,

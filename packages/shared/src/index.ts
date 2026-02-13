@@ -1,7 +1,7 @@
 /**
  * @sprouty-ai/shared
  *
- * Shared business logic for CreatorFlow.
+ * Shared business logic for Sprouty AI.
  * Used by the Electron app.
  *
  * Import specific modules via subpath exports:

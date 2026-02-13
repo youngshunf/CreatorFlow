@@ -1,5 +1,5 @@
 /**
- * Type definitions for @creator-flow/video
+ * Type definitions for @sprouty-ai/video
  *
  * This file contains all Zod schemas and TypeScript types
  * for video projects, compositions, assets, and rendering.

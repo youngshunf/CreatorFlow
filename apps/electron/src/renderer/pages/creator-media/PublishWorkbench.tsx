@@ -252,7 +252,7 @@ function PublishCreateSection({ projectId, platformAccounts, contents }: {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{c.title || t('无标题')}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {c.content_type} · {c.status === 'reviewing' ? t('审核中') : t('已排期')}
+                    {c.status === 'reviewing' ? t('审核中') : t('已排期')}
                     {c.scheduled_at && ` · ${c.scheduled_at.slice(0, 16)}`}
                   </p>
                 </div>
@@ -395,8 +395,7 @@ function DraftsSection({ drafts, loading, onDelete, onRefresh }: {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{d.title || t('无标题')}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {d.content_type || t('文本')}
-              {d.target_platforms && ` · ${d.target_platforms}`}
+              {d.target_platforms && `${d.target_platforms}`}
               {d.updated_at && ` · ${t('更新于')} ${d.updated_at.slice(0, 16)}`}
             </p>
           </div>

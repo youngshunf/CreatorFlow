@@ -16,7 +16,7 @@ import {
   createSuccessResponse,
 } from '../types';
 import { toErrorResponse, MCPError } from '../types/errors';
-import { getTemplateById } from '@creator-flow/video';
+import { getTemplateById } from '../../templates';
 
 // ============================================================================
 // Zod Schemas

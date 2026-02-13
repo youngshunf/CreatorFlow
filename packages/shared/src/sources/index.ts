@@ -77,12 +77,16 @@ export {
   SourceServerBuilder,
   getSourceServerBuilder,
   normalizeMcpUrl,
+  resolveCommand,
+  resolveCwd,
   SERVER_BUILD_ERRORS,
 } from './server-builder.ts';
 export type {
   McpServerConfig,
   SourceWithCredential,
   BuiltServers,
+  CommandResolver,
+  CwdResolver,
 } from './server-builder.ts';
 
 // Built-in Sources (always available in every workspace)

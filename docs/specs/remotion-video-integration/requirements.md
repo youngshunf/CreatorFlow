@@ -2,17 +2,17 @@
 
 ## Introduction
 
-本文档定义了将 Remotion 视频创作引擎集成到 CreatorFlow 桌面应用的功能需求。该集成将实现 AI 驱动的程序化视频创作能力，允许用户通过自然语言描述生成专业视频内容。
+本文档定义了将 Remotion 视频创作引擎集成到 Sprouty AI 桌面应用的功能需求。该集成将实现 AI 驱动的程序化视频创作能力，允许用户通过自然语言描述生成专业视频内容。
 
 核心价值：
-- **React 生态兼容** - CreatorFlow 已使用 React，可无缝集成 Remotion
+- **React 生态兼容** - Sprouty AI 已使用 React，可无缝集成 Remotion
 - **AI 友好** - Remotion 官方提供 Claude Code Agent Skills，专为 AI 生成视频优化
 - **程序化创作** - 代码即视频，完美契合 AI 生成场景
 - **灵活渲染** - 支持本地渲染、预览服务器、多种输出格式
 
 ## Glossary
 
-- **Video_Package**: `@creator-flow/video` 包，负责视频处理核心逻辑，包含 Remotion 配置、组件、模板和渲染器
+- **Video_Package**: `@sprouty-ai/video` 包，负责视频处理核心逻辑，包含 Remotion 配置、组件、模板和渲染器
 - **Composition**: Remotion 中的视频组合单元，定义视频的尺寸、帧率、时长和内容
 - **Video_Project**: 视频项目数据结构，包含配置、组件代码、素材资源和渲染历史
 - **Video_Service**: Electron 主进程中的视频服务模块，负责 IPC 处理、项目管理和渲染调度
@@ -31,7 +31,7 @@
 
 #### Acceptance Criteria
 
-1. THE Video_Package SHALL 在 `CreatorFlow/packages/video/` 目录下创建，遵循 monorepo 包结构规范
+1. THE Video_Package SHALL 在 `Sprouty AI/packages/video/` 目录下创建，遵循 monorepo 包结构规范
 2. THE Video_Package SHALL 包含 Remotion 核心依赖：`remotion ^4.0.0`、`@remotion/player`、`@remotion/cli`、`@remotion/renderer`、`@remotion/bundler`
 3. THE Video_Package SHALL 导出 `RemotionRoot` 根组件，注册所有可用的 Composition
 4. THE Video_Package SHALL 提供 `remotion.config.ts` 配置文件，设置视频图像格式和输出覆盖选项
@@ -194,7 +194,7 @@
 
 #### Acceptance Criteria
 
-1. THE Video_Editor SHALL 使用 CreatorFlow 现有的 i18n 系统（中文 key + 翻译文件）
+1. THE Video_Editor SHALL 使用 Sprouty AI 现有的 i18n 系统（中文 key + 翻译文件）
 2. THE Video_Editor SHALL 为所有用户可见文案提供中文和英文翻译
 3. THE 模板名称和描述 SHALL 支持国际化
 4. THE 错误消息 SHALL 支持国际化

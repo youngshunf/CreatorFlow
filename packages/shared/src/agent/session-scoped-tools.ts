@@ -57,6 +57,7 @@ import {
   saveSourceConfig,
   getSourcePath,
 } from '../sources/storage.ts';
+import { getSourceServerBuilder } from '../sources/server-builder.ts';
 import type { FolderSourceConfig, LoadedSource } from '../sources/types.ts';
 import { getSourceCredentialManager } from '../sources/index.ts';
 import { inferGoogleServiceFromUrl, inferSlackServiceFromUrl, inferMicrosoftServiceFromUrl, isApiOAuthProvider, type GoogleService, type SlackService, type MicrosoftService } from '../sources/types.ts';
@@ -412,7 +413,7 @@ Brief description of what this plan accomplishes.
 export function createConfigValidateTool(sessionId: string, workspaceRootPath: string) {
   return tool(
     'config_validate',
-    `Validate CreatorFlow configuration files.
+    `Validate Sprouty AI configuration files.
 
 Use this after editing configuration files to check for errors before they take effect.
 Returns structured validation results with errors, warnings, and suggestions.
@@ -1060,13 +1061,19 @@ After creating or editing a source's config.json, run this tool to:
               results.push('**❌ No command configured for stdio MCP source**');
             } else {
               // Actually spawn and test the stdio MCP server
-              results.push(`Testing stdio server: ${source.mcp.command} ${(source.mcp.args || []).join(' ')}`);
+              // Use the singleton builder's resolvers to handle Electron-specific
+              // command resolution (bundled bun) and cwd resolution (app: prefix)
+              const builder = getSourceServerBuilder();
+              const resolvedCommand = builder.resolveCommand(source.mcp.command);
+              const resolvedCwd = builder.resolveCwd(source.mcp.cwd, workspaceRootPath);
+              results.push(`Testing stdio server: ${resolvedCommand} ${(source.mcp.args || []).join(' ')}`);
               results.push('');
 
               const stdioResult = await validateStdioMcpConnection({
-                command: source.mcp.command,
+                command: resolvedCommand,
                 args: source.mcp.args,
                 env: source.mcp.env,
+                cwd: resolvedCwd,
                 timeout: 30000, // 30 second timeout for spawn + connect
               });
 

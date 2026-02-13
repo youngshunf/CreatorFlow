@@ -642,6 +642,7 @@ async function testMcpConnection(
           command: source.mcp.command,
           args: source.mcp.args || [],
           env: source.mcp.env,
+          cwd: source.mcp.cwd,
         });
         if (result.success) {
           success = true;

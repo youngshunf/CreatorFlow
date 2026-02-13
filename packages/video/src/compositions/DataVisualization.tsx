@@ -13,6 +13,8 @@ import {
   useVideoConfig,
   interpolate,
   spring,
+  Img,
+  staticFile,
 } from 'remotion';
 import type { TemplateProps } from '../templates/types';
 
@@ -28,7 +30,7 @@ export interface DataPoint {
 /**
  * Props for DataVisualization composition
  */
-export interface DataVisualizationProps extends TemplateProps {
+export type DataVisualizationProps = TemplateProps & {
   /** Chart title */
   title?: string;
   /** Data points to visualize */
@@ -41,7 +43,7 @@ export interface DataVisualizationProps extends TemplateProps {
   showValues?: boolean;
   /** Animation delay between data points (in frames) */
   staggerDelay?: number;
-}
+};
 
 /**
  * Default colors for the composition
@@ -520,8 +522,8 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
 
       {/* Optional Logo */}
       {logo && (
-        <img
-          src={logo}
+        <Img
+          src={staticFile(logo)}
           alt="Logo"
           style={{
             position: 'absolute',

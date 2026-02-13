@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-We take security seriously. If you discover a security vulnerability in CreatorFlow, please report it responsibly.
+We take security seriously. If you discover a security vulnerability in Sprouty AI, please report it responsibly.
 
 ### How to Report
 
@@ -25,9 +25,9 @@ Include the following information:
 ### Scope
 
 This policy applies to:
-- The CreatorFlow desktop application
+- The Sprouty AI desktop application
 - The `@sprouty-ai/*` npm packages
-- Official CreatorFlow repositories
+- Official Sprouty AI repositories
 
 ### Out of Scope
 
@@ -46,7 +46,7 @@ We only provide security updates for the latest version. Please keep your instal
 
 ## Security Best Practices
 
-When using CreatorFlow:
+When using Sprouty AI:
 
 1. **Keep credentials secure**: Never commit `.env` files or credentials
 2. **Use environment variables**: Store secrets in environment variables

@@ -8,10 +8,19 @@ import { ContentTable } from './components/ContentTable'
 import { CreateContentDialog } from './components/CreateContentDialog'
 import { VersionHistoryDialog } from './components/VersionHistoryDialog'
 import { VideoPreviewDialog } from './components/VideoPreviewDialog'
+import { useActiveWorkspace } from '@/context/AppShellContext'
 import type { Content } from '@sprouty-ai/shared/db/types'
 
-/** 判断是否为视频类型内容 */
-const isVideoType = (c: Content) => c.content_type === 'video' || c.content_type === 'short-video'
+/** 判断是否为视频类型内容（通过 metadata 判断） */
+const isVideoType = (c: Content) => {
+  if (!c.metadata) return false
+  try {
+    const meta = JSON.parse(c.metadata)
+    return !!meta.video_project_id
+  } catch {
+    return false
+  }
+}
 
 /** 从 metadata JSON 中提取视频输出路径 */
 function getVideoOutputPath(content: Content): string {
@@ -24,6 +33,17 @@ function getVideoOutputPath(content: Content): string {
   }
 }
 
+/** 下一阶段操作映射 */
+const NEXT_STAGE_ACTION: Record<string, { skillId: string; label: string; icon: string } | null> = {
+  researching: { skillId: 'idea-researcher', label: '灵感调研', icon: '🔍' },
+  scripting: { skillId: 'script-create', label: '脚本创作', icon: '✍️' },
+  creating: { skillId: 'content-creator', label: '内容创作', icon: '🎨' },
+  adapting: { skillId: 'platform-adapter', label: '平台适配', icon: '📱' },
+  scheduled: null,
+  published: null,
+  archived: null,
+}
+
 /**
  * 创作工作台 — 流水线驱动的创作视图
  * 展示活跃流水线进度、选题池、进行中的内容
@@ -31,8 +51,9 @@ function getVideoOutputPath(content: Content): string {
 export default function CreationWorkspace() {
   const t = useT()
   const { navigate } = useNavigation()
+  const workspace = useActiveWorkspace()
   const {
-    projects, activeProject, contents, loading,
+    projects, activeProject, contents, loading, wsRoot,
     switchProject, createContent, deleteContent, updateContentStatus,
     listContentVersions, rollbackContentVersion,
   } = useCreatorMedia()
@@ -54,6 +75,25 @@ export default function CreationWorkspace() {
       setPreviewContent(content)
     }
   }, [navigate])
+
+  // 处理下一阶段操作
+  const handleNextStage = useCallback((content: Content, skillId: string) => {
+    if (!workspace || !activeProject) return
+
+    // 获取 skill 的显示名称
+    const skillAction = NEXT_STAGE_ACTION[content.status]
+    const skillLabel = skillAction?.label || '下一步'
+
+    // 构建提示词
+    let prompt = `为内容「${content.title}」执行${skillLabel}。\n\n`
+    prompt += `内容 ID: ${content.id}\n`
+
+    // 导航到新 session 并激活 skill
+    navigate(routes.view.appView('app.creator-media', 'chat', {
+      input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
+      send: true,
+    }))
+  }, [workspace, activeProject, navigate])
 
   if (loading) {
     return (
@@ -109,6 +149,7 @@ export default function CreationWorkspace() {
             onStatusChange={updateContentStatus}
             onDelete={deleteContent}
             onVersionHistory={setVersionHistoryContent}
+            onNextStage={handleNextStage}
           />
         </div>
       </div>

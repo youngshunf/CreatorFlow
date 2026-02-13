@@ -2,7 +2,7 @@
 
 ## 概述
 
-本指南说明如何在 CreatorFlow 中配置视频 MCP 服务器，使 Agent 能够使用视频创作工具。
+本指南说明如何在 Sprouty AI 中配置视频 MCP 服务器，使 Agent 能够使用视频创作工具。
 
 ## 配置步骤
 
@@ -27,14 +27,14 @@ mkdir -p ~/.creator-flow/workspaces/800d2a01-8dd5-b485-533b-0efbebc52bb0/sources
   "name": "视频创作服务",
   "slug": "video-mcp",
   "enabled": true,
-  "provider": "creator-flow-video",
+  "provider": "sprouty-ai-video",
   "type": "mcp",
   "mcp": {
     "transport": "stdio",
     "command": "bun",
     "args": [
       "run",
-      "/Users/mac/saas/creator-flow/.zcf/CreatorFlow/video-integration/packages/video/src/mcp-server/index.ts"
+      "/Users/mac/saas/creator-flow/.zcf/Sprouty AI/video-integration/packages/video/src/mcp-server/index.ts"
     ],
     "env": {
       "NODE_ENV": "development"
@@ -271,7 +271,7 @@ const status = await video_get_render_status({
 # 配置变量
 WORKSPACE_ID="800d2a01-8dd5-b485-533b-0efbebc52bb0"
 SOURCE_DIR="$HOME/.creator-flow/workspaces/$WORKSPACE_ID/sources/video-mcp"
-VIDEO_SERVER_PATH="/Users/mac/saas/creator-flow/.zcf/CreatorFlow/video-integration/packages/video/src/mcp-server/index.ts"
+VIDEO_SERVER_PATH="/Users/mac/saas/creator-flow/.zcf/Sprouty AI/video-integration/packages/video/src/mcp-server/index.ts"
 
 # 创建目录
 mkdir -p "$SOURCE_DIR"
@@ -283,7 +283,7 @@ cat > "$SOURCE_DIR/config.json" << 'EOF'
   "name": "视频创作服务",
   "slug": "video-mcp",
   "enabled": true,
-  "provider": "creator-flow-video",
+  "provider": "sprouty-ai-video",
   "type": "mcp",
   "mcp": {
     "transport": "stdio",
@@ -312,14 +312,14 @@ echo "✅ 视频 MCP 服务器配置已创建"
 echo "📁 配置目录: $SOURCE_DIR"
 echo ""
 echo "下一步："
-echo "1. 重启 CreatorFlow 应用"
+echo "1. 重启 Sprouty AI 应用"
 echo "2. 在数据源列表中查看 '视频创作服务'"
 echo "3. 测试连接"
 ```
 
 ## 验证配置
 
-配置完成后，在 CreatorFlow 中：
+配置完成后，在 Sprouty AI 中：
 
 1. 打开工作区设置
 2. 进入"数据源"页面
@@ -347,5 +347,5 @@ Agent: 我将使用视频创作服务来帮你创建视频...
 1. **路径配置**: 确保 `command` 和 `args` 中的路径正确
 2. **Bun 运行时**: 确保系统已安装 Bun
 3. **工作区 ID**: 替换为实际的工作区 ID
-4. **重启应用**: 配置后需要重启 CreatorFlow 才能生效
+4. **重启应用**: 配置后需要重启 Sprouty AI 才能生效
 5. **日志查看**: 如有问题，查看 `~/.creator-flow/logs/` 目录下的日志

@@ -16,7 +16,7 @@ import {
   searchTemplatesByTags,
   type VideoTemplate,
   type TemplateCategory,
-} from '@creator-flow/video';
+} from '../../templates';
 import { createSuccessResponse } from '../types';
 import { toErrorResponse } from '../types/errors';
 

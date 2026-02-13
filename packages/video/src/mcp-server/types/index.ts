@@ -2,13 +2,13 @@
  * 类型定义
  *
  * MCP Video Server 的核心类型定义
- * 复用 @creator-flow/video 的类型，并添加 MCP 特定类型
+ * 复用 @sprouty-ai/video 的类型，并添加 MCP 特定类型
  */
 
 import { z } from 'zod';
 
 // ============================================================================
-// 从 @creator-flow/video 重新导出核心类型
+// 从 @sprouty-ai/video 重新导出核心类型
 // ============================================================================
 
 export {
@@ -42,7 +42,7 @@ export {
   // Constants
   QUALITY_PRESETS,
   SUPPORTED_ASSET_EXTENSIONS,
-} from '@creator-flow/video';
+} from '../../types';
 
 // ============================================================================
 // MCP 错误代码枚举

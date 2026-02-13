@@ -42,11 +42,11 @@ import type {
   Composition,
   Asset,
   AssetType,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 import {
   VideoProjectSchema,
   SUPPORTED_ASSET_EXTENSIONS,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 // Import MCP Server path utilities
 import {
   getVideoProjectsDir,
@@ -63,7 +63,7 @@ import {
   OUTPUT_DIR_NAME,
   extractProjectName,
   getAssetRelativePath,
-} from '@creator-flow/video/mcp-server/utils/paths';
+} from '@sprouty-ai/video/mcp-server/utils/paths';
 import log from '../logger';
 
 const videoLog = log.scope('video');
@@ -175,7 +175,7 @@ export class ProjectManager implements IProjectManager {
     // Apply template if specified
     if (template) {
       try {
-        const { getTemplateById } = await import('@creator-flow/video');
+        const { getTemplateById } = await import('@sprouty-ai/video');
         const templateData = getTemplateById(template);
         if (templateData) {
           projectConfig = { ...templateData.defaultConfig };

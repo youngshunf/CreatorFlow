@@ -23,10 +23,10 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "@creator-flow/core": ["../core/src/index.ts"],
-      "@creator-flow/core/*": ["../core/src/*"],
-      "@creator-flow/video": ["./src/index.ts"],
-      "@creator-flow/video/*": ["./src/*"]
+      "@sprouty-ai/core": ["../core/src/index.ts"],
+      "@sprouty-ai/core/*": ["../core/src/*"],
+      "@sprouty-ai/video": ["./src/index.ts"],
+      "@sprouty-ai/video/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],

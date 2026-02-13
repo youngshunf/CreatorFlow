@@ -111,7 +111,7 @@ resolveSourceConfigPaths(sourceConfig: any, isPackaged: boolean, resourcesPath?:
 ### 对于用户
 
 1. **创建工作区**
-   - 打开 CreatorFlow
+   - 打开 Sprouty AI
    - 选择"自媒体创作"应用
    - 创建新工作区
 
@@ -128,7 +128,7 @@ resolveSourceConfigPaths(sourceConfig: any, isPackaged: boolean, resourcesPath?:
 #### 在 Electron 主进程中调用
 
 ```typescript
-import { initializeWorkspaceFromApp } from '@creator-flow/shared/apps';
+import { initializeWorkspaceFromApp } from '@sprouty-ai/shared/apps';
 import { app } from 'electron';
 
 // 创建工作区时

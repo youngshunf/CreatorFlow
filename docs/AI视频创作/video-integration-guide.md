@@ -1,10 +1,10 @@
-# CreatorFlow 视频创作功能使用指南
+# Sprouty AI 视频创作功能使用指南
 
-本文档介绍 CreatorFlow 桌面应用中集成的 Remotion 视频创作功能。
+本文档介绍 Sprouty AI 桌面应用中集成的 Remotion 视频创作功能。
 
 ## 功能概述
 
-CreatorFlow 集成了 Remotion 视频创作引擎，提供以下核心能力：
+Sprouty AI 集成了 Remotion 视频创作引擎，提供以下核心能力：
 
 - **程序化视频创作** - 使用 React 组件定义视频内容和动画
 - **预设模板系统** - 快速创建社交媒体、营销、教程等类型视频
@@ -16,7 +16,7 @@ CreatorFlow 集成了 Remotion 视频创作引擎，提供以下核心能力：
 
 ### 访问视频编辑器
 
-在 CreatorFlow 应用中，通过以下方式访问视频创作功能：
+在 Sprouty AI 应用中，通过以下方式访问视频创作功能：
 
 ```typescript
 import { routes } from '@/shared/routes';
@@ -139,7 +139,7 @@ const project = await window.electronAPI.video.createProject({
 
 ## AI Agent 视频创作
 
-CreatorFlow 的 AI Agent 可以通过自然语言指令创建视频。
+Sprouty AI 的 AI Agent 可以通过自然语言指令创建视频。
 
 ### 可用工具
 
@@ -191,8 +191,8 @@ Agent: 好的，我来为您创建一个竖屏产品介绍视频。
 ## 文件结构
 
 ```
-CreatorFlow/
-├── packages/video/              # @creator-flow/video 包
+Sprouty AI/
+├── packages/video/              # @sprouty-ai/video 包
 │   └── src/
 │       ├── components/          # 可复用动画组件
 │       ├── compositions/        # 预设 Composition

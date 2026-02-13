@@ -19,7 +19,7 @@ import type {
   RenderProgress,
   OutputFormat,
   QualityPreset,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 
 // ============================================================================
 // IPC Channel Definitions (must match main process)

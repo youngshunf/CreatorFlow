@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`@sprouty-ai/shared` is the core business logic package for CreatorFlow. It contains:
-- Agent implementation (CreatorFlowAgent, session-scoped tools, permission modes)
+`@sprouty-ai/shared` is the core business logic package for Sprouty AI. It contains:
+- Agent implementation (SproutyAgent, session-scoped tools, permission modes)
 - Authentication (OAuth, credentials, auth state)
 - Configuration (storage, preferences, themes, watcher)
 - MCP client and validation
@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This package uses subpath exports for clean imports:
 
 ```typescript
-import { CreatorFlowAgent, getPermissionMode, setPermissionMode } from '@sprouty-ai/shared/agent';
+import { SproutyAgent, getPermissionMode, setPermissionMode } from '@sprouty-ai/shared/agent';
 import { loadStoredConfig, type Workspace } from '@sprouty-ai/shared/config';
 import { getCredentialManager } from '@sprouty-ai/shared/credentials';
 import { CraftMcpClient } from '@sprouty-ai/shared/mcp';
@@ -34,7 +34,7 @@ import { debug } from '@sprouty-ai/shared/utils';
 
 ```
 src/
-├── agent/              # CreatorFlowAgent, session-scoped-tools, mode-manager, mode-types, permissions-config
+├── agent/              # SproutyAgent, session-scoped-tools, mode-manager, mode-types, permissions-config
 ├── auth/               # OAuth, craft-token, claude-token, state
 ├── config/             # Storage, preferences, models, theme, watcher
 ├── credentials/        # Secure credential storage (AES-256-GCM)
@@ -55,7 +55,7 @@ src/
 
 ## Key Concepts
 
-### CreatorFlowAgent (`src/agent/creator-flow-agent.ts`)
+### SproutyAgent (`src/agent/creator-flow-agent.ts`)
 The main agent class that wraps the Claude Agent SDK. Handles:
 - MCP server connections
 - Tool permissions via PreToolUse hook

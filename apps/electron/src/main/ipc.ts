@@ -8,6 +8,7 @@ import { execSync } from 'child_process'
 import { SessionManager } from './sessions'
 import { ipcLog, windowLog, searchLog } from './logger'
 import { WindowManager } from './window-manager'
+import { getElectronCommandResolver, getElectronCwdResolver } from './source-resolvers'
 import { registerOnboardingHandlers } from './onboarding'
 import { registerFileManagerIpc } from './file-manager'
 import { registerCreatorMediaIpc } from './creator-media-ipc'
@@ -1739,6 +1740,12 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     await sessionManager.clearCloudAuth()
   })
 
+  // Update cloud connection models
+  ipcMain.handle(IPC_CHANNELS.CLOUD_UPDATE_CONNECTION_MODELS, async (_event, anthropicModel?: string, openaiModel?: string) => {
+    ipcLog.info('Updating cloud connection models', { anthropicModel, openaiModel })
+    await sessionManager.updateCloudConnectionModels(anthropicModel, openaiModel)
+  })
+
   // 旧版兼容：Set cloud LLM gateway configuration (called by renderer after login)
   ipcMain.handle(IPC_CHANNELS.CLOUD_SET_CONFIG, async (_event, config: { gatewayUrl: string; llmToken: string }) => {
     ipcLog.info('Setting cloud LLM config (legacy):', config.gatewayUrl)
@@ -2003,7 +2010,7 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         (lowerMsg.includes('tool') && lowerMsg.includes('not') && lowerMsg.includes('support'))
       if (isToolSupportError) {
         const displayModel = normalizedModels[0] || getDefaultModelForConnection('anthropic')
-        return { success: false, error: `Model "${displayModel}" does not support tool/function calling. CreatorFlow requires a model with tool support (e.g. Claude, GPT-4, Gemini).` }
+        return { success: false, error: `Model "${displayModel}" does not support tool/function calling. 智小芽 requires a model with tool support (e.g. Claude, GPT-4, Gemini).` }
       }
 
       // Model not found — always a failure. Since onboarding is the only place
@@ -2388,14 +2395,14 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
             const apiBaseUrl = getCloudApiUrl()
             const refreshed = await refreshCloudToken(apiBaseUrl, cloudAuth.refreshToken)
 
-            // Store refreshed tokens
+            // Store refreshed tokens (keep existing refreshToken, llmToken, gatewayUrl, refreshExpiresAt)
             await credentialManager.setCloudAuth({
               accessToken: refreshed.accessToken,
-              refreshToken: refreshed.refreshToken,
-              llmToken: refreshed.llmToken,
-              gatewayUrl: refreshed.gatewayUrl,
+              refreshToken: cloudAuth.refreshToken,
+              llmToken: cloudAuth.llmToken,
+              gatewayUrl: cloudAuth.gatewayUrl,
               expiresAt: refreshed.expiresAt,
-              refreshExpiresAt: refreshed.refreshExpiresAt,
+              refreshExpiresAt: cloudAuth.refreshExpiresAt,
             })
 
             ipcLog.info(`LLM connection validated (cloud token refreshed): ${slug}`)
@@ -3288,6 +3295,74 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
     }
   })
 
+  // Test MCP source connection and persist result
+  ipcMain.handle(IPC_CHANNELS.SOURCES_TEST_CONNECTION, async (_event, workspaceId: string, sourceSlug: string) => {
+    const workspace = getWorkspaceByNameOrId(workspaceId)
+    if (!workspace) return { success: false, error: 'Workspace not found' }
+
+    try {
+      const sources = await loadWorkspaceSources(workspace.rootPath)
+      const source = sources.find(s => s.config.slug === sourceSlug)
+      if (!source) return { success: false, error: 'Source not found' }
+      if (source.config.type !== 'mcp') return { success: false, error: 'Source is not an MCP server' }
+      if (!source.config.mcp) return { success: false, error: 'MCP config not found' }
+
+      const { validateStdioMcpConnection, validateMcpConnection } = await import('@sprouty-ai/shared/mcp')
+      const { saveSourceConfig } = await import('@sprouty-ai/shared/sources')
+
+      let result: import('@sprouty-ai/shared/mcp').McpValidationResult
+
+      if (source.config.mcp.transport === 'stdio') {
+        if (!source.config.mcp.command) {
+          return { success: false, error: 'Stdio MCP source is missing required "command" field' }
+        }
+        const resolvedCommand = getElectronCommandResolver()(source.config.mcp.command)
+        const resolvedCwd = getElectronCwdResolver()(source.config.mcp.cwd, source.workspaceRootPath)
+        ipcLog.info(`[testConnection] Testing stdio MCP: ${resolvedCommand} (cwd: ${resolvedCwd || 'none'})`)
+        result = await validateStdioMcpConnection({
+          command: resolvedCommand,
+          args: source.config.mcp.args,
+          env: source.config.mcp.env,
+          cwd: resolvedCwd,
+        })
+      } else {
+        if (!source.config.mcp.url) {
+          return { success: false, error: 'MCP source URL is required' }
+        }
+        let accessToken: string | undefined
+        if (source.config.mcp.authType === 'oauth' || source.config.mcp.authType === 'bearer') {
+          const credentialManager = getCredentialManager()
+          const credentialId = source.config.mcp.authType === 'oauth'
+            ? { type: 'source_oauth' as const, workspaceId: source.workspaceId, sourceId: sourceSlug }
+            : { type: 'source_bearer' as const, workspaceId: source.workspaceId, sourceId: sourceSlug }
+          const credential = await credentialManager.get(credentialId)
+          accessToken = credential?.value
+        }
+        ipcLog.info(`[testConnection] Testing HTTP MCP: ${source.config.mcp.url}`)
+        result = await validateMcpConnection({
+          mcpUrl: source.config.mcp.url,
+          mcpAccessToken: accessToken,
+        })
+      }
+
+      // Persist connection status
+      const updatedConfig = { ...source.config }
+      updatedConfig.connectionStatus = result.success ? 'connected' : 'failed'
+      updatedConfig.connectionError = result.success ? undefined : result.error
+      updatedConfig.lastTestedAt = Date.now()
+      saveSourceConfig(workspace.rootPath, updatedConfig)
+
+      ipcLog.info(`[testConnection] ${sourceSlug}: ${result.success ? 'connected' : 'failed'}`)
+      return result
+    } catch (error) {
+      ipcLog.error('[testConnection] Error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Connection test failed',
+      }
+    }
+  })
+
   // Get MCP tools for a source with permission status
   ipcMain.handle(IPC_CHANNELS.SOURCES_GET_MCP_TOOLS, async (_event, workspaceId: string, sourceSlug: string) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
@@ -3308,9 +3383,6 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       if (source.config.connectionStatus === 'failed') {
         return { success: false, error: source.config.connectionError || 'Connection failed' }
       }
-      if (source.config.connectionStatus === 'untested') {
-        return { success: false, error: 'Source has not been tested yet' }
-      }
 
       // Create unified MCP client for both stdio and HTTP transports
       const { CraftMcpClient } = await import('@sprouty-ai/shared/mcp')
@@ -3321,12 +3393,15 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
         if (!source.config.mcp.command) {
           return { success: false, error: 'Stdio MCP source is missing required "command" field' }
         }
-        ipcLog.info(`Fetching MCP tools via stdio: ${source.config.mcp.command}`)
+        const resolvedCommand = getElectronCommandResolver()(source.config.mcp.command)
+        const resolvedCwd = getElectronCwdResolver()(source.config.mcp.cwd, source.workspaceRootPath)
+        ipcLog.info(`Fetching MCP tools via stdio: ${resolvedCommand} (cwd: ${resolvedCwd || 'none'})`)
         client = new CraftMcpClient({
           transport: 'stdio',
-          command: source.config.mcp.command,
+          command: resolvedCommand,
           args: source.config.mcp.args,
           env: source.config.mcp.env,
+          cwd: resolvedCwd,
         })
       } else {
         // HTTP/SSE transport - connect to remote MCP server
@@ -3626,7 +3701,10 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
   // Generic workspace image loading (for source icons, status icons, etc.)
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_READ_IMAGE, async (_event, workspaceId: string, relativePath: string) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
-    if (!workspace) throw new Error('Workspace not found')
+    if (!workspace) {
+      ipcLog.warn(`WORKSPACE_READ_IMAGE: Workspace not found: ${workspaceId}`)
+      return null  // Silent fallback - workspace may not be loaded yet
+    }
 
     const { readFileSync, existsSync } = await import('fs')
     const { join, normalize } = await import('path')
@@ -3653,11 +3731,11 @@ export function registerIpcHandlers(sessionManager: SessionManager, windowManage
       absolutePath = normalize(relativePath)
 
       // Security: only allow paths within workspace or ~/.sprouty-ai/
-      const globalCreatorFlowDir = normalize(join(homedir(), '.sprouty-ai'))
+      const globalSproutyDir = normalize(join(homedir(), '.sprouty-ai'))
       const isInWorkspace = absolutePath.startsWith(workspace.rootPath)
-      const isInGlobalCreatorFlow = absolutePath.startsWith(globalCreatorFlowDir)
+      const isInGlobalSprouty = absolutePath.startsWith(globalSproutyDir)
 
-      if (!isInWorkspace && !isInGlobalCreatorFlow) {
+      if (!isInWorkspace && !isInGlobalSprouty) {
         throw new Error('Invalid path: outside allowed directories')
       }
     } else {

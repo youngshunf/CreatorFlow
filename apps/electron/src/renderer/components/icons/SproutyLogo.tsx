@@ -1,6 +1,6 @@
 import logoHorizontal from "@/assets/logo-horizontal.svg"
 
-interface CreatorFlowLogoProps {
+interface SproutyLogoProps {
   className?: string
   height?: number
 }
@@ -8,7 +8,7 @@ interface CreatorFlowLogoProps {
 /**
  * 智小芽横版 Logo - 图标 + 中文名称
  */
-export function CreatorFlowLogo({ className, height = 40 }: CreatorFlowLogoProps) {
+export function SproutyLogo({ className, height = 40 }: SproutyLogoProps) {
   return (
     <img
       src={logoHorizontal}

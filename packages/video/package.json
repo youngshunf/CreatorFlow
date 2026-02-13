@@ -1,13 +1,13 @@
 {
-  "name": "@creator-flow/video",
+  "name": "@sprouty-ai/video",
   "version": "0.3.1",
   "license": "Apache-2.0",
-  "description": "Video creation engine for CreatorFlow - Remotion integration, compositions, templates, and rendering",
+  "description": "Video creation engine for Sprouty AI - Remotion integration, compositions, templates, and rendering",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "bin": {
-    "creator-flow-video-mcp": "./src/mcp-server/index.ts"
+    "sprouty-ai-video-mcp": "./src/mcp-server/index.ts"
   },
   "scripts": {
     "dev": "remotion studio",
@@ -41,7 +41,7 @@
     "@remotion/player": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
     "remotion": "^4.0.0",
-    "fastmcp": "^1.0.0",
+    "fastmcp": "^3.32.0",
     "nanoid": "^5.1.5",
     "zod": "^4.0.0"
   },

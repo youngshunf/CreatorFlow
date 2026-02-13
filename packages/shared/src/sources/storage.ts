@@ -391,7 +391,7 @@ export function getSourcesBySlugs(workspaceRootPath: string, slugs: string[]): L
 
 /**
  * Load all sources for a workspace INCLUDING built-in sources.
- * Built-in sources (like creator-flows-docs) are always available and merged
+ * Built-in sources (like sprouty-ai-docs) are always available and merged
  * with user-configured sources from the workspace.
  *
  * Use this when the agent needs visibility into all available sources,
@@ -528,7 +528,7 @@ export async function createSource(
   }
 
   // Create guide.md with skeleton template
-  // (bundled guides removed - agent should search creator-flows-docs MCP for service-specific guidance)
+  // (bundled guides removed - agent should search sprouty-ai-docs MCP for service-specific guidance)
   const guideContent = `# ${input.name}
 
 ## Guidelines

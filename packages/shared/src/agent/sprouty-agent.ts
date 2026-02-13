@@ -654,8 +654,10 @@ export class SproutyAgent extends BaseAgent {
       // Regular agents: full set including preferences, docs, and user sources
       const sourceMcpResult = this.getSourceMcpServersFiltered();
 
-      debug('[chat] sourceMcpServers:', sourceMcpResult.servers);
-      debug('[chat] sourceApiServers:', this.sourceApiServers);
+      console.error('[chat] sourceMcpServers keys:', Object.keys(sourceMcpResult.servers));
+      for (const [name, cfg] of Object.entries(sourceMcpResult.servers)) {
+        console.error(`[chat] MCP server "${name}":`, JSON.stringify(cfg));
+      }
 
       // Build full MCP servers set first, then filter for mini agents
       const fullMcpServers: Options['mcpServers'] = {
@@ -679,7 +681,14 @@ export class SproutyAgent extends BaseAgent {
       const mcpServers: Options['mcpServers'] = miniConfig.enabled
         ? this.filterMcpServersForMiniAgent(fullMcpServers, miniConfig.mcpServerKeys)
         : fullMcpServers;
-      
+
+      console.error(`[chat] Final mcpServers keys: ${JSON.stringify(Object.keys(mcpServers))}`);
+      // Log each MCP server type for debugging
+      for (const [name, cfg] of Object.entries(mcpServers)) {
+        const c = cfg as any;
+        console.error(`[chat] Final MCP "${name}": type=${c.type}, command=${c.command}, cwd=${c.cwd}`);
+      }
+
       // Configure SDK options
       // Model is always set by caller via connection config
       const model = this._model;

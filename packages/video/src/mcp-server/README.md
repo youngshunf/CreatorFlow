@@ -1,4 +1,4 @@
-# CreatorFlow Video MCP Server
+# Sprouty AI Video MCP Server
 
 MCP (Model Context Protocol) 服务器，为 AI Agent 提供视频创作能力。基于 Remotion 实现视频渲染，支持项目管理、素材管理、组合编辑、视频渲染和实时预览。
 
@@ -14,7 +14,7 @@ MCP (Model Context Protocol) 服务器，为 AI Agent 提供视频创作能力�
 ## 安装
 
 ```bash
-cd CreatorFlow/apps/mcp-video
+cd Sprouty AI/apps/mcp-video
 bun install
 ```
 
@@ -62,9 +62,9 @@ bun run start -- --transport http --host 127.0.0.1 --port 8080
 ```json
 {
   "mcpServers": {
-    "creator-flow-video": {
+    "sprouty-ai-video": {
       "command": "bun",
-      "args": ["run", "/path/to/CreatorFlow/apps/mcp-video/src/index.ts"]
+      "args": ["run", "/path/to/Sprouty AI/apps/mcp-video/src/index.ts"]
     }
   }
 }
@@ -77,9 +77,9 @@ bun run start -- --transport http --host 127.0.0.1 --port 8080
 ```json
 {
   "mcpServers": {
-    "creator-flow-video": {
+    "sprouty-ai-video": {
       "command": "bun",
-      "args": ["run", "/path/to/CreatorFlow/apps/mcp-video/src/index.ts"],
+      "args": ["run", "/path/to/Sprouty AI/apps/mcp-video/src/index.ts"],
       "disabled": false,
       "autoApprove": []
     }
@@ -239,7 +239,7 @@ bun run build
 - [Bun](https://bun.sh/) - JavaScript 运行时
 - [FastMCP](https://github.com/jlowin/fastmcp) - MCP 服务器框架
 - [Remotion](https://remotion.dev/) - 视频渲染引擎
-- [@creator-flow/video](../packages/video) - 视频模板和组件
+- [@sprouty-ai/video](../packages/video) - 视频模板和组件
 
 ## 许可证
 

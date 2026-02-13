@@ -59,7 +59,7 @@ All commands below assume the project root (`creator-flow` monorepo).
 This repository is a Bun-based workspaces monorepo with two primary layers:
 
 - **Apps (`apps/*`)**
-  - `apps/electron`: Main desktop Electron + React UI for CreatorFlow.
+  - `apps/electron`: Main desktop Electron + React UI for Sprouty AI.
     - Uses `esbuild` for the main and preload processes and Vite (React + Tailwind v4 + shadcn/ui) for the renderer.
     - Wraps the business logic in `@sprouty-ai/shared` to drive the UI via IPC.
   - `apps/viewer`: Vite-based viewer application referenced by `viewer:*` scripts (e.g., for documentation/log viewing); less central than the Electron app.
@@ -73,7 +73,7 @@ This repository is a Bun-based workspaces monorepo with two primary layers:
       - Messages and events (`Message`, `StoredMessage`, `MessageRole`, `ToolStatus`, `TokenUsage`, `AgentEvent`, `TypedError`, `Question`).
     - Design note: sessions are the primary isolation boundary; each `Session` is 1:1 with an SDK session and belongs to exactly one workspace.
   - `@sprouty-ai/shared` (`packages/shared`)
-    - Core **business logic** for CreatorFlow and the main integration surface for agents:
+    - Core **business logic** for Sprouty AI and the main integration surface for agents:
       - `src/agent/`: `SproutyAgent`, permission modes, session-scoped tools, and permission configuration.
       - `src/auth/`: OAuth, token handling for Craft/Claude, and persisted auth state.
       - `src/config/`: Application/workspace configuration, themes, preferences, and file-watcher for live updates.

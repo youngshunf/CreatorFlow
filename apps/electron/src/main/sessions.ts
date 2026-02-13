@@ -68,6 +68,7 @@ import {
   pickSessionFields,
 } from '@sprouty-ai/shared/sessions'
 import { loadWorkspaceSources, loadAllSources, getSourcesBySlugs, isSourceUsable, type LoadedSource, type McpServerConfig, getSourcesNeedingAuth, getSourceCredentialManager, getSourceServerBuilder, type SourceWithCredential, isApiOAuthProvider, SERVER_BUILD_ERRORS, TokenRefreshManager, createTokenGetter } from '@sprouty-ai/shared/sources'
+import { getElectronCommandResolver, getElectronCwdResolver } from './source-resolvers'
 import { ConfigWatcher, type ConfigWatcherCallbacks } from '@sprouty-ai/shared/config'
 import { getAuthState, getValidClaudeOAuthToken } from '@sprouty-ai/shared/auth'
 import { setAnthropicOptionsEnv, setPathToClaudeCodeExecutable, setInterceptorPath, setExecutable } from '@sprouty-ai/shared/agent'
@@ -146,7 +147,10 @@ async function buildServersFromSources(
 ) {
   const span = perf.span('sources.buildServers', { count: sources.length })
   const credManager = getSourceCredentialManager()
-  const serverBuilder = getSourceServerBuilder()
+  const serverBuilder = getSourceServerBuilder({
+    commandResolver: getElectronCommandResolver(),
+    cwdResolver: getElectronCwdResolver(),
+  })
   const start = Date.now()
 
   // Load credentials for all sources
@@ -255,7 +259,7 @@ async function refreshOAuthTokensIfNeeded(
   if (refreshed.length > 0) {
     // Rebuild server configs with fresh tokens
     sessionLog.debug(`[OAuth] Rebuilding servers after ${refreshed.length} token refresh(es)`)
-    const enabledSources = sources.filter(s => s.config.enabled && s.config.isAuthenticated)
+    const enabledSources = sources.filter(s => isSourceUsable(s))
     const { mcpServers, apiServers } = await buildServersFromSources(
       enabledSources,
       sessionPath,
@@ -641,7 +645,7 @@ interface ManagedSession {
   // Used to detect if a follow-up message has superseded the current one (stale-request guard).
   processingGeneration: number
   // NOTE: Parent-child tracking state (pendingTools, parentToolStack, toolToParentMap,
-  // pendingTextParent) has been removed. CreatorFlow now provides parentToolUseId
+  // pendingTextParent) has been removed. Sprouty AI now provides parentToolUseId
   // directly on all events using the SDK's authoritative parent_tool_use_id field.
   // See: packages/shared/src/agent/tool-matching.ts
   // Session name (user-defined or AI-generated)
@@ -1099,6 +1103,29 @@ export class SessionManager {
   }
 
   /**
+   * 更新云端连接的默认模型
+   */
+  async updateCloudConnectionModels(anthropicModel?: string, openaiModel?: string): Promise<void> {
+    const { updateLlmConnection, getLlmConnection } = await import('@sprouty-ai/shared/config')
+
+    if (anthropicModel) {
+      const conn = getLlmConnection('cloud-anthropic')
+      if (conn) {
+        updateLlmConnection('cloud-anthropic', { defaultModel: anthropicModel })
+        sessionLog.info(`Updated cloud-anthropic default model to: ${anthropicModel}`)
+      }
+    }
+
+    if (openaiModel) {
+      const conn = getLlmConnection('cloud-openai')
+      if (conn) {
+        updateLlmConnection('cloud-openai', { defaultModel: openaiModel })
+        sessionLog.info(`Updated cloud-openai default model to: ${openaiModel}`)
+      }
+    }
+  }
+
+  /**
    * 启动云端令牌自动刷新定时器（每 30 分钟检查一次）。
    */
   private startCloudTokenRefreshTimer(): void {
@@ -1486,6 +1513,8 @@ export class SessionManager {
         process.env.ANTHROPIC_BASE_URL = this.cloudConfig.gatewayUrl
         process.env.ANTHROPIC_API_KEY = this.cloudConfig.llmToken
         delete process.env.CLAUDE_CODE_OAUTH_TOKEN
+        // Disable SDK telemetry when using cloud gateway (gateway doesn't have telemetry endpoints)
+        process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
         sessionLog.info(`Using cloud LLM gateway at ${this.cloudConfig.gatewayUrl}`)
         resetSummarizationClient()
         return
@@ -4293,14 +4322,20 @@ export class SessionManager {
     sendSpan.mark('sources.loaded')
 
     // Apply source servers if any are enabled
+    sessionLog.info(`[SOURCE-DEBUG] enabledSourceSlugs = ${JSON.stringify(managed.enabledSourceSlugs)}`)
     if (managed.enabledSourceSlugs?.length) {
       // Always build server configs fresh (no caching - single source of truth)
       const sources = getSourcesBySlugs(workspaceRootPath, managed.enabledSourceSlugs)
+      sessionLog.info(`[SOURCE-DEBUG] getSourcesBySlugs returned ${sources.length} sources: ${sources.map(s => s.config.slug).join(', ')}`)
+      for (const s of sources) {
+        sessionLog.info(`[SOURCE-DEBUG] source ${s.config.slug}: enabled=${s.config.enabled}, type=${s.config.type}, transport=${s.config.mcp?.transport}, cwd=${s.config.mcp?.cwd}`)
+      }
       // Pass session path so large API responses can be saved to session folder
       const sessionPath = getSessionStoragePath(workspaceRootPath, sessionId)
       const serversStart = Date.now()
       const { mcpServers, apiServers, errors } = await buildServersFromSources(sources, sessionPath, managed.tokenRefreshManager, agent.getSummarizeCallback())
       const serversMs = Date.now() - serversStart
+      sessionLog.info(`[SOURCE-DEBUG] buildServersFromSources: mcpServers=${JSON.stringify(Object.keys(mcpServers))}, apiServers=${JSON.stringify(Object.keys(apiServers))}, errors=${JSON.stringify(errors)}`)
       if (errors.length > 0) {
         sessionLog.warn(`构建 Source 服务器时发生错误`, errors)
       }
@@ -5148,7 +5183,7 @@ To view this task's output:
       }
 
       case 'tool_result': {
-        // toolName comes directly from CreatorFlow (resolved via ToolIndex)
+        // toolName comes directly from Sprouty AI (resolved via ToolIndex)
         const toolName = event.toolName || 'unknown'
 
         // Format absolute paths to relative paths for better readability
@@ -5161,7 +5196,7 @@ To view this task's output:
 
         sessionLog.info(`RESULT MATCH: toolUseId=${event.toolUseId}, found=${!!existingToolMsg}, toolName=${existingToolMsg?.toolName || toolName}, wasComplete=${wasAlreadyComplete}`)
 
-        // parentToolUseId comes from CreatorFlow (SDK-authoritative) or existing message
+        // parentToolUseId comes from Sprouty AI (SDK-authoritative) or existing message
         const parentToolUseId = existingToolMsg?.parentToolUseId || event.parentToolUseId
 
         if (existingToolMsg) {

@@ -27,7 +27,7 @@ import {
   ProductShowcase,
   type VideoTemplate,
   type TemplateCategory,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 
 /**
  * Map composition IDs to actual React components

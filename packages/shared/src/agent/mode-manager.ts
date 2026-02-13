@@ -1741,7 +1741,7 @@ export function shouldAllowToolInMode(
   // Handle MCP tools - allow read-only, block write operations
   if (toolName.startsWith('mcp__')) {
     // Always allow preferences and documentation tools (read-only, always available)
-    if (toolName.startsWith('mcp__preferences__') || toolName.startsWith('mcp__creator-flows-docs__')) {
+    if (toolName.startsWith('mcp__preferences__') || toolName.startsWith('mcp__sprouty-ai-docs__')) {
       return { allowed: true };
     }
 

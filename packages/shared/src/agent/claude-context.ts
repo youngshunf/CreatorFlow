@@ -42,6 +42,7 @@ import {
   validateMcpConnection as validateMcpConnectionImpl,
   validateStdioMcpConnection as validateStdioMcpConnectionImpl,
 } from '../mcp/validation.ts';
+import { getSourceServerBuilder } from '../sources/server-builder.ts';
 import {
   getDefaultLlmConnection,
   getLlmConnection,
@@ -177,7 +178,15 @@ export function createClaudeContext(options: ClaudeContextOptions): SessionToolC
   // MCP validation
   const validateStdioMcpConnection = async (config: StdioMcpConfig): Promise<StdioValidationResult> => {
     try {
-      const result = await validateStdioMcpConnectionImpl(config);
+      // Resolve command and cwd using the singleton builder's injected resolvers
+      // (handles Electron-specific bundled bun path and app: prefix)
+      const builder = getSourceServerBuilder();
+      const resolvedConfig = {
+        ...config,
+        command: builder.resolveCommand(config.command),
+        cwd: config.cwd ? builder.resolveCwd(config.cwd, workspacePath) : config.cwd,
+      };
+      const result = await validateStdioMcpConnectionImpl(resolvedConfig);
       return {
         success: result.success,
         error: result.error,

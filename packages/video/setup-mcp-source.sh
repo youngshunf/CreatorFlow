@@ -15,7 +15,7 @@ read -r WORKSPACE_ID
 
 if [ -z "$WORKSPACE_ID" ]; then
   # 尝试从配置文件中读取第一个工作区
-  CONFIG_FILE="$HOME/.creator-flow/config.json"
+  CONFIG_FILE="$HOME/.sprouty-ai/config.json"
   if [ -f "$CONFIG_FILE" ]; then
     WORKSPACE_ID=$(cat "$CONFIG_FILE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     echo "使用配置文件中的工作区: $WORKSPACE_ID"
@@ -26,7 +26,7 @@ if [ -z "$WORKSPACE_ID" ]; then
 fi
 
 # 配置变量
-SOURCE_DIR="$HOME/.creator-flow/workspaces/$WORKSPACE_ID/sources/video-mcp"
+SOURCE_DIR="$HOME/.sprouty-ai/workspaces/$WORKSPACE_ID/sources/video-mcp"
 VIDEO_SERVER_PATH="$(pwd)/packages/video/src/mcp-server/index.ts"
 
 # 检查视频服务器路径是否存在
@@ -62,7 +62,7 @@ cat > "$SOURCE_DIR/config.json" << EOF
   "name": "视频创作服务",
   "slug": "video-mcp",
   "enabled": true,
-  "provider": "creator-flow-video",
+  "provider": "sprouty-ai-video",
   "type": "mcp",
   "mcp": {
     "transport": "stdio",
@@ -173,5 +173,5 @@ echo ""
 echo "💡 提示: 如果连接失败，请检查:"
 echo "  - Bun 是否已安装: bun --version"
 echo "  - 服务器路径是否正确"
-echo "  - 查看日志: ~/.creator-flow/logs/"
+echo "  - 查看日志: ~/.sprouty-ai/logs/"
 echo ""

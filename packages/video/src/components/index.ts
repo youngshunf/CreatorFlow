@@ -45,3 +45,15 @@ export {
   type LogoAnimation,
   type LogoPosition,
 } from './Logo';
+
+// TitleText - Animated title component for Sequence-based compositions
+export { TitleText, type TitleTextProps } from './TitleText';
+
+// SubtitleText - Animated subtitle component for Sequence-based compositions
+export { SubtitleText, type SubtitleTextProps } from './SubtitleText';
+
+// SlideItem - Animated slide component for slideshow compositions
+export { SlideItem, type SlideItemProps } from './SlideItem';
+
+// BarItem - Animated bar chart item for data visualization
+export { BarItem, type BarItemProps } from './BarItem';

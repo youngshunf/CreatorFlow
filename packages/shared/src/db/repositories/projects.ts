@@ -76,3 +76,29 @@ export function setActiveProject(db: CreatorMediaDB, projectId: string): Project
   });
   return getProject(db, projectId);
 }
+
+/**
+ * 获取项目的所有目标平台（合并 platform 和 platforms，去重）
+ * @returns JSON 字符串数组，如 '["xiaohongshu","douyin"]'，如果项目不存在返回 null
+ */
+export function getProjectTargetPlatforms(db: CreatorMediaDB, projectId: string): string | null {
+  const project = getProject(db, projectId);
+  if (!project) return null;
+
+  const platforms: string[] = [project.platform];
+
+  if (project.platforms) {
+    try {
+      const parsed = JSON.parse(project.platforms);
+      if (Array.isArray(parsed)) {
+        platforms.push(...parsed);
+      }
+    } catch {
+      // 忽略解析错误
+    }
+  }
+
+  // 去重
+  const uniquePlatforms = [...new Set(platforms)];
+  return JSON.stringify(uniquePlatforms);
+}

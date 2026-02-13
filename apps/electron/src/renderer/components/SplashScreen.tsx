@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { CreatorFlowSymbol } from './icons/CreatorFlowSymbol'
+import { SproutySymbol } from './icons/SproutySymbol'
 
 interface SplashScreenProps {
   isExiting: boolean
@@ -37,7 +37,7 @@ export function SplashScreen({ isExiting, onExitComplete }: SplashScreenProps) {
         }}
         className="mb-8"
       >
-        <CreatorFlowSymbol className="h-16 text-accent" />
+        <SproutySymbol className="h-16 text-accent" />
       </motion.div>
 
       {/* 品牌名称 */}

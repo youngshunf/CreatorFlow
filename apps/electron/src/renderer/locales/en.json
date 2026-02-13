@@ -2936,6 +2936,10 @@
     "Always Allow"
   ],
   [
+    "视频创作",
+    "Video Creation"
+  ],
+  [
     "视频导出成功",
     "Video exported successfully"
   ],
@@ -3462,6 +3466,10 @@
   [
     "图标",
     "Icon"
+  ],
+  [
+    "图文创作",
+    "Image-Text Creation"
   ],
   [
     "推荐",
@@ -5446,5 +5454,73 @@
   [
     "未找到模型，请检查连接配置",
     "Model not found. Check the connection configuration."
+  ],
+  [
+    "云端凭证缺失，请重新登录",
+    "Cloud credentials missing. Please log in again."
+  ],
+  [
+    "云端登录已过期，请重新登录",
+    "Cloud login expired. Please log in again."
+  ],
+  [
+    "云端令牌刷新失败，请重新登录",
+    "Cloud token refresh failed. Please log in again."
+  ],
+  [
+    "未配置 API 凭证，请在设置中配置",
+    "API credentials not configured. Please configure in settings."
+  ],
+  [
+    "未设置默认模型，请在设置中配置",
+    "Default model not set. Please configure in settings."
+  ],
+  [
+    "OAuth 认证信息缺失，请重新认证",
+    "OAuth credentials missing. Please re-authenticate."
+  ],
+  [
+    "OAuth 认证已过期，请重新认证",
+    "OAuth authentication expired. Please re-authenticate."
+  ],
+  [
+    "无法连接到 API 服务器，请检查网络连接和 API 地址",
+    "Cannot connect to API server. Check network connection and API address."
+  ],
+  [
+    "API 端点不存在，请检查 API 地址配置",
+    "API endpoint not found. Check API address configuration."
+  ],
+  [
+    "API 认证失败，请检查 API 密钥是否正确",
+    "API authentication failed. Check if API key is correct."
+  ],
+  [
+    "请求过于频繁，请稍后重试",
+    "Too many requests. Please try again later."
+  ],
+  [
+    "账户余额不足或订阅已过期，请充值或续费",
+    "Insufficient account balance or subscription expired. Please recharge or renew."
+  ],
+  [
+    "指定的模型不存在，请检查模型配置",
+    "Specified model does not exist. Check model configuration."
+  ],
+  [
+    "操作失败，请查看技术详情了解更多信息",
+    "Operation failed. View technical details for more information."
+  ],
+  [
+    "详细信息",
+    "Details"
+  ],
+  [
+    "发送消息失败",
+    "Failed to send message"
+  ],
+  [
+    "操作失败",
+    "Operation failed"
   ]
 ]

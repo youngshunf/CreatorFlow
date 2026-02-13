@@ -15,13 +15,13 @@ import { Player, type PlayerRef } from '@remotion/player';
 import { Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/context/LocaleContext';
-import type { VideoProject } from '@creator-flow/video';
+import type { VideoProject } from '@sprouty-ai/video';
 import {
   TitleAnimation,
   Slideshow,
   DataVisualization,
   ProductShowcase,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 
 /**
  * Map composition IDs to actual React components

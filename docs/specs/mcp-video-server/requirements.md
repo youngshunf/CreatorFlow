@@ -2,7 +2,7 @@
 
 ## Introduction
 
-本文档定义了 CreatorFlow 视频创作 MCP Server 的需求规格。该 MCP Server 将使外部 AI Agent（如 Claude Desktop、Kiro 等）能够通过 MCP 协议调用 CreatorFlow 的视频创作功能，包括项目管理、素材管理、视频渲染和实时预览。
+本文档定义了 Sprouty AI 视频创作 MCP Server 的需求规格。该 MCP Server 将使外部 AI Agent（如 Claude Desktop、Kiro 等）能够通过 MCP 协议调用 Sprouty AI 的视频创作功能，包括项目管理、素材管理、视频渲染和实时预览。
 
 MCP Server 作为独立进程运行，不依赖 Electron，直接调用 Remotion API 进行视频处理。
 
@@ -139,4 +139,4 @@ MCP Server 作为独立进程运行，不依赖 Electron，直接调用 Remotion
 
 1. WHEN an AI Agent calls video_list_templates, THE MCP_Server SHALL return all available templates with metadata
 2. WHEN creating a project with a template, THE MCP_Server SHALL apply the template's default config, compositions, and props
-3. THE MCP_Server SHALL support templates from @creator-flow/video package (social-media, marketing, tutorial categories)
+3. THE MCP_Server SHALL support templates from @sprouty-ai/video package (social-media, marketing, tutorial categories)

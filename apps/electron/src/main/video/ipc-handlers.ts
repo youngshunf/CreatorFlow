@@ -17,8 +17,8 @@ import type {
   Asset,
   OutputFormat,
   QualityPreset,
-} from '@creator-flow/video';
-import { SUPPORTED_ASSET_EXTENSIONS } from '@creator-flow/video';
+} from '@sprouty-ai/video';
+import { SUPPORTED_ASSET_EXTENSIONS } from '@sprouty-ai/video';
 import type { IProjectManager, CreateProjectOptions } from './project-manager';
 import type { IRenderWorker } from './render-worker';
 import type { IPreviewServer, PreviewServerResult } from './preview-server';

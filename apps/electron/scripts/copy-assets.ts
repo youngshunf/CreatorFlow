@@ -11,11 +11,11 @@
  * Run: bun scripts/copy-assets.ts
  */
 
-import { cpSync, copyFileSync, mkdirSync } from 'fs';
+import { cpSync, copyFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
 // Copy all resources (icons, themes, docs, permissions, tool-icons, etc.)
-cpSync('resources', 'dist/resources', { recursive: true });
+cpSync('resources', 'dist/resources', { recursive: true, force: true });
 
 console.log('✓ Copied resources/ → dist/resources/');
 
@@ -31,3 +31,7 @@ try {
   // Only warn - PowerShell validation is optional on non-Windows platforms
   console.log('⚠ powershell-parser.ps1 copy skipped (not critical on non-Windows)');
 }
+
+// Video MCP server is now bundled as a single file by electron-build-main.ts
+// into resources/video-mcp-server/index.cjs (copied via resources/ → dist/resources/).
+// No need to copy the entire packages/video/ directory.

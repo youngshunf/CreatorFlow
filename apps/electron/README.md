@@ -1,6 +1,6 @@
-# CreatorFlow Electron App
+# Sprouty AI Electron App
 
-The primary desktop interface for CreatorFlow, built with Electron + React. Provides a multi-session inbox with chat interface for interacting with Claude via Craft workspaces.
+The primary desktop interface for Sprouty AI, built with Electron + React. Provides a multi-session inbox with chat interface for interacting with Claude via Craft workspaces.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ apps/electron/
 │   │   ├── index.ts       # Window creation, app lifecycle
 │   │   ├── ipc.ts         # IPC handler registration
 │   │   ├── menu.ts        # Application menu (File, Edit, View, Help)
-│   │   ├── sessions.ts    # Session management, CreatorFlowAgent integration
+│   │   ├── sessions.ts    # Session management, SproutyAgent integration
 │   │   ├── deep-link.ts   # Deep link URL parsing and handling
 │   │   ├── agent-service.ts # Agent listing, caching, auth checking
 │   │   └── sources-service.ts # Source and authentication service
@@ -88,7 +88,7 @@ if (billing.type === 'oauth_token' && billing.claudeOAuthToken) {
 
 ### 3. AgentEvent Type Mismatches
 
-The `AgentEvent` types from `CreatorFlowAgent` use different property names than you might expect:
+The `AgentEvent` types from `SproutyAgent` use different property names than you might expect:
 
 | Event Type | Wrong | Correct |
 |------------|-------|---------|
@@ -111,16 +111,16 @@ const toolName = managed.pendingTools.get(event.toolUseId) || 'unknown'
 managed.pendingTools.delete(event.toolUseId)
 ```
 
-### 4. CreatorFlowAgent Constructor
+### 4. SproutyAgent Constructor
 
-`CreatorFlowAgent` expects the full `Workspace` object, not just the ID:
+`SproutyAgent` expects the full `Workspace` object, not just the ID:
 
 ```typescript
 // Wrong:
-new CreatorFlowAgent({ workspaceId: workspace.id, model })
+new SproutyAgent({ workspaceId: workspace.id, model })
 
 // Correct:
-new CreatorFlowAgent({ workspace, model })
+new SproutyAgent({ workspace, model })
 ```
 
 ### 5. esbuild Configuration
@@ -265,7 +265,7 @@ See `CLAUDE.md` for complete route reference.
 | File | Purpose |
 |------|---------|
 | `main/index.ts` | App entry, window creation |
-| `main/sessions.ts` | CreatorFlowAgent wrapper, event processing, source integration |
+| `main/sessions.ts` | SproutyAgent wrapper, event processing, source integration |
 | `main/ipc.ts` | IPC channel handlers (sessions, files, shell) |
 | `main/menu.ts` | Application menu (File, Edit, View, Help) |
 | `main/deep-link.ts` | Deep link URL parsing and handling |

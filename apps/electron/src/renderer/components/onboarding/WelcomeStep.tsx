@@ -1,4 +1,4 @@
-import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
+import { SproutySymbol } from "@/components/icons/SproutySymbol"
 import { StepFormLayout, ContinueButton } from "./primitives"
 import { useT } from "@/context/LocaleContext"
 
@@ -14,7 +14,7 @@ interface WelcomeStepProps {
  * WelcomeStep - Initial welcome screen for onboarding
  *
  * Shows different messaging for new vs existing users:
- * - New users: Welcome to CreatorFlow
+ * - New users: Welcome to Sprouty AI
  * - Existing users: Update your API connection settings
  */
 export function WelcomeStep({
@@ -27,7 +27,7 @@ export function WelcomeStep({
     <StepFormLayout
       iconElement={
         <div className="flex size-16 items-center justify-center">
-          <CreatorFlowSymbol className="size-10 text-accent" />
+          <SproutySymbol className="size-10 text-accent" />
         </div>
       }
       title={isExistingUser ? t('更新设置') : t('欢迎使用智小芽')}

@@ -48,27 +48,23 @@ export class TopicRecommendService {
     const topic = recommendedTopicsRepo.get(this.db, topicId);
     if (!topic) return null;
 
-    // 在 contents 表创建记录
+    // 在 contents 表创建记录（target_platforms 会自动从项目继承）
     const contentId = generateId();
     const content = contentsRepo.createContent(this.db, {
       id: contentId,
       project_id: projectId,
       title: topic.title,
-      topic: topic.title,
-      topic_source: 'hot_topic',
-      source_topic_id: topicId,
-      script_path: null,
-      status: 'idea',
-      content_type: null,
-      target_platforms: null,
+      status: 'scripting',
+      target_platforms: null, // 会自动继承项目平台
       pipeline_mode: pipelineMode,
-      pipeline_state: null,
+      content_dir_path: `${projectId}/${contentId}`,
       viral_pattern_id: null,
-      tags: null,
-      scheduled_at: null,
-      files: null,
-      metadata: null,
-      review_summary: null,
+      metadata: JSON.stringify({
+        source: 'topic_recommend',
+        topic_id: topicId,
+        potential_score: topic.potential_score,
+        heat_index: topic.heat_index,
+      }),
     });
 
     // 关联选题和内容

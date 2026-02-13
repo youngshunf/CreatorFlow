@@ -7,7 +7,8 @@
 
 import * as React from 'react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2, Plug } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { EditPopover, EditButton, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { SourceMenu } from '@/components/app-shell/SourceMenu'
@@ -179,6 +180,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
   const [mcpToolsLoading, setMcpToolsLoading] = useState(false)
   const [mcpToolsError, setMcpToolsError] = useState<string | null>(null)
   const [localMcpEnabled, setLocalMcpEnabled] = useState(true)
+  const [testingConnection, setTestingConnection] = useState(false)
 
 
   // Load source data
@@ -219,6 +221,37 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
     }
   }, [workspaceId, sourceSlug])
 
+  // Reusable function to load MCP tools
+  const loadMcpTools = useCallback(async () => {
+    setMcpToolsLoading(true)
+    setMcpToolsError(null)
+    try {
+      const result = await window.electronAPI.getMcpTools(workspaceId, sourceSlug)
+      if (result.success && result.tools) {
+        setMcpTools(result.tools)
+      } else {
+        setMcpToolsError(result.error || 'Failed to load tools')
+      }
+    } catch (err) {
+      setMcpToolsError(err instanceof Error ? err.message : 'Failed to load tools')
+    } finally {
+      setMcpToolsLoading(false)
+    }
+  }, [workspaceId, sourceSlug])
+
+  // Reusable function to reload source data
+  const reloadSource = useCallback(async () => {
+    try {
+      const sources = await window.electronAPI.getSources(workspaceId)
+      const found = sources.find((s) => s.config.slug === sourceSlug)
+      if (found) {
+        setSource(found)
+      }
+    } catch (err) {
+      console.error('[SourceInfoPage] Failed to reload source:', err)
+    }
+  }, [workspaceId, sourceSlug])
+
   // Load MCP tools when source is loaded and is MCP type
   useEffect(() => {
     if (!source || source.config.type !== 'mcp') {
@@ -227,34 +260,8 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
       return
     }
 
-    let isMounted = true
-    setMcpToolsLoading(true)
-    setMcpToolsError(null)
-
-    const loadTools = async () => {
-      try {
-        const result = await window.electronAPI.getMcpTools(workspaceId, sourceSlug)
-        if (!isMounted) return
-
-        if (result.success && result.tools) {
-          setMcpTools(result.tools)
-        } else {
-          setMcpToolsError(result.error || 'Failed to load tools')
-        }
-      } catch (err) {
-        if (!isMounted) return
-        setMcpToolsError(err instanceof Error ? err.message : 'Failed to load tools')
-      } finally {
-        if (isMounted) setMcpToolsLoading(false)
-      }
-    }
-
-    loadTools()
-
-    return () => {
-      isMounted = false
-    }
-  }, [source, workspaceId, sourceSlug])
+    loadMcpTools()
+  }, [source, workspaceId, sourceSlug, loadMcpTools])
 
   // Load workspace settings (for localMcpEnabled)
   useEffect(() => {
@@ -377,6 +384,34 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
     window.electronAPI.openUrl(`sproutyai://sources/source/${sourceSlug}?window=focused`)
   }, [sourceSlug])
 
+  // Handle testing MCP connection
+  const handleTestConnection = useCallback(async () => {
+    if (!source || source.config.type !== 'mcp') return
+    setTestingConnection(true)
+    try {
+      const result = await window.electronAPI.testSourceConnection(workspaceId, sourceSlug)
+      if (result.success) {
+        toast.success(t('连接成功'))
+        // Reload source data to reflect updated connectionStatus
+        await reloadSource()
+        // Reload MCP tools
+        await loadMcpTools()
+      } else {
+        toast.error(t('连接失败'), {
+          description: result.error || t('未知错误'),
+        })
+        // Reload source to show updated status
+        await reloadSource()
+      }
+    } catch (err) {
+      toast.error(t('连接测试出错'), {
+        description: err instanceof Error ? err.message : t('未知错误'),
+      })
+    } finally {
+      setTestingConnection(false)
+    }
+  }, [source, workspaceId, sourceSlug, reloadSource, loadMcpTools, t])
+
   // Get source name for header
   const sourceName = source?.config.name || sourceSlug
 
@@ -423,15 +458,32 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
             title={t('连接')}
             description={getConnectionDescription(source, t)}
             actions={
-              // EditPopover for AI-assisted config.json editing with "Edit File" as secondary action
-              <EditPopover
-                trigger={<EditButton />}
-                {...getEditConfig('source-config', source.folderPath)}
-                secondaryAction={{
-                  label: t('编辑文件'),
-                  onClick: handleEditConfig,
-                }}
-              />
+              <div className="flex items-center gap-1.5">
+                {source.config.type === 'mcp' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestConnection}
+                    disabled={testingConnection}
+                  >
+                    {testingConnection ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Plug className="h-3.5 w-3.5" />
+                    )}
+                    {t('测试连接')}
+                  </Button>
+                )}
+                {/* EditPopover for AI-assisted config.json editing with "Edit File" as secondary action */}
+                <EditPopover
+                  trigger={<EditButton />}
+                  {...getEditConfig('source-config', source.folderPath)}
+                  secondaryAction={{
+                    label: t('编辑文件'),
+                    onClick: handleEditConfig,
+                  }}
+                />
+              </div>
             }
           >
             <Info_Table

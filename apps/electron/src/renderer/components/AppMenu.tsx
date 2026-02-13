@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/styled-dropdown"
 import * as Icons from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@sprouty-ai/ui"
-import { CreatorFlowSymbol } from "./icons/CreatorFlowSymbol"
+import { SproutySymbol } from "./icons/SproutySymbol"
 import { SquarePenRounded } from "./icons/SquarePenRounded"
 import { TopBarButton } from "./ui/TopBarButton"
 import { useT } from "@/context/LocaleContext"
@@ -203,7 +203,7 @@ export function AppMenu({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <TopBarButton aria-label="Craft menu">
-            <CreatorFlowSymbol className="h-4 text-accent" />
+            <SproutySymbol className="h-4 text-accent" />
           </TopBarButton>
         </DropdownMenuTrigger>
         <StyledDropdownMenuContent align="start" minWidth="min-w-48">

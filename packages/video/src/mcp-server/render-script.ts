@@ -210,9 +210,9 @@ function findEntryPoint(projectPath: string): string {
     }
   }
 
-  // 尝试使用 @creator-flow/video 包的 Root
+  // 尝试使用 @sprouty-ai/video 包的 Root
   try {
-    const videoPackageRoot = require.resolve('@creator-flow/video');
+    const videoPackageRoot = require.resolve('@sprouty-ai/video');
     const videoPackageDir = dirname(videoPackageRoot);
     const defaultEntryPoint = join(videoPackageDir, 'Root.tsx');
     if (existsSync(defaultEntryPoint)) {

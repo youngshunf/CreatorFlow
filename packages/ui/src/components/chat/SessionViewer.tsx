@@ -49,7 +49,7 @@ export interface SessionViewerProps {
 }
 
 /**
- * SproutyAgentLogo - The CreatorFlow "C" logo for branding
+ * SproutyAgentLogo - The Sprouty AI logo for branding
  */
 function SproutyAgentLogo({ className }: { className?: string }) {
   return (

@@ -66,7 +66,7 @@ TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
 # Cache directory
-CACHE_DIR="$HOME/.cache/creator-flow/bun"
+CACHE_DIR="$HOME/.cache/sprouty-ai/bun"
 CACHED_ZIP="$CACHE_DIR/${BUN_VERSION}-${BUN_DOWNLOAD}.zip"
 mkdir -p "$CACHE_DIR"
 

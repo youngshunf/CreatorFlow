@@ -1,14 +1,14 @@
 import logoIcon from "@/assets/logo-icon.svg"
 
-interface CreatorFlowAppIconProps {
+interface SproutyAppIconProps {
   className?: string
   size?: number
 }
 
 /**
- * CreatorFlowAppIcon - 显示智小芽 App 图标
+ * SproutyAppIcon - 显示智小芽 App 图标
  */
-export function CreatorFlowAppIcon({ className, size = 64 }: CreatorFlowAppIconProps) {
+export function SproutyAppIcon({ className, size = 64 }: SproutyAppIconProps) {
   return (
     <img
       src={logoIcon}

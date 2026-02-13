@@ -115,7 +115,7 @@ fi
 # 3. Get Bun binary (use cache if available)
 mkdir -p "$ELECTRON_DIR/vendor/bun"
 BUN_DOWNLOAD="bun-darwin-$([ "$ARCH" = "arm64" ] && echo "aarch64" || echo "x64")"
-CACHE_DIR="$HOME/.cache/creator-flow/bun"
+CACHE_DIR="$HOME/.cache/sprouty-ai/bun"
 CACHED_BUN="$CACHE_DIR/${BUN_VERSION}/${BUN_DOWNLOAD}/bun"
 
 # Check if we have a cached version

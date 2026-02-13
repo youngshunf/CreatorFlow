@@ -91,7 +91,7 @@
     "command": "bun",
     "args": [
       "run",
-      "/Users/mac/saas/creator-flow/.zcf/CreatorFlow/video-integration/packages/video/src/mcp-server/index.ts"
+      "/Users/mac/saas/creator-flow/.zcf/Sprouty AI/video-integration/packages/video/src/mcp-server/index.ts"
     ]
   }
 }
@@ -114,7 +114,7 @@
 
 ### 对于最终用户
 
-1. 安装 CreatorFlow 应用
+1. 安装 Sprouty AI 应用
 2. 创建新工作区，选择"自媒体创作"应用
 3. 视频 MCP 服务器自动配置完成
 4. 在 Agent 会话中直接使用视频工具
@@ -134,7 +134,7 @@ Agent: 我将使用视频创作服务来帮你创建视频...
 
 **在 Electron 主进程中**:
 ```typescript
-import { initializeWorkspaceFromApp } from '@creator-flow/shared/apps';
+import { initializeWorkspaceFromApp } from '@sprouty-ai/shared/apps';
 import { app } from 'electron';
 
 const result = initializeWorkspaceFromApp({

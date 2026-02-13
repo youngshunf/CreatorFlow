@@ -39,3 +39,18 @@ export interface RawCloudModel {
 export async function getAvailableModels(): Promise<unknown> {
   return request.get('/llm/models/available')
 }
+
+/**
+ * 用户 LLM 配置
+ */
+export interface UserLlmConfig {
+  default_anthropic_model?: string
+  default_openai_model?: string
+}
+
+/**
+ * 获取用户的 LLM 配置（包括默认模型）
+ */
+export async function getUserLlmConfig(): Promise<UserLlmConfig> {
+  return request.get('/llm/user/config')
+}

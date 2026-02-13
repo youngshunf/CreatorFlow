@@ -224,6 +224,44 @@ const MIGRATIONS: Migration[] = [
       db.exec('DROP TABLE IF EXISTS content_versions');
     },
   },
+  {
+    version: 12,
+    description: '删除 contents.content_type 字段，类型信息由 content_stages 管理',
+    up: (db) => {
+      // SQLite 不支持 DROP COLUMN，需要重建表
+      // 1. 创建新表（无 content_type 字段）
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS contents_new (
+          id                TEXT PRIMARY KEY,
+          project_id        TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          title             TEXT,
+          status            TEXT NOT NULL DEFAULT 'researching',
+          target_platforms  TEXT,
+          pipeline_mode     TEXT DEFAULT 'semi-auto',
+          content_dir_path  TEXT,
+          viral_pattern_id  TEXT,
+          metadata          TEXT,
+          created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2. 复制数据（排除 content_type）
+      db.exec(`
+        INSERT INTO contents_new (id, project_id, title, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata, created_at, updated_at)
+        SELECT id, project_id, title, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata, created_at, updated_at
+        FROM contents
+      `);
+
+      // 3. 删除旧表，重命名新表
+      db.exec('DROP TABLE contents');
+      db.exec('ALTER TABLE contents_new RENAME TO contents');
+
+      // 4. 重建索引
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)');
+    },
+  },
 ];
 
 /**

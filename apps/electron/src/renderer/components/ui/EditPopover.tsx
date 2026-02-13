@@ -81,6 +81,7 @@ export type EditContextKey =
   | 'creator-media-create-project'
   | 'creator-media-edit-profile'
   | 'creator-media-create-content'
+  | 'creator-media-idea-research'
   | 'creator-media-edit-scheduled-task'
 
 /**
@@ -326,7 +327,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
       filePath: `${location}/.sprouty-ai/sources/`,
       context:
         '用户想要添加本地文件夹数据源。' +
-        '首先查阅指南：mcp__creator-flows-docs__SearchSproutyAgents({ query: "filesystem" })。' +
+        '首先查阅指南：mcp__sprouty-ai-docs__SearchSproutyAgents({ query: "filesystem" })。' +
         '本地文件夹是书签——使用 type: "local" 并设置 local.path 字段。' +
         '它们使用现有的 Read、Write、Glob、Grep 工具——不需要 MCP 服务器。' +
         '如不确定，询问用户想连接的文件夹路径。' +
@@ -494,10 +495,13 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         '步骤1 - 生成 UUID 和头像：\n' +
         'PROJECT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n' +
         'PROFILE_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n\n' +
-        '头像处理（avatar_path）：\n' +
-        '- 如果用户提供了图片 URL，直接使用该 URL 作为 avatar_path\n' +
-        '- 否则，根据项目名称和领域生成一个 SVG 头像文件，保存到 .sprouty-ai/avatars/<PROJECT_ID>.svg，avatar_path 填写该相对路径\n' +
-        '- SVG 头像要求：简洁美观，使用领域相关图标，配合适合该领域的渐变背景色，尺寸 128x128\n\n' +
+        '头像处理（avatar_path）- 按优先级依次尝试：\n' +
+        '1. 如果用户提供了账号链接（如小红书、抖音、B站等），访问该链接并提取账号头像 URL，直接使用该 URL 作为 avatar_path\n' +
+        '2. 如果用户提供了产品/品牌信息或链接，尝试获取产品 logo 或品牌 logo URL，使用该 URL 作为 avatar_path\n' +
+        '3. 如果用户提供了图片 URL，直接使用该 URL 作为 avatar_path\n' +
+        '4. 如果以上都没有，才根据项目名称和领域生成一个 SVG 头像文件，保存到 .sprouty-ai/avatars/<PROJECT_ID>.svg，avatar_path 填写该相对路径\n' +
+        '   - SVG 头像要求：简洁美观，使用领域相关图标，配合适合该领域的渐变背景色，尺寸 128x128\n' +
+        '   - 创建 SVG 头像前先确保目录存在：mkdir -p .sprouty-ai/avatars\n\n' +
         '步骤2 - 创建项目并设为活跃：\n' +
         'sqlite3 .sprouty-ai/db/creator.db "UPDATE projects SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE is_active = 1;"\n' +
         'sqlite3 .sprouty-ai/db/creator.db "INSERT INTO projects (id, name, description, platform, platforms, avatar_path, is_active) VALUES (...)"\n\n' +
@@ -513,7 +517,6 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         '重要：\n' +
         '- 所有字段都必须有值，不允许 NULL，请根据用户信息和领域知识智能推断\n' +
         '- 必须使用 sqlite3 命令操作数据库，不要调用任何 MCP 工具\n' +
-        '- 创建 SVG 头像前先确保目录存在：mkdir -p .sprouty-ai/avatars\n' +
         '- 创建完成后告知用户项目已创建成功',
     },
     example: '我是一个小红书美妆博主，主要做护肤品测评',
@@ -559,21 +562,39 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         '   sqlite3 .sprouty-ai/db/creator.db "SELECT id, name, platform FROM projects WHERE is_active = 1;"\n' +
         '2. 生成 UUID：CONTENT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n' +
         '3. 使用 sqlite3 INSERT 创建内容：\n' +
-        '   sqlite3 .sprouty-ai/db/creator.db "INSERT INTO contents (id, project_id, title, content_type, status, body) VALUES (...)"\n\n' +
+        '   sqlite3 .sprouty-ai/db/creator.db "INSERT INTO contents (id, project_id, title, status, body) VALUES (...)"\n\n' +
         '数据库路径：.sprouty-ai/db/creator.db（相对于工作目录）\n\n' +
         '字段说明：\n' +
-        '- content_type 取值：article / short-video / video / image-text / thread / story\n' +
-        '- status 取值：idea / creating / review / scheduled / published\n' +
+        '- status 取值：researching / scripting / creating / adapting / scheduled / published / archived\n' +
         '- body：内容正文（Markdown 格式）\n' +
-        '- 可选字段：hook, outline, tags, scheduled_at, metadata\n\n' +
+        '- 可选字段：target_platforms, pipeline_mode, metadata\n\n' +
         '重要：\n' +
         '- 必须使用 sqlite3 命令操作数据库\n' +
-        '- 根据用户描述智能推断 content_type\n' +
         '- 创建完成后告知用户',
     },
     example: '写一篇关于防晒霜选购指南的小红书笔记',
     overridePlaceholder: '描述你想创建的内容',
     model: 'haiku',
+    systemPromptPreset: 'default',
+    inlineExecution: true,
+  }),
+
+  'creator-media-idea-research': (location) => ({
+    context: {
+      label: '灵感调研',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '你是一个内容创作助手。用户会输入一个灵感描述，你需要：\n' +
+        '1. 理解用户的灵感意图\n' +
+        '2. 调用 idea-researcher skill 进行深度调研\n' +
+        '3. 生成 3-5 个选题分析报告\n' +
+        '4. 每个选题创建对应的 content 记录（status=\'scripting\'）和 content_stages 记录\n\n' +
+        '工作区根目录: ' + location + '\n\n' +
+        '请直接调用 idea-researcher skill 开始工作。',
+    },
+    example: '最近看到很多人在讨论 AI 绘画工具，我想做一期关于 Midjourney 使用技巧的内容',
+    overridePlaceholder: '描述你的灵感，AI 将帮你调研相关热点并生成选题分析...',
+    model: 'sonnet',
     systemPromptPreset: 'default',
     inlineExecution: true,
   }),

@@ -7,37 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components/ui/select'
-import { Monitor, Smartphone, Square } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type { ContentType, ContentStatus, PipelineMode } from '@sprouty-ai/shared/db/types'
+import type { ContentStatus, PipelineMode } from '@sprouty-ai/shared/db/types'
 import { PLATFORM_LIST } from '@sprouty-ai/shared/db/types'
-import { VideoTemplatePicker } from './VideoTemplatePicker'
-
-const CONTENT_TYPES: { value: ContentType; label: string }[] = [
-  { value: 'image-text', label: '图文' },
-  { value: 'video', label: '视频' },
-  { value: 'short-video', label: '短视频' },
-  { value: 'article', label: '文章' },
-  { value: 'live', label: '直播' },
-]
 
 const PLATFORM_OPTIONS = PLATFORM_LIST.map(p => ({ value: p.id, label: p.label }))
-
-/** 分辨率映射 */
-const ASPECT_RATIO_MAP: Record<string, { width: number; height: number }> = {
-  '16:9': { width: 1920, height: 1080 },
-  '9:16': { width: 1080, height: 1920 },
-  '1:1': { width: 1080, height: 1080 },
-}
-
-const ASPECT_RATIO_OPTIONS = [
-  { value: '16:9', label: '横屏 16:9', icon: Monitor },
-  { value: '9:16', label: '竖屏 9:16', icon: Smartphone },
-  { value: '1:1', label: '方形 1:1', icon: Square },
-] as const
 
 interface CreateContentDialogProps {
   open: boolean
@@ -49,7 +22,6 @@ interface CreateContentDialogProps {
     source_topic_id: null
     script_path: null
     status: ContentStatus
-    content_type: ContentType | null
     target_platforms: string | null
     pipeline_mode: PipelineMode
     pipeline_state: null
@@ -67,24 +39,14 @@ export function CreateContentDialog({ open, onOpenChange, onCreateContent }: Cre
 
   const [title, setTitle] = useState('')
   const [topic, setTopic] = useState('')
-  const [contentType, setContentType] = useState<ContentType>('image-text')
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [scheduledAt, setScheduledAt] = useState('')
-
-  // 视频相关状态
-  const [videoTemplateId, setVideoTemplateId] = useState<string | undefined>()
-  const [videoAspectRatio, setVideoAspectRatio] = useState<string>('16:9')
-
-  const isVideoType = contentType === 'video' || contentType === 'short-video'
 
   const reset = () => {
     setTitle('')
     setTopic('')
-    setContentType('image-text')
     setSelectedPlatforms([])
     setScheduledAt('')
-    setVideoTemplateId(undefined)
-    setVideoAspectRatio('16:9')
     setSaving(false)
   }
 
@@ -103,34 +65,21 @@ export function CreateContentDialog({ open, onOpenChange, onCreateContent }: Cre
     if (!title.trim()) return
     setSaving(true)
     try {
-      // 构建视频元数据
-      let metadata: string | null = null
-      if (isVideoType && (videoTemplateId || videoAspectRatio)) {
-        const resolution = ASPECT_RATIO_MAP[videoAspectRatio] ?? ASPECT_RATIO_MAP['16:9']
-        metadata = JSON.stringify({
-          videoTemplateId: videoTemplateId ?? null,
-          aspectRatio: videoAspectRatio,
-          width: resolution.width,
-          height: resolution.height,
-        })
-      }
-
       await onCreateContent({
         title: title.trim(),
         topic: topic.trim() || null,
         topic_source: null,
         source_topic_id: null,
         script_path: null,
-        status: 'idea',
-        content_type: contentType,
-        target_platforms: selectedPlatforms.length > 0 ? selectedPlatforms.join(',') : null,
+        status: 'researching',
+        target_platforms: selectedPlatforms.length > 0 ? JSON.stringify(selectedPlatforms) : null,
         pipeline_mode: 'manual',
         pipeline_state: null,
         viral_pattern_id: null,
         tags: null,
         scheduled_at: scheduledAt || null,
         files: null,
-        metadata,
+        metadata: null,
       })
       handleClose(false)
     } finally {
@@ -166,59 +115,6 @@ export function CreateContentDialog({ open, onOpenChange, onCreateContent }: Cre
               rows={2}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label>{t('内容类型')}</Label>
-            <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-modal">
-                {CONTENT_TYPES.map((ct) => (
-                  <SelectItem key={ct.value} value={ct.value}>{t(ct.label)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 视频模板和分辨率选择（仅视频类型显示） */}
-          {isVideoType && (
-            <>
-              <div className="space-y-2">
-                <Label>{t('视频模板')}</Label>
-                <VideoTemplatePicker
-                  selected={videoTemplateId}
-                  onSelect={setVideoTemplateId}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('分辨率')}</Label>
-                <div className="flex gap-2">
-                  {ASPECT_RATIO_OPTIONS.map((opt) => {
-                    const Icon = opt.icon
-                    const isActive = videoAspectRatio === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setVideoAspectRatio(opt.value)}
-                        className={cn(
-                          'flex-1 inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors border',
-                          isActive
-                            ? 'bg-foreground text-background border-foreground'
-                            : 'bg-muted/60 text-muted-foreground border-transparent hover:bg-muted'
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        {opt.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </>
-          )}
 
           <div className="space-y-2">
             <Label>{t('目标平台')}</Label>

@@ -15,10 +15,10 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CreatorFlow Electron                      │
+│                    Sprouty AI Electron                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │ File Manager│  │   webview   │  │    AI Service       │  │
-│  │  (Chonky)   │  │ OnlyOffice  │  │  (CreatorFlowAgent)       │  │
+│  │  (Chonky)   │  │ OnlyOffice  │  │  (SproutyAgent)       │  │
 │  │             │  │   Editor    │  │                     │  │
 │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
 │         │                │                     │             │
@@ -526,7 +526,7 @@ onlyoffice-ai-plugin/
 
 ```json
 {
-  "name": "CreatorFlow AI",
+  "name": "Sprouty AI AI",
   "guid": "asc.{CF-AI-PLUGIN-GUID}",
   "version": "1.0.0",
   "variations": [
@@ -652,10 +652,10 @@ function renderActionMenu() {
 
 ```typescript
 // apps/electron/src/main/onlyoffice/ai-handler.ts
-import { CreatorFlowAgent } from '@creator-flow/shared';
+import { SproutyAgent } from '@sprouty-ai/shared';
 
 export async function handleOnlyOfficeAI(
-  agent: CreatorFlowAgent,
+  agent: SproutyAgent,
   action: string,
   text: string,
   customPrompt?: string

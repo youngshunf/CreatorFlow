@@ -25,7 +25,7 @@ export interface OAuthCallbacks {
 const CALLBACK_PORT_START = 8914;
 const CALLBACK_PORT_END = 8924;
 const CALLBACK_PATH = '/oauth/callback';
-const CLIENT_NAME = 'CreatorFlow';
+const CLIENT_NAME = 'Sprouty AI';
 
 // Generate PKCE code verifier and challenge
 function generatePKCE(): { verifier: string; challenge: string } {
@@ -256,7 +256,7 @@ export class CraftOAuth {
       }
     } else {
       // Use a default client ID for public clients
-      clientId = 'creator-flow';
+      clientId = 'sprouty-ai';
       this.callbacks.onStatus(`Using default client ID: ${clientId}`);
     }
 

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@sprouty-ai/ui"
-import { CreatorFlowSymbol } from "@/components/icons/CreatorFlowSymbol"
+import { SproutySymbol } from "@/components/icons/SproutySymbol"
 import { StepFormLayout } from "./primitives"
 
 interface ReauthScreenProps {

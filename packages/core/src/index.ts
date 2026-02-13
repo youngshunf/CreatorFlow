@@ -1,7 +1,7 @@
 /**
  * @sprouty-ai/core
  *
- * Core types and utilities for CreatorFlow.
+ * Core types and utilities for Sprouty AI.
  *
  * NOTE: This package currently only exports types and utilities.
  * Storage, credentials, agent, auth, mcp, and prompts are still

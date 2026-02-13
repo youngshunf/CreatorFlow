@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/context/LocaleContext';
-import type { VideoProject } from '@creator-flow/video';
+import type { VideoProject } from '@sprouty-ai/video';
 
 export interface VideoProjectListProps {
   /** Workspace ID to list projects from */

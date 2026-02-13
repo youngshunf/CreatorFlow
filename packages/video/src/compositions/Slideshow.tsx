@@ -14,17 +14,19 @@ import {
   interpolate,
   spring,
   Img,
+  staticFile,
 } from 'remotion';
 import type { TemplateProps } from '../templates/types';
 
 /**
  * Props for Slideshow composition
  */
-export interface SlideshowProps extends TemplateProps {
+export type SlideshowProps = TemplateProps & {
   /** Array of image URLs or items with images */
   items?: Array<{
     title: string;
     description?: string;
+    /** Image path relative to public/ directory (e.g., 'images/slide1.jpg') */
     image?: string;
   }>;
   /** Duration of each slide in frames */
@@ -35,7 +37,7 @@ export interface SlideshowProps extends TemplateProps {
   transitionStyle?: 'fade' | 'slide' | 'zoom' | 'crossfade';
   /** Show slide titles */
   showTitles?: boolean;
-}
+};
 
 /**
  * Default colors for the composition
@@ -214,7 +216,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       {/* Background Image */}
       {slide.image ? (
         <Img
-          src={slide.image}
+          src={staticFile(slide.image)}
           style={{
             width: '100%',
             height: '100%',
@@ -315,8 +317,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
       {/* Optional Logo */}
       {logo && (
-        <img
-          src={logo}
+        <Img
+          src={staticFile(logo)}
           alt="Logo"
           style={{
             position: 'absolute',

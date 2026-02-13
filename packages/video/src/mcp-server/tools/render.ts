@@ -98,7 +98,7 @@ async function handleRender(
       },
       (progress) => {
         // 进度回调 - 在日志中输出
-        console.log(
+        console.error(
           `[video_render] Progress: ${progress.status} - ${progress.progress}%`
         );
       }

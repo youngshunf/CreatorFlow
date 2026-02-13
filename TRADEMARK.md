@@ -1,21 +1,21 @@
 # Trademark Policy
 
-This trademark policy governs the use of the "Craft" and "CreatorFlow" names, logos, and branding in connection with the CreatorFlow open source project.
+This trademark policy governs the use of the "Craft" and "Sprouty AI" names, logos, and branding in connection with the Sprouty AI open source project.
 
 ## Trademarks
 
 The following are trademarks of Craft Docs Ltd.:
 
 - **Craft** (word mark)
-- **CreatorFlow** (word mark)
+- **Sprouty AI** (word mark)
 - The Craft logo and icon
-- The CreatorFlow logo and icon
+- The Sprouty AI logo and icon
 
 ## What You Can Do
 
 ### Use the Code Freely
 
-The CreatorFlow source code is licensed under the Apache License 2.0. You are free to:
+The Sprouty AI source code is licensed under the Apache License 2.0. You are free to:
 
 - Use, modify, and distribute the code
 - Create derivative works
@@ -25,14 +25,14 @@ The CreatorFlow source code is licensed under the Apache License 2.0. You are fr
 
 You may make accurate, factual statements about your relationship to the project:
 
-- "Based on CreatorFlow"
-- "Built with CreatorFlow technology"
-- "Compatible with CreatorFlow"
-- "Fork of CreatorFlow"
+- "Based on Sprouty AI"
+- "Built with Sprouty AI technology"
+- "Compatible with Sprouty AI"
+- "Fork of Sprouty AI"
 
 ### Contribute to the Project
 
-Contributors to the official CreatorFlow repository may use the trademarks when discussing their contributions.
+Contributors to the official Sprouty AI repository may use the trademarks when discussing their contributions.
 
 ## What You Cannot Do
 
@@ -49,7 +49,7 @@ If you create a fork or derivative work, you **must**:
 
 You may not:
 
-- Use "Craft" or "CreatorFlow" as your product name
+- Use "Craft" or "Sprouty AI" as your product name
 - Use the Craft logo as your application icon
 - Suggest that your fork is the official version
 - Imply that Craft Docs Ltd. or Craft endorses your product
@@ -59,8 +59,8 @@ You may not:
 You may not use the trademarks in any way that:
 
 - Suggests your product is created by or affiliated with Craft Docs Ltd.
-- Could cause confusion between your product and the official CreatorFlow
-- Disparages Craft Docs Ltd. or the CreatorFlow project
+- Could cause confusion between your product and the official Sprouty AI
+- Disparages Craft Docs Ltd. or the Sprouty AI project
 
 ## Branding Locations
 
@@ -76,15 +76,15 @@ For those creating forks, the following files contain branding that should be up
 
 ### Acceptable
 
-- "MyAgent - based on CreatorFlow"
-- "This project is a fork of CreatorFlow"
-- "Compatible with the CreatorFlow ecosystem"
+- "MyAgent - based on Sprouty AI"
+- "This project is a fork of Sprouty AI"
+- "Compatible with the Sprouty AI ecosystem"
 
 ### Not Acceptable
 
-- "CreatorFlow Pro"
-- "CreatorFlow for Linux"
-- "Better CreatorFlow"
+- "Sprouty AI Pro"
+- "Sprouty AI for Linux"
+- "Better Sprouty AI"
 - Using the Craft logo for your fork
 
 ## Questions

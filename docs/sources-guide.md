@@ -1,6 +1,6 @@
 # Sources 数据源配置指南
 
-Sources（数据源）是 CreatorFlow 中连接外部数据的核心机制。通过配置数据源，AI 助手可以访问各种外部服务和本地文件，从而提供更强大的辅助能力。
+Sources（数据源）是 Sprouty AI 中连接外部数据的核心机制。通过配置数据源，AI 助手可以访问各种外部服务和本地文件，从而提供更强大的辅助能力。
 
 ## 概述
 
@@ -570,7 +570,7 @@ bundled-apps/app-creator-media/sources/
 
 ## 凭证管理
 
-数据源的敏感凭证（API Key、Token 等）不存储在 config.json 中，而是通过 CreatorFlow 的加密凭证系统管理。
+数据源的敏感凭证（API Key、Token 等）不存储在 config.json 中，而是通过 Sprouty AI 的加密凭证系统管理。
 
 ### 凭证存储位置
 
@@ -620,5 +620,5 @@ bundled-apps/app-creator-media/sources/
 ## 参考资料
 
 - [MCP 协议规范](https://modelcontextprotocol.io/)
-- [CreatorFlow 架构文档](./architecture.md)
+- [Sprouty AI 架构文档](./architecture.md)
 - [应用开发指南](./app-development.md)

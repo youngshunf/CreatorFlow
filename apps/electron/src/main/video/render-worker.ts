@@ -20,7 +20,7 @@ import type {
   RenderProgress,
   OutputFormat,
   QualityPreset,
-} from '@creator-flow/video';
+} from '@sprouty-ai/video';
 import type { BunPathResolver } from '../bun-path';
 import { createBunPathResolver } from '../bun-path';
 import log from '../logger';
@@ -38,7 +38,7 @@ const renderLog = log.scope('video:render');
 export type RenderScriptQualityPreset = 'draft' | 'preview' | 'production' | 'high';
 
 /**
- * 将 @creator-flow/video 的 QualityPreset 映射到渲染脚本的质量预设
+ * 将 @sprouty-ai/video 的 QualityPreset 映射到渲染脚本的质量预设
  */
 function mapQualityPreset(quality: QualityPreset): RenderScriptQualityPreset {
   switch (quality) {
@@ -178,7 +178,7 @@ export class RenderWorker implements IRenderWorker {
     }
 
     // 开发模式：使用相对于项目根目录的路径
-    // 从 apps/electron/src/main/video/ 向上找到 CreatorFlow 根目录
+    // 从 apps/electron/src/main/video/ 向上找到项目根目录
     const devPath = join(__dirname, '..', '..', '..', '..', 'mcp-video', 'src', 'render-script.ts');
     if (existsSync(devPath)) {
       return devPath;

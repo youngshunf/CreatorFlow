@@ -1,16 +1,16 @@
 import type { ComponentEntry } from './types'
-import { CreatorFlowLogo } from '@/components/icons/CreatorFlowLogo'
-import { CreatorFlowSymbol } from '@/components/icons/CreatorFlowSymbol'
+import { SproutyLogo } from '@/components/icons/SproutyLogo'
+import { SproutySymbol } from '@/components/icons/SproutySymbol'
 import { PanelLeftRounded } from '@/components/icons/PanelLeftRounded'
 import { SquarePenRounded } from '@/components/icons/SquarePenRounded'
 
 export const iconComponents: ComponentEntry[] = [
   {
     id: 'creator-flows-logo',
-    name: 'CreatorFlowLogo',
+    name: 'SproutyLogo',
     category: 'Icons',
     description: 'Full 智小芽 branding logo with text',
-    component: CreatorFlowLogo,
+    component: SproutyLogo,
     props: [
       {
         name: 'className',
@@ -27,10 +27,10 @@ export const iconComponents: ComponentEntry[] = [
   },
   {
     id: 'creator-flows-symbol',
-    name: 'CreatorFlowSymbol',
+    name: 'SproutySymbol',
     category: 'Icons',
     description: '智小芽 seed sprout symbol icon (brand gradient: #06B6D4 → #8B5CF6)',
-    component: CreatorFlowSymbol,
+    component: SproutySymbol,
     props: [
       {
         name: 'className',

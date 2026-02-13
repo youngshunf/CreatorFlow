@@ -171,12 +171,12 @@ export function clearRenderStatus(workspacePath: string, projectName: string): v
  * 注册渲染状态工具到 FastMCP 服务器
  */
 export function registerRenderStatusTools(mcp: FastMCP): void {
-  mcp.tool(
-    'video_get_render_status',
-    '获取视频渲染的当前状态和进度',
-    GetRenderStatusInputSchema,
-    handleGetRenderStatus
-  );
+  mcp.addTool({
+    name: 'video_get_render_status',
+    description: '获取视频渲染的当前状态和进度',
+    parameters: GetRenderStatusInputSchema,
+    execute: handleGetRenderStatus,
+  });
 }
 
 // 导出处理函数供测试使用

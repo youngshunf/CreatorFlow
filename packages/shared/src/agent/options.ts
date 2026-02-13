@@ -191,7 +191,7 @@ function ensureSdkSkillsDir(): void {
  * Ensure the SDK can discover workspace skills stored in .sprouty-ai/skills/.
  *
  * The Claude Agent SDK hardcodes skill discovery to {pluginPath}/.claude/skills/.
- * CreatorFlow stores skills in {workspace}/.sprouty-ai/skills/ instead.
+ * Sprouty AI stores skills in {workspace}/.sprouty-ai/skills/ instead.
  * This function creates a symlink: .claude/skills → .sprouty-ai/skills
  * so the SDK's native Skill tool can find and execute workspace skills.
  *
@@ -303,7 +303,7 @@ export function getDefaultOptions(): Partial<Options> {
     }
 
     if (typeof CREATOR_FLOW_CLI_VERSION !== 'undefined' && CREATOR_FLOW_CLI_VERSION != null) {
-        const baseDir = join(homedir(), '.local', 'share', 'creator-flow', 'versions', CREATOR_FLOW_CLI_VERSION);
+        const baseDir = join(homedir(), '.local', 'share', 'sprouty-ai', 'versions', CREATOR_FLOW_CLI_VERSION);
         return {
             pathToClaudeCodeExecutable: join(baseDir, 'claude-agent-sdk', 'cli.js'),
             // Use the compiled binary itself as the runtime via BUN_BE_BUN=1

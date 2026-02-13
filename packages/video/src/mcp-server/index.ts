@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * MCP Video Server 入口文件
  *
@@ -21,6 +20,10 @@
  */
 
 import { runServer, DEFAULT_CONFIG, type ServerConfig } from './server';
+import { applyStdioCompatPatch } from './utils/stdio-compat-patch';
+
+// 应用 stdio 协议兼容补丁（支持 Content-Length 头协议 + 换行分隔 JSON 协议）
+applyStdioCompatPatch();
 
 // ============================================================================
 // 命令行参数解析
@@ -31,7 +34,7 @@ import { runServer, DEFAULT_CONFIG, type ServerConfig } from './server';
  */
 function showHelp(): void {
   console.log(`
-CreatorFlow Video MCP Server
+Sprouty AI Video MCP Server
 
 Usage:
   bun run src/index.ts [options]
@@ -56,9 +59,9 @@ Examples:
 Configuration for Claude Desktop (claude_desktop_config.json):
   {
     "mcpServers": {
-      "creator-flow-video": {
+      "sprouty-ai-video": {
         "command": "bun",
-        "args": ["run", "/path/to/CreatorFlow/apps/mcp-video/src/index.ts"]
+        "args": ["run", "/path/to/SproutyAI/apps/mcp-video/src/index.ts"]
       }
     }
   }

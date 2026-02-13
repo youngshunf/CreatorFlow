@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useT } from '@/context/LocaleContext'
+import { useActiveWorkspace } from '@/context/AppShellContext'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
@@ -139,6 +140,9 @@ interface ProjectSettingsDialogProps {
 
 export function ProjectSettingsDialog({ open, onOpenChange, project, profile, onUpdate, onDelete }: ProjectSettingsDialogProps) {
   const t = useT()
+  const workspace = useActiveWorkspace()
+  const wsRoot = workspace?.rootPath || ''
+
   const [mode, setMode] = useState<'manual' | 'ai'>('ai')
   const [aiInput, setAiInput] = useState('')
   const [name, setName] = useState(project.name)
@@ -148,6 +152,21 @@ export function ProjectSettingsDialog({ open, onOpenChange, project, profile, on
   const [avatarPreview, setAvatarPreview] = useState(project.avatar_path || '')
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // 构建头像 URL - 如果是相对路径，转换为 localfile:// 协议
+  const getAvatarUrl = (avatarPath: string) => {
+    if (!avatarPath) return ''
+    // 如果是 http/https URL，直接返回
+    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+      return avatarPath
+    }
+    // 如果是相对路径，构建 localfile:// URL
+    if (avatarPath.startsWith('.sprouty-ai/')) {
+      const absolutePath = `${wsRoot}/${avatarPath}`
+      return `localfile://file/${encodeURIComponent(absolutePath)}`
+    }
+    return avatarPath
+  }
 
   useEffect(() => {
     setName(project.name)
@@ -290,7 +309,7 @@ export function ProjectSettingsDialog({ open, onOpenChange, project, profile, on
             <div className="flex items-center gap-3">
               <label className="relative w-14 h-14 rounded-full bg-muted/60 overflow-hidden cursor-pointer group flex-shrink-0">
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                  <img src={getAvatarUrl(avatarPreview)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

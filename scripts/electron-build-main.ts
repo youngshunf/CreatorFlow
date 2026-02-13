@@ -17,6 +17,8 @@ const BRIDGE_SERVER_OUTPUT = join(BRIDGE_SERVER_DIR, "dist/index.js");
 const SESSION_TOOLS_CORE_DIR = join(ROOT_DIR, "packages/session-tools-core");
 const SESSION_SERVER_DIR = join(ROOT_DIR, "packages/session-mcp-server");
 const SESSION_SERVER_OUTPUT = join(SESSION_SERVER_DIR, "dist/index.js");
+const VIDEO_MCP_ENTRY = join(ROOT_DIR, "packages/video/src/mcp-server/index.ts");
+const VIDEO_MCP_OUTPUT = join(ROOT_DIR, "apps/electron/resources/video-mcp-server/index.cjs");
 
 // Load .env file if it exists
 function loadEnvFile(): void {
@@ -251,6 +253,59 @@ async function buildSessionServer(): Promise<void> {
   console.log("✅ Session server built successfully");
 }
 
+// Build the Video MCP Server (bundled single-file, like bridge/session servers)
+async function buildVideoMcpServer(): Promise<void> {
+  console.log("🎬 Building Video MCP Server...");
+
+  // Ensure output directory exists
+  const outDir = join(VIDEO_MCP_OUTPUT, "..");
+  if (!existsSync(outDir)) {
+    mkdirSync(outDir, { recursive: true });
+  }
+
+  const proc = spawn({
+    cmd: [
+      "bun", "run", "esbuild",
+      VIDEO_MCP_ENTRY,
+      "--bundle",
+      "--platform=node",
+      "--format=cjs",
+      "--outfile=" + VIDEO_MCP_OUTPUT,
+      "--banner:js=#!/usr/bin/env node\nif(typeof globalThis.__import_meta_url__==='undefined'){const{pathToFileURL}=require('url');globalThis.__import_meta_url__=pathToFileURL(__filename).href;}",
+      "--define:import.meta.url=globalThis.__import_meta_url__",
+      // Remotion packages use dynamic imports at render time - not needed for MCP server startup
+      "--external:@remotion/*",
+      "--external:remotion",
+      "--external:react",
+      "--external:react-dom",
+      // Optional peer deps of fastmcp's xsschema
+      "--external:@valibot/to-json-schema",
+      "--external:effect",
+      "--external:sury",
+      // Alias zod-to-json-schema to our Zod v4 compatible shim
+      // (zod-to-json-schema v3 doesn't support Zod v4's internal structure)
+      "--alias:zod-to-json-schema=./packages/video/src/mcp-server/utils/zod-to-json-schema-shim.ts",
+    ],
+    cwd: ROOT_DIR,
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+
+  const exitCode = await proc.exited;
+
+  if (exitCode !== 0) {
+    console.error("❌ Video MCP server build failed with exit code", exitCode);
+    process.exit(exitCode);
+  }
+
+  if (!existsSync(VIDEO_MCP_OUTPUT)) {
+    console.error("❌ Video MCP server output not found at", VIDEO_MCP_OUTPUT);
+    process.exit(1);
+  }
+
+  console.log("✅ Video MCP server built successfully");
+}
+
 async function main(): Promise<void> {
   loadEnvFile();
 
@@ -268,6 +323,9 @@ async function main(): Promise<void> {
   // Build session server (provides session-scoped tools like SubmitPlan for Codex sessions)
   // Depends on session-tools-core being built first
   await buildSessionServer();
+
+  // Build video MCP server (bundled single-file for stdio MCP)
+  await buildVideoMcpServer();
 
   // Build Copilot network interceptor (CJS bundle for Node.js --require)
   await buildCopilotInterceptor();

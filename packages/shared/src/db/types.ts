@@ -53,7 +53,6 @@ export const PLATFORM_IDS: string = PLATFORM_LIST.map(p => p.id).join(' / ')
 
 /** 内容状态流转 */
 export type ContentStatus =
-  | 'idea'
   | 'researching'
   | 'scripting'
   | 'creating'
@@ -225,7 +224,6 @@ export interface Content {
   id: string;
   project_id: string;
   title: string | null;
-  content_type: ContentType | null;
   status: ContentStatus;
   target_platforms: string | null;  // JSON: string[]
   pipeline_mode: PipelineMode;
@@ -349,7 +347,15 @@ export type UpdateReviewTask = Partial<Omit<ReviewTask, 'id' | 'publish_record_i
 // ============================================================
 
 /** 内容阶段类型 */
-export type ContentStage = 'topic_recommend' | 'research' | 'script' | 'draft' | 'platform_adapt';
+export type ContentStage =
+  | 'topic_recommend'
+  | 'research'
+  | 'script_article'
+  | 'script_video'
+  | 'draft_article'
+  | 'draft_video'
+  | 'platform_adapt_article'
+  | 'platform_adapt_video';
 
 /** 阶段产出状态 */
 export type ContentStageStatus = 'draft' | 'completed' | 'revised';
@@ -448,7 +454,6 @@ export interface Draft {
   project_id: string;
   title: string | null;
   content: string;
-  content_type: ContentType | null;
   media: string;                    // JSON: string[]
   tags: string | null;              // JSON: string[]
   target_platforms: string | null;  // JSON: Platform[]

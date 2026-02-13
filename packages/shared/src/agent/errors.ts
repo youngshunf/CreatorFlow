@@ -155,7 +155,7 @@ const ERROR_DEFINITIONS: Record<ErrorCode, Omit<AgentError, 'code' | 'originalEr
   },
   model_no_tool_support: {
     title: '模型不支持工具',
-    message: '所选模型不支持工具/函数调用，而 CreatorFlow 需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。',
+    message: '所选模型不支持工具/函数调用，而智小芽需要此功能。请选择支持工具的模型（如 Claude、GPT-4、Gemini）。',
     actions: [
       { key: 's', label: '更改模型', command: '/settings', action: 'settings' },
     ],
@@ -317,7 +317,7 @@ export function parseError(error: unknown): AgentError {
       return {
         code,
         ...definition,
-        message: `模型 "${modelMatch[1]}" 不支持工具/函数调用，而 CreatorFlow 需要此功能。请在设置中选择支持工具的模型。`,
+        message: `模型 "${modelMatch[1]}" 不支持工具/函数调用，而智小芽需要此功能。请在设置中选择支持工具的模型。`,
         originalError: errorMessage,
       };
     }

@@ -1,19 +1,19 @@
-# @creator-flow/core
+# @sprouty-ai/core
 
-Shared TypeScript types and utilities for CreatorFlow applications.
+Shared TypeScript types and utilities for Sprouty AI applications.
 
 ## Installation
 
 ```bash
 # In a workspace package
-bun add @creator-flow/core
+bun add @sprouty-ai/core
 ```
 
 Or add to `package.json`:
 ```json
 {
   "dependencies": {
-    "@creator-flow/core": "workspace:*"
+    "@sprouty-ai/core": "workspace:*"
   }
 }
 ```
@@ -28,10 +28,10 @@ import type {
   Message,
   TokenUsage,
   AgentEvent,
-} from '@creator-flow/core';
+} from '@sprouty-ai/core';
 
 // Import utilities
-import { generateMessageId, debug } from '@creator-flow/core';
+import { generateMessageId, debug } from '@sprouty-ai/core';
 ```
 
 ## Exported Types
@@ -54,7 +54,7 @@ import { generateMessageId, debug } from '@creator-flow/core';
 - `MessageRole` - Message type enum
 - `ToolStatus` - Tool execution state
 - `TokenUsage` - Token counts and cost
-- `AgentEvent` - Events from CreatorFlowAgent
+- `AgentEvent` - Events from SproutyAgent
 - `TypedError` - Structured error info
 - `Question` - AskUserQuestion format
 
