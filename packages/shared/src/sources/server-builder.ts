@@ -11,12 +11,107 @@
  * - SourceServerBuilder: handles server configuration
  */
 
+import { execSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { LoadedSource, ApiConfig } from './types.ts';
 import type { ApiCredential } from './credential-manager.ts';
 import { isSourceUsable } from './storage.ts';
 import { createApiServer, type SummarizeCallback } from './api-tools.ts';
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import { debug } from '../utils/debug.ts';
+
+/**
+ * 命令解析器类型 — 将命令名（如 'bun'）解析为可执行文件的绝对路径。
+ * 由宿主环境（如 Electron 主进程）注入，以覆盖默认的 which 查找逻辑。
+ */
+export type CommandResolver = (command: string) => string;
+
+/**
+ * 工作目录解析器类型 — 将 cwd 配置（可能含 'app:' 前缀）解析为实际路径。
+ * 由宿主环境注入，以正确处理 Electron 特有的路径前缀。
+ */
+export type CwdResolver = (cwd: string | undefined, workspaceRootPath: string) => string | undefined;
+
+/**
+ * Well-known install locations for common runtimes.
+ * Used as fallback when `which` fails (e.g. Electron subprocess with limited PATH).
+ */
+const WELL_KNOWN_PATHS: Record<string, string[]> = {
+  bun: [
+    join(homedir(), '.bun', 'bin', 'bun'),
+    '/usr/local/bin/bun',
+    '/opt/homebrew/bin/bun',
+  ],
+  node: [
+    '/usr/local/bin/node',
+    '/opt/homebrew/bin/node',
+    join(homedir(), '.nvm', 'versions', 'node', 'current', 'bin', 'node'),
+  ],
+  npx: [
+    '/usr/local/bin/npx',
+    '/opt/homebrew/bin/npx',
+  ],
+  deno: [
+    join(homedir(), '.deno', 'bin', 'deno'),
+    '/usr/local/bin/deno',
+    '/opt/homebrew/bin/deno',
+  ],
+};
+
+/**
+ * Resolve a command name to its absolute path.
+ * Returns the original command if already absolute or resolution fails.
+ *
+ * Strategy:
+ * 1. If already an absolute path, return as-is
+ * 2. Try `which` to find it on PATH
+ * 3. Check well-known install locations
+ */
+export function resolveCommand(command: string): string {
+  // Already absolute
+  if (command.startsWith('/')) return command;
+
+  // Try `which`
+  try {
+    const resolved = execSync(`which ${command}`, {
+      encoding: 'utf-8',
+      timeout: 3000,
+      env: {
+        ...process.env,
+        // Extend PATH with common locations Electron might miss
+        PATH: [
+          process.env.PATH,
+          join(homedir(), '.bun', 'bin'),
+          join(homedir(), '.deno', 'bin'),
+          '/usr/local/bin',
+          '/opt/homebrew/bin',
+        ].filter(Boolean).join(':'),
+      },
+    }).trim();
+    if (resolved) {
+      debug(`[resolveCommand] Resolved '${command}' → '${resolved}' via which`);
+      return resolved;
+    }
+  } catch {
+    // which failed, try well-known paths
+  }
+
+  // Check well-known paths
+  const candidates = WELL_KNOWN_PATHS[command];
+  if (candidates) {
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        debug(`[resolveCommand] Resolved '${command}' → '${candidate}' via well-known path`);
+        return candidate;
+      }
+    }
+  }
+
+  debug(`[resolveCommand] Could not resolve '${command}', using as-is`);
+  return command;
+}
 
 /**
  * Standard error messages for server build failures.
@@ -58,6 +153,38 @@ export interface BuiltServers {
 }
 
 /**
+ * Resolve cwd path for stdio MCP servers.
+ * Supports special prefixes:
+ * - 'app:' - Relative to app installation directory
+ * - Absolute path - Used as-is
+ * - Relative path - Relative to workspace root
+ */
+export function resolveCwd(cwd: string | undefined, workspaceRootPath: string): string | undefined {
+  if (!cwd) return undefined;
+
+  // app: prefix - resolve relative to app installation directory
+  if (cwd.startsWith('app:')) {
+    const relativePath = cwd.slice(4); // Remove 'app:' prefix
+    // In Electron, __dirname points to app.asar or app/ in development
+    // We need to get the actual app root
+    const appRoot = process.resourcesPath || join(__dirname, '..', '..');
+    const resolved = join(appRoot, relativePath);
+    debug(`[resolveCwd] Resolved 'app:${relativePath}' → '${resolved}'`);
+    return resolved;
+  }
+
+  // Absolute path - use as-is
+  if (cwd.startsWith('/')) {
+    return cwd;
+  }
+
+  // Relative path - resolve relative to workspace root
+  const resolved = join(workspaceRootPath, cwd);
+  debug(`[resolveCwd] Resolved relative path '${cwd}' → '${resolved}'`);
+  return resolved;
+}
+
+/**
  * SourceServerBuilder - builds server configs from sources
  *
  * Usage:
@@ -75,6 +202,27 @@ export interface BuiltServers {
  * ```
  */
 export class SourceServerBuilder {
+  private commandResolver: CommandResolver;
+  private cwdResolver: CwdResolver;
+
+  constructor(options?: {
+    commandResolver?: CommandResolver;
+    cwdResolver?: CwdResolver;
+  }) {
+    this.commandResolver = options?.commandResolver ?? resolveCommand;
+    this.cwdResolver = options?.cwdResolver ?? resolveCwd;
+  }
+
+  /** Resolve a command name using the injected resolver (e.g. 'bun' → absolute path). */
+  resolveCommand(command: string): string {
+    return this.commandResolver(command);
+  }
+
+  /** Resolve a cwd path using the injected resolver (handles 'app:' prefix etc.). */
+  resolveCwd(cwd: string | undefined, workspaceRootPath: string): string | undefined {
+    return this.cwdResolver(cwd, workspaceRootPath);
+  }
+
   /**
    * Build MCP server config from a source
    *
@@ -94,10 +242,24 @@ export class SourceServerBuilder {
         debug(`[SourceServerBuilder] Stdio source ${source.config.slug} missing command`);
         return null;
       }
+      const resolvedCommand = this.commandResolver(mcp.command);
+      const resolvedCwd = this.cwdResolver(mcp.cwd, source.workspaceRootPath);
+
+      // Claude CLI's Zod schema for stdio MCP servers does NOT include 'cwd',
+      // so it gets stripped during validation. To work around this, resolve
+      // relative args to absolute paths using the resolved cwd.
+      let resolvedArgs = mcp.args;
+      if (resolvedCwd && resolvedArgs?.length) {
+        resolvedArgs = resolvedArgs.map((arg) =>
+          arg.startsWith('/') || arg.startsWith('-') ? arg : join(resolvedCwd, arg)
+        );
+        debug(`[SourceServerBuilder] Resolved args with cwd: ${JSON.stringify(resolvedArgs)}`);
+      }
+
       return {
         type: 'stdio',
-        command: mcp.command,
-        args: mcp.args,
+        command: resolvedCommand,
+        args: resolvedArgs,
         env: mcp.env,
       };
     }
@@ -315,11 +477,15 @@ export function normalizeMcpUrl(url: string): string {
 let instance: SourceServerBuilder | null = null;
 
 /**
- * Get shared SourceServerBuilder instance
+ * 获取共享的 SourceServerBuilder 实例。
+ * 首次调用时可传入 options 注入自定义解析器，后续调用返回同一实例。
  */
-export function getSourceServerBuilder(): SourceServerBuilder {
+export function getSourceServerBuilder(options?: {
+  commandResolver?: CommandResolver;
+  cwdResolver?: CwdResolver;
+}): SourceServerBuilder {
   if (!instance) {
-    instance = new SourceServerBuilder();
+    instance = new SourceServerBuilder(options);
   }
   return instance;
 }
