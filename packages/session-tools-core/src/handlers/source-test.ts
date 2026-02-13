@@ -677,7 +677,7 @@ async function testMcpConnection(
       if (source.mcp.args?.length) {
         lines.push(`  Args: ${source.mcp.args.join(' ')}`);
       }
-      lines.push('  (Full validation requires runtime test)');
+      lines.push('  Connection test not available in this context — call the source\'s MCP tools directly to verify');
       success = true; // Config looks ok
     } else {
       hasError = true;
@@ -721,7 +721,7 @@ async function testMcpConnection(
     } else {
       // Basic URL check
       lines.push(`ℹ MCP source URL: ${source.mcp.url}`);
-      lines.push('  (Full MCP connection test requires runtime validation)');
+      lines.push('  Connection test not available in this context — call the source\'s MCP tools directly to verify');
       success = true; // Config looks ok
     }
   } else {
@@ -777,8 +777,12 @@ async function checkAuthStatus(
   let hasWarning = false;
 
   if (source.isAuthenticated) {
-    // Verify actual token if credential manager available
-    if (ctx.credentialManager) {
+    // In Codex context (no validateMcpConnection), MCP source credentials are delivered
+    // via config.toml headers, not the credential cache. Skip token verification to avoid
+    // false "token missing" warnings from the file-based cache.
+    if (source.type === 'mcp' && !ctx.validateMcpConnection) {
+      lines.push('✓ Source is authenticated');
+    } else if (ctx.credentialManager) {
       const workspaceId = basename(ctx.workspacePath) || '';
       const loadedSource = {
         config: source,
