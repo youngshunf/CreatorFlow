@@ -57,6 +57,10 @@ export interface StoredConfig {
   autoCapitalisation?: boolean;  // Auto-capitalize first letter when typing (default: true)
   sendMessageKey?: 'enter' | 'cmd-enter';  // Key to send messages (default: 'enter')
   spellCheck?: boolean;  // Enable spell check in input (default: false)
+  // Experimental: OpenAI backend variant for A/B testing
+  // 'responses' = Custom Responses API implementation (default)
+  // 'codex-sdk' = Forked @openai/codex-sdk with callback support
+  openaiVariant?: 'responses' | 'codex-sdk';
   keepAwakeWhileRunning?: boolean;  // Keep screen awake while sessions are running (default: false)
   richToolDescriptions?: boolean;  // Show rich tool descriptions in chat (default: true)
   // Git Bash path (Windows only)
@@ -368,6 +372,42 @@ export function setRichToolDescriptions(enabled: boolean): void {
   const config = loadStoredConfig();
   if (!config) return;
   config.richToolDescriptions = enabled;
+  saveConfig(config);
+}
+
+/**
+ * Get persisted Git Bash path (Windows only).
+ * Used to set CLAUDE_CODE_GIT_BASH_PATH for the SDK subprocess.
+ */
+export function getGitBashPath(): string | undefined {
+  const config = loadStoredConfig();
+  return config?.gitBashPath;
+}
+
+/**
+ * Set Git Bash path (Windows only).
+ * Persists to config so it survives app restarts.
+ * Returns false if the config could not be loaded (path not persisted).
+ */
+export function setGitBashPath(path: string): boolean {
+  const config = loadStoredConfig();
+  if (!config) {
+    console.warn('[storage] Failed to persist Git Bash path: config could not be loaded');
+    return false;
+  }
+  config.gitBashPath = path;
+  saveConfig(config);
+  return true;
+}
+
+/**
+ * Clear persisted Git Bash path (Windows only).
+ * Used when the stored path is stale or invalid.
+ */
+export function clearGitBashPath(): void {
+  const config = loadStoredConfig();
+  if (!config || !config.gitBashPath) return;
+  delete config.gitBashPath;
   saveConfig(config);
 }
 

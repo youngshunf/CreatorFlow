@@ -446,7 +446,7 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
         '用户想要编辑视图（基于表达式的动态过滤器）。' +
         '视图存储在工作区 .sprouty-ai/views.json 中的 "views" 数组内。' +
         '每个视图包含：id（唯一 slug）、name（显示文本）、description（可选）、color（可选 EntityColor）、expression（Filtrex 字符串）。' +
-        '表达式基于会话上下文字段求值：name、preview、todoState、permissionMode、model、lastMessageRole、' +
+        '表达式基于会话上下文字段求值：name、preview、sessionStatus（也可使用已弃用的别名 todoState）、permissionMode、model、lastMessageRole、' +
         'lastUsedAt、createdAt、messageCount、labelCount、isFlagged、hasUnread、isProcessing、hasPendingPlan、tokenUsage.*、labels。' +
         '可用函数：daysSince(timestamp)、contains(array, value)。' +
         '颜色使用 EntityColor 格式：字符串简写（如 "orange"）或 { light, dark } 对象。' +

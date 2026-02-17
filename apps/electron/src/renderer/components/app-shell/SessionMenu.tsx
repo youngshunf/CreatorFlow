@@ -40,8 +40,8 @@ import {
 import { toast } from 'sonner'
 import { useMenuComponents, type MenuComponents } from '@/components/ui/menu-context'
 import { useT } from '@/context/LocaleContext'
-import { getStateColor, getStateIcon, type TodoStateId } from '@/config/todo-states'
-import type { TodoState } from '@/config/todo-states'
+import { getStateColor, getStateIcon, type SessionStatusId } from '@/config/session-status-config'
+import type { SessionStatus } from '@/config/session-status-config'
 import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { extractLabelId } from '@sprouty-ai/shared/labels'
 import { LabelMenuItems, StatusMenuItems } from './SessionMenuParts'
@@ -62,9 +62,9 @@ export interface SessionMenuProps {
   /** Whether session has unread messages */
   hasUnreadMessages: boolean
   /** Current todo state */
-  currentTodoState: TodoStateId
+  currentSessionStatus: SessionStatusId
   /** Available todo states */
-  todoStates: TodoState[]
+  sessionStatuses: SessionStatus[]
   /** Current labels applied to this session (e.g. ["bug", "priority::3"]) */
   sessionLabels?: string[]
   /** All available label configs (tree structure) for the labels submenu */
@@ -78,7 +78,7 @@ export interface SessionMenuProps {
   onArchive: () => void
   onUnarchive: () => void
   onMarkUnread: () => void
-  onTodoStateChange: (state: TodoStateId) => void
+  onSessionStatusChange: (state: SessionStatusId) => void
   onOpenInNewWindow: () => void
   onDelete: () => void
 }
@@ -95,8 +95,8 @@ export function SessionMenu({
   sharedUrl,
   hasMessages,
   hasUnreadMessages,
-  currentTodoState,
-  todoStates,
+  currentSessionStatus,
+  sessionStatuses,
   sessionLabels = [],
   labels = [],
   onLabelsChange,
@@ -106,7 +106,7 @@ export function SessionMenu({
   onArchive,
   onUnarchive,
   onMarkUnread,
-  onTodoStateChange,
+  onSessionStatusChange,
   onOpenInNewWindow,
   onDelete,
 }: SessionMenuProps) {
@@ -243,9 +243,9 @@ export function SessionMenu({
       {/* Status submenu - includes all statuses plus Flag/Unflag at the bottom */}
       <Sub>
         <SubTrigger className="pr-2">
-          <span style={{ color: getStateColor(currentTodoState, todoStates) ?? 'var(--foreground)' }}>
+          <span style={{ color: getStateColor(currentSessionStatus, sessionStatuses) ?? 'var(--foreground)' }}>
             {(() => {
-              const icon = getStateIcon(currentTodoState, todoStates)
+              const icon = getStateIcon(currentSessionStatus, sessionStatuses)
               if (!React.isValidElement(icon)) return icon
               // Only pass bare to EntityIcon-based components (StatusIcon, etc.) that support it
               const elementType = icon.type as { displayName?: string; name?: string }
@@ -260,9 +260,9 @@ export function SessionMenu({
         </SubTrigger>
         <SubContent>
           <StatusMenuItems
-            todoStates={todoStates}
-            activeStateId={currentTodoState}
-            onSelect={onTodoStateChange}
+            sessionStatuses={sessionStatuses}
+            activeStateId={currentSessionStatus}
+            onSelect={onSessionStatusChange}
             menu={{ MenuItem }}
           />
         </SubContent>

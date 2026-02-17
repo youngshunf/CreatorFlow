@@ -27,6 +27,17 @@ import { tmpdir } from 'node:os';
 import { getSessionPlansPath, getSessionDataPath, getSessionPath } from '../sessions/storage.ts';
 import { debug } from '../utils/debug.ts';
 import { getCredentialManager } from '../credentials/index.ts';
+import { DOC_REFS } from '../docs/index.ts';
+import { createClaudeContext } from './claude-context.ts';
+
+// Feature flags
+import { FEATURE_FLAGS } from '../feature-flags.ts';
+
+// Template rendering
+import { loadTemplate, validateTemplateData } from '../templates/loader.ts';
+import { renderMustache } from '../templates/mustache.ts';
+
+// Import handlers from session-tools-core
 import {
   validateConfig,
   validateSource,
@@ -314,6 +325,14 @@ export function clearPlanFileState(sessionId: string): void {
  */
 export function createSubmitPlanTool(sessionId: string) {
   const exploreName = PERMISSION_MODE_CONFIG['safe'].displayName;
+
+/**
+ * Check if a path is within a session's plans directory
+ */
+export function isPathInPlansDir(path: string, workspacePath: string, sessionId: string): boolean {
+  const plansDir = getSessionPlansDir(workspacePath, sessionId);
+  return path.startsWith(plansDir);
+}
 
   return tool(
     'SubmitPlan',
@@ -2220,32 +2239,46 @@ async function handleTransformData(
       delete env[key];
     }
 
-    // Spawn subprocess
+    // Spawn subprocess with manual timeout that escalates to SIGKILL.
+    // We can't rely on spawn()'s built-in `timeout` option because it only sends
+    // SIGTERM, which can be caught/ignored — leaving the promise hanging forever.
     const result = await new Promise<{ stdout: string; stderr: string; code: number | null }>((resolvePromise, reject) => {
       const child = spawn(cmd, spawnArgs, {
         cwd: dataDir,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
-        timeout: TRANSFORM_DATA_TIMEOUT_MS,
       });
 
       let stdout = '';
       let stderr = '';
+      let timedOut = false;
+
+      const killTimer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }, TRANSFORM_DATA_TIMEOUT_MS);
 
       child.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
       child.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
 
       child.on('close', (code) => {
-        resolvePromise({ stdout, stderr, code });
+        clearTimeout(killTimer);
+        if (timedOut) {
+          resolvePromise({ stdout, stderr: `Script timed out after ${TRANSFORM_DATA_TIMEOUT_MS / 1000}s and was killed`, code });
+        } else {
+          resolvePromise({ stdout, stderr, code });
+        }
       });
 
       child.on('error', (err) => {
+        clearTimeout(killTimer);
         reject(err);
       });
     });
 
     if (result.code !== 0) {
       const errorOutput = result.stderr || result.stdout || 'Script exited with non-zero code';
+      debug('session-scoped-tools', `transform_data failed (exit code ${result.code}): ${errorOutput.slice(0, 200)}`);
       return {
         content: [{ type: 'text', text: `Script failed (exit code ${result.code}):\n${errorOutput.slice(0, 2000)}` }],
         isError: true,
@@ -2260,10 +2293,10 @@ async function handleTransformData(
       };
     }
 
-    // Return the absolute path for use in the datatable/spreadsheet "src" field
+    // Return the absolute path for use in the datatable/spreadsheet/html-preview "src" field
     // The UI's file reader requires absolute paths for security validation
     const lines = [`Output written to: ${resolvedOutput}`];
-    lines.push(`\nUse this absolute path as the "src" value in your datatable or spreadsheet block.`);
+    lines.push(`\nUse this absolute path as the "src" value in your datatable, spreadsheet, html-preview, or pdf-preview block.`);
     if (result.stdout.trim()) {
       lines.push(`\nStdout:\n${result.stdout.slice(0, 500)}`);
     }
@@ -2316,6 +2349,85 @@ Use this tool when you need to transform large datasets (20+ rows) into structur
       return handleTransformData(sessionId, workspaceRootPath, args);
     }
   );
+}
+
+// ============================================================
+// render_template Handler
+// ============================================================
+
+async function handleRenderTemplate(
+  sessionId: string,
+  workspaceRootPath: string,
+  args: {
+    source: string;
+    template: string;
+    data: Record<string, unknown>;
+  }
+): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
+  const sourcePath = join(workspaceRootPath, 'sources', args.source);
+
+  // Validate source exists
+  if (!existsSync(sourcePath)) {
+    return {
+      content: [{ type: 'text', text: `Error: Source "${args.source}" not found at ${sourcePath}` }],
+      isError: true,
+    };
+  }
+
+  // Load template
+  const template = loadTemplate(sourcePath, args.template);
+  if (!template) {
+    return {
+      content: [{ type: 'text', text: `Error: Template "${args.template}" not found for source "${args.source}".\n\nExpected file: ${join(sourcePath, 'templates', `${args.template}.html`)}` }],
+      isError: true,
+    };
+  }
+
+  // Soft validation
+  const warnings = validateTemplateData(template.meta, args.data);
+
+  // Render template
+  let rendered: string;
+  try {
+    rendered = renderMustache(template.content, args.data);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return {
+      content: [{ type: 'text', text: `Error rendering template "${args.template}": ${msg}` }],
+      isError: true,
+    };
+  }
+
+  // Write output to session data folder
+  const dataDir = getSessionDataPath(workspaceRootPath, sessionId);
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true });
+  }
+
+  const outputFileName = `${args.source}-${args.template}-${Date.now()}.html`;
+  const outputPath = join(dataDir, outputFileName);
+  writeFileSync(outputPath, rendered, 'utf-8');
+
+  // Build response
+  const lines: string[] = [];
+  lines.push(`Rendered template: ${template.meta.name || args.template}`);
+  lines.push(`Output: ${outputPath}`);
+  lines.push('');
+  lines.push(`Use this absolute path as the "src" value in your html-preview block.`);
+
+  if (warnings.length > 0) {
+    lines.push('');
+    lines.push('⚠ Warnings:');
+    for (const w of warnings) {
+      lines.push(`  - ${w.message}`);
+    }
+    lines.push('The template was rendered but may have blank sections. Consider re-rendering with the missing fields.');
+  }
+
+  debug('session-scoped-tools', `render_template succeeded: ${outputPath} (${warnings.length} warnings)`);
+  return {
+    content: [{ type: 'text', text: lines.join('\n') }],
+  };
 }
 
 // ============================================================

@@ -13,7 +13,7 @@ import type {
   TypedErrorEvent,
   SourcesChangedEvent,
   LabelsChangedEvent,
-  TodoStateChangedEvent,
+  SessionStatusChangedEvent,
   SessionFlaggedEvent,
   SessionUnflaggedEvent,
   SessionArchivedEvent,
@@ -111,7 +111,7 @@ export function handleError(
     id: generateMessageId(),
     role: 'error',
     content: event.error,
-    timestamp: Date.now(),
+    timestamp: event.timestamp ?? Date.now(),
     errorCode: 'unknown_error',
     errorTitle: '操作失败',
     errorOriginal: event.error,
@@ -150,8 +150,10 @@ export function handleTypedError(
   const errorMessage: Message = {
     id: generateMessageId(),
     role: 'error',
-    content: event.error.message || 'Unknown error',
-    timestamp: Date.now(),
+    content: event.error.title
+      ? `${event.error.title}: ${event.error.message}`
+      : event.error.message,
+    timestamp: event.timestamp ?? Date.now(),
     errorCode: event.error.code,
     errorTitle: event.error.title,
     errorDetails: event.error.details,
@@ -187,7 +189,7 @@ export function handleStatus(
     id: generateMessageId(),
     role: 'status',
     content: event.message,
-    timestamp: Date.now(),
+    timestamp: event.timestamp ?? Date.now(),
     statusType: event.statusType,
   }
 
@@ -243,7 +245,7 @@ export function handleInfo(
     id: generateMessageId(),
     role: 'info',
     content: event.message,
-    timestamp: Date.now(),
+    timestamp: event.timestamp ?? Date.now(),
     infoLevel: event.level,
   }
 
@@ -559,16 +561,16 @@ export function handleLabelsChanged(
 }
 
 /**
- * Handle todo_state_changed - update session's todoState (external metadata change or agent tool)
+ * Handle session_status_changed - update session's sessionStatus (external metadata change or agent tool)
  */
-export function handleTodoStateChanged(
+export function handleSessionStatusChanged(
   state: SessionState,
-  event: TodoStateChangedEvent
+  event: SessionStatusChangedEvent
 ): ProcessResult {
   const { session, streaming } = state
   return {
     state: {
-      session: { ...session, todoState: event.todoState },
+      session: { ...session, sessionStatus: event.sessionStatus },
       streaming,
     },
     effects: [],

@@ -181,8 +181,8 @@ export interface FreeFormInputProps {
   sessionFolderPath?: string
   /** Session ID for scoping events like approve-plan */
   sessionId?: string
-  /** Current todo state of the session (for # menu state selection) */
-  currentTodoState?: string
+  /** Current session status of the session (for # menu state selection) */
+  currentSessionStatus?: string
   /** Disable send action (for tutorial guidance) */
   disableSend?: boolean
   /** Whether the session is empty (no messages yet) - affects context badge prominence */
@@ -250,7 +250,7 @@ export function FreeFormInput({
   onWorkingDirectoryChange,
   sessionFolderPath,
   sessionId,
-  currentTodoState,
+  currentSessionStatus,
   disableSend = false,
   isEmptySession = false,
   contextStatus,
@@ -359,9 +359,9 @@ export function FreeFormInput({
   }, [llmConnections, effectiveConnection])
 
 
-  // Access todoStates and onTodoStateChange from context for the # menu state picker
-  const todoStates = appShellCtx?.todoStates ?? []
-  const onTodoStateChange = appShellCtx?.onTodoStateChange
+  // Access sessionStatuses and onSessionStatusChange from context for the # menu state picker
+  const sessionStatuses = appShellCtx?.sessionStatuses ?? []
+  const onSessionStatusChange = appShellCtx?.onSessionStatusChange
 
   // Get locale-aware placeholders
   const defaultPlaceholders = t('你想做什么？') !== '你想做什么？'
@@ -800,8 +800,8 @@ export function FreeFormInput({
     labels,
     sessionLabels,
     onSelect: handleLabelSelect,
-    todoStates,
-    activeStateId: currentTodoState,
+    sessionStatuses,
+    activeStateId: currentSessionStatus,
   })
 
   // "Add New Label" handler: cleans up the #trigger text and opens a controlled
@@ -1293,10 +1293,10 @@ export function FreeFormInput({
     setInput(newValue)
     syncToParent(newValue)
     if (sessionId) {
-      onTodoStateChange?.(sessionId, stateId)
+      onSessionStatusChange?.(sessionId, stateId)
     }
     richInputRef.current?.focus()
-  }, [inlineLabel, syncToParent, sessionId, onTodoStateChange])
+  }, [inlineLabel, syncToParent, sessionId, onSessionStatusChange])
 
   const hasContent = input.trim() || attachments.length > 0
 
@@ -1668,7 +1668,7 @@ export function FreeFormInput({
                     <div className="font-medium text-sm">{connectionDefaultModel}</div>
                     <div className="text-xs text-muted-foreground">{t('自定义 API 连接')}</div>
                   </div>
-                  <Check className="h-4 w-4 text-foreground shrink-0 ml-3" />
+                  <Check className="h-3 w-3 text-foreground shrink-0 ml-3" />
                 </StyledDropdownMenuItem>
               ) : isEmptySession && llmConnections.length > 1 ? (
                 /* Hierarchical view: Provider → Connection → Models (for new sessions with multiple connections) */
@@ -1723,7 +1723,7 @@ export function FreeFormInput({
                                   >
                                     <div className="font-medium text-sm">{modelName}</div>
                                     {isSelectedModel && (
-                                      <Check className="h-4 w-4 text-foreground shrink-0 ml-3" />
+                                      <Check className="h-3 w-3 text-foreground shrink-0 ml-3" />
                                     )}
                                   </StyledDropdownMenuItem>
                                 )
@@ -1769,7 +1769,7 @@ export function FreeFormInput({
                           )}
                         </div>
                         {isSelected && (
-                          <Check className="h-4 w-4 text-foreground shrink-0 ml-3" />
+                          <Check className="h-3 w-3 text-foreground shrink-0 ml-3" />
                         )}
                       </StyledDropdownMenuItem>
                     )
@@ -1804,7 +1804,7 @@ export function FreeFormInput({
                               <div className="text-xs text-muted-foreground">{description}</div>
                             </div>
                             {isSelected && (
-                              <Check className="h-4 w-4 text-foreground shrink-0 ml-3" />
+                              <Check className="h-3 w-3 text-foreground shrink-0 ml-3" />
                             )}
                           </StyledDropdownMenuItem>
                         )

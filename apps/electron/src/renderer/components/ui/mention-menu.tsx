@@ -5,6 +5,7 @@ import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import type { LoadedSkill, LoadedSource, FileSearchResult } from '../../../shared/types'
 import { t } from '@sprouty-ai/shared/locale'
+import { AGENTS_PLUGIN_NAME } from '@sprouty-ai/shared/skills/types'
 
 // ============================================================================
 // Types
@@ -634,8 +635,11 @@ export function useInlineMention({
       // Skill tool requires this format to resolve workspace-scoped skills.
       let mentionText: string
       if (item.type === 'skill') {
-        // Use fully-qualified name for skills: [skill:workspaceId:slug]
-        const qualifiedName = workspaceId ? `${workspaceId}:${item.id}` : item.id
+        // Use fully-qualified name for skills: [skill:pluginName:slug]
+        // Plugin name depends on which tier the skill came from:
+        //   workspace → workspaceId, project/global → ".agents"
+        const pluginName = item.skill?.source === 'workspace' ? workspaceId : AGENTS_PLUGIN_NAME
+        const qualifiedName = pluginName ? `${pluginName}:${item.id}` : item.id
         mentionText = `[skill:${qualifiedName}] `
       } else if (item.type === 'source') {
         mentionText = `[source:${item.id}] `

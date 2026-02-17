@@ -6,7 +6,6 @@ import { debug } from "../utils/debug";
 
 declare const CREATOR_FLOW_CLI_VERSION: string | undefined;
 
-let optionsEnv: Record<string, string> = {};
 let customPathToClaudeCodeExecutable: string | null = null;
 let customInterceptorPath: string | null = null;
 let customExecutable: string | null = null;
@@ -156,7 +155,7 @@ export function resetClaudeConfigCheck(): void {
  * Ensure the global SDK skills directory exists.
  * The Claude SDK scans this directory on startup and crashes with ENOENT if missing.
  * This is an upstream SDK bug (https://github.com/anthropics/claude-code/issues/20571)
- * 
+ *
  * Paths by platform:
  * - macOS: /Library/Application Support/ClaudeCode/.claude/skills
  * - Windows: C:\ProgramData\ClaudeCode\.claude\skills
@@ -164,7 +163,7 @@ export function resetClaudeConfigCheck(): void {
  */
 function ensureSdkSkillsDir(): void {
     let skillsDir: string;
-    
+
     if (process.platform === 'darwin') {
         // macOS: /Library/Application Support/ClaudeCode/.claude/skills
         skillsDir = '/Library/Application Support/ClaudeCode/.claude/skills';
@@ -175,7 +174,7 @@ function ensureSdkSkillsDir(): void {
         // Linux and others: try XDG or /etc path
         skillsDir = '/etc/claude-code/.claude/skills';
     }
-    
+
     if (!existsSync(skillsDir)) {
         try {
             mkdirSync(skillsDir, { recursive: true });
@@ -240,6 +239,7 @@ export function setAnthropicOptionsEnv(env: Record<string, string>) {
     optionsEnv = env;
 }
 
+
 /**
  * Override the path to the Claude Code executable (cli.js from the SDK).
  * This is needed when the SDK is bundled (e.g., in Electron) and can't auto-detect the path.
@@ -264,7 +264,15 @@ export function setExecutable(path: string) {
     customExecutable = path;
 }
 
-export function getDefaultOptions(): Partial<Options> {
+/**
+ * Get default SDK options for spawning the Claude Code subprocess.
+ *
+ * @param envOverrides - Per-session environment variable overrides.
+ *   These are spread AFTER process.env so they take precedence.
+ *   Used to pass per-session config like ANTHROPIC_BASE_URL that would
+ *   otherwise be clobbered by concurrent sessions mutating process.env.
+ */
+export function getDefaultOptions(envOverrides?: Record<string, string>): Partial<Options> {
     // Repair corrupted ~/.claude.json before the SDK subprocess reads it
     ensureClaudeConfig();
     
@@ -294,7 +302,7 @@ export function getDefaultOptions(): Partial<Options> {
             executableArgs,
             env: {
                 ...process.env,
-                ... optionsEnv,
+                ...envOverrides,
                 // Propagate debug mode from argv flag OR existing env var
                 SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
                 CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
@@ -315,7 +323,7 @@ export function getDefaultOptions(): Partial<Options> {
             env: {
                 ...process.env,
                 BUN_BE_BUN: '1',
-                ... optionsEnv,
+                ...envOverrides,
                 // Propagate debug mode from argv flag OR existing env var
                 SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
                 CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
@@ -325,8 +333,8 @@ export function getDefaultOptions(): Partial<Options> {
     return {
         executableArgs: [envFileFlag],
         env: {
-            ... process.env,
-            ... optionsEnv,
+            ...process.env,
+            ...envOverrides,
             // Propagate debug mode from argv flag OR existing env var
             SPROUTY_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
             CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.SPROUTY_DEBUG === '1' || process.env.CRAFT_DEBUG === '1') ? '1' : '0',

@@ -5,7 +5,7 @@ import { LabelIcon } from './label-icon'
 import type { LabelConfig } from '@sprouty-ai/shared/labels'
 import { flattenLabels } from '@sprouty-ai/shared/labels'
 import { useT } from '@/context/LocaleContext'
-import type { TodoState } from '@/config/todo-states'
+import type { SessionStatus } from '@/config/session-status-config'
 
 // ============================================================================
 // Types
@@ -31,7 +31,7 @@ export interface InlineLabelMenuProps {
   className?: string
   // ── State selection (optional — when provided, shows a "States" section) ──
   /** Available workflow states to show in the menu */
-  states?: TodoState[]
+  states?: SessionStatus[]
   /** Currently active state ID (shows checkmark) */
   activeStateId?: string
   /** Callback when a state is selected */
@@ -130,7 +130,7 @@ export function filterItems(items: LabelMenuItem[], filter: string): LabelMenuIt
  * Filter states by a simple text match on the state label.
  * Uses the same segmentScore logic for consistency with label filtering.
  */
-export function filterStates(states: TodoState[], filter: string): TodoState[] {
+export function filterSessionStatuses(states: SessionStatus[], filter: string): SessionStatus[] {
   if (!filter) return states
 
   const segments = filter.toLowerCase().split('/').map(s => s.trim()).filter(Boolean)
@@ -138,7 +138,7 @@ export function filterStates(states: TodoState[], filter: string): TodoState[] {
 
   // States are flat (no hierarchy), so just match the first segment against the label
   const segment = segments[0]
-  const scored: { state: TodoState; score: number }[] = []
+  const scored: { state: SessionStatus; score: number }[] = []
 
   for (const state of states) {
     const score = segmentScore(state.label, segment)
@@ -178,7 +178,7 @@ export function InlineLabelMenu({
   const listRef = React.useRef<HTMLDivElement>(null)
   const [selectedIndex, setSelectedIndex] = React.useState(0)
   const filteredItems = filterItems(items, filter)
-  const filteredStates_ = filterStates(states, filter)
+  const filteredStates_ = filterSessionStatuses(states, filter)
 
   // Build a unified flat index for keyboard navigation:
   // [0..filteredStates_.length-1] = states, [filteredStates_.length..] = labels
@@ -420,7 +420,7 @@ export interface UseInlineLabelMenuOptions {
   onSelect: (labelId: string) => void
   // ── State selection (optional — enables states in the # menu) ──
   /** Available workflow states */
-  todoStates?: TodoState[]
+  sessionStatuses?: SessionStatus[]
   /** Currently active state ID */
   activeStateId?: string
 }
@@ -431,7 +431,7 @@ export interface UseInlineLabelMenuReturn {
   position: { x: number; y: number }
   items: LabelMenuItem[]
   /** Workflow states passed through for the menu component */
-  states: TodoState[]
+  states: SessionStatus[]
   /** Currently active state ID */
   activeStateId?: string
   handleInputChange: (value: string, cursorPosition: number) => void
@@ -450,7 +450,7 @@ export function useInlineLabelMenu({
   labels,
   sessionLabels = [],
   onSelect,
-  todoStates = [],
+  sessionStatuses = [],
   activeStateId,
 }: UseInlineLabelMenuOptions): UseInlineLabelMenuReturn {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -559,7 +559,7 @@ export function useInlineLabelMenu({
     filter,
     position,
     items,
-    states: todoStates,
+    states: sessionStatuses,
     activeStateId,
     handleInputChange,
     close,

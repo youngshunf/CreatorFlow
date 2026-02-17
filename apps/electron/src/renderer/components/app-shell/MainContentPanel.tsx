@@ -37,6 +37,9 @@ import {
 } from '@/contexts/NavigationContext'
 import { isMarketplaceNavigation, isAppViewNavigation, isVideoNavigation } from '../../../shared/types'
 import { APP_VIEW_REGISTRY } from '../../pages/creator-media/registry'
+import { useSessionSelection, useIsMultiSelectActive, useSelectedIds, useSelectionCount } from '@/hooks/useSession'
+import { extractLabelId } from '@sprouty-ai/shared/labels'
+import type { SessionStatusId } from '@/config/session-status-config'
 import { UserProfilePage, UserProfileEditPage, AppSettingsPage, AiSettingsPage, AppearanceSettingsPage, InputSettingsPage, WorkspaceSettingsPage, PermissionsSettingsPage, LabelsSettingsPage, PreferencesPage, ShortcutsPage, SourceInfoPage, ChatPage, SubscriptionSettingsPage, SourcesSettingsPage, SkillsSettingsPage } from '@/pages'
 import SkillInfoPage from '@/pages/SkillInfoPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
@@ -65,8 +68,7 @@ export function MainContentPanel({
 }: MainContentPanelProps) {
   const t = useT()
   const navState = useNavigationState()
-  const { navigate } = useNavigation()
-  const { activeWorkspaceId, skills = [], onCreateSession, onRenameSession, onSendMessage, onTodoStateChange, onArchiveSession, onSessionLabelsChange, todoStates, labels } = useAppShellContext()
+  const { activeWorkspaceId, skills = [], onCreateSession, onRenameSession, onSendMessage, onSessionStatusChange, onArchiveSession, onSessionLabelsChange, sessionStatuses, labels } = useAppShellContext()
   const activeWorkspace = useActiveWorkspace()
 
   // Multi-select state
@@ -85,10 +87,10 @@ export function MainContentPanel({
     return metas
   }, [selectedIds, sessionMetaMap])
 
-  const activeStatusId = useMemo((): TodoStateId | null => {
+  const activeStatusId = useMemo((): SessionStatusId | null => {
     if (selectedMetas.length === 0) return null
-    const first = (selectedMetas[0].todoState || 'todo') as TodoStateId
-    const allSame = selectedMetas.every(meta => (meta.todoState || 'todo') === first)
+    const first = (selectedMetas[0].sessionStatus || 'todo') as SessionStatusId
+    const allSame = selectedMetas.every(meta => (meta.sessionStatus || 'todo') === first)
     return allSame ? first : null
   }, [selectedMetas])
 
@@ -107,11 +109,11 @@ export function MainContentPanel({
   }, [selectedMetas])
 
   // Batch operations for multi-select
-  const handleBatchSetStatus = useCallback((status: TodoStateId) => {
+  const handleBatchSetStatus = useCallback((status: SessionStatusId) => {
     selectedIds.forEach(sessionId => {
-      onTodoStateChange(sessionId, status)
+      onSessionStatusChange(sessionId, status)
     })
-  }, [selectedIds, onTodoStateChange])
+  }, [selectedIds, onSessionStatusChange])
 
   const handleBatchArchive = useCallback(() => {
     selectedIds.forEach(sessionId => {
@@ -393,7 +395,7 @@ export function MainContentPanel({
         <Panel variant="grow" className={className}>
           <MultiSelectPanel
             count={selectionCount}
-            todoStates={todoStates}
+            sessionStatuses={sessionStatuses}
             activeStatusId={activeStatusId}
             onSetStatus={handleBatchSetStatus}
             labels={labels}
