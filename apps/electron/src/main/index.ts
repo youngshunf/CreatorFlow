@@ -434,7 +434,7 @@ app.whenReady().then(async () => {
 
     // Restore persisted Git Bash path on Windows (must happen before any SDK subprocess spawn)
     if (process.platform === 'win32') {
-      const { getGitBashPath, clearGitBashPath } = await import('@craft-agent/shared/config')
+      const { getGitBashPath, clearGitBashPath } = await import('@sprouty-ai/shared/config')
       const gitBashPath = getGitBashPath()
       if (gitBashPath) {
         const validation = await validateGitBashPath(gitBashPath)

@@ -11,7 +11,7 @@
 import type { ContentBadge } from '@sprouty-ai/core'
 import type { MentionItemType } from '@/components/ui/mention-menu'
 import type { LoadedSkill, LoadedSource } from '../../shared/types'
-import { AGENTS_PLUGIN_NAME } from '@craft-agent/shared/skills/types'
+import { AGENTS_PLUGIN_NAME } from '@sprouty-ai/shared/skills/types'
 import { getSourceIconSync, getSkillIconSync } from './icon-cache'
 
 // Import and re-export parsing functions from shared (pure string operations, no renderer deps)

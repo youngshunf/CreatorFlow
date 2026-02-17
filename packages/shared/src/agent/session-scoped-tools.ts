@@ -326,14 +326,6 @@ export function clearPlanFileState(sessionId: string): void {
 export function createSubmitPlanTool(sessionId: string) {
   const exploreName = PERMISSION_MODE_CONFIG['safe'].displayName;
 
-/**
- * Check if a path is within a session's plans directory
- */
-export function isPathInPlansDir(path: string, workspacePath: string, sessionId: string): boolean {
-  const plansDir = getSessionPlansDir(workspacePath, sessionId);
-  return path.startsWith(plansDir);
-}
-
   return tool(
     'SubmitPlan',
     `Submit a plan for user review.

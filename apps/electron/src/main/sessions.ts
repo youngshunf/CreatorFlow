@@ -441,7 +441,7 @@ async function regenCodexConfigAndReconnect(
   agent: CodexBackend,
   sessionPath: string,
   enabledSources: LoadedSource[],
-  mcpServers: Record<string, import('@craft-agent/shared/agent/backend').SdkMcpServerConfig>,
+  mcpServers: Record<string, import('@sprouty-ai/shared/agent/backend').SdkMcpServerConfig>,
   sessionId: string,
   workspaceRootPath: string,
   context: string
@@ -1800,32 +1800,31 @@ export class SessionManager {
           sessionLog.warn('[GitBash] Git Bash not found. SDK shell commands may fail. Please install Git for Windows.')
         }
       }
-    }
 
-    // Backfill missing `models` arrays on existing LLM connections
-    migrateLegacyLlmConnectionsConfig()
+      // Backfill missing `models` arrays on existing LLM connections
+      migrateLegacyLlmConnectionsConfig()
 
-    // Fix defaultLlmConnection if it points to a non-existent connection
-    migrateOrphanedDefaultConnections()
+      // Fix defaultLlmConnection if it points to a non-existent connection
+      migrateOrphanedDefaultConnections()
 
-    // Migrate legacy credentials to LLM connection format (one-time migration)
-    // This ensures credentials saved before LLM connections are available via the new system
-    await migrateLegacyCredentials()
+      // Migrate legacy credentials to LLM connection format (one-time migration)
+      // This ensures credentials saved before LLM connections are available via the new system
+      await migrateLegacyCredentials()
 
-    // 尝试恢复云端认证状态（从 credential manager 读取持久化令牌）
-    const cloudRestored = await this.restoreCloudAuth()
-    if (cloudRestored) {
-      sessionLog.info('Cloud auth restored from credential manager')
-    }
+      // 尝试恢复云端认证状态（从 credential manager 读取持久化令牌）
+      const cloudRestored = await this.restoreCloudAuth()
+      if (cloudRestored) {
+        sessionLog.info('Cloud auth restored from credential manager')
+      }
 
-    // Set up authentication environment variables (critical for SDK to work)
-    await this.reinitializeAuth()
+      // Set up authentication environment variables (critical for SDK to work)
+      await this.reinitializeAuth()
 
-    // Load existing sessions from disk
-    this.loadSessionsFromDisk()
+      // Load existing sessions from disk
+      this.loadSessionsFromDisk()
 
-    // Signal that initialization is complete — IPC handlers waiting on initGate will proceed
-    this.initGate.markReady()
+      // Signal that initialization is complete — IPC handlers waiting on initGate will proceed
+      this.initGate.markReady()
     } catch (error) {
       this.initGate.markFailed(error)
       throw error

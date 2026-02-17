@@ -48,8 +48,6 @@ import { VideoEditor } from '@/components/video'
 import { SkillAvatar } from '@/components/ui/skill-avatar'
 import { toast } from 'sonner'
 import type { LoadedSkill } from '../../../shared/types'
-import { useSessionSelection, useIsMultiSelectActive, useSelectedIds, useSelectionCount } from '@/hooks/useSession'
-import { extractLabelId } from '@sprouty-ai/shared/labels'
 import type { TodoStateId } from '@/config/todo-states'
 
 export interface MainContentPanelProps {
@@ -68,6 +66,7 @@ export function MainContentPanel({
 }: MainContentPanelProps) {
   const t = useT()
   const navState = useNavigationState()
+  const { navigate } = useNavigation()
   const { activeWorkspaceId, skills = [], onCreateSession, onRenameSession, onSendMessage, onSessionStatusChange, onArchiveSession, onSessionLabelsChange, sessionStatuses, labels } = useAppShellContext()
   const activeWorkspace = useActiveWorkspace()
 
