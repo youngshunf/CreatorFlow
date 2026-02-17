@@ -12,7 +12,7 @@ export {
   AnimatedText,
   type AnimatedTextProps,
   type AnimationType,
-} from './AnimatedText';
+} from "./AnimatedText";
 
 // Transition - Scene transition effects
 export {
@@ -20,8 +20,8 @@ export {
   TransitionOverlay,
   type TransitionProps,
   type TransitionOverlayProps,
-  type TransitionType,
-} from './Transition';
+  type TransitionEffectType,
+} from "./Transition";
 
 // Background - Various background types with animations
 export {
@@ -34,7 +34,7 @@ export {
   type BackgroundType,
   type GradientDirection,
   type BackgroundAnimation,
-} from './Background';
+} from "./Background";
 
 // Logo - Logo display with animation effects
 export {
@@ -44,16 +44,16 @@ export {
   type AnimatedLogoProps,
   type LogoAnimation,
   type LogoPosition,
-} from './Logo';
+} from "./Logo";
 
 // TitleText - Animated title component for Sequence-based compositions
-export { TitleText, type TitleTextProps } from './TitleText';
+export { TitleText, type TitleTextProps } from "./TitleText";
 
 // SubtitleText - Animated subtitle component for Sequence-based compositions
-export { SubtitleText, type SubtitleTextProps } from './SubtitleText';
+export { SubtitleText, type SubtitleTextProps } from "./SubtitleText";
 
 // SlideItem - Animated slide component for slideshow compositions
-export { SlideItem, type SlideItemProps } from './SlideItem';
+export { SlideItem, type SlideItemProps } from "./SlideItem";
 
 // BarItem - Animated bar chart item for data visualization
-export { BarItem, type BarItemProps } from './BarItem';
+export { BarItem, type BarItemProps } from "./BarItem";

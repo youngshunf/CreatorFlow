@@ -4,7 +4,7 @@
  * This file contains all Zod schemas and TypeScript types
  * for video projects, compositions, assets, and rendering.
  */
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // Video Configuration Schema
@@ -27,24 +27,70 @@ export const VideoConfigSchema = z.object({
 export type VideoConfig = z.infer<typeof VideoConfigSchema>;
 
 // ============================================================================
-// Composition Schema
+// Scene Schema
 // ============================================================================
 
 /**
- * Composition schema representing a video composition unit
+ * Scene schema representing a video scene unit
  */
-export const CompositionSchema = z.object({
-  /** Unique identifier for the composition */
+export const SceneSchema = z.object({
+  /** Unique identifier for the scene */
   id: z.string(),
-  /** Display name of the composition */
+  /** Display name of the scene */
   name: z.string(),
-  /** React component code (file path or inline code) */
-  code: z.string(),
+  /** Reference to built-in composition ID (e.g., "TitleAnimation") */
+  compositionId: z.string(),
+  /** Duration of this scene in frames */
+  durationInFrames: z.number().int().positive(),
   /** Props to pass to the composition component */
   props: z.record(z.string(), z.any()).default({}),
 });
 
-export type Composition = z.infer<typeof CompositionSchema>;
+export type Scene = z.infer<typeof SceneSchema>;
+
+// ============================================================================
+// Transition Schema
+// ============================================================================
+
+/**
+ * Transition type enumeration
+ */
+export const TransitionTypeEnum = z.enum([
+  "fade",
+  "slide",
+  "wipe",
+  "flip",
+  "clock-wipe",
+  "none",
+]);
+
+export type TransitionType = z.infer<typeof TransitionTypeEnum>;
+
+/**
+ * Transition direction enumeration
+ */
+export const TransitionDirectionEnum = z.enum([
+  "from-left",
+  "from-right",
+  "from-top",
+  "from-bottom",
+]);
+
+export type TransitionDirection = z.infer<typeof TransitionDirectionEnum>;
+
+/**
+ * Transition schema representing transition effects between scenes
+ */
+export const TransitionSchema = z.object({
+  /** Type of transition effect */
+  type: TransitionTypeEnum,
+  /** Duration of transition in frames */
+  durationInFrames: z.number().int().positive(),
+  /** Direction of transition (optional, for directional transitions) */
+  direction: TransitionDirectionEnum.optional(),
+});
+
+export type Transition = z.infer<typeof TransitionSchema>;
 
 // ============================================================================
 // Asset Schema
@@ -53,7 +99,7 @@ export type Composition = z.infer<typeof CompositionSchema>;
 /**
  * Asset type enumeration
  */
-export const AssetTypeEnum = z.enum(['image', 'video', 'audio', 'font']);
+export const AssetTypeEnum = z.enum(["image", "video", "audio", "font"]);
 
 export type AssetType = z.infer<typeof AssetTypeEnum>;
 
@@ -81,10 +127,10 @@ export type Asset = z.infer<typeof AssetSchema>;
  * Render status enumeration
  */
 export const RenderStatusEnum = z.enum([
-  'pending',
-  'rendering',
-  'completed',
-  'failed',
+  "pending",
+  "rendering",
+  "completed",
+  "failed",
 ]);
 
 export type RenderStatus = z.infer<typeof RenderStatusEnum>;
@@ -131,8 +177,10 @@ export const VideoProjectSchema = z.object({
   updatedAt: z.string(),
   /** Video configuration */
   config: VideoConfigSchema,
-  /** List of compositions in the project */
-  compositions: z.array(CompositionSchema).default([]),
+  /** List of scenes in the project (ordered) */
+  scenes: z.array(SceneSchema).default([]),
+  /** List of transitions between scenes (length = scenes.length - 1) */
+  transitions: z.array(TransitionSchema).default([]),
   /** List of assets used in the project */
   assets: z.array(AssetSchema).default([]),
   /** Render history */
@@ -148,14 +196,14 @@ export type VideoProject = z.infer<typeof VideoProjectSchema>;
 /**
  * Output format enumeration
  */
-export const OutputFormatEnum = z.enum(['mp4', 'webm', 'gif']);
+export const OutputFormatEnum = z.enum(["mp4", "webm", "gif"]);
 
 export type OutputFormat = z.infer<typeof OutputFormatEnum>;
 
 /**
  * Quality preset enumeration
  */
-export const QualityPresetEnum = z.enum(['draft', 'standard', 'high']);
+export const QualityPresetEnum = z.enum(["draft", "standard", "high"]);
 
 export type QualityPreset = z.infer<typeof QualityPresetEnum>;
 
@@ -168,9 +216,9 @@ export const RenderOptionsSchema = z.object({
   /** Composition ID to render */
   compositionId: z.string(),
   /** Output format */
-  outputFormat: OutputFormatEnum.default('mp4'),
+  outputFormat: OutputFormatEnum.default("mp4"),
   /** Quality preset */
-  quality: QualityPresetEnum.default('standard'),
+  quality: QualityPresetEnum.default("standard"),
 });
 
 export type RenderOptions = z.infer<typeof RenderOptionsSchema>;
@@ -183,11 +231,11 @@ export type RenderOptions = z.infer<typeof RenderOptionsSchema>;
  * Render progress status enumeration
  */
 export const RenderProgressStatusEnum = z.enum([
-  'bundling',
-  'preparing',
-  'rendering',
-  'completed',
-  'failed',
+  "bundling",
+  "preparing",
+  "rendering",
+  "completed",
+  "failed",
 ]);
 
 export type RenderProgressStatus = z.infer<typeof RenderProgressStatusEnum>;
@@ -240,8 +288,8 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityPresetConfig> = {
  */
 export const SUPPORTED_ASSET_EXTENSIONS: Record<AssetType, readonly string[]> =
   {
-    image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
-    video: ['.mp4', '.webm', '.mov'],
-    audio: ['.mp3', '.wav', '.ogg', '.m4a'],
-    font: ['.ttf', '.otf', '.woff', '.woff2'],
+    image: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
+    video: [".mp4", ".webm", ".mov"],
+    audio: [".mp3", ".wav", ".ogg", ".m4a"],
+    font: [".ttf", ".otf", ".woff", ".woff2"],
   } as const;

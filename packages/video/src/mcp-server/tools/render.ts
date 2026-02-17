@@ -2,23 +2,24 @@
  * 渲染工具
  *
  * MCP 工具：video_render
+ * 使用统一入口 SceneComposer 渲染，从项目读取 scenes + transitions 作为 inputProps
  *
  * @requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6
  */
 
-import { z } from 'zod';
-import type { FastMCP } from 'fastmcp';
-import { ProjectStore } from '../services/project-store';
-import { RenderEngine } from '../services/render-engine';
+import { z } from "zod";
+import type { FastMCP } from "fastmcp";
+import { ProjectStore } from "../services/project-store";
+import { RenderEngine } from "../services/render-engine";
 import {
   type RenderResult,
   type OutputFormat,
   type QualityPreset,
   createSuccessResponse,
-} from '../types';
-import { toErrorResponse, createProjectNotFoundError } from '../types/errors';
-import { getOutputPath } from '../utils/paths';
-import { join } from 'path';
+} from "../types";
+import { toErrorResponse, createProjectNotFoundError } from "../types/errors";
+import { getOutputPath } from "../utils/paths";
+import { join } from "path";
 
 // ============================================================================
 // Zod Schemas
@@ -28,20 +29,22 @@ import { join } from 'path';
  * video_render 输入 Schema
  */
 export const RenderInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
-  projectId: z.string().describe('项目ID'),
-  compositionId: z.string().describe('组合ID'),
+  workspacePath: z.string().describe("工作区根路径"),
+  projectId: z.string().describe("项目ID"),
   outputFormat: z
-    .enum(['mp4', 'webm', 'gif'])
+    .enum(["mp4", "webm", "gif"])
     .optional()
-    .default('mp4')
-    .describe('输出格式'),
+    .default("mp4")
+    .describe("输出格式"),
   quality: z
-    .enum(['draft', 'standard', 'high'])
+    .enum(["draft", "standard", "high"])
     .optional()
-    .default('standard')
-    .describe('质量预设'),
-  outputPath: z.string().optional().describe('输出文件路径（可选，默认自动生成）'),
+    .default("standard")
+    .describe("质量预设"),
+  outputPath: z
+    .string()
+    .optional()
+    .describe("输出文件路径（可选，默认自动生成）"),
 });
 
 // ============================================================================
@@ -51,15 +54,11 @@ export const RenderInputSchema = z.object({
 /**
  * 渲染视频到文件
  *
- * @requirements 5.1 - 启动渲染指定的组合
- * @requirements 5.2 - 支持 MP4、WebM、GIF 格式
- * @requirements 5.3 - 支持质量预设
- * @requirements 5.4 - 提供进度更新
- * @requirements 5.5 - 返回输出文件路径和渲染统计
- * @requirements 5.6 - 渲染失败时返回错误信息
+ * 从项目读取 scenes + transitions，使用 SceneComposer 统一渲染。
+ * 不再需要 compositionId 参数（固定为 SceneComposer）。
  */
 async function handleRender(
-  input: z.infer<typeof RenderInputSchema>
+  input: z.infer<typeof RenderInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -70,38 +69,42 @@ async function handleRender(
       throw createProjectNotFoundError(input.projectId);
     }
 
-    // 获取项目路径
-    const projectPath = store.getProjectPath(project.name);
-
     // 确定输出路径
     let outputPath = input.outputPath;
     if (!outputPath) {
-      // 生成带时间戳的文件名
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const fileName = `${input.compositionId}_${timestamp}.${input.outputFormat}`;
-      outputPath = join(getOutputPath(input.workspacePath, project.name), fileName);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, 19);
+      const fileName = `SceneComposer_${timestamp}.${input.outputFormat}`;
+      outputPath = join(
+        getOutputPath(input.workspacePath, project.name),
+        fileName,
+      );
     }
 
     // 创建渲染引擎
     const renderEngine = RenderEngine.create();
 
+    // 从项目读取 scenes + transitions 作为 inputProps
+    const inputProps = {
+      scenes: project.scenes,
+      transitions: project.transitions,
+    };
+
     // 执行渲染
-    // 注意：由于 MCP 工具是同步返回的，我们无法实时推送进度
-    // 进度信息会在日志中输出
     const result = await renderEngine.render(
       {
-        projectPath,
-        compositionId: input.compositionId,
         outputFormat: input.outputFormat as OutputFormat,
         quality: input.quality as QualityPreset,
+        inputProps,
         outputPath,
       },
       (progress) => {
-        // 进度回调 - 在日志中输出
         console.error(
-          `[video_render] Progress: ${progress.status} - ${progress.progress}%`
+          `[video_render] Progress: ${progress.status} - ${progress.progress}%`,
         );
-      }
+      },
     );
 
     return JSON.stringify(createSuccessResponse(result));
@@ -120,8 +123,8 @@ async function handleRender(
 export function registerRenderTools(mcp: FastMCP): void {
   // video_render
   mcp.addTool({
-    name: 'video_render',
-    description: `渲染视频到文件。
+    name: "video_render",
+    description: `渲染视频到文件。自动从项目读取场景和过渡效果，使用 SceneComposer 统一渲染。
 
 支持的输出格式：
 - mp4: H.264 编码，最广泛支持

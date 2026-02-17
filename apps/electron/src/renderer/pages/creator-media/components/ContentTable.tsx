@@ -1,5 +1,6 @@
 import { useT } from '@/context/LocaleContext'
 import type { Content, ContentStageRecord } from '@sprouty-ai/shared/db/types'
+import { PLATFORM_MAP } from '@sprouty-ai/shared/db/types'
 import { Video, FileText, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useActiveWorkspace } from '@/context/AppShellContext'
@@ -85,6 +86,40 @@ const SCRIPTING_ACTIONS = [
   { skill: 'article-script-create', label: '图文脚本', icon: FileText },
   { skill: 'video-script-create', label: '视频脚本', icon: Video },
 ]
+
+/** 解析 target_platforms JSON 字符串为平台 id 数组 */
+function parsePlatforms(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    // 兼容逗号分隔的旧格式
+    return raw.split(',').map(s => s.trim()).filter(Boolean)
+  }
+}
+
+/** 平台标签组件 */
+function PlatformTags({ platforms }: { platforms: string }) {
+  const t = useT()
+  const ids = parsePlatforms(platforms)
+  if (ids.length === 0) return <span className="text-muted-foreground">-</span>
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ids.map((id) => {
+        const meta = PLATFORM_MAP[id as keyof typeof PLATFORM_MAP]
+        return (
+          <span
+            key={id}
+            className={`inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium whitespace-nowrap ${meta?.color || 'text-muted-foreground border-border'}`}
+          >
+            {meta?.shortLabel || id}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 
 function StatusBadge({ status }: { status: string }) {
   const t = useT()
@@ -176,16 +211,17 @@ export function ContentTable({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border/60">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="border-b border-border/40 bg-muted/30">
-            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-8"></th>
-            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('标题')}</th>
-            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('状态')}</th>
-            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('平台')}</th>
-            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('更新时间')}</th>
+            <th className="px-3 py-2.5 text-left font-medium text-muted-foreground w-9"></th>
+            <th className="px-3 py-2.5 text-left font-medium text-muted-foreground w-[30%]">{t('标题')}</th>
+            <th className="px-3 py-2.5 text-left font-medium text-muted-foreground w-[12%]">{t('状态')}</th>
+            <th className="px-3 py-2.5 text-left font-medium text-muted-foreground w-[18%]">{t('平台')}</th>
+            <th className="px-3 py-2.5 text-left font-medium text-muted-foreground w-[10%]">{t('更新时间')}</th>
             {(onStatusChange || onDelete || onVersionHistory || onNextStage) && (
-              <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('操作')}</th>
+              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground">{t('操作')}</th>
             )}
           </tr>
         </thead>
@@ -205,7 +241,7 @@ export function ContentTable({
                   className={`border-b border-border/20 hover:bg-muted/20 transition-colors ${hasStages ? 'cursor-pointer' : ''}`}
                   onClick={() => hasStages && toggleRow(item.id)}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     {hasStages && (
                       <button
                         type="button"
@@ -219,19 +255,19 @@ export function ContentTable({
                       </button>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="truncate">{item.title || t('无标题')}</span>
+                  <td className="px-3 py-3 font-medium text-foreground">
+                    <div className="min-w-0">
+                      <span className="block truncate">{item.title || t('无标题')}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <StatusBadge status={item.status} />
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{item.target_platforms || '-'}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{item.updated_at ? new Date(item.updated_at).toLocaleDateString('zh-CN') : '-'}</td>
+                  <td className="px-3 py-3 text-xs"><PlatformTags platforms={item.target_platforms || ''} /></td>
+                  <td className="px-3 py-3 text-muted-foreground text-xs whitespace-nowrap">{item.updated_at ? new Date(item.updated_at).toLocaleDateString('zh-CN') : '-'}</td>
                   {(onStatusChange || onDelete || onVersionHistory || onNextStage || onScriptAction) && (
-                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1 flex-wrap">
                         {/* scripting 状态显示两个脚本创建按钮 */}
                         {onScriptAction && item.status === 'scripting' && (
                           SCRIPTING_ACTIONS.map((action) => {
@@ -305,25 +341,26 @@ export function ContentTable({
                       key={stage.id}
                       className="border-b border-border/10 bg-muted/10 hover:bg-muted/20 transition-colors"
                     >
-                      <td className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-sm text-muted-foreground" colSpan={2}>
+                      <td className="px-3 py-2"></td>
+                      <td className="px-3 py-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2 pl-4">
                           {Icon && <Icon className="h-3.5 w-3.5" />}
                           <span>{t(STAGE_TYPE_LABELS[stage.stage] || stage.stage)}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                      <td className="px-3 py-2 text-xs text-muted-foreground"></td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
                         {stage.file_path ? (
-                          <span className="truncate max-w-xs inline-block" title={stage.file_path}>
+                          <span className="block truncate" title={stage.file_path}>
                             {stage.file_path.split('/').pop()}
                           </span>
                         ) : '-'}
                       </td>
-                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                      <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                         {stage.updated_at ? new Date(stage.updated_at).toLocaleDateString('zh-CN') : '-'}
                       </td>
-                      <td className="px-4 py-2 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           {/* Stage 操作按钮 */}
                           {onStageAction && stageAction && (
                             <button
@@ -355,6 +392,7 @@ export function ContentTable({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

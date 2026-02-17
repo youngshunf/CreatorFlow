@@ -32,16 +32,32 @@ export {
   ListAssetsInputSchema,
 } from './asset';
 
-// 导出组合管理工具
+// 导出场景管理工具
 export {
-  registerCompositionTools,
-  handleAddComposition,
-  handleUpdateComposition,
-  handleRemoveComposition,
-  AddCompositionInputSchema,
-  UpdateCompositionInputSchema,
-  RemoveCompositionInputSchema,
-} from './composition';
+  registerSceneTools,
+  handleAddScene,
+  handleUpdateScene,
+  handleRemoveScene,
+  handleReorderScenes,
+  AddSceneInputSchema,
+  UpdateSceneInputSchema,
+  RemoveSceneInputSchema,
+  ReorderScenesInputSchema,
+} from './scene';
+
+// 导出过渡效果工具
+export {
+  registerTransitionTools,
+  handleSetTransitions,
+  SetTransitionsInputSchema,
+} from './transition';
+
+// 导出组合列表工具
+export {
+  registerCompositionListTools,
+  handleListAvailableCompositions,
+  ListAvailableCompositionsInputSchema,
+} from './composition-list';
 
 // 导出渲染工具
 export {
@@ -49,15 +65,6 @@ export {
   handleRender,
   RenderInputSchema,
 } from './render';
-
-// 导出预览工具
-export {
-  registerPreviewTools,
-  handlePreviewStart,
-  handlePreviewStop,
-  PreviewStartInputSchema,
-  PreviewStopInputSchema,
-} from './preview';
 
 // 导出模板工具
 export {
@@ -94,9 +101,10 @@ export {
 // 导入注册函数
 import { registerProjectTools } from './project';
 import { registerAssetTools } from './asset';
-import { registerCompositionTools } from './composition';
+import { registerSceneTools } from './scene';
+import { registerTransitionTools } from './transition';
+import { registerCompositionListTools } from './composition-list';
 import { registerRenderTools } from './render';
-import { registerPreviewTools } from './preview';
 import { registerTemplateTools } from './template';
 import { registerAssetDiscoveryTools } from './asset-discovery';
 import { registerCodeValidationTools } from './code-validation';
@@ -118,17 +126,21 @@ export function registerAllTools(mcp: FastMCP): void {
   registerAssetTools(mcp);
   console.error('[MCP Video Server] - Asset tools registered');
 
-  // 注册组合管理工具
-  registerCompositionTools(mcp);
-  console.error('[MCP Video Server] - Composition tools registered');
+  // 注册场景管理工具
+  registerSceneTools(mcp);
+  console.error('[MCP Video Server] - Scene tools registered');
+
+  // 注册过渡效果工具
+  registerTransitionTools(mcp);
+  console.error('[MCP Video Server] - Transition tools registered');
+
+  // 注册组合列表工具
+  registerCompositionListTools(mcp);
+  console.error('[MCP Video Server] - Composition list tools registered');
 
   // 注册渲染工具
   registerRenderTools(mcp);
   console.error('[MCP Video Server] - Render tools registered');
-
-  // 注册预览工具
-  registerPreviewTools(mcp);
-  console.error('[MCP Video Server] - Preview tools registered');
 
   // 注册模板工具
   registerTemplateTools(mcp);
@@ -165,29 +177,32 @@ export const TOOL_LIST = [
   { name: 'video_remove_asset', category: 'asset', description: '从视频项目移除素材' },
   { name: 'video_list_assets', category: 'asset', description: '列出项目中的所有素材' },
 
-  // 组合管理
-  { name: 'video_add_composition', category: 'composition', description: '添加组合到视频项目' },
-  { name: 'video_update_composition', category: 'composition', description: '更新视频组合' },
-  { name: 'video_remove_composition', category: 'composition', description: '从视频项目移除组合' },
+  // 场景管理
+  { name: 'video_add_scene', category: 'scene', description: '向项目添加场景片段' },
+  { name: 'video_update_scene', category: 'scene', description: '更新场景参数' },
+  { name: 'video_remove_scene', category: 'scene', description: '移除场景片段' },
+  { name: 'video_reorder_scenes', category: 'scene', description: '重排场景顺序' },
+
+  // 过渡效果
+  { name: 'video_set_transitions', category: 'transition', description: '设置场景间过渡效果' },
+
+  // 组合列表
+  { name: 'video_list_available_compositions', category: 'composition', description: '列出所有可用的内置组合及其参数' },
 
   // 渲染
   { name: 'video_render', category: 'render', description: '渲染视频到文件' },
-
-  // 预览
-  { name: 'video_preview_start', category: 'preview', description: '启动视频预览服务器' },
-  { name: 'video_preview_stop', category: 'preview', description: '停止视频预览服务器' },
 
   // 模板
   { name: 'video_list_templates', category: 'template', description: '列出所有可用的视频模板' },
   { name: 'video_get_template', category: 'template', description: '获取视频模板详情' },
 
-  // 素材发现（新增）
+  // 素材发现
   { name: 'video_list_available_assets', category: 'asset-discovery', description: '列出工作区中可用的素材文件' },
 
-  // 代码验证（新增）
+  // 代码验证
   { name: 'video_validate_composition', category: 'code-validation', description: '验证 Remotion 组合代码的语法和正确性' },
 
-  // 渲染状态（新增）
+  // 渲染状态
   { name: 'video_get_render_status', category: 'render-status', description: '获取视频渲染的当前状态和进度' },
 ] as const;
 

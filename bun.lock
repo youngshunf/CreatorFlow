@@ -189,6 +189,19 @@
         "vite": "^6.2.5",
       },
     },
+    "packages/bridge-mcp-server": {
+      "name": "@craft-agent/bridge-mcp-server",
+      "version": "0.4.5",
+      "bin": {
+        "bridge-mcp-server": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.11.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.0.0",
+      },
+    },
     "packages/codex-types": {
       "name": "@sprouty-ai/codex-types",
       "version": "0.4.3",
@@ -213,6 +226,21 @@
       },
       "devDependencies": {
         "shiki": "^3.19.0",
+      },
+    },
+    "packages/session-mcp-server": {
+      "name": "@craft-agent/session-mcp-server",
+      "version": "0.4.5",
+      "bin": {
+        "session-mcp-server": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.11.0",
+        "@sprouty-ai/session-tools-core": "workspace:*",
+        "zod": "^3.23.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.0.0",
       },
     },
     "packages/session-tools-core": {
@@ -307,6 +335,7 @@
         "@remotion/cli": "^4.0.0",
         "@remotion/player": "^4.0.0",
         "@remotion/renderer": "^4.0.0",
+        "@remotion/transitions": "^4.0.422",
         "@sprouty-ai/core": "workspace:*",
         "fastmcp": "^3.32.0",
         "nanoid": "^5.1.5",
@@ -337,6 +366,7 @@
     "@remotion/studio": "4.0.417",
     "@remotion/studio-server": "4.0.417",
     "@remotion/studio-shared": "4.0.417",
+    "@remotion/transitions": "4.0.417",
     "@remotion/web-renderer": "4.0.417",
     "@remotion/webcodecs": "4.0.417",
     "@remotion/zod-types": "4.0.417",
@@ -506,6 +536,10 @@
     "@babel/types": ["@babel/types@7.29.0", "https://registry.npm.taobao.org/@babel/types/-/types-7.29.0.tgz", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A=="],
 
     "@borewit/text-codec": ["@borewit/text-codec@0.2.1", "https://registry.npmmirror.com/@borewit/text-codec/-/text-codec-0.2.1.tgz", {}, "sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw=="],
+
+    "@craft-agent/bridge-mcp-server": ["@craft-agent/bridge-mcp-server@workspace:packages/bridge-mcp-server"],
+
+    "@craft-agent/session-mcp-server": ["@craft-agent/session-mcp-server@workspace:packages/session-mcp-server"],
 
     "@dagrejs/dagre": ["@dagrejs/dagre@1.1.8", "https://registry.npm.taobao.org/@dagrejs/dagre/-/dagre-1.1.8.tgz", { "dependencies": { "@dagrejs/graphlib": "2.2.4" } }, "sha512-5SEDlndt4W/LaVzPYJW+bSmSEZc9EzTf8rJ20WCKvjS5EAZAN0b+x0Yww7VMT4R3Wootkg+X9bUfUxazYw6Blw=="],
 
@@ -941,9 +975,13 @@
 
     "@remotion/media-utils": ["@remotion/media-utils@4.0.417", "https://registry.npmmirror.com/@remotion/media-utils/-/media-utils-4.0.417.tgz", { "dependencies": { "@remotion/media-parser": "4.0.417", "@remotion/webcodecs": "4.0.417", "mediabunny": "1.29.0", "remotion": "4.0.417" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-gNR665lY7u5JBmnykWWBp/w1nTd/ZgiyPzylKxWyUYLqB6vH0Vonj3m7pLaZLC97XEkH+svPZeSz16h4SZEBqg=="],
 
+    "@remotion/paths": ["@remotion/paths@4.0.417", "https://registry.npmmirror.com/@remotion/paths/-/paths-4.0.417.tgz", {}, "sha512-Fk5En4nOoatHNDj2eGRh/eXTL/ckn7KDVFwsxhF2DrP9zQiuxrkMmBEi3fpIunY9UEBtvoLPLYpHcw3V4hrA6Q=="],
+
     "@remotion/player": ["@remotion/player@4.0.417", "https://registry.npmmirror.com/@remotion/player/-/player-4.0.417.tgz", { "dependencies": { "remotion": "4.0.417" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-mpTrEka/V6bWkxwDUgHYjbJ5EV87OQEObim6QgQEeWhM+9z2uJOJmKwHz+PlU3L9m0wnOprThyadch3tDdh9kQ=="],
 
     "@remotion/renderer": ["@remotion/renderer@4.0.417", "https://registry.npmmirror.com/@remotion/renderer/-/renderer-4.0.417.tgz", { "dependencies": { "@remotion/licensing": "4.0.417", "@remotion/streaming": "4.0.417", "execa": "5.1.1", "extract-zip": "2.0.1", "remotion": "4.0.417", "source-map": "^0.8.0-beta.0", "ws": "8.17.1" }, "optionalDependencies": { "@remotion/compositor-darwin-arm64": "4.0.417", "@remotion/compositor-darwin-x64": "4.0.417", "@remotion/compositor-linux-arm64-gnu": "4.0.417", "@remotion/compositor-linux-arm64-musl": "4.0.417", "@remotion/compositor-linux-x64-gnu": "4.0.417", "@remotion/compositor-linux-x64-musl": "4.0.417", "@remotion/compositor-win32-x64-msvc": "4.0.417" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-8XMfWotRdfHJI6YIYZipwCgFutGwYxDu+fkxwxX2ARovbH+LRbg13qAYAF+itmcYewwirEYwlewrPmRvr5l6Bg=="],
+
+    "@remotion/shapes": ["@remotion/shapes@4.0.417", "https://registry.npmmirror.com/@remotion/shapes/-/shapes-4.0.417.tgz", { "dependencies": { "@remotion/paths": "4.0.417" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-zMsLe2vXrK46bg25bFW2m9dlOeXbmRyUq8ZM64VkkF9uEp1OxItU9witXck4fvKjs/1HpamzfdR3/w+pKCDpuA=="],
 
     "@remotion/streaming": ["@remotion/streaming@4.0.417", "https://registry.npmmirror.com/@remotion/streaming/-/streaming-4.0.417.tgz", {}, "sha512-27DQu4jkGKtUnXDwKgLtK3rGQ6cPFXS6IxDwediVU2gcIlk8pAGear/jq8oiJU9Sozs/l4KYJ8+BdlN8fnjU/w=="],
 
@@ -952,6 +990,8 @@
     "@remotion/studio-server": ["@remotion/studio-server@4.0.417", "https://registry.npmmirror.com/@remotion/studio-server/-/studio-server-4.0.417.tgz", { "dependencies": { "@babel/parser": "7.24.1", "@remotion/bundler": "4.0.417", "@remotion/renderer": "4.0.417", "@remotion/studio-shared": "4.0.417", "memfs": "3.4.3", "open": "^8.4.2", "recast": "0.23.11", "remotion": "4.0.417", "semver": "7.5.3", "source-map": "0.7.3" } }, "sha512-iPZqhv3vhx27+O/e/OI3Q1Fz7PfP6ADDy/1vgHXtLae+uD3mPT2L72kyLrpBOxKzNtJJoffYxII6HPEM2bYoVA=="],
 
     "@remotion/studio-shared": ["@remotion/studio-shared@4.0.417", "https://registry.npmmirror.com/@remotion/studio-shared/-/studio-shared-4.0.417.tgz", { "dependencies": { "remotion": "4.0.417" } }, "sha512-c5dzRF2zuGTYb/mED5l7B7JVHjQYoi+POc/IExDGMcosfgoJVZ8MPbgdteCtYvCjq2ap3NUfCvKkF1Z+hLF8FA=="],
+
+    "@remotion/transitions": ["@remotion/transitions@4.0.417", "https://registry.npmmirror.com/@remotion/transitions/-/transitions-4.0.417.tgz", { "dependencies": { "@remotion/paths": "4.0.417", "@remotion/shapes": "4.0.417", "remotion": "4.0.417" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-1/Av1FtRz01OB+3jGVjtQr4WoVSl84QeyuxSeFzTLZx0mFj9f3ZifHArP6ENmrCqkL4FRRfa8VpKNzLO5gYH2w=="],
 
     "@remotion/web-renderer": ["@remotion/web-renderer@4.0.417", "https://registry.npmmirror.com/@remotion/web-renderer/-/web-renderer-4.0.417.tgz", { "dependencies": { "@remotion/licensing": "4.0.417", "mediabunny": "1.29.0", "remotion": "4.0.417" }, "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-l3Xra4iiQnyDfQ/Xgncs0CiYmLRbFD7ngzwYi1PNKZ6bnxwMqH3L9gTO8nQrMHLQqS0iEBPmkfdLl/K+GOdt4Q=="],
 
@@ -3325,6 +3365,12 @@
 
     "@babel/highlight/chalk": ["chalk@2.4.2", "https://registry.npm.taobao.org/chalk/-/chalk-2.4.2.tgz", { "dependencies": { "ansi-styles": "^3.2.1", "escape-string-regexp": "^1.0.5", "supports-color": "^5.3.0" } }, "sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ=="],
 
+    "@craft-agent/bridge-mcp-server/@types/node": ["@types/node@22.19.8", "https://registry.npm.taobao.org/@types/node/-/node-22.19.8.tgz", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-ebO/Yl+EAvVe8DnMfi+iaAyIqYdK0q/q0y0rw82INWEKJOBe6b/P3YWE8NW7oOlF/nXFNrHwhARrN/hdgDkraA=="],
+
+    "@craft-agent/session-mcp-server/@types/node": ["@types/node@22.19.8", "https://registry.npm.taobao.org/@types/node/-/node-22.19.8.tgz", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-ebO/Yl+EAvVe8DnMfi+iaAyIqYdK0q/q0y0rw82INWEKJOBe6b/P3YWE8NW7oOlF/nXFNrHwhARrN/hdgDkraA=="],
+
+    "@craft-agent/session-mcp-server/zod": ["zod@3.25.76", "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
     "@electron/asar/minimatch": ["minimatch@10.1.2", "https://registry.npm.taobao.org/minimatch/-/minimatch-10.1.2.tgz", { "dependencies": { "@isaacs/brace-expansion": "^5.0.1" } }, "sha512-fu656aJ0n2kcXwsnwnv9g24tkU5uSmOlTjd6WyyaKm2Z+h1qmY6bAjrcaIxF/BslFqbZ8UBtbJi7KgQOZD2PTw=="],
 
     "@electron/fuses/fs-extra": ["fs-extra@9.1.0", "https://registry.npm.taobao.org/fs-extra/-/fs-extra-9.1.0.tgz", { "dependencies": { "at-least-node": "^1.0.0", "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ=="],
@@ -3480,6 +3526,8 @@
     "@sentry/react/@sentry/core": ["@sentry/core@10.38.0", "https://registry.npm.taobao.org/@sentry/core/-/core-10.38.0.tgz", {}, "sha512-1pubWDZE5y5HZEPMAZERP4fVl2NH3Ihp1A+vMoVkb3Qc66Diqj1WierAnStlZP7tCx0TBa0dK85GTW/ZFYyB9g=="],
 
     "@sprouty-ai/electron/pdfjs-dist": ["pdfjs-dist@5.4.296", "https://registry.npm.taobao.org/pdfjs-dist/-/pdfjs-dist-5.4.296.tgz", { "optionalDependencies": { "@napi-rs/canvas": "^0.1.80" } }, "sha512-DlOzet0HO7OEnmUmB6wWGJrrdvbyJKftI1bhMitK7O2N8W2gc757yyYBbINy9IDafXAV9wmKr9t7xsTaNKRG5Q=="],
+
+    "@sprouty-ai/server/@types/bun": ["@types/bun@1.3.9", "https://registry.npmmirror.com/@types/bun/-/bun-1.3.9.tgz", { "dependencies": { "bun-types": "1.3.9" } }, "sha512-KQ571yULOdWJiMH+RIWIOZ7B2RXQGpL1YQrBtLIV3FqDcCu6FsbFUBwhdKUlCKUpS3PJDsHlJ1QKlpxoVR+xtw=="],
 
     "@sprouty-ai/session-tools-core/zod": ["zod@3.25.76", "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
@@ -3751,6 +3799,10 @@
 
     "@babel/highlight/chalk/supports-color": ["supports-color@5.5.0", "https://registry.npm.taobao.org/supports-color/-/supports-color-5.5.0.tgz", { "dependencies": { "has-flag": "^3.0.0" } }, "sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow=="],
 
+    "@craft-agent/bridge-mcp-server/@types/node/undici-types": ["undici-types@6.21.0", "https://registry.npm.taobao.org/undici-types/-/undici-types-6.21.0.tgz", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
+    "@craft-agent/session-mcp-server/@types/node/undici-types": ["undici-types@6.21.0", "https://registry.npm.taobao.org/undici-types/-/undici-types-6.21.0.tgz", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
     "@electron/rebuild/got/@sindresorhus/is": ["@sindresorhus/is@4.6.0", "https://registry.npm.taobao.org/@sindresorhus/is/-/is-4.6.0.tgz", {}, "sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw=="],
 
     "@electron/rebuild/got/cacheable-lookup": ["cacheable-lookup@5.0.4", "https://registry.npm.taobao.org/cacheable-lookup/-/cacheable-lookup-5.0.4.tgz", {}, "sha512-2/kNscPhpcxrOigMZzbiWF7dz8ilhb/nIHU3EyZiXWXpeq/au8qJ8VhdftMkty3n7Gj6HIGalQG8oiBNB3AJgA=="],
@@ -3948,6 +4000,8 @@
     "@sentry/react/@sentry/browser/@sentry-internal/replay": ["@sentry-internal/replay@10.38.0", "https://registry.npm.taobao.org/@sentry-internal/replay/-/replay-10.38.0.tgz", { "dependencies": { "@sentry-internal/browser-utils": "10.38.0", "@sentry/core": "10.38.0" } }, "sha512-YWIkL6/dnaiQyFiZXJ/nN+NXGv/15z45ia86bE/TMq01CubX/DUOilgsFz0pk2v/pg3tp/U2MskLO9Hz0cnqeg=="],
 
     "@sentry/react/@sentry/browser/@sentry-internal/replay-canvas": ["@sentry-internal/replay-canvas@10.38.0", "https://registry.npm.taobao.org/@sentry-internal/replay-canvas/-/replay-canvas-10.38.0.tgz", { "dependencies": { "@sentry-internal/replay": "10.38.0", "@sentry/core": "10.38.0" } }, "sha512-OXWM9jEqNYh4VTvrMu7v+z1anz+QKQ/fZXIZdsO7JTT2lGNZe58UUMeoq386M+Saxen8F9SUH7yTORy/8KI5qw=="],
+
+    "@sprouty-ai/server/@types/bun/bun-types": ["bun-types@1.3.9", "https://registry.npmmirror.com/bun-types/-/bun-types-1.3.9.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-+UBWWOakIP4Tswh0Bt0QD0alpTY8cb5hvgiYeWCMet9YukHbzuruIEeXC2D7nMJPB12kbh8C7XJykSexEqGKJg=="],
 
     "@sprouty-ai/viewer/@vitejs/plugin-react/@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "https://registry.npm.taobao.org/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.27.tgz", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 

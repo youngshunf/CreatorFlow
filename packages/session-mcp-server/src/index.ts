@@ -21,15 +21,21 @@
  *   --plans-folder: Path to session's plans folder
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   type Tool,
-} from '@modelcontextprotocol/sdk/types.js';
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+} from "@modelcontextprotocol/sdk/types.js";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 // Import from session-tools-core
 import {
   type SessionToolContext,
@@ -52,7 +58,7 @@ import {
   // Helpers
   loadSourceConfig as loadSourceConfigFromHelpers,
   errorResponse,
-} from '@craft-agent/session-tools-core';
+} from "@sprouty-ai/session-tools-core";
 
 // ============================================================
 // Types
@@ -94,7 +100,10 @@ interface CredentialCacheEntry {
  * Get the path to a source's credential cache file.
  * The main process writes decrypted credentials to these files.
  */
-function getCredentialCachePath(workspaceRootPath: string, sourceSlug: string): string {
+function getCredentialCachePath(
+  workspaceRootPath: string,
+  sourceSlug: string,
+): string {
   return `${workspaceRootPath}/sources/${sourceSlug}/.credential-cache.json`;
 }
 
@@ -102,7 +111,10 @@ function getCredentialCachePath(workspaceRootPath: string, sourceSlug: string): 
  * Read credentials from the cache file for a source.
  * Returns null if the cache doesn't exist or is expired.
  */
-function readCredentialCache(workspaceRootPath: string, sourceSlug: string): string | null {
+function readCredentialCache(
+  workspaceRootPath: string,
+  sourceSlug: string,
+): string | null {
   const cachePath = getCredentialCachePath(workspaceRootPath, sourceSlug);
 
   try {
@@ -110,7 +122,7 @@ function readCredentialCache(workspaceRootPath: string, sourceSlug: string): str
       return null;
     }
 
-    const content = readFileSync(cachePath, 'utf-8');
+    const content = readFileSync(cachePath, "utf-8");
     const cache = JSON.parse(content) as CredentialCacheEntry;
 
     // Check expiry if set
@@ -128,7 +140,9 @@ function readCredentialCache(workspaceRootPath: string, sourceSlug: string): str
  * Create a credential manager that reads from credential cache files.
  * This allows the session-mcp-server to access credentials without keychain access.
  */
-function createCredentialManager(workspaceRootPath: string): CredentialManagerInterface {
+function createCredentialManager(
+  workspaceRootPath: string,
+): CredentialManagerInterface {
   return {
     hasValidCredentials: async (source: LoadedSource): Promise<boolean> => {
       const token = readCredentialCache(workspaceRootPath, source.config.slug);
@@ -160,10 +174,12 @@ function createCodexContext(config: SessionConfig): SessionToolContext {
   // File system implementation
   const fs = {
     exists: (path: string) => existsSync(path),
-    readFile: (path: string) => readFileSync(path, 'utf-8'),
+    readFile: (path: string) => readFileSync(path, "utf-8"),
     readFileBuffer: (path: string) => readFileSync(path),
-    writeFile: (path: string, content: string) => writeFileSync(path, content, 'utf-8'),
-    isDirectory: (path: string) => existsSync(path) && statSync(path).isDirectory(),
+    writeFile: (path: string, content: string) =>
+      writeFileSync(path, content, "utf-8"),
+    isDirectory: (path: string) =>
+      existsSync(path) && statSync(path).isDirectory(),
     readdir: (path: string) => readdirSync(path),
     stat: (path: string) => {
       const stats = statSync(path);
@@ -178,14 +194,14 @@ function createCodexContext(config: SessionConfig): SessionToolContext {
   const callbacks = {
     onPlanSubmitted: (planPath: string) => {
       sendCallback({
-        __callback__: 'plan_submitted',
+        __callback__: "plan_submitted",
         sessionId,
         planPath,
       });
     },
     onAuthRequest: (request: AuthRequest) => {
       sendCallback({
-        __callback__: 'auth_request',
+        __callback__: "auth_request",
         ...request,
       });
     },
@@ -198,8 +214,12 @@ function createCodexContext(config: SessionConfig): SessionToolContext {
   return {
     sessionId,
     workspacePath: workspaceRootPath,
-    get sourcesPath() { return join(workspaceRootPath, 'sources'); },
-    get skillsPath() { return join(workspaceRootPath, 'skills'); },
+    get sourcesPath() {
+      return join(workspaceRootPath, "sources");
+    },
+    get skillsPath() {
+      return join(workspaceRootPath, "skills");
+    },
     plansFolderPath,
     callbacks,
     fs,
@@ -222,7 +242,7 @@ function createCodexContext(config: SessionConfig): SessionToolContext {
 function createTools(): Tool[] {
   return [
     {
-      name: 'SubmitPlan',
+      name: "SubmitPlan",
       description: `Submit a plan for user review.
 
 Call this after you have written your plan to a markdown file using the Write tool.
@@ -233,18 +253,18 @@ The plan will be displayed to the user in a special formatted view.
 - No further tool calls or text output will be processed after this tool returns
 - The conversation will resume when the user responds`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           planPath: {
-            type: 'string',
-            description: 'Absolute path to the plan markdown file you wrote',
+            type: "string",
+            description: "Absolute path to the plan markdown file you wrote",
           },
         },
-        required: ['planPath'],
+        required: ["planPath"],
       },
     },
     {
-      name: 'config_validate',
+      name: "config_validate",
       description: `Validate Craft Agent configuration files.
 
 **Targets:**
@@ -256,120 +276,129 @@ The plan will be displayed to the user in a special formatted view.
 - tool-icons: Validates tool-icons.json
 - all: Validates all configuration files`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           target: {
-            type: 'string',
-            enum: ['config', 'sources', 'statuses', 'preferences', 'permissions', 'tool-icons', 'all'],
-            description: 'Which config file(s) to validate',
+            type: "string",
+            enum: [
+              "config",
+              "sources",
+              "statuses",
+              "preferences",
+              "permissions",
+              "tool-icons",
+              "all",
+            ],
+            description: "Which config file(s) to validate",
           },
           sourceSlug: {
-            type: 'string',
-            description: 'Validate a specific source by slug (used with target "sources")',
+            type: "string",
+            description:
+              'Validate a specific source by slug (used with target "sources")',
           },
         },
-        required: ['target'],
+        required: ["target"],
       },
     },
     {
-      name: 'skill_validate',
+      name: "skill_validate",
       description: `Validate a skill's SKILL.md file.
 
 Checks slug format, SKILL.md existence, YAML frontmatter, and required fields.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           skillSlug: {
-            type: 'string',
-            description: 'The slug of the skill to validate',
+            type: "string",
+            description: "The slug of the skill to validate",
           },
         },
-        required: ['skillSlug'],
+        required: ["skillSlug"],
       },
     },
     {
-      name: 'mermaid_validate',
+      name: "mermaid_validate",
       description: `Validate Mermaid diagram syntax before outputting.
 
 Use this when creating complex diagrams or debugging syntax issues.
 Uses @craft-agent/mermaid parser for accurate validation.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           code: {
-            type: 'string',
-            description: 'The mermaid diagram code to validate',
+            type: "string",
+            description: "The mermaid diagram code to validate",
           },
         },
-        required: ['code'],
+        required: ["code"],
       },
     },
     {
-      name: 'source_oauth_trigger',
+      name: "source_oauth_trigger",
       description: `Start OAuth authentication for an MCP source.
 
 **IMPORTANT:** After calling this tool, execution will be paused while OAuth completes.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the source to authenticate',
+            type: "string",
+            description: "The slug of the source to authenticate",
           },
         },
-        required: ['sourceSlug'],
+        required: ["sourceSlug"],
       },
     },
     {
-      name: 'source_google_oauth_trigger',
+      name: "source_google_oauth_trigger",
       description: `Trigger Google OAuth authentication for a Google API source (Gmail, Calendar, Drive).
 
 **IMPORTANT:** After calling this tool, execution will be paused while OAuth completes.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the Google API source to authenticate',
+            type: "string",
+            description: "The slug of the Google API source to authenticate",
           },
         },
-        required: ['sourceSlug'],
+        required: ["sourceSlug"],
       },
     },
     {
-      name: 'source_slack_oauth_trigger',
+      name: "source_slack_oauth_trigger",
       description: `Trigger Slack OAuth authentication for a Slack API source.
 
 **IMPORTANT:** After calling this tool, execution will be paused while OAuth completes.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the Slack API source to authenticate',
+            type: "string",
+            description: "The slug of the Slack API source to authenticate",
           },
         },
-        required: ['sourceSlug'],
+        required: ["sourceSlug"],
       },
     },
     {
-      name: 'source_microsoft_oauth_trigger',
+      name: "source_microsoft_oauth_trigger",
       description: `Trigger Microsoft OAuth authentication for a Microsoft API source (Outlook, OneDrive, Teams).
 
 **IMPORTANT:** After calling this tool, execution will be paused while OAuth completes.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the Microsoft API source to authenticate',
+            type: "string",
+            description: "The slug of the Microsoft API source to authenticate",
           },
         },
-        required: ['sourceSlug'],
+        required: ["sourceSlug"],
       },
     },
     {
-      name: 'source_credential_prompt',
+      name: "source_credential_prompt",
       description: `Prompt the user to enter credentials for a source.
 
 **Auth Modes:**
@@ -380,44 +409,45 @@ Uses @craft-agent/mermaid parser for accurate validation.`,
 
 **IMPORTANT:** After calling this tool, execution will be paused for user input.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the source to authenticate',
+            type: "string",
+            description: "The slug of the source to authenticate",
           },
           mode: {
-            type: 'string',
-            enum: ['bearer', 'basic', 'header', 'query'],
-            description: 'Type of credential input',
+            type: "string",
+            enum: ["bearer", "basic", "header", "query"],
+            description: "Type of credential input",
           },
           labels: {
-            type: 'object',
-            description: 'Custom field labels',
+            type: "object",
+            description: "Custom field labels",
             properties: {
-              credential: { type: 'string' },
-              username: { type: 'string' },
-              password: { type: 'string' },
+              credential: { type: "string" },
+              username: { type: "string" },
+              password: { type: "string" },
             },
           },
           description: {
-            type: 'string',
-            description: 'Description shown to user',
+            type: "string",
+            description: "Description shown to user",
           },
           hint: {
-            type: 'string',
-            description: 'Hint about where to find credentials',
+            type: "string",
+            description: "Hint about where to find credentials",
           },
           passwordRequired: {
-            type: 'boolean',
-            description: 'For basic auth: whether password is required (default: true)',
+            type: "boolean",
+            description:
+              "For basic auth: whether password is required (default: true)",
           },
         },
-        required: ['sourceSlug', 'mode'],
+        required: ["sourceSlug", "mode"],
       },
     },
     {
-      name: 'source_test',
+      name: "source_test",
       description: `Validate and test a source configuration.
 
 **Performs:**
@@ -428,14 +458,14 @@ Uses @craft-agent/mermaid parser for accurate validation.`,
 
 **Returns:** Detailed validation report with errors and warnings.`,
       inputSchema: {
-        type: 'object' as const,
+        type: "object" as const,
         properties: {
           sourceSlug: {
-            type: 'string',
-            description: 'The slug of the source to test',
+            type: "string",
+            description: "The slug of the source to test",
           },
         },
-        required: ['sourceSlug'],
+        required: ["sourceSlug"],
       },
     },
   ];
@@ -447,15 +477,17 @@ Uses @craft-agent/mermaid parser for accurate validation.`,
 
 function setupSignalHandlers(): void {
   const shutdown = (signal: string) => {
-    console.error(`Session MCP Server received ${signal}, shutting down gracefully`);
+    console.error(
+      `Session MCP Server received ${signal}, shutting down gracefully`,
+    );
     process.exit(0);
   };
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 
-  process.on('unhandledRejection', (reason) => {
-    console.error('Unhandled promise rejection in session MCP server:', reason);
+  process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled promise rejection in session MCP server:", reason);
   });
 }
 
@@ -469,20 +501,22 @@ async function main() {
   let plansFolderPath: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--session-id' && args[i + 1]) {
+    if (args[i] === "--session-id" && args[i + 1]) {
       sessionId = args[i + 1];
       i++;
-    } else if (args[i] === '--workspace-root' && args[i + 1]) {
+    } else if (args[i] === "--workspace-root" && args[i + 1]) {
       workspaceRootPath = args[i + 1];
       i++;
-    } else if (args[i] === '--plans-folder' && args[i + 1]) {
+    } else if (args[i] === "--plans-folder" && args[i + 1]) {
       plansFolderPath = args[i + 1];
       i++;
     }
   }
 
   if (!sessionId || !workspaceRootPath || !plansFolderPath) {
-    console.error('Usage: session-mcp-server --session-id <id> --workspace-root <path> --plans-folder <path>');
+    console.error(
+      "Usage: session-mcp-server --session-id <id> --workspace-root <path> --plans-folder <path>",
+    );
     process.exit(1);
   }
 
@@ -498,14 +532,14 @@ async function main() {
   // Create MCP server
   const server = new Server(
     {
-      name: 'craft-agent-session',
-      version: '0.3.1',
+      name: "craft-agent-session",
+      version: "0.3.1",
     },
     {
       capabilities: {
         tools: {},
       },
-    }
+    },
   );
 
   // Handle tool listing
@@ -519,49 +553,87 @@ async function main() {
 
     try {
       switch (name) {
-        case 'SubmitPlan':
+        case "SubmitPlan":
           return await handleSubmitPlan(ctx, toolArgs as { planPath: string });
 
-        case 'config_validate':
-          return await handleConfigValidate(ctx, toolArgs as { target: 'config' | 'sources' | 'statuses' | 'preferences' | 'permissions' | 'tool-icons' | 'all'; sourceSlug?: string });
+        case "config_validate":
+          return await handleConfigValidate(
+            ctx,
+            toolArgs as {
+              target:
+                | "config"
+                | "sources"
+                | "statuses"
+                | "preferences"
+                | "permissions"
+                | "tool-icons"
+                | "all";
+              sourceSlug?: string;
+            },
+          );
 
-        case 'skill_validate':
-          return await handleSkillValidate(ctx, toolArgs as { skillSlug: string });
+        case "skill_validate":
+          return await handleSkillValidate(
+            ctx,
+            toolArgs as { skillSlug: string },
+          );
 
-        case 'mermaid_validate':
+        case "mermaid_validate":
           return await handleMermaidValidate(ctx, toolArgs as { code: string });
 
-        case 'source_oauth_trigger':
-          return await handleSourceOAuthTrigger(ctx, toolArgs as { sourceSlug: string });
+        case "source_oauth_trigger":
+          return await handleSourceOAuthTrigger(
+            ctx,
+            toolArgs as { sourceSlug: string },
+          );
 
-        case 'source_google_oauth_trigger':
-          return await handleGoogleOAuthTrigger(ctx, toolArgs as { sourceSlug: string });
+        case "source_google_oauth_trigger":
+          return await handleGoogleOAuthTrigger(
+            ctx,
+            toolArgs as { sourceSlug: string },
+          );
 
-        case 'source_slack_oauth_trigger':
-          return await handleSlackOAuthTrigger(ctx, toolArgs as { sourceSlug: string });
+        case "source_slack_oauth_trigger":
+          return await handleSlackOAuthTrigger(
+            ctx,
+            toolArgs as { sourceSlug: string },
+          );
 
-        case 'source_microsoft_oauth_trigger':
-          return await handleMicrosoftOAuthTrigger(ctx, toolArgs as { sourceSlug: string });
+        case "source_microsoft_oauth_trigger":
+          return await handleMicrosoftOAuthTrigger(
+            ctx,
+            toolArgs as { sourceSlug: string },
+          );
 
-        case 'source_credential_prompt':
-          return await handleCredentialPrompt(ctx, toolArgs as {
-            sourceSlug: string;
-            mode: 'bearer' | 'basic' | 'header' | 'query';
-            labels?: { credential?: string; username?: string; password?: string };
-            description?: string;
-            hint?: string;
-            passwordRequired?: boolean;
-          });
+        case "source_credential_prompt":
+          return await handleCredentialPrompt(
+            ctx,
+            toolArgs as {
+              sourceSlug: string;
+              mode: "bearer" | "basic" | "header" | "query";
+              labels?: {
+                credential?: string;
+                username?: string;
+                password?: string;
+              };
+              description?: string;
+              hint?: string;
+              passwordRequired?: boolean;
+            },
+          );
 
-        case 'source_test':
-          return await handleSourceTest(ctx, toolArgs as { sourceSlug: string });
+        case "source_test":
+          return await handleSourceTest(
+            ctx,
+            toolArgs as { sourceSlug: string },
+          );
 
         default:
           return errorResponse(`Unknown tool: ${name}`);
       }
     } catch (error) {
       return errorResponse(
-        `Tool '${name}' failed: ${error instanceof Error ? error.message : String(error)}`
+        `Tool '${name}' failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   });
@@ -574,6 +646,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  console.error("Fatal error:", error);
   process.exit(1);
 });

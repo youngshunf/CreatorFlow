@@ -7,16 +7,16 @@
  * @requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4
  */
 
-import { z } from 'zod';
-import type { FastMCP } from 'fastmcp';
-import { ProjectStore } from '../services/project-store';
+import { z } from "zod";
+import type { FastMCP } from "fastmcp";
+import { ProjectStore } from "../services/project-store";
 import {
   type VideoProject,
   type ProjectSummary,
   createSuccessResponse,
-} from '../types';
-import { toErrorResponse, MCPError } from '../types/errors';
-import { getTemplateById } from '../../templates';
+} from "../types";
+import { toErrorResponse, MCPError } from "../types/errors";
+import { getTemplateById } from "../../templates";
 
 // ============================================================================
 // Zod Schemas
@@ -26,56 +26,56 @@ import { getTemplateById } from '../../templates';
  * video_create_project 输入 Schema
  */
 export const CreateProjectInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
-  name: z.string().describe('项目名称'),
-  template: z.string().optional().describe('模板ID'),
-  width: z.number().optional().default(1920).describe('视频宽度（像素）'),
-  height: z.number().optional().default(1080).describe('视频高度（像素）'),
-  fps: z.number().optional().default(30).describe('帧率'),
-  durationInSeconds: z.number().describe('视频时长（秒）'),
-  description: z.string().optional().describe('项目描述'),
+  workspacePath: z.string().describe("工作区根路径"),
+  name: z.string().describe("项目名称"),
+  template: z.string().optional().describe("模板ID"),
+  width: z.number().optional().default(1920).describe("视频宽度（像素）"),
+  height: z.number().optional().default(1080).describe("视频高度（像素）"),
+  fps: z.number().optional().default(30).describe("帧率"),
+  durationInSeconds: z.number().describe("视频时长（秒）"),
+  description: z.string().optional().describe("项目描述"),
 });
 
 /**
  * video_list_projects 输入 Schema
  */
 export const ListProjectsInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
+  workspacePath: z.string().describe("工作区根路径"),
 });
 
 /**
  * video_get_project 输入 Schema
  */
 export const GetProjectInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
-  projectId: z.string().describe('项目ID'),
+  workspacePath: z.string().describe("工作区根路径"),
+  projectId: z.string().describe("项目ID"),
 });
 
 /**
  * video_update_project 输入 Schema
  */
 export const UpdateProjectInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
-  projectId: z.string().describe('项目ID'),
-  name: z.string().optional().describe('新的项目名称'),
-  description: z.string().optional().describe('新的项目描述'),
+  workspacePath: z.string().describe("工作区根路径"),
+  projectId: z.string().describe("项目ID"),
+  name: z.string().optional().describe("新的项目名称"),
+  description: z.string().optional().describe("新的项目描述"),
   config: z
     .object({
-      width: z.number().optional().describe('视频宽度'),
-      height: z.number().optional().describe('视频高度'),
-      fps: z.number().optional().describe('帧率'),
-      durationInFrames: z.number().optional().describe('总帧数'),
+      width: z.number().optional().describe("视频宽度"),
+      height: z.number().optional().describe("视频高度"),
+      fps: z.number().optional().describe("帧率"),
+      durationInFrames: z.number().optional().describe("总帧数"),
     })
     .optional()
-    .describe('视频配置'),
+    .describe("视频配置"),
 });
 
 /**
  * video_delete_project 输入 Schema
  */
 export const DeleteProjectInputSchema = z.object({
-  workspacePath: z.string().describe('工作区根路径'),
-  projectId: z.string().describe('项目ID'),
+  workspacePath: z.string().describe("工作区根路径"),
+  projectId: z.string().describe("项目ID"),
 });
 
 // ============================================================================
@@ -94,7 +94,7 @@ export const DeleteProjectInputSchema = z.object({
  * @requirements 1.7 - 创建用户友好的目录结构
  */
 async function handleCreateProject(
-  input: z.infer<typeof CreateProjectInputSchema>
+  input: z.infer<typeof CreateProjectInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -105,7 +105,12 @@ async function handleCreateProject(
       height?: number;
       fps?: number;
       durationInFrames?: number;
-      compositions?: Array<{ name: string; code: string; props?: Record<string, any> }>;
+      scenes?: Array<{
+        name: string;
+        compositionId: string;
+        durationInFrames: number;
+        props?: Record<string, any>;
+      }>;
     } = {};
 
     if (input.template) {
@@ -116,10 +121,11 @@ async function handleCreateProject(
           height: template.defaultConfig.height,
           fps: template.defaultConfig.fps,
           durationInFrames: template.defaultConfig.durationInFrames,
-          compositions: [
+          scenes: [
             {
               name: template.name,
-              code: template.compositionCode,
+              compositionId: template.compositionId,
+              durationInFrames: template.defaultConfig.durationInFrames,
               props: template.defaultProps,
             },
           ],
@@ -138,13 +144,14 @@ async function handleCreateProject(
       description: input.description,
     });
 
-    // 如果有模板组合，添加到项目
-    if (templateConfig.compositions) {
-      for (const comp of templateConfig.compositions) {
-        await store.addComposition(project.id, {
-          name: comp.name,
-          code: comp.code,
-          props: comp.props,
+    // 如果有模板场景，添加到项目
+    if (templateConfig.scenes) {
+      for (const scene of templateConfig.scenes) {
+        await store.addScene(project.id, {
+          name: scene.name,
+          compositionId: scene.compositionId,
+          durationInFrames: scene.durationInFrames,
+          props: scene.props,
         });
       }
       // 重新获取项目以包含组合
@@ -167,7 +174,7 @@ async function handleCreateProject(
  * @requirements 2.4 - 按更新时间降序排列
  */
 async function handleListProjects(
-  input: z.infer<typeof ListProjectsInputSchema>
+  input: z.infer<typeof ListProjectsInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -185,7 +192,7 @@ async function handleListProjects(
  * @requirements 2.3 - 项目不存在时返回错误
  */
 async function handleGetProject(
-  input: z.infer<typeof GetProjectInputSchema>
+  input: z.infer<typeof GetProjectInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -193,9 +200,9 @@ async function handleGetProject(
 
     if (!project) {
       throw new MCPError(
-        'PROJECT_NOT_FOUND',
+        "PROJECT_NOT_FOUND",
         `项目不存在: ${input.projectId}`,
-        { field: 'projectId', received: input.projectId }
+        { field: "projectId", received: input.projectId },
       );
     }
 
@@ -213,7 +220,7 @@ async function handleGetProject(
  * @requirements 3.4 - 项目不存在时返回错误
  */
 async function handleUpdateProject(
-  input: z.infer<typeof UpdateProjectInputSchema>
+  input: z.infer<typeof UpdateProjectInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -235,7 +242,7 @@ async function handleUpdateProject(
  * @requirements 3.4 - 项目不存在时返回错误
  */
 async function handleDeleteProject(
-  input: z.infer<typeof DeleteProjectInputSchema>
+  input: z.infer<typeof DeleteProjectInputSchema>,
 ): Promise<string> {
   try {
     const store = ProjectStore.create(input.workspacePath);
@@ -256,40 +263,44 @@ async function handleDeleteProject(
 export function registerProjectTools(mcp: FastMCP): void {
   // video_create_project
   mcp.addTool({
-    name: 'video_create_project',
-    description: '创建新的视频项目。支持指定模板、分辨率、帧率和时长。项目将保存在工作区的"视频创作"目录下。',
+    name: "video_create_project",
+    description:
+      '创建新的视频项目。支持指定模板、分辨率、帧率和时长。项目将保存在工作区的"视频创作"目录下。',
     parameters: CreateProjectInputSchema,
     execute: handleCreateProject,
   });
 
   // video_list_projects
   mcp.addTool({
-    name: 'video_list_projects',
-    description: '列出工作区中的所有视频项目。返回项目摘要列表，按更新时间降序排列。',
+    name: "video_list_projects",
+    description:
+      "列出工作区中的所有视频项目。返回项目摘要列表，按更新时间降序排列。",
     parameters: ListProjectsInputSchema,
     execute: handleListProjects,
   });
 
   // video_get_project
   mcp.addTool({
-    name: 'video_get_project',
-    description: '获取视频项目的完整详情，包括配置、组合和素材列表。',
+    name: "video_get_project",
+    description: "获取视频项目的完整详情，包括配置、组合和素材列表。",
     parameters: GetProjectInputSchema,
     execute: handleGetProject,
   });
 
   // video_update_project
   mcp.addTool({
-    name: 'video_update_project',
-    description: '更新视频项目的名称、描述或配置。只更新提供的字段，其他字段保持不变。',
+    name: "video_update_project",
+    description:
+      "更新视频项目的名称、描述或配置。只更新提供的字段，其他字段保持不变。",
     parameters: UpdateProjectInputSchema,
     execute: handleUpdateProject,
   });
 
   // video_delete_project
   mcp.addTool({
-    name: 'video_delete_project',
-    description: '删除视频项目及其所有关联文件（素材、组合、输出等）。此操作不可撤销。',
+    name: "video_delete_project",
+    description:
+      "删除视频项目及其所有关联文件（素材、组合、输出等）。此操作不可撤销。",
     parameters: DeleteProjectInputSchema,
     execute: handleDeleteProject,
   });

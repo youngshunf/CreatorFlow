@@ -2,30 +2,28 @@
  * Render Worker
  *
  * Handles video rendering using Bun subprocess to call Remotion's bundler and renderer APIs.
- * Supports multiple quality presets and output formats with progress reporting.
- *
- * 重构说明：
- * - 使用 Bun 子进程调用独立的渲染脚本 (apps/mcp-video/src/render-script.ts)
- * - 通过解析子进程 stdout 获取 JSON 格式的进度信息
- * - 支持通过 SIGTERM 信号取消渲染
+ * 使用 packages/video/src/Root.tsx 作为统一入口，compositionId 固定为 "SceneComposer"。
+ * 通过 inputProps 传入 scenes + transitions 数据。
  *
  * @requirements 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
-import { spawn, type ChildProcess } from 'child_process';
-import { join, dirname } from 'path';
-import { existsSync, mkdirSync } from 'fs';
-import { app } from 'electron';
+import { spawn, type ChildProcess } from "child_process";
+import { join, dirname } from "path";
+import { existsSync, mkdirSync } from "fs";
+import { app } from "electron";
 import type {
   RenderProgress,
   OutputFormat,
   QualityPreset,
-} from '@sprouty-ai/video';
-import type { BunPathResolver } from '../bun-path';
-import { createBunPathResolver } from '../bun-path';
-import log from '../logger';
+  Scene,
+  Transition,
+} from "@sprouty-ai/video";
+import type { BunPathResolver } from "../bun-path";
+import { createBunPathResolver } from "../bun-path";
+import log from "../logger";
 
-const renderLog = log.scope('video:render');
+const renderLog = log.scope("video:render");
 
 // ============================================================================
 // Types and Interfaces
@@ -35,21 +33,25 @@ const renderLog = log.scope('video:render');
  * 渲染脚本支持的质量预设
  * 渲染脚本支持: draft, preview, production, high
  */
-export type RenderScriptQualityPreset = 'draft' | 'preview' | 'production' | 'high';
+export type RenderScriptQualityPreset =
+  | "draft"
+  | "preview"
+  | "production"
+  | "high";
 
 /**
  * 将 @sprouty-ai/video 的 QualityPreset 映射到渲染脚本的质量预设
  */
 function mapQualityPreset(quality: QualityPreset): RenderScriptQualityPreset {
   switch (quality) {
-    case 'draft':
-      return 'draft';
-    case 'standard':
-      return 'production';
-    case 'high':
-      return 'high';
+    case "draft":
+      return "draft";
+    case "standard":
+      return "production";
+    case "high":
+      return "high";
     default:
-      return 'production';
+      return "production";
   }
 }
 
@@ -58,14 +60,14 @@ function mapQualityPreset(quality: QualityPreset): RenderScriptQualityPreset {
  * @requirements 4.5 - 返回分类的错误信息
  */
 export enum RenderErrorType {
-  BUNDLE_FAILED = 'BUNDLE_FAILED',
-  COMPOSITION_NOT_FOUND = 'COMPOSITION_NOT_FOUND',
-  RENDER_FAILED = 'RENDER_FAILED',
-  OUTPUT_WRITE_FAILED = 'OUTPUT_WRITE_FAILED',
-  CANCELLED = 'CANCELLED',
-  INVALID_PROJECT = 'INVALID_PROJECT',
-  BUN_NOT_FOUND = 'BUN_NOT_FOUND',
-  SCRIPT_NOT_FOUND = 'SCRIPT_NOT_FOUND',
+  BUNDLE_FAILED = "BUNDLE_FAILED",
+  COMPOSITION_NOT_FOUND = "COMPOSITION_NOT_FOUND",
+  RENDER_FAILED = "RENDER_FAILED",
+  OUTPUT_WRITE_FAILED = "OUTPUT_WRITE_FAILED",
+  CANCELLED = "CANCELLED",
+  INVALID_PROJECT = "INVALID_PROJECT",
+  BUN_NOT_FOUND = "BUN_NOT_FOUND",
+  SCRIPT_NOT_FOUND = "SCRIPT_NOT_FOUND",
 }
 
 /**
@@ -82,16 +84,17 @@ export interface RenderError {
  * Options for the render worker
  */
 export interface RenderWorkerOptions {
-  /** Path to the video project directory */
-  projectPath: string;
-  /** ID of the composition to render */
-  compositionId: string;
   /** Output file path */
   outputPath: string;
   /** Quality preset (draft, standard, high) - will be mapped to render script presets */
   quality: QualityPreset;
   /** Output format */
   outputFormat?: OutputFormat;
+  /** SceneComposer inputProps: scenes + transitions */
+  inputProps: {
+    scenes: Scene[];
+    transitions: Transition[];
+  };
   /** Progress callback */
   onProgress?: (progress: RenderProgress) => void;
 }
@@ -148,23 +151,46 @@ export class RenderWorker implements IRenderWorker {
   constructor(bunResolver?: BunPathResolver, renderScriptPath?: string) {
     this.bunResolver = bunResolver ?? createBunPathResolver();
     this.renderScriptPath = renderScriptPath ?? this.detectRenderScriptPath();
-    renderLog.info('RenderWorker initialized with Bun subprocess mode');
+    renderLog.info("RenderWorker initialized with Bun subprocess mode");
     renderLog.info(`Render script path: ${this.renderScriptPath}`);
   }
 
   /**
    * 检测渲染脚本路径
+   * 渲染脚本位于 packages/video/src/mcp-server/services/render-script.ts
    */
   private detectRenderScriptPath(): string {
-    // 在打包模式下，渲染脚本位于 app.asar 或 resources 目录
     if (app.isPackaged) {
-      // 尝试多个可能的位置
       const possiblePaths = [
-        // 打包后的路径（在 resources 目录下）
-        join(process.resourcesPath, 'app.asar', 'apps', 'mcp-video', 'src', 'render-script.ts'),
-        join(process.resourcesPath, 'apps', 'mcp-video', 'src', 'render-script.ts'),
-        // 解压后的路径
-        join(app.getAppPath(), '..', 'apps', 'mcp-video', 'src', 'render-script.ts'),
+        join(
+          process.resourcesPath,
+          "app.asar",
+          "packages",
+          "video",
+          "src",
+          "mcp-server",
+          "services",
+          "render-script.ts",
+        ),
+        join(
+          process.resourcesPath,
+          "packages",
+          "video",
+          "src",
+          "mcp-server",
+          "services",
+          "render-script.ts",
+        ),
+        join(
+          app.getAppPath(),
+          "..",
+          "packages",
+          "video",
+          "src",
+          "mcp-server",
+          "services",
+          "render-script.ts",
+        ),
       ];
 
       for (const scriptPath of possiblePaths) {
@@ -173,37 +199,66 @@ export class RenderWorker implements IRenderWorker {
         }
       }
 
-      // 如果都找不到，返回默认路径（后续会报错）
-      return join(process.resourcesPath, 'apps', 'mcp-video', 'src', 'render-script.ts');
+      return join(
+        process.resourcesPath,
+        "packages",
+        "video",
+        "src",
+        "mcp-server",
+        "services",
+        "render-script.ts",
+      );
     }
 
-    // 开发模式：使用相对于项目根目录的路径
-    // 从 apps/electron/src/main/video/ 向上找到项目根目录
-    const devPath = join(__dirname, '..', '..', '..', '..', 'mcp-video', 'src', 'render-script.ts');
+    // 开发模式：从 apps/electron/src/main/video/ 向上到 monorepo 根目录
+    // apps/electron/src/main/video/ → ../../../../.. → monorepo root
+    const devPath = join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "..",
+      "packages",
+      "video",
+      "src",
+      "mcp-server",
+      "services",
+      "render-script.ts",
+    );
     if (existsSync(devPath)) {
       return devPath;
     }
 
-    // 备用：从 app.getAppPath() 计算
-    return join(app.getAppPath(), 'apps', 'mcp-video', 'src', 'render-script.ts');
+    // 备用：从 app.getAppPath() 计算（app.getAppPath() = apps/electron）
+    return join(
+      app.getAppPath(),
+      "..",
+      "..",
+      "packages",
+      "video",
+      "src",
+      "mcp-server",
+      "services",
+      "render-script.ts",
+    );
   }
 
   /**
-   * Render a video composition using Bun subprocess
+   * Render a video using Bun subprocess with SceneComposer
+   *
+   * compositionId 固定为 "SceneComposer"，通过 inputProps 传入 scenes + transitions。
    *
    * @param options - Render options
    * @returns Path to the rendered output file
    * @throws RenderError if rendering fails
-   *
-   * @requirements 4.1, 4.2, 4.3, 4.4, 4.5
    */
   async render(options: RenderWorkerOptions): Promise<string> {
     const {
-      projectPath,
-      compositionId,
       outputPath,
       quality,
-      outputFormat = 'mp4',
+      outputFormat = "mp4",
+      inputProps,
       onProgress,
     } = options;
 
@@ -211,27 +266,17 @@ export class RenderWorker implements IRenderWorker {
     this.isCancelled = false;
     this.currentProcess = null;
 
-    renderLog.info(`Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}`);
+    const compositionId = "SceneComposer";
+
+    renderLog.info(
+      `Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}, scenes=${inputProps.scenes.length}`,
+    );
 
     // 报告初始状态
     this.reportProgress(onProgress, {
-      status: 'bundling',
+      status: "bundling",
       progress: 0,
     });
-
-    // 验证项目路径
-    if (!existsSync(projectPath)) {
-      const error = this.createError(
-        RenderErrorType.INVALID_PROJECT,
-        `Project path not found: ${projectPath}`
-      );
-      this.reportProgress(onProgress, {
-        status: 'failed',
-        progress: 0,
-        error: error.message,
-      });
-      throw error;
-    }
 
     // 确保输出目录存在
     const outputDir = dirname(outputPath);
@@ -247,10 +292,10 @@ export class RenderWorker implements IRenderWorker {
     } catch (error) {
       const renderError = this.createError(
         RenderErrorType.BUN_NOT_FOUND,
-        `Bun runtime not found: ${error instanceof Error ? error.message : String(error)}`
+        `Bun runtime not found: ${error instanceof Error ? error.message : String(error)}`,
       );
       this.reportProgress(onProgress, {
-        status: 'failed',
+        status: "failed",
         progress: 0,
         error: renderError.message,
       });
@@ -261,10 +306,10 @@ export class RenderWorker implements IRenderWorker {
     if (!existsSync(this.renderScriptPath)) {
       const error = this.createError(
         RenderErrorType.SCRIPT_NOT_FOUND,
-        `Render script not found: ${this.renderScriptPath}`
+        `Render script not found: ${this.renderScriptPath}`,
       );
       this.reportProgress(onProgress, {
-        status: 'failed',
+        status: "failed",
         progress: 0,
         error: error.message,
       });
@@ -275,42 +320,51 @@ export class RenderWorker implements IRenderWorker {
     const scriptQuality = mapQualityPreset(quality);
 
     // 构建命令行参数
+    // compositionId 固定为 SceneComposer，inputProps 通过 --input-props JSON 传入
     const args = [
-      'run',
+      "run",
       this.renderScriptPath,
-      '--project', projectPath,
-      '--composition', compositionId,
-      '--output', outputPath,
-      '--quality', scriptQuality,
-      '--format', outputFormat,
+      "--composition",
+      compositionId,
+      "--output",
+      outputPath,
+      "--quality",
+      scriptQuality,
+      "--format",
+      outputFormat,
+      "--input-props",
+      JSON.stringify(inputProps),
     ];
 
-    renderLog.info(`Spawning render process: ${bunPath} ${args.join(' ')}`);
+    renderLog.info(
+      `Spawning render process: ${bunPath} ${args.slice(0, 8).join(" ")} --input-props [...]`,
+    );
+
+    // 获取 packages/video 目录作为 cwd（确保 Remotion 能找到依赖）
+    const videoPackageDir = dirname(dirname(this.renderScriptPath));
 
     return new Promise<string>((resolve, reject) => {
-      // 启动子进程
-      // @requirements 4.2 - 通过 Bun 子进程调用 Remotion 渲染 API
       const childProcess = spawn(bunPath, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
         detached: false,
-        // 设置工作目录为项目路径
-        cwd: projectPath,
+        // 设置工作目录为 packages/video 目录
+        cwd: videoPackageDir,
       });
 
       this.currentProcess = childProcess;
 
       let lastError: string | undefined;
-      let stdoutBuffer = '';
+      let stdoutBuffer = "";
 
       // 处理 stdout - 解析 JSON 进度信息
       // @requirements 4.3 - 支持进度回调，报告渲染状态
-      childProcess.stdout?.on('data', (data: Buffer) => {
+      childProcess.stdout?.on("data", (data: Buffer) => {
         stdoutBuffer += data.toString();
 
         // 按行解析 JSON
-        const lines = stdoutBuffer.split('\n');
+        const lines = stdoutBuffer.split("\n");
         // 保留最后一个不完整的行
-        stdoutBuffer = lines.pop() || '';
+        stdoutBuffer = lines.pop() || "";
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -332,7 +386,7 @@ export class RenderWorker implements IRenderWorker {
       });
 
       // 处理 stderr - 记录错误日志
-      childProcess.stderr?.on('data', (data: Buffer) => {
+      childProcess.stderr?.on("data", (data: Buffer) => {
         const message = data.toString().trim();
         if (message) {
           renderLog.warn(`Render stderr: ${message}`);
@@ -340,7 +394,7 @@ export class RenderWorker implements IRenderWorker {
       });
 
       // 处理进程退出
-      childProcess.on('close', (code: number | null, signal: string | null) => {
+      childProcess.on("close", (code: number | null, signal: string | null) => {
         this.currentProcess = null;
 
         // 处理剩余的 stdout 缓冲
@@ -358,13 +412,13 @@ export class RenderWorker implements IRenderWorker {
 
         // 检查是否被取消
         // @requirements 4.4 - 支持取消正在进行的渲染任务
-        if (this.isCancelled || signal === 'SIGTERM') {
+        if (this.isCancelled || signal === "SIGTERM") {
           const error = this.createError(
             RenderErrorType.CANCELLED,
-            'Render cancelled by user'
+            "Render cancelled by user",
           );
           this.reportProgress(onProgress, {
-            status: 'failed',
+            status: "failed",
             progress: 0,
             error: error.message,
           });
@@ -376,7 +430,7 @@ export class RenderWorker implements IRenderWorker {
         if (code === 0) {
           // 成功
           this.reportProgress(onProgress, {
-            status: 'completed',
+            status: "completed",
             progress: 100,
           });
           renderLog.info(`Render completed: ${outputPath}`);
@@ -384,14 +438,16 @@ export class RenderWorker implements IRenderWorker {
         } else {
           // 失败 - 根据退出码分类错误
           // @requirements 4.5 - 返回分类的错误信息
-          const errorType = EXIT_CODE_TO_ERROR_TYPE[code ?? -1] ?? RenderErrorType.RENDER_FAILED;
+          const errorType =
+            EXIT_CODE_TO_ERROR_TYPE[code ?? -1] ??
+            RenderErrorType.RENDER_FAILED;
           const error = this.createError(
             errorType,
             lastError || `Render process exited with code ${code}`,
-            `Exit code: ${code}, Signal: ${signal}`
+            `Exit code: ${code}, Signal: ${signal}`,
           );
           this.reportProgress(onProgress, {
-            status: 'failed',
+            status: "failed",
             progress: 0,
             error: error.message,
           });
@@ -401,15 +457,15 @@ export class RenderWorker implements IRenderWorker {
       });
 
       // 处理进程错误
-      childProcess.on('error', (err: Error) => {
+      childProcess.on("error", (err: Error) => {
         this.currentProcess = null;
         const error = this.createError(
           RenderErrorType.RENDER_FAILED,
           `Failed to spawn render process: ${err.message}`,
-          err.stack
+          err.stack,
         );
         this.reportProgress(onProgress, {
-          status: 'failed',
+          status: "failed",
           progress: 0,
           error: error.message,
         });
@@ -425,20 +481,22 @@ export class RenderWorker implements IRenderWorker {
    * @requirements 4.4 - 支持取消正在进行的渲染任务
    */
   cancel(): void {
-    renderLog.info('Cancelling render...');
+    renderLog.info("Cancelling render...");
     this.isCancelled = true;
 
     if (this.currentProcess) {
       // 发送 SIGTERM 信号
-      const killed = this.currentProcess.kill('SIGTERM');
+      const killed = this.currentProcess.kill("SIGTERM");
       renderLog.info(`SIGTERM sent to render process, killed=${killed}`);
 
       // 如果 SIGTERM 没有效果，5 秒后发送 SIGKILL
       const process = this.currentProcess;
       setTimeout(() => {
         if (process && !process.killed) {
-          renderLog.warn('Render process did not respond to SIGTERM, sending SIGKILL');
-          process.kill('SIGKILL');
+          renderLog.warn(
+            "Render process did not respond to SIGTERM, sending SIGKILL",
+          );
+          process.kill("SIGKILL");
         }
       }, 5000);
     }
@@ -453,7 +511,7 @@ export class RenderWorker implements IRenderWorker {
    */
   private reportProgress(
     callback: ((progress: RenderProgress) => void) | undefined,
-    progress: RenderProgress
+    progress: RenderProgress,
   ): void {
     if (callback) {
       callback(progress);
@@ -464,7 +522,11 @@ export class RenderWorker implements IRenderWorker {
   /**
    * Create a render error
    */
-  private createError(type: RenderErrorType, message: string, details?: string): RenderError {
+  private createError(
+    type: RenderErrorType,
+    message: string,
+    details?: string,
+  ): RenderError {
     return {
       type,
       message,

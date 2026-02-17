@@ -14,17 +14,15 @@
  *         │   ├── videos/
  *         │   ├── audio/
  *         │   └── fonts/
- *         ├── 组合/                  # 组合代码
- *         │   └── {compositionId}.tsx
  *         └── 输出/                  # 渲染输出
  *             └── {renderName}.mp4
  *
  * @requirements 12.1, 12.2, 12.3, 12.4
  */
 
-import { join, basename, extname } from 'path';
-import { homedir } from 'os';
-import { randomUUID } from 'crypto';
+import { join, basename, extname } from "path";
+import { homedir } from "os";
+import { randomUUID } from "crypto";
 import {
   existsSync,
   mkdirSync,
@@ -33,40 +31,31 @@ import {
   rmSync,
   copyFileSync,
   readdirSync,
-  statSync,
-} from 'fs';
+} from "fs";
 // Import types from video package
 import type {
   VideoProject,
   VideoConfig,
-  Composition,
+  Scene,
+  Transition,
   Asset,
   AssetType,
-} from '@sprouty-ai/video';
+} from "@sprouty-ai/video";
 import {
   VideoProjectSchema,
   SUPPORTED_ASSET_EXTENSIONS,
-} from '@sprouty-ai/video';
+} from "@sprouty-ai/video";
 // Import MCP Server path utilities
 import {
   getVideoProjectsDir,
   getProjectPath,
-  getProjectConfigPath,
-  getAssetsPath,
   getAssetTypePath,
-  getCompositionsPath,
-  getCompositionFilePath,
   getOutputPath,
-  VIDEO_PROJECTS_DIR_NAME,
-  ASSETS_DIR_NAME,
-  COMPOSITIONS_DIR_NAME,
-  OUTPUT_DIR_NAME,
-  extractProjectName,
   getAssetRelativePath,
-} from '@sprouty-ai/video/mcp-server/utils/paths';
-import log from '../logger';
+} from "@sprouty-ai/video/mcp-server/utils/paths";
+import log from "../logger";
 
-const videoLog = log.scope('video');
+const videoLog = log.scope("video");
 
 /**
  * Options for creating a new video project
@@ -91,9 +80,16 @@ export interface IProjectManager {
   createProject(options: CreateProjectOptions): Promise<VideoProject>;
   listProjects(workspaceId: string): Promise<VideoProject[]>;
   getProject(projectId: string): Promise<VideoProject | null>;
-  updateProject(projectId: string, updates: Partial<VideoProject>): Promise<VideoProject>;
+  updateProject(
+    projectId: string,
+    updates: Partial<VideoProject>,
+  ): Promise<VideoProject>;
   deleteProject(projectId: string): Promise<boolean>;
-  addAsset(projectId: string, assetPath: string, assetType: AssetType): Promise<Asset>;
+  addAsset(
+    projectId: string,
+    assetPath: string,
+    assetType: AssetType,
+  ): Promise<Asset>;
   removeAsset(projectId: string, assetId: string): Promise<boolean>;
   getProjectPath(projectId: string): string;
 }
@@ -120,7 +116,7 @@ function getVideoProjectsBasePath(workspaceRootPath: string): string {
  * Workspaces are stored in ~/.creator-flow/workspaces/{workspaceId}/
  */
 function getWorkspaceRootPath(workspaceId: string): string {
-  return join(homedir(), '.creator-flow', 'workspaces', workspaceId);
+  return join(homedir(), ".creator-flow", "workspaces", workspaceId);
 }
 
 /**
@@ -134,7 +130,7 @@ export class ProjectManager implements IProjectManager {
   private projectIdToNameCache: Map<string, string> = new Map();
 
   constructor() {
-    videoLog.info('ProjectManager initialized');
+    videoLog.info("ProjectManager initialized");
   }
 
   /**
@@ -145,7 +141,7 @@ export class ProjectManager implements IProjectManager {
     const { name, workspaceId, template, config, description } = options;
 
     // Generate unique project ID
-    const projectId = `proj_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+    const projectId = `proj_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
     // Get workspace root path
     const workspaceRootPath = getWorkspaceRootPath(workspaceId);
@@ -155,49 +151,48 @@ export class ProjectManager implements IProjectManager {
 
     // Create project directory structure using MCP Server path utilities
     const projectPath = getProjectPath(workspaceRootPath, name);
-    const compositionsPath = getCompositionsPath(workspaceRootPath, name);
-    const assetsPath = getAssetsPath(workspaceRootPath, name);
     const outputPath = getOutputPath(workspaceRootPath, name);
 
     // Create all directories
     mkdirSync(projectPath, { recursive: true });
-    mkdirSync(compositionsPath, { recursive: true });
-    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'image'), { recursive: true });
-    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'video'), { recursive: true });
-    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'audio'), { recursive: true });
-    mkdirSync(getAssetTypePath(workspaceRootPath, name, 'font'), { recursive: true });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, "image"), {
+      recursive: true,
+    });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, "video"), {
+      recursive: true,
+    });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, "audio"), {
+      recursive: true,
+    });
+    mkdirSync(getAssetTypePath(workspaceRootPath, name, "font"), {
+      recursive: true,
+    });
     mkdirSync(outputPath, { recursive: true });
 
     // Initialize project configuration
     let projectConfig: VideoConfig = { ...DEFAULT_CONFIG };
-    let compositions: Composition[] = [];
+    const scenes: Scene[] = [];
+    const transitions: Transition[] = [];
 
     // Apply template if specified
     if (template) {
       try {
-        const { getTemplateById } = await import('@sprouty-ai/video');
+        const { getTemplateById } = await import("@sprouty-ai/video");
         const templateData = getTemplateById(template);
         if (templateData) {
           projectConfig = { ...templateData.defaultConfig };
-          // Create initial composition from template
-          const compositionId = `comp_${randomUUID().replace(/-/g, '').slice(0, 8)}`;
-          const compositionFilePath = getCompositionFilePath(workspaceRootPath, name, compositionId);
-
-          // Write composition code to file
-          writeFileSync(
-            compositionFilePath,
-            templateData.compositionCode,
-            'utf-8'
-          );
-
-          compositions.push({
-            id: compositionId,
+          // Create initial scene from template
+          scenes.push({
+            id: `scene_${randomUUID().replace(/-/g, "").slice(0, 8)}`,
             name: templateData.name,
-            code: `${COMPOSITIONS_DIR_NAME}/${compositionId}.tsx`,
-            props: templateData.defaultProps,
+            compositionId: templateData.compositionId,
+            durationInFrames: templateData.defaultConfig.durationInFrames,
+            props: templateData.defaultProps || {},
           });
 
-          videoLog.info(`Applied template "${template}" to project ${projectId}`);
+          videoLog.info(
+            `Applied template "${template}" to project ${projectId}`,
+          );
         }
       } catch (error) {
         videoLog.warn(`Failed to apply template "${template}":`, error);
@@ -219,7 +214,8 @@ export class ProjectManager implements IProjectManager {
       createdAt: now,
       updatedAt: now,
       config: projectConfig,
-      compositions,
+      scenes,
+      transitions,
       assets: [],
       renders: [],
     };
@@ -234,7 +230,9 @@ export class ProjectManager implements IProjectManager {
     this.projectWorkspaceMap.set(projectId, workspaceId);
     this.projectIdToNameCache.set(projectId, name);
 
-    videoLog.info(`Created video project "${name}" (${projectId}) in workspace ${workspaceId}`);
+    videoLog.info(
+      `Created video project "${name}" (${projectId}) in workspace ${workspaceId}`,
+    );
 
     return validated;
   }
@@ -258,16 +256,20 @@ export class ProjectManager implements IProjectManager {
       if (!entry.isDirectory()) continue;
 
       const projectPath = join(projectsBasePath, entry.name);
-      const projectJsonPath = join(projectPath, 'project.json');
+      const projectJsonPath = join(projectPath, "project.json");
 
       if (!existsSync(projectJsonPath)) {
-        videoLog.warn(`Project directory ${entry.name} missing project.json, skipping`);
+        videoLog.warn(
+          `Project directory ${entry.name} missing project.json, skipping`,
+        );
         continue;
       }
 
       try {
-        const data = readFileSync(projectJsonPath, 'utf-8');
+        const data = readFileSync(projectJsonPath, "utf-8");
         const parsed = JSON.parse(data);
+        // 旧项目迁移：compositions → scenes
+        this.migrateCompositionsToScenes(parsed);
         const validated = VideoProjectSchema.parse(parsed);
         projects.push(validated);
 
@@ -281,7 +283,9 @@ export class ProjectManager implements IProjectManager {
       }
     }
 
-    videoLog.info(`Loaded ${projects.length} video projects from workspace ${workspaceId}`);
+    videoLog.info(
+      `Loaded ${projects.length} video projects from workspace ${workspaceId}`,
+    );
     return projects;
   }
 
@@ -294,14 +298,16 @@ export class ProjectManager implements IProjectManager {
       return null;
     }
 
-    const projectJsonPath = join(projectPath, 'project.json');
+    const projectJsonPath = join(projectPath, "project.json");
     if (!existsSync(projectJsonPath)) {
       return null;
     }
 
     try {
-      const data = readFileSync(projectJsonPath, 'utf-8');
+      const data = readFileSync(projectJsonPath, "utf-8");
       const parsed = JSON.parse(data);
+      // 旧项目迁移：compositions → scenes
+      this.migrateCompositionsToScenes(parsed);
       const validated = VideoProjectSchema.parse(parsed);
       return validated;
     } catch (error) {
@@ -315,7 +321,7 @@ export class ProjectManager implements IProjectManager {
    */
   async updateProject(
     projectId: string,
-    updates: Partial<VideoProject>
+    updates: Partial<VideoProject>,
   ): Promise<VideoProject> {
     const project = await this.getProject(projectId);
     if (!project) {
@@ -371,7 +377,7 @@ export class ProjectManager implements IProjectManager {
   async addAsset(
     projectId: string,
     assetPath: string,
-    assetType: AssetType
+    assetType: AssetType,
   ): Promise<Asset> {
     // Validate source file exists
     if (!existsSync(assetPath)) {
@@ -383,7 +389,7 @@ export class ProjectManager implements IProjectManager {
     const supportedExts = SUPPORTED_ASSET_EXTENSIONS[assetType];
     if (!supportedExts.includes(ext as any)) {
       throw new Error(
-        `Unsupported ${assetType} format: ${ext}. Supported formats: ${supportedExts.join(', ')}`
+        `Unsupported ${assetType} format: ${ext}. Supported formats: ${supportedExts.join(", ")}`,
       );
     }
 
@@ -401,9 +407,13 @@ export class ProjectManager implements IProjectManager {
     const workspaceRootPath = getWorkspaceRootPath(workspaceId);
 
     // Generate asset ID and determine destination path
-    const assetId = `asset_${randomUUID().replace(/-/g, '').slice(0, 8)}`;
+    const assetId = `asset_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
     const fileName = basename(assetPath);
-    const destDir = getAssetTypePath(workspaceRootPath, project.name, assetType);
+    const destDir = getAssetTypePath(
+      workspaceRootPath,
+      project.name,
+      assetType,
+    );
     const destPath = join(destDir, `${assetId}_${fileName}`);
 
     // Ensure destination directory exists
@@ -424,7 +434,9 @@ export class ProjectManager implements IProjectManager {
     const updatedAssets = [...project.assets, asset];
     await this.updateProject(projectId, { assets: updatedAssets });
 
-    videoLog.info(`Added ${assetType} asset "${fileName}" to project ${projectId}`);
+    videoLog.info(
+      `Added ${assetType} asset "${fileName}" to project ${projectId}`,
+    );
     return asset;
   }
 
@@ -498,7 +510,7 @@ export class ProjectManager implements IProjectManager {
     }
 
     // Search all workspaces
-    const workspacesDir = join(homedir(), '.creator-flow', 'workspaces');
+    const workspacesDir = join(homedir(), ".creator-flow", "workspaces");
     if (!existsSync(workspacesDir)) {
       return null;
     }
@@ -513,17 +525,19 @@ export class ProjectManager implements IProjectManager {
       if (!existsSync(videoProjectsDir)) continue;
 
       // Scan all project directories
-      const projectDirs = readdirSync(videoProjectsDir, { withFileTypes: true });
+      const projectDirs = readdirSync(videoProjectsDir, {
+        withFileTypes: true,
+      });
       for (const projectDir of projectDirs) {
         if (!projectDir.isDirectory()) continue;
 
         const projectPath = join(videoProjectsDir, projectDir.name);
-        const projectJsonPath = join(projectPath, 'project.json');
+        const projectJsonPath = join(projectPath, "project.json");
 
         if (!existsSync(projectJsonPath)) continue;
 
         try {
-          const data = readFileSync(projectJsonPath, 'utf-8');
+          const data = readFileSync(projectJsonPath, "utf-8");
           const parsed = JSON.parse(data);
 
           if (parsed.id === projectId) {
@@ -543,11 +557,32 @@ export class ProjectManager implements IProjectManager {
   }
 
   /**
+   * 旧项目迁移：将 compositions 字段转换为 scenes + transitions
+   * 就地修改 parsed 对象，使其符合新的 VideoProject schema
+   */
+  private migrateCompositionsToScenes(parsed: Record<string, any>): void {
+    if (parsed.compositions && !parsed.scenes) {
+      parsed.scenes = parsed.compositions.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        compositionId: c.name,
+        durationInFrames: parsed.config?.durationInFrames || 300,
+        props: c.props || {},
+      }));
+      parsed.transitions = [];
+      delete parsed.compositions;
+      videoLog.info(
+        `Migrated project "${parsed.name}" from compositions to scenes`,
+      );
+    }
+  }
+
+  /**
    * Save project data to disk
    * @requirements 12.2
    */
   private saveProjectToDisk(projectPath: string, project: VideoProject): void {
-    const projectJsonPath = join(projectPath, 'project.json');
-    writeFileSync(projectJsonPath, JSON.stringify(project, null, 2), 'utf-8');
+    const projectJsonPath = join(projectPath, "project.json");
+    writeFileSync(projectJsonPath, JSON.stringify(project, null, 2), "utf-8");
   }
 }

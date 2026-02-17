@@ -7,9 +7,9 @@
  * @requirements 5.1, 5.2, 8.2, 8.3, 8.4, 8.5, 8.6
  */
 
-import { ipcMain, dialog, BrowserWindow } from 'electron';
-import { extname, join } from 'path';
-import { app } from 'electron';
+import { ipcMain, dialog, BrowserWindow } from "electron";
+import { extname, join } from "path";
+import { app } from "electron";
 import type {
   VideoProject,
   RenderProgress,
@@ -17,20 +17,20 @@ import type {
   Asset,
   OutputFormat,
   QualityPreset,
-} from '@sprouty-ai/video';
-import { SUPPORTED_ASSET_EXTENSIONS } from '@sprouty-ai/video';
-import type { IProjectManager, CreateProjectOptions } from './project-manager';
-import type { IRenderWorker } from './render-worker';
-import type { IPreviewServer, PreviewServerResult } from './preview-server';
-import type { VideoServiceManager, ServiceStatus } from './service-manager';
-import { createVideoServiceManager } from './service-manager';
-import { createPreviewServer } from './preview-server';
-import { RenderWorker } from './render-worker';
-import { ProjectManager } from './project-manager';
-import { createBunPathResolver } from '../bun-path';
-import log from '../logger';
+} from "@sprouty-ai/video";
+import { SUPPORTED_ASSET_EXTENSIONS } from "@sprouty-ai/video";
+import type { IProjectManager, CreateProjectOptions } from "./project-manager";
+import type { IRenderWorker } from "./render-worker";
+import type { IPreviewServer, PreviewServerResult } from "./preview-server";
+import type { VideoServiceManager, ServiceStatus } from "./service-manager";
+import { createVideoServiceManager } from "./service-manager";
+import { createPreviewServer } from "./preview-server";
+import { RenderWorker } from "./render-worker";
+import { ProjectManager } from "./project-manager";
+import { createBunPathResolver } from "../bun-path";
+import log from "../logger";
 
-const ipcLog = log.scope('video:ipc');
+const ipcLog = log.scope("video:ipc");
 
 // ============================================================================
 // IPC Channel Definitions
@@ -43,34 +43,35 @@ const ipcLog = log.scope('video:ipc');
 export const VIDEO_IPC_CHANNELS = {
   // Service management
   // @requirements 5.1, 5.2
-  START_VIDEO_SERVICE: 'video:start-service',
-  STOP_VIDEO_SERVICE: 'video:stop-service',
-  GET_SERVICE_STATUS: 'video:get-status',
-  SERVICE_STATUS_CHANGED: 'video:status-changed',
+  START_VIDEO_SERVICE: "video:start-service",
+  STOP_VIDEO_SERVICE: "video:stop-service",
+  GET_SERVICE_STATUS: "video:get-status",
+  SERVICE_STATUS_CHANGED: "video:status-changed",
 
   // Project management
-  CREATE_PROJECT: 'video:create-project',
-  LIST_PROJECTS: 'video:list-projects',
-  GET_PROJECT: 'video:get-project',
-  UPDATE_PROJECT: 'video:update-project',
-  DELETE_PROJECT: 'video:delete-project',
+  CREATE_PROJECT: "video:create-project",
+  LIST_PROJECTS: "video:list-projects",
+  GET_PROJECT: "video:get-project",
+  UPDATE_PROJECT: "video:update-project",
+  DELETE_PROJECT: "video:delete-project",
 
   // Asset management
-  ADD_ASSET: 'video:add-asset',
-  REMOVE_ASSET: 'video:remove-asset',
+  SELECT_ASSET_FILES: "video:select-asset-files",
+  ADD_ASSET: "video:add-asset",
+  REMOVE_ASSET: "video:remove-asset",
 
   // Rendering
-  RENDER: 'video:render',
-  CANCEL_RENDER: 'video:cancel-render',
-  RENDER_PROGRESS: 'video:render-progress',
-  RENDER_COMPLETED: 'video:render-completed',
-  RENDER_FAILED: 'video:render-failed',
+  RENDER: "video:render",
+  CANCEL_RENDER: "video:cancel-render",
+  RENDER_PROGRESS: "video:render-progress",
+  RENDER_COMPLETED: "video:render-completed",
+  RENDER_FAILED: "video:render-failed",
 
   // Preview
-  START_PREVIEW: 'video:start-preview',
-  STOP_PREVIEW: 'video:stop-preview',
-  PREVIEW_STARTED: 'video:preview-started',
-  PREVIEW_STOPPED: 'video:preview-stopped',
+  START_PREVIEW: "video:start-preview",
+  STOP_PREVIEW: "video:stop-preview",
+  PREVIEW_STARTED: "video:preview-started",
+  PREVIEW_STOPPED: "video:preview-stopped",
 } as const;
 
 // ============================================================================
@@ -106,10 +107,11 @@ export interface CreateProjectRequest {
 
 /**
  * Render request
+ * compositionId 已废弃，固定使用 SceneComposer
  */
 export interface RenderRequest {
   projectId: string;
-  compositionId: string;
+  compositionId?: string;
   outputFormat?: OutputFormat;
   quality?: QualityPreset;
 }
@@ -149,8 +151,27 @@ function getVideoServiceManager(): VideoServiceManager {
   if (!videoServiceManager) {
     const bunResolver = createBunPathResolver();
     const mcpServerEntry = app.isPackaged
-      ? join(process.resourcesPath, 'app', 'packages', 'video', 'src', 'mcp-server', 'index.ts')
-      : join(__dirname, '..', '..', '..', '..', 'packages', 'video', 'src', 'mcp-server', 'index.ts');
+      ? join(
+          process.resourcesPath,
+          "app",
+          "packages",
+          "video",
+          "src",
+          "mcp-server",
+          "index.ts",
+        )
+      : join(
+          __dirname,
+          "..",
+          "..",
+          "..",
+          "..",
+          "packages",
+          "video",
+          "src",
+          "mcp-server",
+          "index.ts",
+        );
 
     videoServiceManager = createVideoServiceManager(bunResolver, {
       mcpServerEntry,
@@ -161,21 +182,24 @@ function getVideoServiceManager(): VideoServiceManager {
     });
 
     // Set up event handlers for broadcasting status changes
-    videoServiceManager.on('status-changed', (status: ServiceStatus) => {
+    videoServiceManager.on("status-changed", (status: ServiceStatus) => {
       broadcastToAllWindows(VIDEO_IPC_CHANNELS.SERVICE_STATUS_CHANGED, status);
     });
 
-    videoServiceManager.on('error', (error: Error) => {
-      ipcLog.error('Video service error:', error);
+    videoServiceManager.on("error", (error: Error) => {
+      ipcLog.error("Video service error:", error);
     });
 
-    videoServiceManager.on('log', (level: 'info' | 'error', message: string) => {
-      if (level === 'error') {
-        ipcLog.error(message);
-      } else {
-        ipcLog.info(message);
-      }
-    });
+    videoServiceManager.on(
+      "log",
+      (level: "info" | "error", message: string) => {
+        if (level === "error") {
+          ipcLog.error(message);
+        } else {
+          ipcLog.info(message);
+        }
+      },
+    );
   }
   return videoServiceManager;
 }
@@ -240,7 +264,7 @@ function broadcastToAllWindows(channel: string, data: unknown): void {
  * @requirements 5.1, 5.2, 8.2, 8.3, 8.4, 8.5, 8.6
  */
 export function registerVideoIpcHandlers(): void {
-  ipcLog.info('Registering video IPC handlers');
+  ipcLog.info("Registering video IPC handlers");
 
   // ============================================================================
   // Service Management IPC Handlers
@@ -254,14 +278,14 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.START_VIDEO_SERVICE,
     async (event): Promise<ServiceStatusResponse> => {
-      ipcLog.info('Starting video service');
+      ipcLog.info("Starting video service");
 
       try {
         // Register the window for broadcasts
         const browserWindow = BrowserWindow.fromWebContents(event.sender);
         if (browserWindow) {
           registeredWindows.add(browserWindow);
-          browserWindow.on('closed', () => {
+          browserWindow.on("closed", () => {
             registeredWindows.delete(browserWindow);
           });
         }
@@ -272,10 +296,10 @@ export function registerVideoIpcHandlers(): void {
         ipcLog.info(`Video service started: PID=${status.pid}`);
         return status;
       } catch (error) {
-        ipcLog.error('Failed to start video service:', error);
+        ipcLog.error("Failed to start video service:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -285,19 +309,19 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.STOP_VIDEO_SERVICE,
     async (): Promise<ServiceStatusResponse> => {
-      ipcLog.info('Stopping video service');
+      ipcLog.info("Stopping video service");
 
       try {
         const manager = getVideoServiceManager();
         await manager.stopMcpServer();
         const status = manager.getStatus();
-        ipcLog.info('Video service stopped');
+        ipcLog.info("Video service stopped");
         return status;
       } catch (error) {
-        ipcLog.error('Failed to stop video service:', error);
+        ipcLog.error("Failed to stop video service:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -307,16 +331,16 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.GET_SERVICE_STATUS,
     async (): Promise<ServiceStatusResponse> => {
-      ipcLog.debug('Getting video service status');
+      ipcLog.debug("Getting video service status");
 
       try {
         const manager = getVideoServiceManager();
         return manager.getStatus();
       } catch (error) {
-        ipcLog.error('Failed to get video service status:', error);
+        ipcLog.error("Failed to get video service status:", error);
         throw error;
       }
-    }
+    },
   );
 
   // ============================================================================
@@ -346,10 +370,10 @@ export function registerVideoIpcHandlers(): void {
         ipcLog.info(`Video project created: ${project.id}`);
         return project;
       } catch (error) {
-        ipcLog.error('Failed to create video project:', error);
+        ipcLog.error("Failed to create video project:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -365,10 +389,10 @@ export function registerVideoIpcHandlers(): void {
         const projects = await pm.listProjects(workspaceId);
         return projects;
       } catch (error) {
-        ipcLog.error('Failed to list video projects:', error);
+        ipcLog.error("Failed to list video projects:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -384,10 +408,10 @@ export function registerVideoIpcHandlers(): void {
         const project = await pm.getProject(projectId);
         return project;
       } catch (error) {
-        ipcLog.error('Failed to get video project:', error);
+        ipcLog.error("Failed to get video project:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -398,7 +422,7 @@ export function registerVideoIpcHandlers(): void {
     async (
       _event,
       projectId: string,
-      updates: Partial<VideoProject>
+      updates: Partial<VideoProject>,
     ): Promise<VideoProject> => {
       ipcLog.info(`Updating video project: ${projectId}`);
 
@@ -408,10 +432,10 @@ export function registerVideoIpcHandlers(): void {
         ipcLog.info(`Video project updated: ${projectId}`);
         return project;
       } catch (error) {
-        ipcLog.error('Failed to update video project:', error);
+        ipcLog.error("Failed to update video project:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -432,16 +456,81 @@ export function registerVideoIpcHandlers(): void {
         }
         return success;
       } catch (error) {
-        ipcLog.error('Failed to delete video project:', error);
+        ipcLog.error("Failed to delete video project:", error);
         throw error;
       }
-    }
+    },
   );
 
   // ============================================================================
   // Asset Management IPC Handlers
   // @requirements 8.3, 13.3
   // ============================================================================
+
+  /**
+   * 打开文件选择对话框，选择素材文件
+   * 返回 { filePaths, assetType } 数组
+   */
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.SELECT_ASSET_FILES,
+    async (
+      _event,
+      filterType?: AssetType,
+    ): Promise<{ filePath: string; assetType: AssetType }[]> => {
+      const browserWindow = BrowserWindow.getFocusedWindow();
+      const filters: Electron.FileDialogFilter[] = [];
+
+      if (!filterType || filterType === "image") {
+        filters.push({
+          name: "图片",
+          extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg"],
+        });
+      }
+      if (!filterType || filterType === "video") {
+        filters.push({
+          name: "视频",
+          extensions: ["mp4", "webm", "mov"],
+        });
+      }
+      if (!filterType || filterType === "audio") {
+        filters.push({
+          name: "音频",
+          extensions: ["mp3", "wav", "ogg", "m4a"],
+        });
+      }
+      if (!filterType || filterType === "font") {
+        filters.push({
+          name: "字体",
+          extensions: ["ttf", "otf", "woff", "woff2"],
+        });
+      }
+      if (!filterType) {
+        filters.push({ name: "所有文件", extensions: ["*"] });
+      }
+
+      const result = await dialog.showOpenDialog(browserWindow!, {
+        title: "选择素材文件",
+        properties: ["openFile", "multiSelections"],
+        filters,
+      });
+
+      if (result.canceled || result.filePaths.length === 0) return [];
+
+      // 自动检测素材类型
+      return result.filePaths.map((filePath) => {
+        const ext = extname(filePath).toLowerCase();
+        let detectedType: AssetType = "image";
+        if (SUPPORTED_ASSET_EXTENSIONS.video.includes(ext as any)) {
+          detectedType = "video";
+        } else if (SUPPORTED_ASSET_EXTENSIONS.audio.includes(ext as any)) {
+          detectedType = "audio";
+        } else if (SUPPORTED_ASSET_EXTENSIONS.font.includes(ext as any)) {
+          detectedType = "font";
+        }
+        return { filePath, assetType: filterType ?? detectedType };
+      });
+    },
+  );
 
   /**
    * Add an asset to a video project
@@ -451,7 +540,9 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.ADD_ASSET,
     async (_event, request: AddAssetRequest): Promise<Asset> => {
       const { projectId, assetPath, assetType } = request;
-      ipcLog.info(`Adding ${assetType} asset to project ${projectId}: ${assetPath}`);
+      ipcLog.info(
+        `Adding ${assetType} asset to project ${projectId}: ${assetPath}`,
+      );
 
       try {
         const pm = getProjectManager();
@@ -460,7 +551,7 @@ export function registerVideoIpcHandlers(): void {
         const supportedExts = SUPPORTED_ASSET_EXTENSIONS[assetType];
 
         if (!supportedExts.includes(ext as any)) {
-          const errorMsg = `不支持的 ${assetType} 格式: ${ext}。支持的格式: ${supportedExts.join(', ')}`;
+          const errorMsg = `不支持的 ${assetType} 格式: ${ext}。支持的格式: ${supportedExts.join(", ")}`;
           ipcLog.error(errorMsg);
           throw new Error(errorMsg);
         }
@@ -469,10 +560,10 @@ export function registerVideoIpcHandlers(): void {
         ipcLog.info(`Asset added: ${asset.id}`);
         return asset;
       } catch (error) {
-        ipcLog.error('Failed to add asset:', error);
+        ipcLog.error("Failed to add asset:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -493,10 +584,10 @@ export function registerVideoIpcHandlers(): void {
         }
         return success;
       } catch (error) {
-        ipcLog.error('Failed to remove asset:', error);
+        ipcLog.error("Failed to remove asset:", error);
         throw error;
       }
-    }
+    },
   );
 
   // ============================================================================
@@ -512,35 +603,35 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.RENDER,
     async (event, request: RenderRequest): Promise<string | null> => {
-      const { projectId, compositionId, outputFormat = 'mp4', quality = 'standard' } = request;
-      ipcLog.info(`Starting render: project=${projectId}, composition=${compositionId}, format=${outputFormat}, quality=${quality}`);
+      const { projectId, outputFormat = "mp4", quality = "standard" } = request;
+      ipcLog.info(
+        `Starting render: project=${projectId}, format=${outputFormat}, quality=${quality}`,
+      );
 
       try {
         const pm = getProjectManager();
         const rw = getRenderWorker();
 
-        // Get project to validate it exists
+        // 获取项目并验证
         const project = await pm.getProject(projectId);
         if (!project) {
           throw new Error(`项目不存在: ${projectId}`);
         }
 
-        // Validate composition exists
-        const composition = project.compositions.find((c) => c.id === compositionId);
-        if (!composition) {
-          throw new Error(`组件不存在: ${compositionId}`);
+        // 验证项目有场景
+        if (!project.scenes || project.scenes.length === 0) {
+          throw new Error("项目没有场景，无法渲染");
         }
 
-        // Get the browser window for the dialog
+        // 获取浏览器窗口用于对话框
         const browserWindow = BrowserWindow.fromWebContents(event.sender);
 
-        // Show save dialog for output path selection
-        // @requirements 8.5 - Show system save dialog
+        // 显示保存对话框
         const fileExtension = outputFormat;
-        const defaultFileName = `${project.name}_${composition.name}.${fileExtension}`;
+        const defaultFileName = `${project.name}.${fileExtension}`;
 
         const dialogResult = await dialog.showSaveDialog(browserWindow!, {
-          title: '保存视频',
+          title: "保存视频",
           defaultPath: defaultFileName,
           filters: [
             {
@@ -551,71 +642,64 @@ export function registerVideoIpcHandlers(): void {
         });
 
         if (dialogResult.canceled || !dialogResult.filePath) {
-          ipcLog.info('Render cancelled by user (save dialog)');
+          ipcLog.info("Render cancelled by user (save dialog)");
           return null;
         }
 
         const outputPath = dialogResult.filePath;
         ipcLog.info(`Output path selected: ${outputPath}`);
 
-        // Get project path for rendering
-        const projectPath = pm.getProjectPath(projectId);
-
-        // Create progress callback that sends events to renderer
-        // @requirements 8.6 - Push render progress via IPC
+        // 创建进度回调
         const onProgress = (progress: RenderProgress) => {
-          // Send progress event to the renderer process
           event.sender.send(VIDEO_IPC_CHANNELS.RENDER_PROGRESS, {
             projectId,
-            compositionId,
             ...progress,
           });
         };
 
-        // Start rendering
+        // 使用 SceneComposer 渲染，传入 scenes + transitions
         const result = await rw.render({
-          projectPath,
-          compositionId,
           outputPath,
           quality,
           outputFormat,
+          inputProps: {
+            scenes: project.scenes,
+            transitions: project.transitions,
+          },
           onProgress,
         });
 
-        // Send completion event
+        // 发送完成事件
         event.sender.send(VIDEO_IPC_CHANNELS.RENDER_COMPLETED, {
           projectId,
-          compositionId,
           outputPath: result,
         });
 
         ipcLog.info(`Render completed: ${result}`);
         return result;
       } catch (error) {
-        ipcLog.error('Render failed:', error);
-        // Send failure event
+        ipcLog.error("Render failed:", error);
         event.sender.send(VIDEO_IPC_CHANNELS.RENDER_FAILED, {
           projectId,
-          compositionId,
           error: error instanceof Error ? error.message : String(error),
         });
         throw error;
       }
-    }
+    },
   );
 
   /**
    * Cancel the current render operation
    */
   ipcMain.handle(VIDEO_IPC_CHANNELS.CANCEL_RENDER, async (): Promise<void> => {
-    ipcLog.info('Cancelling render');
+    ipcLog.info("Cancelling render");
 
     try {
       const rw = getRenderWorker();
       rw.cancel();
-      ipcLog.info('Render cancelled');
+      ipcLog.info("Render cancelled");
     } catch (error) {
-      ipcLog.error('Failed to cancel render:', error);
+      ipcLog.error("Failed to cancel render:", error);
       throw error;
     }
   });
@@ -654,10 +738,10 @@ export function registerVideoIpcHandlers(): void {
 
         return result;
       } catch (error) {
-        ipcLog.error('Failed to start preview:', error);
+        ipcLog.error("Failed to start preview:", error);
         throw error;
       }
-    }
+    },
   );
 
   /**
@@ -677,20 +761,20 @@ export function registerVideoIpcHandlers(): void {
 
         // Stop preview server
         await ps.stop(projectPath);
-        ipcLog.info('Preview stopped');
+        ipcLog.info("Preview stopped");
 
         // Send preview stopped event
         event.sender.send(VIDEO_IPC_CHANNELS.PREVIEW_STOPPED, {
           projectId,
         });
       } catch (error) {
-        ipcLog.error('Failed to stop preview:', error);
+        ipcLog.error("Failed to stop preview:", error);
         throw error;
       }
-    }
+    },
   );
 
-  ipcLog.info('Video IPC handlers registered successfully');
+  ipcLog.info("Video IPC handlers registered successfully");
 }
 
 // ============================================================================
@@ -702,14 +786,14 @@ export function registerVideoIpcHandlers(): void {
  */
 function getFormatDisplayName(format: OutputFormat): string {
   switch (format) {
-    case 'mp4':
-      return 'MP4 视频 (H.264)';
-    case 'webm':
-      return 'WebM 视频 (VP8)';
-    case 'gif':
-      return 'GIF 动画';
+    case "mp4":
+      return "MP4 视频 (H.264)";
+    case "webm":
+      return "WebM 视频 (VP8)";
+    case "gif":
+      return "GIF 动画";
     default:
-      return 'Video';
+      return "Video";
   }
 }
 
@@ -718,7 +802,7 @@ function getFormatDisplayName(format: OutputFormat): string {
  * Call this when cleaning up the video service
  */
 export function unregisterVideoIpcHandlers(): void {
-  ipcLog.info('Unregistering video IPC handlers');
+  ipcLog.info("Unregistering video IPC handlers");
 
   Object.values(VIDEO_IPC_CHANNELS).forEach((channel) => {
     // Skip event channels (they don't have handlers)
@@ -735,7 +819,7 @@ export function unregisterVideoIpcHandlers(): void {
     ipcMain.removeHandler(channel);
   });
 
-  ipcLog.info('Video IPC handlers unregistered');
+  ipcLog.info("Video IPC handlers unregistered");
 }
 
 /**
@@ -743,7 +827,7 @@ export function unregisterVideoIpcHandlers(): void {
  * Call this when the application is shutting down
  */
 export async function cleanupVideoServices(): Promise<void> {
-  ipcLog.info('Cleaning up video services');
+  ipcLog.info("Cleaning up video services");
 
   try {
     // Stop video service manager
@@ -770,9 +854,9 @@ export async function cleanupVideoServices(): Promise<void> {
     // Clear registered windows
     registeredWindows.clear();
 
-    ipcLog.info('Video services cleaned up');
+    ipcLog.info("Video services cleaned up");
   } catch (error) {
-    ipcLog.error('Error cleaning up video services:', error);
+    ipcLog.error("Error cleaning up video services:", error);
   }
 }
 

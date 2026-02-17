@@ -12228,7 +12228,7 @@ var require_code = __commonJS({
       else if (arg instanceof Name)
         code.push(arg);
       else
-        code.push(interpolate(arg));
+        code.push(interpolate12(arg));
     }
     exports2.addCodeArg = addCodeArg;
     function optimize(expr) {
@@ -12267,7 +12267,7 @@ var require_code = __commonJS({
       return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str`${c1}${c2}`;
     }
     exports2.strConcat = strConcat;
-    function interpolate(x) {
+    function interpolate12(x) {
       return typeof x == "number" || typeof x == "boolean" || x === null ? x : safeStringify(Array.isArray(x) ? x.join(",") : x);
     }
     function stringify(x) {
@@ -15093,7 +15093,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a2 = root.localRefs) === null || _a2 === void 0 ? void 0 : _a2[ref];
         const { schemaId } = this.opts;
@@ -15120,7 +15120,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -15695,7 +15695,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse4(baseURI, schemelessOptions), parse4(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -15922,7 +15922,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -21489,9 +21489,9 @@ var require_dispatcher_base = __commonJS({
       }
       close(callback) {
         if (callback === void 0) {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve2, reject) => {
             this.close((err, data) => {
-              return err ? reject(err) : resolve(data);
+              return err ? reject(err) : resolve2(data);
             });
           });
         }
@@ -21529,9 +21529,9 @@ var require_dispatcher_base = __commonJS({
           err = null;
         }
         if (callback === void 0) {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve2, reject) => {
             this.destroy(err, (err2, data) => {
-              return err2 ? reject(err2) : resolve(data);
+              return err2 ? reject(err2) : resolve2(data);
             });
           });
         }
@@ -25007,8 +25007,8 @@ var require_promise = __commonJS({
     function createDeferredPromise() {
       let res;
       let rej;
-      const promise2 = new Promise((resolve, reject) => {
-        res = resolve;
+      const promise2 = new Promise((resolve2, reject) => {
+        res = resolve2;
         rej = reject;
       });
       return { promise: promise2, resolve: res, reject: rej };
@@ -26306,12 +26306,12 @@ upgrade: ${upgrade}\r
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve, reject) => {
+      const waitForDrain = () => new Promise((resolve2, reject) => {
         assert2(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve;
+          callback = resolve2;
         }
       });
       socket.on("close", onDrain).on("drain", onDrain);
@@ -27152,12 +27152,12 @@ var require_client_h2 = __commonJS({
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve, reject) => {
+      const waitForDrain = () => new Promise((resolve2, reject) => {
         assert2(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve;
+          callback = resolve2;
         }
       });
       h2stream.on("close", onDrain).on("drain", onDrain);
@@ -27465,16 +27465,16 @@ var require_client = __commonJS({
         return this[kNeedDrain] < 2;
       }
       [kClose]() {
-        return new Promise((resolve) => {
+        return new Promise((resolve2) => {
           if (this[kSize]) {
-            this[kClosedResolve] = resolve;
+            this[kClosedResolve] = resolve2;
           } else {
-            resolve(null);
+            resolve2(null);
           }
         });
       }
       [kDestroy](err) {
-        return new Promise((resolve) => {
+        return new Promise((resolve2) => {
           const requests = this[kQueue].splice(this[kPendingIdx]);
           for (let i = 0; i < requests.length; i++) {
             const request = requests[i];
@@ -27485,7 +27485,7 @@ var require_client = __commonJS({
               this[kClosedResolve]();
               this[kClosedResolve] = null;
             }
-            resolve(null);
+            resolve2(null);
           };
           if (this[kHTTPContext]) {
             this[kHTTPContext].destroy(err, callback);
@@ -27882,8 +27882,8 @@ var require_pool_base = __commonJS({
           }
           return Promise.all(closeAll);
         } else {
-          return new Promise((resolve) => {
-            this[kClosedResolve] = resolve;
+          return new Promise((resolve2) => {
+            this[kClosedResolve] = resolve2;
           });
         }
       }
@@ -29414,7 +29414,7 @@ var require_readable = __commonJS({
         if (this._readableState.closeEmitted) {
           return Promise.resolve(null);
         }
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           if (this[kContentLength] && this[kContentLength] > limit || this[kBytesRead] > limit) {
             this.destroy(new AbortError());
           }
@@ -29428,11 +29428,11 @@ var require_readable = __commonJS({
               if (signal.aborted) {
                 reject(signal.reason ?? new AbortError());
               } else {
-                resolve(null);
+                resolve2(null);
               }
             });
           } else {
-            this.on("close", resolve);
+            this.on("close", resolve2);
           }
           this.on("error", noop2).on("data", () => {
             if (this[kBytesRead] > limit) {
@@ -29460,7 +29460,7 @@ var require_readable = __commonJS({
     }
     function consume(stream, type) {
       assert2(!stream[kConsume]);
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve2, reject) => {
         if (isUnusable(stream)) {
           const rState = stream._readableState;
           if (rState.destroyed && rState.closeEmitted === false) {
@@ -29475,7 +29475,7 @@ var require_readable = __commonJS({
             stream[kConsume] = {
               type,
               stream,
-              resolve,
+              resolve: resolve2,
               reject,
               length: 0,
               body: []
@@ -29549,18 +29549,18 @@ var require_readable = __commonJS({
       return buffer;
     }
     function consumeEnd(consume2, encoding) {
-      const { type, body, resolve, stream, length } = consume2;
+      const { type, body, resolve: resolve2, stream, length } = consume2;
       try {
         if (type === "text") {
-          resolve(chunksDecode(body, length, encoding));
+          resolve2(chunksDecode(body, length, encoding));
         } else if (type === "json") {
-          resolve(JSON.parse(chunksDecode(body, length, encoding)));
+          resolve2(JSON.parse(chunksDecode(body, length, encoding)));
         } else if (type === "arrayBuffer") {
-          resolve(chunksConcat(body, length).buffer);
+          resolve2(chunksConcat(body, length).buffer);
         } else if (type === "blob") {
-          resolve(new Blob(body, { type: stream[kContentType] }));
+          resolve2(new Blob(body, { type: stream[kContentType] }));
         } else if (type === "bytes") {
-          resolve(chunksConcat(body, length));
+          resolve2(chunksConcat(body, length));
         }
         consumeFinish(consume2);
       } catch (err) {
@@ -29750,9 +29750,9 @@ var require_api_request = __commonJS({
     };
     function request(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           request.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve(data);
+            return err ? reject(err) : resolve2(data);
           });
         });
       }
@@ -29964,9 +29964,9 @@ var require_api_stream = __commonJS({
     };
     function stream(opts, factory, callback) {
       if (callback === void 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           stream.call(this, opts, factory, (err, data) => {
-            return err ? reject(err) : resolve(data);
+            return err ? reject(err) : resolve2(data);
           });
         });
       }
@@ -30254,9 +30254,9 @@ var require_api_upgrade = __commonJS({
     };
     function upgrade(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           upgrade.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve(data);
+            return err ? reject(err) : resolve2(data);
           });
         });
       }
@@ -30349,9 +30349,9 @@ var require_api_connect = __commonJS({
     };
     function connect(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           connect.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve(data);
+            return err ? reject(err) : resolve2(data);
           });
         });
       }
@@ -31619,7 +31619,7 @@ var require_snapshot_recorder = __commonJS({
   "node_modules/.bun/undici@7.21.0/node_modules/undici/lib/mock/snapshot-recorder.js"(exports2, module2) {
     "use strict";
     var { writeFile, readFile, mkdir } = require("node:fs/promises");
-    var { dirname: dirname3, resolve } = require("node:path");
+    var { dirname: dirname2, resolve: resolve2 } = require("node:path");
     var { setTimeout: setTimeout2, clearTimeout: clearTimeout2 } = require("node:timers");
     var { InvalidArgumentError, UndiciError } = require_errors3();
     var { hashId, isUrlExcludedFactory, normalizeHeaders, createHeaderFilters } = require_snapshot_utils();
@@ -31820,7 +31820,7 @@ var require_snapshot_recorder = __commonJS({
           throw new InvalidArgumentError("Snapshot path is required");
         }
         try {
-          const data = await readFile(resolve(path), "utf8");
+          const data = await readFile(resolve2(path), "utf8");
           const parsed = JSON.parse(data);
           if (Array.isArray(parsed)) {
             this.#snapshots.clear();
@@ -31849,8 +31849,8 @@ var require_snapshot_recorder = __commonJS({
         if (!path) {
           throw new InvalidArgumentError("Snapshot path is required");
         }
-        const resolvedPath = resolve(path);
-        await mkdir(dirname3(resolvedPath), { recursive: true });
+        const resolvedPath = resolve2(path);
+        await mkdir(dirname2(resolvedPath), { recursive: true });
         const data = Array.from(this.#snapshots.entries()).map(([hash2, snapshot]) => ({
           hash: hash2,
           snapshot
@@ -38398,7 +38398,7 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url3 = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        return new Promise((resolve, reject) => agent.dispatch(
+        return new Promise((resolve2, reject) => agent.dispatch(
           {
             path: url3.pathname + url3.search,
             origin: url3.origin,
@@ -38478,7 +38478,7 @@ var require_fetch = __commonJS({
                 }
               }
               const onError = this.onError.bind(this);
-              resolve({
+              resolve2({
                 status,
                 statusText,
                 headersList,
@@ -38521,7 +38521,7 @@ var require_fetch = __commonJS({
               for (let i = 0; i < rawHeaders.length; i += 2) {
                 headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString("latin1"), true);
               }
-              resolve({
+              resolve2({
                 status,
                 statusText: STATUS_CODES[status],
                 headersList,
@@ -51263,7 +51263,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error48) {
@@ -51280,7 +51280,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error48) => {
         reject(error48);
       };
@@ -51358,7 +51358,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error48) {
           reject(error48);
@@ -51619,12 +51619,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -52353,12 +52353,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json2 = serializeMessage(message);
       if (this._stdout.write(json2)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
@@ -69969,7 +69969,7 @@ var applyCorsHeaders = (req, res, corsOptions) => {
     console.error("[mcp-proxy] error parsing origin", error$1);
   }
 };
-var handleStreamRequest = async ({ activeTransports, authenticate, authMiddleware, createServer: createServer3, enableJsonResponse, endpoint, eventStore, oauth, onClose, onConnect, req, res, stateless }) => {
+var handleStreamRequest = async ({ activeTransports, authenticate, authMiddleware, createServer: createServer2, enableJsonResponse, endpoint, eventStore, oauth, onClose, onConnect, req, res, stateless }) => {
   if (req.method === "POST" && new URL(req.url, "http://localhost").pathname === endpoint) {
     let body;
     try {
@@ -70051,7 +70051,7 @@ var handleStreamRequest = async ({ activeTransports, authenticate, authMiddlewar
           } else if (stateless) await cleanupServer(server, onClose);
         };
         try {
-          server = await createServer3(req);
+          server = await createServer2(req);
         } catch (error$1) {
           if (await handleResponseError(error$1, res)) return true;
           const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
@@ -70088,7 +70088,7 @@ var handleStreamRequest = async ({ activeTransports, authenticate, authMiddlewar
           sessionIdGenerator: void 0
         });
         try {
-          server = await createServer3(req);
+          server = await createServer2(req);
         } catch (error$1) {
           if (await handleResponseError(error$1, res)) return true;
           const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
@@ -70177,12 +70177,12 @@ var handleStreamRequest = async ({ activeTransports, authenticate, authMiddlewar
   }
   return false;
 };
-var handleSSERequest = async ({ activeTransports, createServer: createServer3, endpoint, onClose, onConnect, req, res }) => {
+var handleSSERequest = async ({ activeTransports, createServer: createServer2, endpoint, onClose, onConnect, req, res }) => {
   if (req.method === "GET" && new URL(req.url, "http://localhost").pathname === endpoint) {
     const transport = new SSEServerTransport("/messages", res);
     let server;
     try {
-      server = await createServer3(req);
+      server = await createServer2(req);
     } catch (error$1) {
       if (await handleResponseError(error$1, res)) return true;
       res.writeHead(500).end("Error creating server");
@@ -70233,7 +70233,7 @@ var handleSSERequest = async ({ activeTransports, createServer: createServer3, e
   }
   return false;
 };
-var startHTTPServer = async ({ apiKey, authenticate, cors, createServer: createServer3, enableJsonResponse, eventStore, host = "::", oauth, onClose, onConnect, onUnhandledRequest, port, sseEndpoint = "/sse", sslCa, sslCert, sslKey, stateless, streamEndpoint = "/mcp" }) => {
+var startHTTPServer = async ({ apiKey, authenticate, cors, createServer: createServer2, enableJsonResponse, eventStore, host = "::", oauth, onClose, onConnect, onUnhandledRequest, port, sseEndpoint = "/sse", sslCa, sslCert, sslKey, stateless, streamEndpoint = "/mcp" }) => {
   const activeSSETransports = {};
   const activeStreamTransports = {};
   const authMiddleware = new AuthenticationMiddleware({
@@ -70259,7 +70259,7 @@ var startHTTPServer = async ({ apiKey, authenticate, cors, createServer: createS
     }
     if (sseEndpoint && await handleSSERequest({
       activeTransports: activeSSETransports,
-      createServer: createServer3,
+      createServer: createServer2,
       endpoint: sseEndpoint,
       onClose,
       onConnect,
@@ -70270,7 +70270,7 @@ var startHTTPServer = async ({ apiKey, authenticate, cors, createServer: createS
       activeTransports: activeStreamTransports,
       authenticate,
       authMiddleware,
-      createServer: createServer3,
+      createServer: createServer2,
       enableJsonResponse,
       endpoint: streamEndpoint,
       eventStore,
@@ -70400,7 +70400,7 @@ var require_code$1 = /* @__PURE__ */ __commonJSMin(((exports2) => {
   function addCodeArg(code, arg) {
     if (arg instanceof _Code) code.push(...arg._items);
     else if (arg instanceof Name) code.push(arg);
-    else code.push(interpolate(arg));
+    else code.push(interpolate12(arg));
   }
   exports2.addCodeArg = addCodeArg;
   function optimize(expr) {
@@ -70432,7 +70432,7 @@ var require_code$1 = /* @__PURE__ */ __commonJSMin(((exports2) => {
     return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str`${c1}${c2}`;
   }
   exports2.strConcat = strConcat;
-  function interpolate(x) {
+  function interpolate12(x) {
     return typeof x == "number" || typeof x == "boolean" || x === null ? x : safeStringify(Array.isArray(x) ? x.join(",") : x);
   }
   function stringify(x) {
@@ -73371,7 +73371,7 @@ var require_fast_uri2 = /* @__PURE__ */ __commonJSMin(((exports2, module2) => {
     else if (typeof uri$2 === "object") uri$2 = parse4(serialize(uri$2, options), options);
     return uri$2;
   }
-  function resolve(baseURI, relativeURI, options) {
+  function resolve2(baseURI, relativeURI, options) {
     const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
     const resolved = resolveComponent(parse4(baseURI, schemelessOptions), parse4(relativeURI, schemelessOptions), schemelessOptions, true);
     schemelessOptions.skipEscape = true;
@@ -73545,7 +73545,7 @@ var require_fast_uri2 = /* @__PURE__ */ __commonJSMin(((exports2, module2) => {
   const fastUri = {
     SCHEMES,
     normalize,
-    resolve,
+    resolve: resolve2,
     resolveComponent,
     equal: equal$1,
     serialize,
@@ -77133,7 +77133,7 @@ ${error48 instanceof Error ? error48.stack : JSON.stringify(error48)}`
         new Error(`Connection is in ${this.#connectionState} state`)
       );
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const timeout = setTimeout(() => {
         reject(
           new Error(
@@ -77143,7 +77143,7 @@ ${error48 instanceof Error ? error48.stack : JSON.stringify(error48)}`
       }, 5e3);
       this.once("ready", () => {
         clearTimeout(timeout);
-        resolve();
+        resolve2();
       });
       this.once("error", (event) => {
         clearTimeout(timeout);
@@ -77585,7 +77585,7 @@ ${error48 instanceof Error ? error48.stack : JSON.stringify(error48)}`
               }
             });
             if (this.#needsEventLoopFlush) {
-              await new Promise((resolve) => setImmediate(resolve));
+              await new Promise((resolve2) => setImmediate(resolve2));
             }
           } catch (progressError) {
             this.#logger.warn(
@@ -77643,7 +77643,7 @@ ${error48 instanceof Error ? error48.stack : JSON.stringify(error48)}`
               }
             });
             if (this.#needsEventLoopFlush) {
-              await new Promise((resolve) => setImmediate(resolve));
+              await new Promise((resolve2) => setImmediate(resolve2));
             }
           } catch (streamError) {
             this.#logger.warn(
@@ -78630,8 +78630,8 @@ var import_util6 = require("util");
 var pbkdf2Async = (0, import_util6.promisify)(import_crypto.pbkdf2);
 
 // packages/video/src/mcp-server/services/project-store.ts
-var import_fs3 = require("fs");
-var import_path3 = require("path");
+var import_fs4 = require("fs");
+var import_path4 = require("path");
 var import_crypto2 = require("crypto");
 
 // packages/video/src/types.ts
@@ -78645,15 +78645,39 @@ var VideoConfigSchema = external_exports3.object({
   /** Total duration in frames */
   durationInFrames: external_exports3.number().int().positive()
 });
-var CompositionSchema = external_exports3.object({
-  /** Unique identifier for the composition */
+var SceneSchema = external_exports3.object({
+  /** Unique identifier for the scene */
   id: external_exports3.string(),
-  /** Display name of the composition */
+  /** Display name of the scene */
   name: external_exports3.string(),
-  /** React component code (file path or inline code) */
-  code: external_exports3.string(),
+  /** Reference to built-in composition ID (e.g., "TitleAnimation") */
+  compositionId: external_exports3.string(),
+  /** Duration of this scene in frames */
+  durationInFrames: external_exports3.number().int().positive(),
   /** Props to pass to the composition component */
   props: external_exports3.record(external_exports3.string(), external_exports3.any()).default({})
+});
+var TransitionTypeEnum = external_exports3.enum([
+  "fade",
+  "slide",
+  "wipe",
+  "flip",
+  "clock-wipe",
+  "none"
+]);
+var TransitionDirectionEnum = external_exports3.enum([
+  "from-left",
+  "from-right",
+  "from-top",
+  "from-bottom"
+]);
+var TransitionSchema = external_exports3.object({
+  /** Type of transition effect */
+  type: TransitionTypeEnum,
+  /** Duration of transition in frames */
+  durationInFrames: external_exports3.number().int().positive(),
+  /** Direction of transition (optional, for directional transitions) */
+  direction: TransitionDirectionEnum.optional()
 });
 var AssetTypeEnum = external_exports3.enum(["image", "video", "audio", "font"]);
 var AssetSchema = external_exports3.object({
@@ -78701,8 +78725,10 @@ var VideoProjectSchema = external_exports3.object({
   updatedAt: external_exports3.string(),
   /** Video configuration */
   config: VideoConfigSchema,
-  /** List of compositions in the project */
-  compositions: external_exports3.array(CompositionSchema).default([]),
+  /** List of scenes in the project (ordered) */
+  scenes: external_exports3.array(SceneSchema).default([]),
+  /** List of transitions between scenes (length = scenes.length - 1) */
+  transitions: external_exports3.array(TransitionSchema).default([]),
   /** List of assets used in the project */
   assets: external_exports3.array(AssetSchema).default([]),
   /** Render history */
@@ -78788,8 +78814,8 @@ var ProjectSummarySchema = external_exports3.object({
   createdAt: external_exports3.string(),
   /** 更新时间 */
   updatedAt: external_exports3.string(),
-  /** 组合数量 */
-  compositionCount: external_exports3.number().int().nonnegative(),
+  /** 场景数量 */
+  sceneCount: external_exports3.number().int().nonnegative(),
   /** 素材数量 */
   assetCount: external_exports3.number().int().nonnegative()
 });
@@ -78887,25 +78913,28 @@ var MCPError = class _MCPError extends Error {
   }
 };
 function createProjectNotFoundError(projectId) {
-  return new MCPError(
-    "PROJECT_NOT_FOUND",
-    `\u9879\u76EE\u4E0D\u5B58\u5728: ${projectId}`,
-    { field: "projectId", received: projectId }
-  );
+  return new MCPError("PROJECT_NOT_FOUND", `\u9879\u76EE\u4E0D\u5B58\u5728: ${projectId}`, {
+    field: "projectId",
+    received: projectId
+  });
 }
 function createAssetNotFoundError(assetId) {
-  return new MCPError(
-    "ASSET_NOT_FOUND",
-    `\u7D20\u6750\u4E0D\u5B58\u5728: ${assetId}`,
-    { field: "assetId", received: assetId }
-  );
+  return new MCPError("ASSET_NOT_FOUND", `\u7D20\u6750\u4E0D\u5B58\u5728: ${assetId}`, {
+    field: "assetId",
+    received: assetId
+  });
 }
 function createCompositionNotFoundError(compositionId) {
-  return new MCPError(
-    "COMPOSITION_NOT_FOUND",
-    `\u7EC4\u5408\u4E0D\u5B58\u5728: ${compositionId}`,
-    { field: "compositionId", received: compositionId }
-  );
+  return new MCPError("COMPOSITION_NOT_FOUND", `\u7EC4\u5408\u4E0D\u5B58\u5728: ${compositionId}`, {
+    field: "compositionId",
+    received: compositionId
+  });
+}
+function createSceneNotFoundError(sceneId) {
+  return new MCPError("COMPOSITION_NOT_FOUND", `\u573A\u666F\u4E0D\u5B58\u5728: ${sceneId}`, {
+    field: "sceneId",
+    received: sceneId
+  });
 }
 function createValidationError(message, field, expected, received) {
   return new MCPError("INVALID_INPUT", message, {
@@ -78915,36 +78944,24 @@ function createValidationError(message, field, expected, received) {
   });
 }
 function createFileNotFoundError(filePath) {
-  return new MCPError(
-    "FILE_NOT_FOUND",
-    `\u6587\u4EF6\u4E0D\u5B58\u5728: ${filePath}`,
-    { path: filePath }
-  );
+  return new MCPError("FILE_NOT_FOUND", `\u6587\u4EF6\u4E0D\u5B58\u5728: ${filePath}`, {
+    path: filePath
+  });
 }
 function createUnsupportedFormatError(format2, supportedFormats) {
-  return new MCPError(
-    "UNSUPPORTED_FORMAT",
-    `\u4E0D\u652F\u6301\u7684\u683C\u5F0F: ${format2}`,
-    {
-      received: format2,
-      expected: supportedFormats.join(", ")
-    }
-  );
+  return new MCPError("UNSUPPORTED_FORMAT", `\u4E0D\u652F\u6301\u7684\u683C\u5F0F: ${format2}`, {
+    received: format2,
+    expected: supportedFormats.join(", ")
+  });
 }
 function createRenderFailedError(message, details) {
   return new MCPError("RENDER_FAILED", `\u6E32\u67D3\u5931\u8D25: ${message}`, details);
-}
-function createPreviewFailedError(message, details) {
-  return new MCPError("PREVIEW_FAILED", `\u9884\u89C8\u670D\u52A1\u5668\u542F\u52A8\u5931\u8D25: ${message}`, details);
 }
 function createInternalError(originalError) {
   if (originalError) {
     console.error("[MCP Video Server] Internal error:", originalError);
   }
-  return new MCPError(
-    "INTERNAL_ERROR",
-    "\u670D\u52A1\u5668\u5185\u90E8\u9519\u8BEF\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5"
-  );
+  return new MCPError("INTERNAL_ERROR", "\u670D\u52A1\u5668\u5185\u90E8\u9519\u8BEF\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
 }
 function isMCPError(error48) {
   return error48 instanceof MCPError;
@@ -78960,7 +78977,42 @@ function toErrorResponse(error48) {
 }
 
 // packages/video/src/mcp-server/utils/paths.ts
+var import_path2 = require("path");
+
+// packages/video/src/mcp-server/utils/creator-db.ts
+var import_better_sqlite3 = __toESM(require("better-sqlite3"), 1);
+var import_fs2 = require("fs");
 var import_path = require("path");
+var CREATOR_DB_RELATIVE_PATH = (0, import_path.join)(".sprouty-ai", "db", "creator.db");
+function getCreatorDbPath(workspacePath) {
+  return (0, import_path.join)(workspacePath, CREATOR_DB_RELATIVE_PATH);
+}
+function hasCreatorDb(workspacePath) {
+  return (0, import_fs2.existsSync)(getCreatorDbPath(workspacePath));
+}
+function getActiveProject(dbPath) {
+  const db = new import_better_sqlite3.default(dbPath, { readonly: true });
+  try {
+    const row = db.prepare("SELECT id, name, is_active FROM projects WHERE is_active = 1").get();
+    return row;
+  } finally {
+    db.close();
+  }
+}
+function getNextContentIndex(dbPath, projectId) {
+  const db = new import_better_sqlite3.default(dbPath, { readonly: true });
+  try {
+    const row = db.prepare("SELECT COUNT(*) as count FROM contents WHERE project_id = ?").get(projectId);
+    return (row?.count ?? 0) + 1;
+  } finally {
+    db.close();
+  }
+}
+function formatContentIndex(index) {
+  return String(index).padStart(2, "0");
+}
+
+// packages/video/src/mcp-server/utils/paths.ts
 var VIDEO_PROJECTS_DIR_NAME = "\u89C6\u9891\u521B\u4F5C";
 var ASSETS_DIR_NAME = "\u7D20\u6750";
 var COMPOSITIONS_DIR_NAME = "\u7EC4\u5408";
@@ -78973,35 +79025,53 @@ var ASSET_SUBDIRS = {
   fonts: "fonts"
 };
 function getVideoProjectsDir(workspacePath) {
-  return (0, import_path.join)(workspacePath, VIDEO_PROJECTS_DIR_NAME);
+  return (0, import_path2.join)(workspacePath, VIDEO_PROJECTS_DIR_NAME);
 }
 function getProjectPath(workspacePath, projectName) {
-  return (0, import_path.join)(getVideoProjectsDir(workspacePath), projectName);
+  return (0, import_path2.join)(getVideoProjectsDir(workspacePath), projectName);
 }
 function getProjectConfigPath(workspacePath, projectName) {
-  return (0, import_path.join)(getProjectPath(workspacePath, projectName), PROJECT_CONFIG_FILE);
+  return (0, import_path2.join)(getProjectPath(workspacePath, projectName), PROJECT_CONFIG_FILE);
 }
 function getAssetsPath(workspacePath, projectName) {
-  return (0, import_path.join)(getProjectPath(workspacePath, projectName), ASSETS_DIR_NAME);
+  return (0, import_path2.join)(getProjectPath(workspacePath, projectName), ASSETS_DIR_NAME);
 }
 function getAssetTypePath(workspacePath, projectName, assetType) {
   const subdir = assetType === "image" ? ASSET_SUBDIRS.images : assetType === "video" ? ASSET_SUBDIRS.videos : assetType === "audio" ? ASSET_SUBDIRS.audio : ASSET_SUBDIRS.fonts;
-  return (0, import_path.join)(getAssetsPath(workspacePath, projectName), subdir);
+  return (0, import_path2.join)(getAssetsPath(workspacePath, projectName), subdir);
 }
 function getCompositionsPath(workspacePath, projectName) {
-  return (0, import_path.join)(getProjectPath(workspacePath, projectName), COMPOSITIONS_DIR_NAME);
+  return (0, import_path2.join)(
+    getProjectPath(workspacePath, projectName),
+    COMPOSITIONS_DIR_NAME
+  );
 }
 function getOutputPath(workspacePath, projectName) {
-  return (0, import_path.join)(getProjectPath(workspacePath, projectName), OUTPUT_DIR_NAME);
+  return (0, import_path2.join)(getProjectPath(workspacePath, projectName), OUTPUT_DIR_NAME);
 }
 function getAssetRelativePath(assetType, fileName) {
   const subdir = assetType === "image" ? ASSET_SUBDIRS.images : assetType === "video" ? ASSET_SUBDIRS.videos : assetType === "audio" ? ASSET_SUBDIRS.audio : ASSET_SUBDIRS.fonts;
-  return (0, import_path.join)(ASSETS_DIR_NAME, subdir, fileName);
+  return (0, import_path2.join)(ASSETS_DIR_NAME, subdir, fileName);
+}
+var VIDEO_SUBDIR_NAME = "\u89C6\u9891";
+function resolveVideoProjectPath(workspacePath, projectName, options) {
+  if (!hasCreatorDb(workspacePath)) {
+    return (0, import_path2.join)(workspacePath, VIDEO_PROJECTS_DIR_NAME, projectName);
+  }
+  const dbPath = getCreatorDbPath(workspacePath);
+  const activeProject = getActiveProject(dbPath);
+  if (!activeProject) {
+    return (0, import_path2.join)(workspacePath, VIDEO_PROJECTS_DIR_NAME, projectName);
+  }
+  const index = options?.contentIndex ?? getNextContentIndex(dbPath, activeProject.id);
+  const title = options?.contentTitle ?? projectName;
+  const dirName = `${formatContentIndex(index)}-${title}`;
+  return (0, import_path2.join)(workspacePath, activeProject.name, dirName, VIDEO_SUBDIR_NAME);
 }
 
 // packages/video/src/mcp-server/utils/validators.ts
-var import_fs2 = require("fs");
-var import_path2 = require("path");
+var import_fs3 = require("fs");
+var import_path3 = require("path");
 var INVALID_PROJECT_NAME_CHARS = /[<>:"/\\|?*\x00-\x1f]/;
 var MAX_PROJECT_NAME_LENGTH = 100;
 var MIN_PROJECT_NAME_LENGTH = 1;
@@ -79140,7 +79210,7 @@ function validateWorkspacePath(workspacePath) {
       )
     };
   }
-  if (!(0, import_path2.isAbsolute)(trimmedPath)) {
+  if (!(0, import_path3.isAbsolute)(trimmedPath)) {
     return {
       valid: false,
       error: createValidationError(
@@ -79151,14 +79221,14 @@ function validateWorkspacePath(workspacePath) {
       )
     };
   }
-  if (!(0, import_fs2.existsSync)(trimmedPath)) {
+  if (!(0, import_fs3.existsSync)(trimmedPath)) {
     return {
       valid: false,
       error: createFileNotFoundError(trimmedPath)
     };
   }
   try {
-    const stats = (0, import_fs2.statSync)(trimmedPath);
+    const stats = (0, import_fs3.statSync)(trimmedPath);
     if (!stats.isDirectory()) {
       return {
         valid: false,
@@ -79205,7 +79275,7 @@ function validateAssetType(assetType) {
   return { valid: true, type: assetType };
 }
 function validateAssetExtension(filePath, assetType) {
-  const extension = (0, import_path2.extname)(filePath).toLowerCase();
+  const extension = (0, import_path3.extname)(filePath).toLowerCase();
   const supportedExtensions = SUPPORTED_ASSET_EXTENSIONS[assetType];
   if (!supportedExtensions.includes(extension)) {
     return {
@@ -79230,14 +79300,14 @@ function validateAssetFile(filePath, assetType) {
       )
     };
   }
-  if (!(0, import_fs2.existsSync)(filePath)) {
+  if (!(0, import_fs3.existsSync)(filePath)) {
     return {
       valid: false,
       error: createFileNotFoundError(filePath)
     };
   }
   try {
-    const stats = (0, import_fs2.statSync)(filePath);
+    const stats = (0, import_fs3.statSync)(filePath);
     if (!stats.isFile()) {
       return {
         valid: false,
@@ -79285,8 +79355,8 @@ var ProjectStore = class _ProjectStore {
   async createProject(input) {
     assertValidWorkspacePath(this.workspacePath);
     assertValidProjectName(input.name);
-    const projectPath = getProjectPath(this.workspacePath, input.name);
-    if ((0, import_fs3.existsSync)(projectPath)) {
+    const projectPath = resolveVideoProjectPath(this.workspacePath, input.name);
+    if ((0, import_fs4.existsSync)(projectPath)) {
       throw createValidationError(
         `\u9879\u76EE\u5DF2\u5B58\u5728: ${input.name}`,
         "name",
@@ -79311,7 +79381,8 @@ var ProjectStore = class _ProjectStore {
       createdAt: now,
       updatedAt: now,
       config: config3,
-      compositions: [],
+      scenes: [],
+      transitions: [],
       assets: [],
       renders: []
     };
@@ -79327,10 +79398,10 @@ var ProjectStore = class _ProjectStore {
   async getProject(projectId) {
     assertValidWorkspacePath(this.workspacePath);
     const projectsDir = getVideoProjectsDir(this.workspacePath);
-    if (!(0, import_fs3.existsSync)(projectsDir)) {
+    if (!(0, import_fs4.existsSync)(projectsDir)) {
       return null;
     }
-    const projectDirs = (0, import_fs3.readdirSync)(projectsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
+    const projectDirs = (0, import_fs4.readdirSync)(projectsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
     for (const projectName of projectDirs) {
       const project = this.loadProject(projectName);
       if (project && project.id === projectId) {
@@ -79355,10 +79426,10 @@ var ProjectStore = class _ProjectStore {
   async listProjects() {
     assertValidWorkspacePath(this.workspacePath);
     const projectsDir = getVideoProjectsDir(this.workspacePath);
-    if (!(0, import_fs3.existsSync)(projectsDir)) {
+    if (!(0, import_fs4.existsSync)(projectsDir)) {
       return [];
     }
-    const projectDirs = (0, import_fs3.readdirSync)(projectsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
+    const projectDirs = (0, import_fs4.readdirSync)(projectsDir, { withFileTypes: true }).filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
     const summaries = [];
     for (const projectName of projectDirs) {
       const project = this.loadProject(projectName);
@@ -79369,7 +79440,7 @@ var ProjectStore = class _ProjectStore {
           description: project.description,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,
-          compositionCount: project.compositions.length,
+          sceneCount: project.scenes.length,
           assetCount: project.assets.length
         });
       }
@@ -79397,7 +79468,7 @@ var ProjectStore = class _ProjectStore {
     if (updates.name && updates.name !== project.name) {
       assertValidProjectName(updates.name);
       const newProjectPath = getProjectPath(this.workspacePath, updates.name);
-      if ((0, import_fs3.existsSync)(newProjectPath)) {
+      if ((0, import_fs4.existsSync)(newProjectPath)) {
         throw createValidationError(
           `\u9879\u76EE\u540D\u79F0\u5DF2\u5B58\u5728: ${updates.name}`,
           "name",
@@ -79439,7 +79510,7 @@ var ProjectStore = class _ProjectStore {
       throw createProjectNotFoundError(projectId);
     }
     const projectPath = getProjectPath(this.workspacePath, project.name);
-    (0, import_fs3.rmSync)(projectPath, { recursive: true, force: true });
+    (0, import_fs4.rmSync)(projectPath, { recursive: true, force: true });
     return true;
   }
   // ==========================================================================
@@ -79470,14 +79541,22 @@ var ProjectStore = class _ProjectStore {
       throw fileResult.error;
     }
     const assetId = (0, import_crypto2.randomUUID)();
-    const fileName = (0, import_path3.basename)(input.sourcePath);
-    const targetFileName = this.generateUniqueFileName(project.name, input.assetType, fileName);
-    const targetDir = getAssetTypePath(this.workspacePath, project.name, input.assetType);
-    const targetPath = (0, import_path3.join)(targetDir, targetFileName);
-    if (!(0, import_fs3.existsSync)(targetDir)) {
-      (0, import_fs3.mkdirSync)(targetDir, { recursive: true });
+    const fileName = (0, import_path4.basename)(input.sourcePath);
+    const targetFileName = this.generateUniqueFileName(
+      project.name,
+      input.assetType,
+      fileName
+    );
+    const targetDir = getAssetTypePath(
+      this.workspacePath,
+      project.name,
+      input.assetType
+    );
+    const targetPath = (0, import_path4.join)(targetDir, targetFileName);
+    if (!(0, import_fs4.existsSync)(targetDir)) {
+      (0, import_fs4.mkdirSync)(targetDir, { recursive: true });
     }
-    (0, import_fs3.copyFileSync)(input.sourcePath, targetPath);
+    (0, import_fs4.copyFileSync)(input.sourcePath, targetPath);
     const asset = {
       id: assetId,
       type: input.assetType,
@@ -79519,9 +79598,9 @@ var ProjectStore = class _ProjectStore {
     }
     if (deleteFile) {
       const projectPath = getProjectPath(this.workspacePath, project.name);
-      const assetFilePath = (0, import_path3.join)(projectPath, asset.path);
-      if ((0, import_fs3.existsSync)(assetFilePath)) {
-        (0, import_fs3.unlinkSync)(assetFilePath);
+      const assetFilePath = (0, import_path4.join)(projectPath, asset.path);
+      if ((0, import_fs4.existsSync)(assetFilePath)) {
+        (0, import_fs4.unlinkSync)(assetFilePath);
       }
     }
     const updatedAssets = [...project.assets];
@@ -79576,19 +79655,12 @@ var ProjectStore = class _ProjectStore {
     return asset ?? null;
   }
   // ==========================================================================
-  // 组合管理操作
+  // 场景管理操作
   // ==========================================================================
   /**
-   * 添加组合到项目
-   *
-   * 创建新的组合并注册到项目配置中
-   *
-   * @param projectId 项目 ID
-   * @param input 添加组合输入
-   * @returns 添加的组合对象
-   * @throws MCPError 如果项目不存在或组合名称无效
+   * 添加场景到项目
    */
-  async addComposition(projectId, input) {
+  async addScene(projectId, input) {
     assertValidWorkspacePath(this.workspacePath);
     const project = await this.getProject(projectId);
     if (!project) {
@@ -79596,153 +79668,177 @@ var ProjectStore = class _ProjectStore {
     }
     if (!input.name || input.name.trim().length === 0) {
       throw createValidationError(
-        "\u7EC4\u5408\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A",
+        "\u573A\u666F\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A",
         "name",
         "\u975E\u7A7A\u5B57\u7B26\u4E32",
         input.name ?? ""
       );
     }
-    if (!input.code || input.code.trim().length === 0) {
+    if (!input.compositionId || input.compositionId.trim().length === 0) {
       throw createValidationError(
-        "\u7EC4\u5408\u4EE3\u7801\u4E0D\u80FD\u4E3A\u7A7A",
-        "code",
+        "\u7EC4\u5408 ID \u4E0D\u80FD\u4E3A\u7A7A",
+        "compositionId",
         "\u975E\u7A7A\u5B57\u7B26\u4E32",
-        input.code ?? ""
+        input.compositionId ?? ""
       );
     }
-    const compositionId = (0, import_crypto2.randomUUID)();
-    const composition = {
-      id: compositionId,
+    if (!input.durationInFrames || input.durationInFrames <= 0) {
+      throw createValidationError(
+        "\u65F6\u957F\u5FC5\u987B\u5927\u4E8E 0",
+        "durationInFrames",
+        "\u6B63\u6574\u6570",
+        String(input.durationInFrames)
+      );
+    }
+    const scene = {
+      id: (0, import_crypto2.randomUUID)(),
       name: input.name.trim(),
-      code: input.code,
+      compositionId: input.compositionId,
+      durationInFrames: input.durationInFrames,
       props: input.props ?? {}
     };
+    const updatedScenes = [...project.scenes];
+    if (input.insertAt !== void 0 && input.insertAt >= 0 && input.insertAt <= updatedScenes.length) {
+      updatedScenes.splice(input.insertAt, 0, scene);
+    } else {
+      updatedScenes.push(scene);
+    }
     const updatedProject = {
       ...project,
-      compositions: [...project.compositions, composition],
+      scenes: updatedScenes,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     this.saveProject(updatedProject);
-    return composition;
+    return scene;
   }
   /**
-   * 更新组合
-   *
-   * 更新组合的名称、代码或属性
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @param updates 更新内容
-   * @returns 更新后的组合对象
-   * @throws MCPError 如果项目或组合不存在
+   * 更新场景参数
    */
-  async updateComposition(projectId, compositionId, updates) {
+  async updateScene(projectId, sceneId, updates) {
     assertValidWorkspacePath(this.workspacePath);
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
-    const compositionIndex = project.compositions.findIndex((c) => c.id === compositionId);
-    if (compositionIndex === -1) {
-      throw createCompositionNotFoundError(compositionId);
+    const sceneIndex = project.scenes.findIndex((s) => s.id === sceneId);
+    if (sceneIndex === -1) {
+      throw createSceneNotFoundError(sceneId);
     }
-    const existingComposition = project.compositions[compositionIndex];
-    if (!existingComposition) {
-      throw createCompositionNotFoundError(compositionId);
-    }
-    if (updates.name !== void 0 && updates.name.trim().length === 0) {
-      throw createValidationError(
-        "\u7EC4\u5408\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A",
-        "name",
-        "\u975E\u7A7A\u5B57\u7B26\u4E32",
-        updates.name
-      );
-    }
-    if (updates.code !== void 0 && updates.code.trim().length === 0) {
-      throw createValidationError(
-        "\u7EC4\u5408\u4EE3\u7801\u4E0D\u80FD\u4E3A\u7A7A",
-        "code",
-        "\u975E\u7A7A\u5B57\u7B26\u4E32",
-        updates.code
-      );
-    }
-    const updatedComposition = {
-      ...existingComposition,
+    const existing = project.scenes[sceneIndex];
+    const updatedScene = {
+      ...existing,
       ...updates.name !== void 0 && { name: updates.name.trim() },
-      ...updates.code !== void 0 && { code: updates.code },
+      ...updates.compositionId !== void 0 && {
+        compositionId: updates.compositionId
+      },
+      ...updates.durationInFrames !== void 0 && {
+        durationInFrames: updates.durationInFrames
+      },
       ...updates.props !== void 0 && { props: updates.props }
     };
-    const updatedCompositions = [...project.compositions];
-    updatedCompositions[compositionIndex] = updatedComposition;
+    const updatedScenes = [...project.scenes];
+    updatedScenes[sceneIndex] = updatedScene;
     const updatedProject = {
       ...project,
-      compositions: updatedCompositions,
+      scenes: updatedScenes,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     this.saveProject(updatedProject);
-    return updatedComposition;
+    return updatedScene;
   }
   /**
-   * 从项目移除组合
-   *
-   * 从项目配置中移除组合注册
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @returns 是否移除成功
-   * @throws MCPError 如果项目或组合不存在
+   * 移除场景
    */
-  async removeComposition(projectId, compositionId) {
+  async removeScene(projectId, sceneId) {
     assertValidWorkspacePath(this.workspacePath);
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
-    const compositionIndex = project.compositions.findIndex((c) => c.id === compositionId);
-    if (compositionIndex === -1) {
-      throw createCompositionNotFoundError(compositionId);
+    const sceneIndex = project.scenes.findIndex((s) => s.id === sceneId);
+    if (sceneIndex === -1) {
+      throw createSceneNotFoundError(sceneId);
     }
-    const updatedCompositions = [...project.compositions];
-    updatedCompositions.splice(compositionIndex, 1);
+    const updatedScenes = [...project.scenes];
+    updatedScenes.splice(sceneIndex, 1);
+    const updatedTransitions = [...project.transitions];
+    if (updatedTransitions.length > 0) {
+      if (sceneIndex === 0) {
+        updatedTransitions.splice(0, 1);
+      } else if (sceneIndex >= updatedScenes.length) {
+        updatedTransitions.splice(updatedTransitions.length - 1, 1);
+      } else {
+        updatedTransitions.splice(sceneIndex - 1, 1);
+      }
+    }
     const updatedProject = {
       ...project,
-      compositions: updatedCompositions,
+      scenes: updatedScenes,
+      transitions: updatedTransitions,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     this.saveProject(updatedProject);
     return true;
   }
   /**
-   * 列出项目中的所有组合
-   *
-   * @param projectId 项目 ID
-   * @returns 组合列表
-   * @throws MCPError 如果项目不存在
+   * 重排场景顺序
    */
-  async listCompositions(projectId) {
+  async reorderScenes(projectId, sceneIds) {
     assertValidWorkspacePath(this.workspacePath);
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
-    return project.compositions;
+    if (sceneIds.length !== project.scenes.length) {
+      throw createValidationError(
+        `\u573A\u666F ID \u6570\u91CF\u4E0D\u5339\u914D: \u671F\u671B ${project.scenes.length}\uFF0C\u6536\u5230 ${sceneIds.length}`,
+        "sceneIds",
+        `${project.scenes.length} \u4E2A\u573A\u666F ID`,
+        `${sceneIds.length} \u4E2A\u573A\u666F ID`
+      );
+    }
+    const sceneMap = new Map(project.scenes.map((s) => [s.id, s]));
+    const reorderedScenes = [];
+    for (const id of sceneIds) {
+      const scene = sceneMap.get(id);
+      if (!scene) {
+        throw createSceneNotFoundError(id);
+      }
+      reorderedScenes.push(scene);
+    }
+    const updatedProject = {
+      ...project,
+      scenes: reorderedScenes,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.saveProject(updatedProject);
+    return updatedProject;
   }
   /**
-   * 获取单个组合详情
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @returns 组合对象，如果不存在则返回 null
-   * @throws MCPError 如果项目不存在
+   * 设置场景间过渡效果
    */
-  async getComposition(projectId, compositionId) {
+  async setTransitions(projectId, transitions) {
     assertValidWorkspacePath(this.workspacePath);
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
-    const composition = project.compositions.find((c) => c.id === compositionId);
-    return composition ?? null;
+    const expectedLength = Math.max(0, project.scenes.length - 1);
+    if (transitions.length !== expectedLength) {
+      throw createValidationError(
+        `\u8FC7\u6E21\u6548\u679C\u6570\u91CF\u4E0D\u5339\u914D: \u671F\u671B ${expectedLength}\uFF08\u573A\u666F\u6570 - 1\uFF09\uFF0C\u6536\u5230 ${transitions.length}`,
+        "transitions",
+        `${expectedLength} \u4E2A\u8FC7\u6E21\u6548\u679C`,
+        `${transitions.length} \u4E2A\u8FC7\u6E21\u6548\u679C`
+      );
+    }
+    const updatedProject = {
+      ...project,
+      transitions,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.saveProject(updatedProject);
+    return updatedProject;
   }
   // ==========================================================================
   // 路径工具方法
@@ -79793,12 +79889,16 @@ var ProjectStore = class _ProjectStore {
    * @returns 唯一的文件名
    */
   generateUniqueFileName(projectName, assetType, originalFileName) {
-    const targetDir = getAssetTypePath(this.workspacePath, projectName, assetType);
-    if (!(0, import_fs3.existsSync)(targetDir)) {
+    const targetDir = getAssetTypePath(
+      this.workspacePath,
+      projectName,
+      assetType
+    );
+    if (!(0, import_fs4.existsSync)(targetDir)) {
       return originalFileName;
     }
-    let targetPath = (0, import_path3.join)(targetDir, originalFileName);
-    if (!(0, import_fs3.existsSync)(targetPath)) {
+    let targetPath = (0, import_path4.join)(targetDir, originalFileName);
+    if (!(0, import_fs4.existsSync)(targetPath)) {
       return originalFileName;
     }
     const lastDotIndex = originalFileName.lastIndexOf(".");
@@ -79806,11 +79906,11 @@ var ProjectStore = class _ProjectStore {
     const ext = lastDotIndex > 0 ? originalFileName.slice(lastDotIndex) : "";
     let counter = 1;
     let newFileName = `${nameWithoutExt}_${counter}${ext}`;
-    targetPath = (0, import_path3.join)(targetDir, newFileName);
-    while ((0, import_fs3.existsSync)(targetPath)) {
+    targetPath = (0, import_path4.join)(targetDir, newFileName);
+    while ((0, import_fs4.existsSync)(targetPath)) {
       counter++;
       newFileName = `${nameWithoutExt}_${counter}${ext}`;
-      targetPath = (0, import_path3.join)(targetDir, newFileName);
+      targetPath = (0, import_path4.join)(targetDir, newFileName);
     }
     return newFileName;
   }
@@ -79820,20 +79920,23 @@ var ProjectStore = class _ProjectStore {
    */
   createProjectDirectories(projectName) {
     const projectsDir = getVideoProjectsDir(this.workspacePath);
-    if (!(0, import_fs3.existsSync)(projectsDir)) {
-      (0, import_fs3.mkdirSync)(projectsDir, { recursive: true });
+    if (!(0, import_fs4.existsSync)(projectsDir)) {
+      (0, import_fs4.mkdirSync)(projectsDir, { recursive: true });
     }
     const projectPath = getProjectPath(this.workspacePath, projectName);
-    (0, import_fs3.mkdirSync)(projectPath, { recursive: true });
+    (0, import_fs4.mkdirSync)(projectPath, { recursive: true });
     const assetsPath = getAssetsPath(this.workspacePath, projectName);
-    (0, import_fs3.mkdirSync)(assetsPath, { recursive: true });
+    (0, import_fs4.mkdirSync)(assetsPath, { recursive: true });
     for (const subdir of Object.values(ASSET_SUBDIRS)) {
-      (0, import_fs3.mkdirSync)((0, import_path3.join)(assetsPath, subdir), { recursive: true });
+      (0, import_fs4.mkdirSync)((0, import_path4.join)(assetsPath, subdir), { recursive: true });
     }
-    const compositionsPath = getCompositionsPath(this.workspacePath, projectName);
-    (0, import_fs3.mkdirSync)(compositionsPath, { recursive: true });
+    const compositionsPath = getCompositionsPath(
+      this.workspacePath,
+      projectName
+    );
+    (0, import_fs4.mkdirSync)(compositionsPath, { recursive: true });
     const outputPath = getOutputPath(this.workspacePath, projectName);
-    (0, import_fs3.mkdirSync)(outputPath, { recursive: true });
+    (0, import_fs4.mkdirSync)(outputPath, { recursive: true });
   }
   /**
    * 加载项目配置
@@ -79842,20 +79945,26 @@ var ProjectStore = class _ProjectStore {
    */
   loadProject(projectName) {
     const configPath = getProjectConfigPath(this.workspacePath, projectName);
-    if (!(0, import_fs3.existsSync)(configPath)) {
+    if (!(0, import_fs4.existsSync)(configPath)) {
       return null;
     }
     try {
-      const content = (0, import_fs3.readFileSync)(configPath, "utf-8");
+      const content = (0, import_fs4.readFileSync)(configPath, "utf-8");
       const data = JSON.parse(content);
       const result = VideoProjectSchema.safeParse(data);
       if (!result.success) {
-        console.error(`[ProjectStore] Invalid project data in ${configPath}:`, result.error);
+        console.error(
+          `[ProjectStore] Invalid project data in ${configPath}:`,
+          result.error
+        );
         return null;
       }
       return result.data;
     } catch (error48) {
-      console.error(`[ProjectStore] Failed to load project ${projectName}:`, error48);
+      console.error(
+        `[ProjectStore] Failed to load project ${projectName}:`,
+        error48
+      );
       return null;
     }
   }
@@ -79866,7 +79975,7 @@ var ProjectStore = class _ProjectStore {
   saveProject(project) {
     const configPath = getProjectConfigPath(this.workspacePath, project.name);
     const content = JSON.stringify(project, null, 2);
-    (0, import_fs3.writeFileSync)(configPath, content, "utf-8");
+    (0, import_fs4.writeFileSync)(configPath, content, "utf-8");
   }
   // ==========================================================================
   // 静态工厂方法
@@ -79938,339 +80047,6 @@ var ASPECT_RATIOS = {
 };
 
 // packages/video/src/templates/social-media.ts
-var VERTICAL_COMPOSITION_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-} from 'remotion';
-
-interface SocialMediaVerticalProps {
-  title?: string;
-  subtitle?: string;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-  cta?: {
-    text: string;
-    url?: string;
-  };
-}
-
-export const SocialMediaVertical: React.FC<SocialMediaVerticalProps> = ({
-  title = 'Your Title Here',
-  subtitle = 'Swipe up to learn more',
-  colors = {
-    primary: '#ec4899',
-    secondary: '#8b5cf6',
-    background: '#0f0f23',
-    text: '#ffffff',
-  },
-  logo,
-  cta,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Title animation with spring
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  const titleTranslateY = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-    from: 50,
-    to: 0,
-  });
-
-  // Subtitle animation (delayed)
-  const subtitleProgress = spring({
-    frame: frame - 15,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // CTA animation (delayed more)
-  const ctaProgress = spring({
-    frame: frame - 30,
-    fps,
-    config: { damping: 200, stiffness: 80, mass: 1 },
-  });
-
-  // Fade out at the end
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 20, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  // Gradient background animation
-  const gradientRotation = interpolate(frame, [0, durationInFrames], [0, 360]);
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: \`linear-gradient(\${gradientRotation}deg, \${colors.background} 0%, \${colors.primary}20 50%, \${colors.background} 100%)\`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-        padding: 40,
-      }}
-    >
-      {/* Logo at top */}
-      {logo && (
-        <img
-          src={logo}
-          alt="Logo"
-          style={{
-            position: 'absolute',
-            top: 60,
-            height: 60,
-            opacity: titleProgress,
-          }}
-        />
-      )}
-
-      {/* Main content */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: 30,
-        }}
-      >
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: 64,
-            fontWeight: 'bold',
-            color: colors.text,
-            margin: 0,
-            opacity: titleProgress,
-            transform: \`translateY(\${titleTranslateY}px)\`,
-            lineHeight: 1.2,
-            maxWidth: '90%',
-          }}
-        >
-          {title}
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          style={{
-            fontSize: 28,
-            color: colors.primary,
-            margin: 0,
-            opacity: Math.max(0, subtitleProgress),
-            maxWidth: '80%',
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {/* CTA Button */}
-        {cta && (
-          <div
-            style={{
-              marginTop: 40,
-              padding: '20px 50px',
-              backgroundColor: colors.primary,
-              borderRadius: 50,
-              fontSize: 24,
-              fontWeight: 'bold',
-              color: colors.text,
-              opacity: Math.max(0, ctaProgress),
-              transform: \`scale(\${interpolate(ctaProgress, [0, 1], [0.8, 1])})\`,
-              boxShadow: \`0 10px 30px \${colors.primary}60\`,
-            }}
-          >
-            {cta.text}
-          </div>
-        )}
-      </div>
-
-      {/* Decorative elements */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 100,
-          width: 60,
-          height: 4,
-          backgroundColor: colors.primary,
-          borderRadius: 2,
-          opacity: ctaProgress,
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-export default SocialMediaVertical;
-`;
-var SQUARE_COMPOSITION_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-} from 'remotion';
-
-interface SocialMediaSquareProps {
-  title?: string;
-  subtitle?: string;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-  cta?: {
-    text: string;
-    url?: string;
-  };
-}
-
-export const SocialMediaSquare: React.FC<SocialMediaSquareProps> = ({
-  title = 'Your Title Here',
-  subtitle = 'Double tap to like',
-  colors = {
-    primary: '#ec4899',
-    secondary: '#8b5cf6',
-    background: '#0f0f23',
-    text: '#ffffff',
-  },
-  logo,
-  cta,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  const titleScale = interpolate(titleProgress, [0, 1], [0.9, 1]);
-
-  // Subtitle animation
-  const subtitleProgress = spring({
-    frame: frame - 15,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 20, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: \`radial-gradient(circle at center, \${colors.primary}30 0%, \${colors.background} 70%)\`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-        padding: 60,
-      }}
-    >
-      {/* Logo */}
-      {logo && (
-        <img
-          src={logo}
-          alt="Logo"
-          style={{
-            position: 'absolute',
-            top: 40,
-            left: 40,
-            height: 50,
-            opacity: titleProgress,
-          }}
-        />
-      )}
-
-      {/* Content */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: 24,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 56,
-            fontWeight: 'bold',
-            color: colors.text,
-            margin: 0,
-            opacity: titleProgress,
-            transform: \`scale(\${titleScale})\`,
-            lineHeight: 1.2,
-          }}
-        >
-          {title}
-        </h1>
-
-        <p
-          style={{
-            fontSize: 24,
-            color: colors.primary,
-            margin: 0,
-            opacity: Math.max(0, subtitleProgress),
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {cta && (
-          <div
-            style={{
-              marginTop: 30,
-              padding: '16px 40px',
-              backgroundColor: colors.primary,
-              borderRadius: 30,
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: colors.text,
-              opacity: Math.max(0, subtitleProgress),
-            }}
-          >
-            {cta.text}
-          </div>
-        )}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default SocialMediaSquare;
-`;
 var socialMediaVerticalTemplate = {
   id: "social-media-vertical",
   name: "\u793E\u4EA4\u5A92\u4F53\u7AD6\u7248",
@@ -80292,7 +80068,7 @@ var socialMediaVerticalTemplate = {
       text: "\u4E86\u89E3\u66F4\u591A"
     }
   },
-  compositionCode: VERTICAL_COMPOSITION_CODE,
+  compositionId: "SocialMediaVertical",
   aspectRatio: "9:16",
   tags: ["\u6296\u97F3", "\u5FEB\u624B", "\u77ED\u89C6\u9891", "\u7AD6\u5C4F", "\u79FB\u52A8\u7AEF", "\u793E\u4EA4"],
   useCases: [
@@ -80324,7 +80100,7 @@ var socialMediaSquareTemplate = {
       text: "\u7ACB\u5373\u8D2D\u4E70"
     }
   },
-  compositionCode: SQUARE_COMPOSITION_CODE,
+  compositionId: "SocialMediaSquare",
   aspectRatio: "1:1",
   tags: ["\u5C0F\u7EA2\u4E66", "\u5FAE\u4FE1", "\u65B9\u5F62", "\u52A8\u6001", "\u793E\u4EA4"],
   useCases: [
@@ -80371,526 +80147,10 @@ var SOCIAL_MEDIA_TEMPLATES = [
 ];
 
 // packages/video/src/templates/marketing.ts
-var PRODUCT_MARKETING_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-  Img,
-} from 'remotion';
-
-interface ProductMarketingProps {
-  title?: string;
-  subtitle?: string;
-  items?: Array<{
-    title: string;
-    description?: string;
-    icon?: string;
-  }>;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-  cta?: {
-    text: string;
-    url?: string;
-  };
-  productImage?: string;
-}
-
-export const ProductMarketing: React.FC<ProductMarketingProps> = ({
-  title = 'Introducing Our Product',
-  subtitle = 'The future of innovation',
-  items = [
-    { title: 'Feature One', description: 'Amazing capability', icon: '\u{1F680}' },
-    { title: 'Feature Two', description: 'Powerful performance', icon: '\u26A1' },
-    { title: 'Feature Three', description: 'Smart design', icon: '\u{1F3AF}' },
-  ],
-  colors = {
-    primary: '#0ea5e9',
-    secondary: '#0284c7',
-    background: '#0f172a',
-    text: '#f8fafc',
-  },
-  logo,
-  cta,
-  productImage,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  const titleTranslateY = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-    from: -30,
-    to: 0,
-  });
-
-  // Subtitle animation
-  const subtitleProgress = spring({
-    frame: frame - 15,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Product image animation
-  const productProgress = spring({
-    frame: frame - 30,
-    fps,
-    config: { damping: 200, stiffness: 80, mass: 1 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 30, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: colors.background,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-      }}
-    >
-      {/* Background gradient */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: \`radial-gradient(ellipse at top right, \${colors.primary}20 0%, transparent 50%),
-                       radial-gradient(ellipse at bottom left, \${colors.secondary}20 0%, transparent 50%)\`,
-        }}
-      />
-
-      {/* Content container */}
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          padding: 80,
-        }}
-      >
-        {/* Left side - Text content */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            paddingRight: 60,
-          }}
-        >
-          {/* Logo */}
-          {logo && (
-            <img
-              src={logo}
-              alt="Logo"
-              style={{
-                height: 50,
-                marginBottom: 40,
-                opacity: titleProgress,
-              }}
-            />
-          )}
-
-          {/* Title */}
-          <h1
-            style={{
-              fontSize: 64,
-              fontWeight: 'bold',
-              color: colors.text,
-              margin: 0,
-              marginBottom: 20,
-              opacity: titleProgress,
-              transform: \`translateY(\${titleTranslateY}px)\`,
-              lineHeight: 1.1,
-            }}
-          >
-            {title}
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            style={{
-              fontSize: 28,
-              color: colors.primary,
-              margin: 0,
-              marginBottom: 40,
-              opacity: Math.max(0, subtitleProgress),
-            }}
-          >
-            {subtitle}
-          </p>
-
-          {/* Features */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
-            }}
-          >
-            {items.slice(0, 3).map((item, index) => {
-              const itemProgress = spring({
-                frame: frame - 45 - index * 10,
-                fps,
-                config: { damping: 200, stiffness: 100, mass: 0.5 },
-              });
-
-              return (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    opacity: Math.max(0, itemProgress),
-                    transform: \`translateX(\${interpolate(itemProgress, [0, 1], [-20, 0])}px)\`,
-                  }}
-                >
-                  <span style={{ fontSize: 32 }}>{item.icon || '\u2713'}</span>
-                  <div>
-                    <h3
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 'bold',
-                        color: colors.text,
-                        margin: 0,
-                      }}
-                    >
-                      {item.title}
-                    </h3>
-                    {item.description && (
-                      <p
-                        style={{
-                          fontSize: 16,
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          margin: 0,
-                        }}
-                      >
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* CTA */}
-          {cta && (
-            <div
-              style={{
-                marginTop: 40,
-                opacity: Math.max(0, spring({
-                  frame: frame - 75,
-                  fps,
-                  config: { damping: 200, stiffness: 100, mass: 0.5 },
-                })),
-              }}
-            >
-              <div
-                style={{
-                  display: 'inline-block',
-                  padding: '16px 40px',
-                  backgroundColor: colors.primary,
-                  borderRadius: 8,
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  color: colors.text,
-                  boxShadow: \`0 8px 24px \${colors.primary}40\`,
-                }}
-              >
-                {cta.text}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right side - Product image */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          {productImage ? (
-            <Img
-              src={productImage}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '80%',
-                borderRadius: 20,
-                boxShadow: '0 30px 60px rgba(0, 0, 0, 0.4)',
-                opacity: productProgress,
-                transform: \`scale(\${interpolate(productProgress, [0, 1], [0.9, 1])})\`,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 500,
-                height: 400,
-                borderRadius: 20,
-                background: \`linear-gradient(135deg, \${colors.primary} 0%, \${colors.secondary} 100%)\`,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                boxShadow: '0 30px 60px rgba(0, 0, 0, 0.4)',
-                opacity: productProgress,
-                transform: \`scale(\${interpolate(productProgress, [0, 1], [0.9, 1])})\`,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 100,
-                  color: 'rgba(255, 255, 255, 0.3)',
-                }}
-              >
-                \u{1F4E6}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default ProductMarketing;
-`;
-var PROMO_AD_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-} from 'remotion';
-
-interface PromoAdProps {
-  title?: string;
-  subtitle?: string;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-  cta?: {
-    text: string;
-    url?: string;
-  };
-  discount?: string;
-}
-
-export const PromoAd: React.FC<PromoAdProps> = ({
-  title = 'MEGA SALE',
-  subtitle = 'Limited time offer',
-  colors = {
-    primary: '#f43f5e',
-    secondary: '#fb923c',
-    background: '#1a1a2e',
-    text: '#ffffff',
-  },
-  logo,
-  cta = { text: 'Shop Now' },
-  discount = '50% OFF',
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Pulsing animation for discount
-  const pulse = Math.sin(frame * 0.15) * 0.05 + 1;
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 100, stiffness: 200, mass: 0.5 },
-  });
-
-  // Discount animation
-  const discountProgress = spring({
-    frame: frame - 10,
-    fps,
-    config: { damping: 100, stiffness: 200, mass: 0.5 },
-  });
-
-  // CTA animation
-  const ctaProgress = spring({
-    frame: frame - 25,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 20, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: \`linear-gradient(135deg, \${colors.background} 0%, \${colors.primary}30 100%)\`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-      }}
-    >
-      {/* Animated background shapes */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -100,
-          right: -100,
-          width: 400,
-          height: 400,
-          borderRadius: '50%',
-          background: \`radial-gradient(circle, \${colors.primary}40 0%, transparent 70%)\`,
-          transform: \`scale(\${pulse})\`,
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: -150,
-          left: -150,
-          width: 500,
-          height: 500,
-          borderRadius: '50%',
-          background: \`radial-gradient(circle, \${colors.secondary}30 0%, transparent 70%)\`,
-          transform: \`scale(\${pulse * 1.1})\`,
-        }}
-      />
-
-      {/* Logo */}
-      {logo && (
-        <img
-          src={logo}
-          alt="Logo"
-          style={{
-            position: 'absolute',
-            top: 40,
-            left: 60,
-            height: 50,
-            opacity: titleProgress,
-          }}
-        />
-      )}
-
-      {/* Main content */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: 20,
-        }}
-      >
-        {/* Discount badge */}
-        <div
-          style={{
-            padding: '12px 30px',
-            backgroundColor: colors.primary,
-            borderRadius: 50,
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: colors.text,
-            opacity: discountProgress,
-            transform: \`scale(\${interpolate(discountProgress, [0, 1], [0.5, 1]) * pulse})\`,
-            boxShadow: \`0 10px 30px \${colors.primary}60\`,
-          }}
-        >
-          {discount}
-        </div>
-
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: 96,
-            fontWeight: 'bold',
-            color: colors.text,
-            margin: 0,
-            opacity: titleProgress,
-            transform: \`scale(\${interpolate(titleProgress, [0, 1], [0.8, 1])})\`,
-            textShadow: \`0 4px 20px \${colors.primary}80\`,
-            letterSpacing: '0.05em',
-          }}
-        >
-          {title}
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          style={{
-            fontSize: 32,
-            color: 'rgba(255, 255, 255, 0.8)',
-            margin: 0,
-            opacity: titleProgress,
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {/* CTA */}
-        <div
-          style={{
-            marginTop: 30,
-            padding: '20px 60px',
-            background: \`linear-gradient(135deg, \${colors.primary} 0%, \${colors.secondary} 100%)\`,
-            borderRadius: 12,
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: colors.text,
-            opacity: ctaProgress,
-            transform: \`scale(\${interpolate(ctaProgress, [0, 1], [0.9, 1])})\`,
-            boxShadow: \`0 15px 40px \${colors.primary}50\`,
-          }}
-        >
-          {cta.text}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default PromoAd;
-`;
 var productMarketingTemplate = {
   id: "marketing-product",
   name: "\u4EA7\u54C1\u8425\u9500",
-  description: "\u4E13\u4E1A\u4EA7\u54C1\u8425\u9500\u89C6\u9891\uFF0C\u7A81\u51FA\u529F\u80FD\u4EAE\u70B9\u3002\u9002\u7528\u4E8E\u4EA7\u54C1\u53D1\u5E03\u3001\u6F14\u793A\u548C\u63A8\u5E7F\u5185\u5BB9\u3002",
+  description: "\u4E13\u4E1A\u7684\u4EA7\u54C1\u5C55\u793A\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u4EA7\u54C1\u53D1\u5E03\u548C\u529F\u80FD\u4ECB\u7ECD\u3002\u6A2A\u7248\u8BBE\u8BA1\uFF0C\u9002\u5408 YouTube \u548C\u6F14\u793A\u6587\u7A3F\u3002",
   category: "marketing",
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
@@ -80925,7 +80185,7 @@ var productMarketingTemplate = {
     },
     animationStyle: "spring"
   },
-  compositionCode: PRODUCT_MARKETING_CODE,
+  compositionId: "ProductMarketing",
   aspectRatio: "16:9",
   tags: ["\u4EA7\u54C1", "\u8425\u9500", "\u4E13\u4E1A", "\u5546\u52A1", "\u53D1\u5E03"],
   useCases: [
@@ -80945,38 +80205,38 @@ var promoAdTemplate = {
     width: ASPECT_RATIOS.HORIZONTAL.width,
     height: ASPECT_RATIOS.HORIZONTAL.height,
     fps: 30,
-    durationInFrames: 150
-    // 5 seconds
+    durationInFrames: 180
+    // 6 seconds
   },
   defaultProps: {
-    title: "\u8D85\u7EA7\u5927\u4FC3",
-    subtitle: "\u9650\u65F6\u4F18\u60E0\uFF0C\u4E0D\u5BB9\u9519\u8FC7\uFF01",
+    title: "\u9650\u65F6\u7279\u60E0",
+    subtitle: "\u5168\u573A5\u6298\u8D77",
     colors: DEFAULT_COLOR_SCHEMES.playful,
     cta: {
       text: "\u7ACB\u5373\u62A2\u8D2D"
     },
     animationStyle: "spring"
   },
-  compositionCode: PROMO_AD_CODE,
+  compositionId: "PromoAd",
   aspectRatio: "16:9",
-  tags: ["\u4FC3\u9500", "\u6253\u6298", "\u4F18\u60E0", "\u5E7F\u544A", "\u8425\u9500", "\u9192\u76EE"],
+  tags: ["\u4FC3\u9500", "\u5E7F\u544A", "\u7279\u5356", "\u4F18\u60E0", "\u8425\u9500"],
   useCases: [
     "\u4FC3\u9500\u6D3B\u52A8",
-    "\u6298\u6263\u516C\u544A",
-    "\u9650\u65F6\u79D2\u6740",
+    "\u9650\u65F6\u4F18\u60E0",
     "\u8282\u65E5\u8425\u9500",
-    "\u793E\u4EA4\u5A92\u4F53\u5E7F\u544A"
+    "\u6E05\u4ED3\u7529\u5356",
+    "\u65B0\u54C1\u4E0A\u5E02"
   ]
 };
 var marketingTemplate = {
   ...productMarketingTemplate,
   id: "marketing",
   name: "\u8425\u9500\u63A8\u5E7F",
-  description: "\u4E13\u4E1A\u8425\u9500\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u4EA7\u54C1\u5C55\u793A\u3001\u4FC3\u9500\u548C\u5546\u52A1\u6F14\u793A\u3002",
+  description: "\u591A\u573A\u666F\u8425\u9500\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u4EA7\u54C1\u63A8\u5E7F\u548C\u4FC3\u9500\u6D3B\u52A8\u3002",
   variants: [
     {
       id: "product",
-      name: "Product Showcase",
+      name: "Product Marketing",
       aspectRatio: "HORIZONTAL",
       config: productMarketingTemplate.defaultConfig
     },
@@ -80994,686 +80254,17 @@ var MARKETING_TEMPLATES = [
 ];
 
 // packages/video/src/templates/tutorial.ts
-var STEP_BY_STEP_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-  Sequence,
-} from 'remotion';
-
-interface TutorialStep {
-  title: string;
-  description?: string;
-  icon?: string;
-}
-
-interface StepByStepTutorialProps {
-  title?: string;
-  subtitle?: string;
-  items?: TutorialStep[];
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-}
-
-export const StepByStepTutorial: React.FC<StepByStepTutorialProps> = ({
-  title = 'How To Guide',
-  subtitle = 'Follow these simple steps',
-  items = [
-    { title: 'Step 1', description: 'First, do this', icon: '1\uFE0F\u20E3' },
-    { title: 'Step 2', description: 'Then, do that', icon: '2\uFE0F\u20E3' },
-    { title: 'Step 3', description: 'Finally, complete', icon: '3\uFE0F\u20E3' },
-  ],
-  colors = {
-    primary: '#10b981',
-    secondary: '#059669',
-    background: '#0f172a',
-    text: '#f8fafc',
-  },
-  logo,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Calculate timing for each step
-  const introFrames = 60; // 2 seconds intro
-  const stepFrames = Math.floor((durationInFrames - introFrames - 30) / items.length);
-  
-  // Current step based on frame
-  const currentStepIndex = Math.min(
-    Math.floor((frame - introFrames) / stepFrames),
-    items.length - 1
-  );
-  const isIntro = frame < introFrames;
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 30, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: colors.background,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          padding: '40px 60px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: \`1px solid \${colors.primary}30\`,
-        }}
-      >
-        {/* Logo */}
-        {logo ? (
-          <img
-            src={logo}
-            alt="Logo"
-            style={{
-              height: 40,
-              opacity: titleProgress,
-            }}
-          />
-        ) : (
-          <div style={{ width: 40 }} />
-        )}
-
-        {/* Progress indicator */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-          }}
-        >
-          {items.map((_, index) => (
-            <div
-              key={index}
-              style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor:
-                  index <= currentStepIndex && !isIntro
-                    ? colors.primary
-                    : \`\${colors.primary}30\`,
-                transition: 'background-color 0.3s',
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 80,
-          paddingTop: 120,
-        }}
-      >
-        {/* Intro section */}
-        {isIntro && (
-          <div
-            style={{
-              textAlign: 'center',
-            }}
-          >
-            <h1
-              style={{
-                fontSize: 72,
-                fontWeight: 'bold',
-                color: colors.text,
-                margin: 0,
-                marginBottom: 20,
-                opacity: titleProgress,
-              }}
-            >
-              {title}
-            </h1>
-            <p
-              style={{
-                fontSize: 32,
-                color: colors.primary,
-                margin: 0,
-                opacity: titleProgress,
-              }}
-            >
-              {subtitle}
-            </p>
-          </div>
-        )}
-
-        {/* Step content */}
-        {!isIntro && items[currentStepIndex] && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 60,
-              maxWidth: 1200,
-            }}
-          >
-            {/* Step number */}
-            <div
-              style={{
-                width: 150,
-                height: 150,
-                borderRadius: '50%',
-                backgroundColor: colors.primary,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                fontSize: 64,
-                fontWeight: 'bold',
-                color: colors.text,
-                boxShadow: \`0 20px 40px \${colors.primary}40\`,
-                opacity: spring({
-                  frame: frame - introFrames - currentStepIndex * stepFrames,
-                  fps,
-                  config: { damping: 200, stiffness: 100, mass: 0.5 },
-                }),
-                transform: \`scale(\${spring({
-                  frame: frame - introFrames - currentStepIndex * stepFrames,
-                  fps,
-                  config: { damping: 200, stiffness: 100, mass: 0.5 },
-                  from: 0.5,
-                  to: 1,
-                })})\`,
-              }}
-            >
-              {currentStepIndex + 1}
-            </div>
-
-            {/* Step content */}
-            <div
-              style={{
-                flex: 1,
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: 48,
-                  fontWeight: 'bold',
-                  color: colors.text,
-                  margin: 0,
-                  marginBottom: 16,
-                  opacity: spring({
-                    frame: frame - introFrames - currentStepIndex * stepFrames - 5,
-                    fps,
-                    config: { damping: 200, stiffness: 100, mass: 0.5 },
-                  }),
-                }}
-              >
-                {items[currentStepIndex].title}
-              </h2>
-              {items[currentStepIndex].description && (
-                <p
-                  style={{
-                    fontSize: 28,
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    margin: 0,
-                    lineHeight: 1.5,
-                    opacity: spring({
-                      frame: frame - introFrames - currentStepIndex * stepFrames - 10,
-                      fps,
-                      config: { damping: 200, stiffness: 100, mass: 0.5 },
-                    }),
-                  }}
-                >
-                  {items[currentStepIndex].description}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default StepByStepTutorial;
-`;
-var EXPLAINER_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-} from 'remotion';
-
-interface ExplainerProps {
-  title?: string;
-  subtitle?: string;
-  items?: Array<{
-    title: string;
-    description?: string;
-    icon?: string;
-  }>;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-}
-
-export const Explainer: React.FC<ExplainerProps> = ({
-  title = 'Understanding the Concept',
-  subtitle = 'A simple explanation',
-  items = [
-    { title: 'Point One', description: 'Key insight here', icon: '\u{1F4A1}' },
-    { title: 'Point Two', description: 'Another important fact', icon: '\u{1F4CA}' },
-    { title: 'Point Three', description: 'Final takeaway', icon: '\u{1F3AF}' },
-  ],
-  colors = {
-    primary: '#6366f1',
-    secondary: '#8b5cf6',
-    background: '#ffffff',
-    text: '#1f2937',
-  },
-  logo,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 30, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: colors.background,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-        padding: 80,
-      }}
-    >
-      {/* Logo */}
-      {logo && (
-        <img
-          src={logo}
-          alt="Logo"
-          style={{
-            position: 'absolute',
-            top: 40,
-            left: 60,
-            height: 40,
-            opacity: titleProgress,
-          }}
-        />
-      )}
-
-      {/* Header */}
-      <div
-        style={{
-          marginBottom: 60,
-          paddingTop: 40,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 56,
-            fontWeight: 'bold',
-            color: colors.text,
-            margin: 0,
-            marginBottom: 16,
-            opacity: titleProgress,
-          }}
-        >
-          {title}
-        </h1>
-        <p
-          style={{
-            fontSize: 28,
-            color: colors.primary,
-            margin: 0,
-            opacity: titleProgress,
-          }}
-        >
-          {subtitle}
-        </p>
-      </div>
-
-      {/* Content grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 40,
-          flex: 1,
-        }}
-      >
-        {items.map((item, index) => {
-          const itemProgress = spring({
-            frame: frame - 30 - index * 15,
-            fps,
-            config: { damping: 200, stiffness: 100, mass: 0.5 },
-          });
-
-          return (
-            <div
-              key={index}
-              style={{
-                padding: 40,
-                backgroundColor: \`\${colors.primary}08\`,
-                borderRadius: 20,
-                border: \`2px solid \${colors.primary}20\`,
-                opacity: Math.max(0, itemProgress),
-                transform: \`translateY(\${interpolate(itemProgress, [0, 1], [30, 0])}px)\`,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 48,
-                  display: 'block',
-                  marginBottom: 20,
-                }}
-              >
-                {item.icon || '\u{1F4CC}'}
-              </span>
-              <h3
-                style={{
-                  fontSize: 28,
-                  fontWeight: 'bold',
-                  color: colors.text,
-                  margin: 0,
-                  marginBottom: 12,
-                }}
-              >
-                {item.title}
-              </h3>
-              {item.description && (
-                <p
-                  style={{
-                    fontSize: 18,
-                    color: \`\${colors.text}99\`,
-                    margin: 0,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {item.description}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default Explainer;
-`;
-var TIPS_CODE = `
-import React from 'react';
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-} from 'remotion';
-
-interface TipsProps {
-  title?: string;
-  subtitle?: string;
-  items?: Array<{
-    title: string;
-    description?: string;
-  }>;
-  colors?: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  logo?: string;
-}
-
-export const Tips: React.FC<TipsProps> = ({
-  title = '5 Quick Tips',
-  subtitle = 'Boost your productivity',
-  items = [
-    { title: 'Tip 1', description: 'Start with the basics' },
-    { title: 'Tip 2', description: 'Practice regularly' },
-    { title: 'Tip 3', description: 'Learn from mistakes' },
-    { title: 'Tip 4', description: 'Stay consistent' },
-    { title: 'Tip 5', description: 'Never stop learning' },
-  ],
-  colors = {
-    primary: '#f59e0b',
-    secondary: '#d97706',
-    background: '#1f2937',
-    text: '#ffffff',
-  },
-  logo,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-
-  // Title animation
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: { damping: 200, stiffness: 100, mass: 0.5 },
-  });
-
-  // Fade out
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 30, durationInFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: colors.background,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        opacity: fadeOut,
-      }}
-    >
-      {/* Background accent */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '40%',
-          height: '100%',
-          background: \`linear-gradient(180deg, \${colors.primary}20 0%, transparent 100%)\`,
-        }}
-      />
-
-      {/* Content */}
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          padding: 80,
-        }}
-      >
-        {/* Left side - Title */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-          }}
-        >
-          {logo && (
-            <img
-              src={logo}
-              alt="Logo"
-              style={{
-                height: 40,
-                marginBottom: 40,
-                opacity: titleProgress,
-              }}
-            />
-          )}
-          <h1
-            style={{
-              fontSize: 64,
-              fontWeight: 'bold',
-              color: colors.text,
-              margin: 0,
-              marginBottom: 16,
-              opacity: titleProgress,
-            }}
-          >
-            {title}
-          </h1>
-          <p
-            style={{
-              fontSize: 28,
-              color: colors.primary,
-              margin: 0,
-              opacity: titleProgress,
-            }}
-          >
-            {subtitle}
-          </p>
-        </div>
-
-        {/* Right side - Tips list */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            gap: 20,
-          }}
-        >
-          {items.slice(0, 5).map((item, index) => {
-            const itemProgress = spring({
-              frame: frame - 20 - index * 12,
-              fps,
-              config: { damping: 200, stiffness: 100, mass: 0.5 },
-            });
-
-            return (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 20,
-                  opacity: Math.max(0, itemProgress),
-                  transform: \`translateX(\${interpolate(itemProgress, [0, 1], [30, 0])}px)\`,
-                }}
-              >
-                <div
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 12,
-                    backgroundColor: colors.primary,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    fontSize: 24,
-                    fontWeight: 'bold',
-                    color: colors.background,
-                    flexShrink: 0,
-                  }}
-                >
-                  {index + 1}
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 'bold',
-                      color: colors.text,
-                      margin: 0,
-                    }}
-                  >
-                    {item.title}
-                  </h3>
-                  {item.description && (
-                    <p
-                      style={{
-                        fontSize: 16,
-                        color: 'rgba(255, 255, 255, 0.6)',
-                        margin: 0,
-                      }}
-                    >
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-export default Tips;
-`;
 var stepByStepTemplate = {
-  id: "tutorial-steps",
+  id: "tutorial-step-by-step",
   name: "\u5206\u6B65\u6559\u7A0B",
-  description: "\u5E26\u6709\u6E05\u6670\u6B65\u9AA4\u8FDB\u5EA6\u7684\u6559\u7A0B\u6A21\u677F\u3002\u9002\u7528\u4E8E\u64CD\u4F5C\u6307\u5357\u3001\u6F14\u7EC3\u548C\u6559\u5B66\u5185\u5BB9\u3002",
+  description: "\u5206\u6B65\u6559\u7A0B\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u64CD\u4F5C\u6307\u5357\u548C\u8BF4\u660E\u3002\u6E05\u6670\u7684\u6B65\u9AA4\u5C55\u793A\uFF0C\u6613\u4E8E\u8DDF\u968F\u3002",
   category: "tutorial",
   defaultConfig: {
     width: ASPECT_RATIOS.HORIZONTAL.width,
     height: ASPECT_RATIOS.HORIZONTAL.height,
     fps: 30,
-    durationInFrames: 450
-    // 15 seconds
+    durationInFrames: 360
+    // 12 seconds
   },
   defaultProps: {
     title: "\u64CD\u4F5C\u6307\u5357",
@@ -81703,7 +80294,7 @@ var stepByStepTemplate = {
     ],
     animationStyle: "spring"
   },
-  compositionCode: STEP_BY_STEP_CODE,
+  compositionId: "StepByStepTutorial",
   aspectRatio: "16:9",
   tags: ["\u6559\u7A0B", "\u64CD\u4F5C\u6307\u5357", "\u6B65\u9AA4", "\u6307\u5BFC", "\u6559\u5B66", "\u8BF4\u660E"],
   useCases: [
@@ -81727,19 +80318,19 @@ var explainerTemplate = {
     // 10 seconds
   },
   defaultProps: {
-    title: "\u6982\u5FF5\u89E3\u6790",
+    title: "\u7406\u89E3\u6838\u5FC3\u6982\u5FF5",
     subtitle: "\u7B80\u5355\u6613\u61C2\u7684\u8BB2\u89E3",
     colors: DEFAULT_COLOR_SCHEMES.minimal,
     items: [
       {
         title: "\u6838\u5FC3\u8981\u70B9\u4E00",
-        description: "\u4F60\u9700\u8981\u7406\u89E3\u7684\u57FA\u7840\u6982\u5FF5",
+        description: "\u57FA\u7840\u6982\u5FF5\u4E0E\u5B9A\u4E49",
         icon: "\u{1F4A1}"
       },
       {
         title: "\u6838\u5FC3\u8981\u70B9\u4E8C",
-        description: "\u5728\u57FA\u7840\u4E0A\u6DF1\u5165\u4E86\u89E3\u66F4\u591A\u7EC6\u8282",
-        icon: "\u{1F4CA}"
+        description: "\u5DE5\u4F5C\u539F\u7406\u4E0E\u673A\u5236",
+        icon: "\u2699\uFE0F"
       },
       {
         title: "\u6838\u5FC3\u8981\u70B9\u4E09",
@@ -81749,7 +80340,7 @@ var explainerTemplate = {
     ],
     animationStyle: "spring"
   },
-  compositionCode: EXPLAINER_CODE,
+  compositionId: "Explainer",
   aspectRatio: "16:9",
   tags: ["\u8BB2\u89E3", "\u6559\u80B2", "\u6982\u5FF5", "\u5B66\u4E60", "\u6F14\u793A"],
   useCases: [
@@ -81785,25 +80376,25 @@ var tipsTemplate = {
     ],
     animationStyle: "spring"
   },
-  compositionCode: TIPS_CODE,
+  compositionId: "Tips",
   aspectRatio: "16:9",
-  tags: ["\u6280\u5DE7", "\u6E05\u5355", "\u5FEB\u901F", "\u5EFA\u8BAE", "\u6548\u7387"],
+  tags: ["\u6280\u5DE7", "\u6E05\u5355", "\u5EFA\u8BAE", "\u5FEB\u901F", "\u5B9E\u7528"],
   useCases: [
-    "\u5FEB\u901F\u6280\u5DE7\u89C6\u9891",
-    "\u6E05\u5355\u7C7B\u5185\u5BB9",
-    "\u7ECF\u9A8C\u6C47\u603B",
-    "\u6700\u4F73\u5B9E\u8DF5",
-    "\u751F\u6D3B\u5999\u62DB"
+    "\u6280\u5DE7\u5206\u4EAB",
+    "\u6E05\u5355\u5185\u5BB9",
+    "\u5FEB\u901F\u5EFA\u8BAE",
+    "\u751F\u6D3B\u7A8D\u95E8",
+    "\u6548\u7387\u63D0\u5347"
   ]
 };
 var tutorialTemplate = {
   ...stepByStepTemplate,
   id: "tutorial",
   name: "\u6559\u7A0B",
-  description: "\u6559\u80B2\u7C7B\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u6559\u7A0B\u3001\u8BB2\u89E3\u548C\u6559\u5B66\u5185\u5BB9\u3002\u6E05\u6670\u4E13\u4E1A\u7684\u8BBE\u8BA1\uFF0C\u63D0\u5347\u5B66\u4E60\u6548\u679C\u3002",
+  description: "\u591A\u573A\u666F\u6559\u7A0B\u6A21\u677F\uFF0C\u9002\u7528\u4E8E\u6559\u80B2\u548C\u57F9\u8BAD\u5185\u5BB9\u3002",
   variants: [
     {
-      id: "steps",
+      id: "step-by-step",
       name: "Step-by-Step",
       aspectRatio: "HORIZONTAL",
       config: stepByStepTemplate.defaultConfig
@@ -81816,7 +80407,7 @@ var tutorialTemplate = {
     },
     {
       id: "tips",
-      name: "Tips & Listicle",
+      name: "Tips/Listicle",
       aspectRatio: "HORIZONTAL",
       config: tipsTemplate.defaultConfig
     }
@@ -81899,10 +80490,11 @@ async function handleCreateProject(input) {
           height: template.defaultConfig.height,
           fps: template.defaultConfig.fps,
           durationInFrames: template.defaultConfig.durationInFrames,
-          compositions: [
+          scenes: [
             {
               name: template.name,
-              code: template.compositionCode,
+              compositionId: template.compositionId,
+              durationInFrames: template.defaultConfig.durationInFrames,
               props: template.defaultProps
             }
           ]
@@ -81918,12 +80510,13 @@ async function handleCreateProject(input) {
       durationInSeconds: input.durationInSeconds,
       description: input.description
     });
-    if (templateConfig.compositions) {
-      for (const comp of templateConfig.compositions) {
-        await store.addComposition(project.id, {
-          name: comp.name,
-          code: comp.code,
-          props: comp.props
+    if (templateConfig.scenes) {
+      for (const scene of templateConfig.scenes) {
+        await store.addScene(project.id, {
+          name: scene.name,
+          compositionId: scene.compositionId,
+          durationInFrames: scene.durationInFrames,
+          props: scene.props
         });
       }
       const updatedProject = await store.getProject(project.id);
@@ -82096,99 +80689,557 @@ function registerAssetTools(mcp) {
   });
 }
 
-// packages/video/src/mcp-server/tools/composition.ts
-var AddCompositionInputSchema = external_exports3.object({
+// packages/video/src/mcp-server/tools/scene.ts
+var AddSceneInputSchema = external_exports3.object({
   workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
   projectId: external_exports3.string().describe("\u9879\u76EEID"),
-  name: external_exports3.string().describe("\u7EC4\u5408\u540D\u79F0"),
-  code: external_exports3.string().describe("\u7EC4\u5408\u4EE3\u7801\uFF08React \u7EC4\u4EF6\u4EE3\u7801\u6216\u6587\u4EF6\u8DEF\u5F84\uFF09"),
-  props: external_exports3.record(external_exports3.string(), external_exports3.any()).optional().describe("\u7EC4\u5408\u5C5E\u6027")
+  compositionId: external_exports3.string().describe('\u5185\u7F6E\u7EC4\u5408 ID\uFF08\u5982 "TitleAnimation"\u3001"Slideshow" \u7B49\uFF09'),
+  durationInFrames: external_exports3.number().int().positive().describe("\u573A\u666F\u65F6\u957F\uFF08\u5E27\u6570\uFF09\uFF0C\u4F8B\u5982 30fps \u4E0B 90 \u5E27 = 3 \u79D2"),
+  props: external_exports3.record(external_exports3.string(), external_exports3.any()).optional().describe("\u4F20\u7ED9\u7EC4\u5408\u7EC4\u4EF6\u7684\u53C2\u6570"),
+  name: external_exports3.string().optional().describe("\u573A\u666F\u540D\u79F0\uFF08\u53EF\u9009\uFF0C\u9ED8\u8BA4\u4F7F\u7528\u7EC4\u5408 ID\uFF09"),
+  insertAt: external_exports3.number().int().nonnegative().optional().describe("\u63D2\u5165\u4F4D\u7F6E\u7D22\u5F15\uFF08\u53EF\u9009\uFF0C\u9ED8\u8BA4\u8FFD\u52A0\u5230\u672B\u5C3E\uFF09")
 });
-var UpdateCompositionInputSchema = external_exports3.object({
+var UpdateSceneInputSchema = external_exports3.object({
   workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
   projectId: external_exports3.string().describe("\u9879\u76EEID"),
-  compositionId: external_exports3.string().describe("\u7EC4\u5408ID"),
-  name: external_exports3.string().optional().describe("\u65B0\u7684\u7EC4\u5408\u540D\u79F0"),
-  code: external_exports3.string().optional().describe("\u65B0\u7684\u7EC4\u5408\u4EE3\u7801"),
-  props: external_exports3.record(external_exports3.string(), external_exports3.any()).optional().describe("\u65B0\u7684\u7EC4\u5408\u5C5E\u6027")
+  sceneId: external_exports3.string().describe("\u573A\u666FID"),
+  props: external_exports3.record(external_exports3.string(), external_exports3.any()).optional().describe("\u66F4\u65B0\u7684\u7EC4\u5408\u53C2\u6570"),
+  durationInFrames: external_exports3.number().int().positive().optional().describe("\u66F4\u65B0\u7684\u65F6\u957F\uFF08\u5E27\u6570\uFF09"),
+  compositionId: external_exports3.string().optional().describe("\u66F4\u6362\u7EC4\u5408\u7C7B\u578B"),
+  name: external_exports3.string().optional().describe("\u66F4\u65B0\u573A\u666F\u540D\u79F0")
 });
-var RemoveCompositionInputSchema = external_exports3.object({
+var RemoveSceneInputSchema = external_exports3.object({
   workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
   projectId: external_exports3.string().describe("\u9879\u76EEID"),
-  compositionId: external_exports3.string().describe("\u7EC4\u5408ID")
+  sceneId: external_exports3.string().describe("\u573A\u666FID")
 });
-async function handleAddComposition(input) {
+var ReorderScenesInputSchema = external_exports3.object({
+  workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
+  projectId: external_exports3.string().describe("\u9879\u76EEID"),
+  sceneIds: external_exports3.array(external_exports3.string()).describe("\u65B0\u7684\u573A\u666F ID \u987A\u5E8F\uFF08\u5FC5\u987B\u5305\u542B\u6240\u6709\u573A\u666F ID\uFF09")
+});
+async function handleAddScene(input) {
   try {
     const store = ProjectStore.create(input.workspacePath);
-    const composition = await store.addComposition(input.projectId, {
-      name: input.name,
-      code: input.code,
-      props: input.props
+    const scene = await store.addScene(input.projectId, {
+      name: input.name ?? input.compositionId,
+      compositionId: input.compositionId,
+      durationInFrames: input.durationInFrames,
+      props: input.props,
+      insertAt: input.insertAt
     });
-    return JSON.stringify(createSuccessResponse(composition));
+    const project = await store.getProject(input.projectId);
+    return JSON.stringify(createSuccessResponse({
+      scene,
+      projectState: project ? {
+        scenes: project.scenes,
+        transitions: project.transitions
+      } : void 0
+    }));
   } catch (error48) {
     return JSON.stringify(toErrorResponse(error48));
   }
 }
-async function handleUpdateComposition(input) {
+async function handleUpdateScene(input) {
   try {
     const store = ProjectStore.create(input.workspacePath);
-    const composition = await store.updateComposition(
-      input.projectId,
-      input.compositionId,
-      {
-        name: input.name,
-        code: input.code,
-        props: input.props
+    const scene = await store.updateScene(input.projectId, input.sceneId, {
+      props: input.props,
+      durationInFrames: input.durationInFrames,
+      compositionId: input.compositionId,
+      name: input.name
+    });
+    return JSON.stringify(createSuccessResponse(scene));
+  } catch (error48) {
+    return JSON.stringify(toErrorResponse(error48));
+  }
+}
+async function handleRemoveScene(input) {
+  try {
+    const store = ProjectStore.create(input.workspacePath);
+    const success2 = await store.removeScene(input.projectId, input.sceneId);
+    const project = await store.getProject(input.projectId);
+    return JSON.stringify(createSuccessResponse({
+      removed: success2,
+      projectState: project ? {
+        scenes: project.scenes,
+        transitions: project.transitions
+      } : void 0
+    }));
+  } catch (error48) {
+    return JSON.stringify(toErrorResponse(error48));
+  }
+}
+async function handleReorderScenes(input) {
+  try {
+    const store = ProjectStore.create(input.workspacePath);
+    const project = await store.reorderScenes(input.projectId, input.sceneIds);
+    return JSON.stringify(createSuccessResponse({
+      scenes: project.scenes,
+      transitions: project.transitions
+    }));
+  } catch (error48) {
+    return JSON.stringify(toErrorResponse(error48));
+  }
+}
+function registerSceneTools(mcp) {
+  mcp.addTool({
+    name: "video_add_scene",
+    description: `\u5411\u89C6\u9891\u9879\u76EE\u6DFB\u52A0\u4E00\u4E2A\u573A\u666F\u7247\u6BB5\u3002
+
+\u573A\u666F\u662F\u89C6\u9891\u7684\u57FA\u672C\u6784\u5EFA\u5757\uFF0C\u6BCF\u4E2A\u573A\u666F\u5F15\u7528\u4E00\u4E2A\u5185\u7F6E\u7EC4\u5408\uFF08\u5982 TitleAnimation\u3001Slideshow \u7B49\uFF09\uFF0C
+\u5E76\u901A\u8FC7 props \u914D\u7F6E\u5176\u5185\u5BB9\u548C\u5916\u89C2\u3002
+
+\u4F7F\u7528 video_list_available_compositions \u67E5\u770B\u6240\u6709\u53EF\u7528\u7684\u7EC4\u5408\u53CA\u5176\u53C2\u6570\u8BF4\u660E\u3002`,
+    parameters: AddSceneInputSchema,
+    execute: handleAddScene
+  });
+  mcp.addTool({
+    name: "video_update_scene",
+    description: "\u66F4\u65B0\u573A\u666F\u7247\u6BB5\u7684\u53C2\u6570\u3001\u65F6\u957F\u6216\u7EC4\u5408\u7C7B\u578B\u3002\u53EA\u66F4\u65B0\u63D0\u4F9B\u7684\u5B57\u6BB5\uFF0C\u5176\u4ED6\u5B57\u6BB5\u4FDD\u6301\u4E0D\u53D8\u3002",
+    parameters: UpdateSceneInputSchema,
+    execute: handleUpdateScene
+  });
+  mcp.addTool({
+    name: "video_remove_scene",
+    description: "\u4ECE\u89C6\u9891\u9879\u76EE\u79FB\u9664\u573A\u666F\u7247\u6BB5\u3002\u5173\u8054\u7684\u8FC7\u6E21\u6548\u679C\u4F1A\u81EA\u52A8\u8C03\u6574\u3002",
+    parameters: RemoveSceneInputSchema,
+    execute: handleRemoveScene
+  });
+  mcp.addTool({
+    name: "video_reorder_scenes",
+    description: "\u91CD\u65B0\u6392\u5217\u573A\u666F\u987A\u5E8F\u3002\u9700\u8981\u4F20\u5165\u6240\u6709\u573A\u666F ID \u7684\u65B0\u987A\u5E8F\u3002",
+    parameters: ReorderScenesInputSchema,
+    execute: handleReorderScenes
+  });
+}
+
+// packages/video/src/mcp-server/tools/transition.ts
+var TransitionItemSchema = external_exports3.object({
+  type: TransitionTypeEnum.describe("\u8FC7\u6E21\u7C7B\u578B: fade | slide | wipe | flip | clock-wipe | none"),
+  durationInFrames: external_exports3.number().int().positive().describe("\u8FC7\u6E21\u65F6\u957F\uFF08\u5E27\u6570\uFF09"),
+  direction: TransitionDirectionEnum.optional().describe("\u8FC7\u6E21\u65B9\u5411\uFF08\u4EC5 slide/wipe/flip \u9700\u8981\uFF09: from-left | from-right | from-top | from-bottom")
+});
+var SetTransitionsInputSchema = external_exports3.object({
+  workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
+  projectId: external_exports3.string().describe("\u9879\u76EEID"),
+  transitions: external_exports3.array(TransitionItemSchema).describe("\u8FC7\u6E21\u6548\u679C\u5217\u8868\uFF08\u957F\u5EA6\u5FC5\u987B\u7B49\u4E8E\u573A\u666F\u6570 - 1\uFF09")
+});
+async function handleSetTransitions(input) {
+  try {
+    const store = ProjectStore.create(input.workspacePath);
+    const project = await store.setTransitions(input.projectId, input.transitions);
+    return JSON.stringify(createSuccessResponse({
+      scenes: project.scenes,
+      transitions: project.transitions
+    }));
+  } catch (error48) {
+    return JSON.stringify(toErrorResponse(error48));
+  }
+}
+function registerTransitionTools(mcp) {
+  mcp.addTool({
+    name: "video_set_transitions",
+    description: `\u8BBE\u7F6E\u573A\u666F\u95F4\u7684\u8FC7\u6E21\u6548\u679C\u3002
+
+\u8FC7\u6E21\u6548\u679C\u5217\u8868\u7684\u957F\u5EA6\u5FC5\u987B\u7B49\u4E8E\u573A\u666F\u6570 - 1\uFF08\u5373\u6BCF\u4E24\u4E2A\u76F8\u90BB\u573A\u666F\u4E4B\u95F4\u4E00\u4E2A\u8FC7\u6E21\uFF09\u3002
+
+\u53EF\u7528\u7684\u8FC7\u6E21\u7C7B\u578B\uFF1A
+- fade: \u6DE1\u5165\u6DE1\u51FA
+- slide: \u6ED1\u52A8\uFF08\u9700\u6307\u5B9A direction\uFF09
+- wipe: \u64E6\u9664\uFF08\u9700\u6307\u5B9A direction\uFF09
+- flip: \u7FFB\u8F6C\uFF08\u9700\u6307\u5B9A direction\uFF09
+- clock-wipe: \u65F6\u949F\u64E6\u9664
+- none: \u65E0\u8FC7\u6E21\uFF08\u76F4\u63A5\u5207\u6362\uFF09
+
+\u65B9\u5411\u9009\u9879\uFF1Afrom-left, from-right, from-top, from-bottom`,
+    parameters: SetTransitionsInputSchema,
+    execute: handleSetTransitions
+  });
+}
+
+// packages/video/src/compositions/SceneComposer.tsx
+var import_react12 = __toESM(require("react"), 1);
+var import_remotion12 = require("remotion");
+var import_transitions = require("@remotion/transitions");
+var import_fade = require("@remotion/transitions/fade");
+var import_slide = require("@remotion/transitions/slide");
+var import_wipe = require("@remotion/transitions/wipe");
+var import_flip = require("@remotion/transitions/flip");
+var import_clock_wipe = require("@remotion/transitions/clock-wipe");
+
+// packages/video/src/compositions/TitleAnimation.tsx
+var import_react = require("react");
+var import_remotion = require("remotion");
+var import_jsx_runtime = require("react/jsx-runtime");
+
+// packages/video/src/compositions/Slideshow.tsx
+var import_react2 = require("react");
+var import_remotion2 = require("remotion");
+var import_jsx_runtime2 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/DataVisualization.tsx
+var import_react3 = require("react");
+var import_remotion3 = require("remotion");
+var import_jsx_runtime3 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/ProductShowcase.tsx
+var import_react4 = require("react");
+var import_remotion4 = require("remotion");
+var import_jsx_runtime4 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/SocialMediaVertical.tsx
+var import_react5 = require("react");
+var import_remotion5 = require("remotion");
+var import_jsx_runtime5 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/SocialMediaSquare.tsx
+var import_react6 = require("react");
+var import_remotion6 = require("remotion");
+var import_jsx_runtime6 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/StepByStepTutorial.tsx
+var import_react7 = require("react");
+var import_remotion7 = require("remotion");
+var import_jsx_runtime7 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/Explainer.tsx
+var import_react8 = require("react");
+var import_remotion8 = require("remotion");
+var import_jsx_runtime8 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/Tips.tsx
+var import_react9 = require("react");
+var import_remotion9 = require("remotion");
+var import_jsx_runtime9 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/ProductMarketing.tsx
+var import_react10 = require("react");
+var import_remotion10 = require("remotion");
+var import_jsx_runtime10 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/PromoAd.tsx
+var import_react11 = require("react");
+var import_remotion11 = require("remotion");
+var import_jsx_runtime11 = require("react/jsx-runtime");
+
+// packages/video/src/compositions/SceneComposer.tsx
+var import_jsx_runtime12 = require("react/jsx-runtime");
+var TransitionDirectionSchema = external_exports3.enum([
+  "from-left",
+  "from-right",
+  "from-top",
+  "from-bottom"
+]);
+var TransitionConfigSchema = external_exports3.object({
+  type: external_exports3.enum(["fade", "slide", "wipe", "flip", "clock-wipe", "none"]),
+  durationInFrames: external_exports3.number().int().positive(),
+  direction: TransitionDirectionSchema.optional()
+});
+var SceneItemSchema = external_exports3.object({
+  id: external_exports3.string(),
+  name: external_exports3.string(),
+  compositionId: external_exports3.string(),
+  durationInFrames: external_exports3.number().int().positive(),
+  props: external_exports3.record(external_exports3.string(), external_exports3.any()).default({})
+});
+var SceneComposerSchema = external_exports3.object({
+  scenes: external_exports3.array(SceneItemSchema),
+  transitions: external_exports3.array(TransitionConfigSchema)
+});
+
+// packages/video/src/mcp-server/tools/composition-list.ts
+var COMPOSITION_REGISTRY = [
+  {
+    id: "TitleAnimation",
+    name: "\u6807\u9898\u52A8\u753B",
+    description: "\u663E\u793A\u6807\u9898\u548C\u526F\u6807\u9898\u7684\u52A8\u753B\u6548\u679C\uFF0C\u652F\u6301 fade/slide/scale/spring \u56DB\u79CD\u98CE\u683C",
+    category: "\u57FA\u7840",
+    propsSchema: {
+      title: { type: "string", description: "\u4E3B\u6807\u9898\u6587\u5B57", default: "Welcome" },
+      subtitle: {
+        type: "string",
+        description: "\u526F\u6807\u9898\u6587\u5B57",
+        default: "Your subtitle here"
+      },
+      animationStyle: {
+        type: "enum(fade|slide|scale|spring)",
+        description: "\u52A8\u753B\u98CE\u683C",
+        default: "spring"
+      },
+      titleFontSize: {
+        type: "number",
+        description: "\u6807\u9898\u5B57\u53F7\uFF08\u50CF\u7D20\uFF09",
+        default: 72
+      },
+      subtitleFontSize: {
+        type: "number",
+        description: "\u526F\u6807\u9898\u5B57\u53F7\uFF08\u50CF\u7D20\uFF09",
+        default: 36
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      },
+      logo: { type: "string", description: "Logo \u56FE\u7247\u8DEF\u5F84" }
+    },
+    defaultProps: {
+      title: "Welcome",
+      subtitle: "Your subtitle here",
+      animationStyle: "spring",
+      titleFontSize: 72,
+      subtitleFontSize: 36
+    }
+  },
+  {
+    id: "Slideshow",
+    name: "\u56FE\u7247\u5E7B\u706F\u7247",
+    description: "\u56FE\u7247\u8F6E\u64AD\u5C55\u793A\uFF0C\u652F\u6301 fade/slide/zoom/crossfade \u8FC7\u6E21\u6548\u679C",
+    category: "\u57FA\u7840",
+    propsSchema: {
+      items: {
+        type: "array",
+        description: "\u5E7B\u706F\u7247\u5217\u8868 [{ title, description?, image }]",
+        required: true
+      },
+      animationStyle: {
+        type: "enum(fade|slide|zoom)",
+        description: "\u5207\u6362\u52A8\u753B",
+        default: "fade"
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
       }
-    );
-    return JSON.stringify(createSuccessResponse(composition));
-  } catch (error48) {
-    return JSON.stringify(toErrorResponse(error48));
+    },
+    defaultProps: {
+      animationStyle: "fade"
+    }
+  },
+  {
+    id: "DataVisualization",
+    name: "\u6570\u636E\u56FE\u8868",
+    description: "\u6570\u636E\u53EF\u89C6\u5316\u56FE\u8868\uFF0C\u652F\u6301 bar/line/pie/donut \u56DB\u79CD\u56FE\u8868\u7C7B\u578B",
+    category: "\u57FA\u7840",
+    propsSchema: {
+      chartType: {
+        type: "enum(bar|line|pie|donut)",
+        description: "\u56FE\u8868\u7C7B\u578B",
+        default: "bar"
+      },
+      title: { type: "string", description: "\u56FE\u8868\u6807\u9898" },
+      items: {
+        type: "array",
+        description: "\u6570\u636E\u70B9 [{ title, description?, value }]",
+        required: true
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      }
+    },
+    defaultProps: {
+      chartType: "bar"
+    }
+  },
+  {
+    id: "ProductShowcase",
+    name: "\u4EA7\u54C1\u5C55\u793A",
+    description: "\u4EA7\u54C1\u5C55\u793A\u9875\u9762\uFF0C\u652F\u6301 centered/split/features-grid \u4E09\u79CD\u5E03\u5C40",
+    category: "\u57FA\u7840",
+    propsSchema: {
+      title: { type: "string", description: "\u4EA7\u54C1\u540D\u79F0" },
+      subtitle: { type: "string", description: "\u4EA7\u54C1\u63CF\u8FF0" },
+      items: {
+        type: "array",
+        description: "\u529F\u80FD\u7279\u6027 [{ title, description, icon? }]"
+      },
+      logo: { type: "string", description: "\u4EA7\u54C1\u56FE\u7247\u8DEF\u5F84" },
+      animationStyle: {
+        type: "enum(fade|slide|scale)",
+        description: "\u5E03\u5C40\u98CE\u683C",
+        default: "fade"
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      }
+    },
+    defaultProps: {
+      animationStyle: "fade"
+    }
+  },
+  {
+    id: "SocialMediaVertical",
+    name: "\u7AD6\u7248\u793E\u4EA4\u5A92\u4F53",
+    description: "9:16 \u7AD6\u7248\u793E\u4EA4\u5A92\u4F53\u89C6\u9891\uFF08TikTok\u3001Instagram Reels\u3001YouTube Shorts\uFF09",
+    category: "\u793E\u4EA4\u5A92\u4F53",
+    propsSchema: {
+      title: { type: "string", description: "\u4E3B\u6807\u9898" },
+      subtitle: { type: "string", description: "\u526F\u6807\u9898" },
+      items: { type: "array", description: "\u5185\u5BB9\u9879\u5217\u8868" },
+      cta: { type: "object", description: "\u884C\u52A8\u53F7\u53EC { text, url? }" },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      },
+      logo: { type: "string", description: "Logo \u56FE\u7247\u8DEF\u5F84" }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "SocialMediaSquare",
+    name: "\u65B9\u5F62\u793E\u4EA4\u5A92\u4F53",
+    description: "1:1 \u65B9\u5F62\u793E\u4EA4\u5A92\u4F53\u89C6\u9891\uFF08Instagram Feed\u3001Facebook\uFF09",
+    category: "\u793E\u4EA4\u5A92\u4F53",
+    propsSchema: {
+      title: { type: "string", description: "\u4E3B\u6807\u9898" },
+      subtitle: { type: "string", description: "\u526F\u6807\u9898" },
+      items: { type: "array", description: "\u5185\u5BB9\u9879\u5217\u8868" },
+      cta: { type: "object", description: "\u884C\u52A8\u53F7\u53EC { text, url? }" },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      },
+      logo: { type: "string", description: "Logo \u56FE\u7247\u8DEF\u5F84" }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "StepByStepTutorial",
+    name: "\u5206\u6B65\u6559\u7A0B",
+    description: "\u5206\u6B65\u9AA4\u6559\u7A0B\u89C6\u9891\uFF0C\u6BCF\u4E2A\u6B65\u9AA4\u5E26\u6807\u9898\u3001\u63CF\u8FF0\u548C\u53EF\u9009\u56FE\u7247",
+    category: "\u6559\u7A0B",
+    propsSchema: {
+      title: { type: "string", description: "\u6559\u7A0B\u6807\u9898" },
+      items: {
+        type: "array",
+        description: "\u6B65\u9AA4\u5217\u8868 [{ title, description, image? }]",
+        required: true
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "Explainer",
+    name: "\u6982\u5FF5\u8BB2\u89E3",
+    description: "\u6982\u5FF5\u8BB2\u89E3\u89C6\u9891\uFF0C\u9002\u5408\u89E3\u91CA\u590D\u6742\u6982\u5FF5\u6216\u6D41\u7A0B",
+    category: "\u6559\u7A0B",
+    propsSchema: {
+      title: { type: "string", description: "\u8BB2\u89E3\u6807\u9898" },
+      subtitle: { type: "string", description: "\u526F\u6807\u9898" },
+      items: {
+        type: "array",
+        description: "\u8BB2\u89E3\u8981\u70B9 [{ title, description, icon? }]",
+        required: true
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "Tips",
+    name: "\u6280\u5DE7\u6E05\u5355",
+    description: "\u6280\u5DE7/\u5EFA\u8BAE\u6E05\u5355\u89C6\u9891\uFF0C\u9010\u6761\u5C55\u793A\u8981\u70B9",
+    category: "\u6559\u7A0B",
+    propsSchema: {
+      title: { type: "string", description: "\u6E05\u5355\u6807\u9898" },
+      items: {
+        type: "array",
+        description: "\u6280\u5DE7\u5217\u8868 [{ title, description, icon? }]",
+        required: true
+      },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "ProductMarketing",
+    name: "\u4EA7\u54C1\u8425\u9500",
+    description: "\u4EA7\u54C1\u8425\u9500\u63A8\u5E7F\u89C6\u9891\uFF0C\u5C55\u793A\u4EA7\u54C1\u7279\u6027\u548C\u5356\u70B9",
+    category: "\u8425\u9500",
+    propsSchema: {
+      title: { type: "string", description: "\u4EA7\u54C1\u540D\u79F0" },
+      subtitle: { type: "string", description: "\u4EA7\u54C1\u6807\u8BED" },
+      items: {
+        type: "array",
+        description: "\u4EA7\u54C1\u7279\u6027 [{ title, description, icon? }]"
+      },
+      cta: { type: "object", description: "\u884C\u52A8\u53F7\u53EC { text, url? }" },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      },
+      logo: { type: "string", description: "\u4EA7\u54C1\u56FE\u7247\u8DEF\u5F84" }
+    },
+    defaultProps: {}
+  },
+  {
+    id: "PromoAd",
+    name: "\u4FC3\u9500\u5E7F\u544A",
+    description: "\u4FC3\u9500\u5E7F\u544A\u89C6\u9891\uFF0C\u7A81\u51FA\u4F18\u60E0\u4FE1\u606F\u548C\u884C\u52A8\u53F7\u53EC",
+    category: "\u8425\u9500",
+    propsSchema: {
+      title: { type: "string", description: "\u4FC3\u9500\u6807\u9898" },
+      subtitle: { type: "string", description: "\u4FC3\u9500\u63CF\u8FF0" },
+      cta: { type: "object", description: "\u884C\u52A8\u53F7\u53EC { text, url? }" },
+      colors: {
+        type: "object",
+        description: "\u989C\u8272\u914D\u7F6E { primary, secondary, background, text }"
+      },
+      logo: { type: "string", description: "Logo \u56FE\u7247\u8DEF\u5F84" }
+    },
+    defaultProps: {}
   }
-}
-async function handleRemoveComposition(input) {
+];
+var ListAvailableCompositionsInputSchema = external_exports3.object({}).describe("\u65E0\u9700\u8F93\u5165\u53C2\u6570");
+async function handleListAvailableCompositions() {
   try {
-    const store = ProjectStore.create(input.workspacePath);
-    const success2 = await store.removeComposition(
-      input.projectId,
-      input.compositionId
+    const byCategory = {};
+    for (const comp of COMPOSITION_REGISTRY) {
+      if (!byCategory[comp.category]) {
+        byCategory[comp.category] = [];
+      }
+      byCategory[comp.category].push(comp);
+    }
+    return JSON.stringify(
+      createSuccessResponse({
+        total: COMPOSITION_REGISTRY.length,
+        compositions: COMPOSITION_REGISTRY,
+        byCategory
+      })
     );
-    return JSON.stringify(createSuccessResponse({ removed: success2 }));
   } catch (error48) {
     return JSON.stringify(toErrorResponse(error48));
   }
 }
-function registerCompositionTools(mcp) {
+function registerCompositionListTools(mcp) {
   mcp.addTool({
-    name: "video_add_composition",
-    description: `\u6DFB\u52A0\u7EC4\u5408\u5230\u89C6\u9891\u9879\u76EE\u3002\u7EC4\u5408\u662F\u89C6\u9891\u7684\u57FA\u672C\u6784\u5EFA\u5757\uFF0C\u5B9A\u4E49\u4E86\u89C6\u9891\u5185\u5BB9\u548C\u52A8\u753B\u3002
+    name: "video_list_available_compositions",
+    description: `\u5217\u51FA\u6240\u6709\u53EF\u7528\u7684\u5185\u7F6E\u7EC4\u5408\u53CA\u5176\u53C2\u6570\u8BF4\u660E\u3002
 
-\u7EC4\u5408\u4EE3\u7801\u53EF\u4EE5\u662F\uFF1A
-- React \u7EC4\u4EF6\u4EE3\u7801\u5B57\u7B26\u4E32
-- \u6307\u5411\u7EC4\u4EF6\u6587\u4EF6\u7684\u8DEF\u5F84
+\u6BCF\u4E2A\u7EC4\u5408\u662F\u4E00\u4E2A\u53EF\u590D\u7528\u7684\u89C6\u9891"\u79EF\u6728\u5757"\uFF0CAgent \u901A\u8FC7 video_add_scene \u5C06\u7EC4\u5408\u6DFB\u52A0\u5230\u9879\u76EE\u4E2D\uFF0C
+\u5E76\u901A\u8FC7 props \u914D\u7F6E\u5176\u5185\u5BB9\u548C\u5916\u89C2\u3002
 
-\u7EC4\u5408\u5C5E\u6027\uFF08props\uFF09\u7528\u4E8E\u914D\u7F6E\u7EC4\u5408\u7684\u884C\u4E3A\u548C\u5916\u89C2\u3002`,
-    parameters: AddCompositionInputSchema,
-    execute: handleAddComposition
-  });
-  mcp.addTool({
-    name: "video_update_composition",
-    description: "\u66F4\u65B0\u89C6\u9891\u7EC4\u5408\u7684\u540D\u79F0\u3001\u4EE3\u7801\u6216\u5C5E\u6027\u3002\u53EA\u66F4\u65B0\u63D0\u4F9B\u7684\u5B57\u6BB5\uFF0C\u5176\u4ED6\u5B57\u6BB5\u4FDD\u6301\u4E0D\u53D8\u3002",
-    parameters: UpdateCompositionInputSchema,
-    execute: handleUpdateComposition
-  });
-  mcp.addTool({
-    name: "video_remove_composition",
-    description: "\u4ECE\u89C6\u9891\u9879\u76EE\u79FB\u9664\u7EC4\u5408\u3002\u6B64\u64CD\u4F5C\u4E0D\u53EF\u64A4\u9500\u3002",
-    parameters: RemoveCompositionInputSchema,
-    execute: handleRemoveComposition
+\u8FD4\u56DE\u6BCF\u4E2A\u7EC4\u5408\u7684 ID\u3001\u540D\u79F0\u3001\u63CF\u8FF0\u3001\u5206\u7C7B\u3001\u53C2\u6570 schema \u548C\u9ED8\u8BA4\u503C\u3002`,
+    parameters: ListAvailableCompositionsInputSchema,
+    execute: handleListAvailableCompositions
   });
 }
 
 // packages/video/src/mcp-server/services/render-engine.ts
-var import_fs4 = require("fs");
-var import_path4 = require("path");
+var import_fs5 = require("fs");
+var import_path5 = require("path");
 var RenderEngine = class _RenderEngine {
   /** 是否已取消渲染 */
   isCancelled = false;
@@ -82202,6 +81253,9 @@ var RenderEngine = class _RenderEngine {
   /**
    * 渲染视频
    *
+   * 始终使用 packages/video/src/Root.tsx 作为入口，compositionId 固定为 "SceneComposer"。
+   * 通过 inputProps 传入 scenes + transitions 数据。
+   *
    * @param config 渲染配置
    * @param onProgress 进度回调函数（可选）
    * @returns 渲染结果
@@ -82210,30 +81264,31 @@ var RenderEngine = class _RenderEngine {
    * @requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6
    */
   async render(config3, onProgress) {
-    const { projectPath, compositionId, outputFormat, quality, outputPath } = config3;
+    const { outputFormat, quality, inputProps, outputPath } = config3;
     this.isCancelled = false;
     this.cancelHandle = null;
     const startTime = Date.now();
-    console.error(`[RenderEngine] Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}`);
+    const compositionId = "SceneComposer";
+    console.error(
+      `[RenderEngine] Starting render: composition=${compositionId}, quality=${quality}, format=${outputFormat}, scenes=${inputProps.scenes.length}`
+    );
     try {
       this.reportProgress(onProgress, {
         status: "bundling",
         progress: 0
       });
-      if (!(0, import_fs4.existsSync)(projectPath)) {
-        throw createFileNotFoundError(projectPath);
-      }
-      const finalOutputPath = outputPath ?? this.generateOutputPath(projectPath, compositionId, outputFormat);
-      const outputDir = (0, import_path4.dirname)(finalOutputPath);
-      if (!(0, import_fs4.existsSync)(outputDir)) {
-        (0, import_fs4.mkdirSync)(outputDir, { recursive: true });
+      const outputDir = (0, import_path5.dirname)(outputPath);
+      if (!(0, import_fs5.existsSync)(outputDir)) {
+        (0, import_fs5.mkdirSync)(outputDir, { recursive: true });
       }
       const presetConfig = this.getQualityConfig(quality);
-      console.error(`[RenderEngine] Using quality preset: crf=${presetConfig.crf}, scale=${presetConfig.scale}, fps=${presetConfig.fps}`);
+      console.error(
+        `[RenderEngine] Using quality preset: crf=${presetConfig.crf}, scale=${presetConfig.scale}, fps=${presetConfig.fps}`
+      );
       if (this.isCancelled) {
         throw this.createCancelledError();
       }
-      const bundleLocation = await this.bundleProject(projectPath, onProgress);
+      const bundleLocation = await this.bundleProject(onProgress);
       if (this.isCancelled) {
         throw this.createCancelledError();
       }
@@ -82246,12 +81301,15 @@ var RenderEngine = class _RenderEngine {
       this.cancelHandle = { cancelSignal, cancel };
       const composition = await selectComposition({
         serveUrl: bundleLocation,
-        id: compositionId
+        id: compositionId,
+        inputProps
       });
       if (!composition) {
         throw createCompositionNotFoundError(compositionId);
       }
-      console.error(`[RenderEngine] Selected composition: ${composition.id} (${composition.width}x${composition.height}, ${composition.fps}fps, ${composition.durationInFrames} frames)`);
+      console.error(
+        `[RenderEngine] Selected composition: ${composition.id} (${composition.width}x${composition.height}, ${composition.fps}fps, ${composition.durationInFrames} frames)`
+      );
       this.reportProgress(onProgress, {
         status: "preparing",
         progress: 40
@@ -82271,7 +81329,8 @@ var RenderEngine = class _RenderEngine {
         },
         serveUrl: bundleLocation,
         codec: codec2,
-        outputLocation: finalOutputPath,
+        outputLocation: outputPath,
+        inputProps,
         crf: presetConfig.crf,
         onProgress: ({ progress: renderProgress }) => {
           const progress = 40 + Math.round(renderProgress * 60);
@@ -82290,11 +81349,13 @@ var RenderEngine = class _RenderEngine {
         progress: 100
       });
       const duration4 = Date.now() - startTime;
-      const fileSize = this.getFileSize(finalOutputPath);
-      console.error(`[RenderEngine] Render completed: ${finalOutputPath} (${fileSize} bytes, ${duration4}ms)`);
+      const fileSize = this.getFileSize(outputPath);
+      console.error(
+        `[RenderEngine] Render completed: ${outputPath} (${fileSize} bytes, ${duration4}ms)`
+      );
       return {
         success: true,
-        outputPath: finalOutputPath,
+        outputPath,
         duration: duration4,
         fileSize
       };
@@ -82315,9 +81376,7 @@ var RenderEngine = class _RenderEngine {
         error: renderError.message
       });
       console.error(`[RenderEngine] Render failed:`, renderError);
-      throw createRenderFailedError(renderError.message, {
-        path: config3.projectPath
-      });
+      throw createRenderFailedError(renderError.message);
     } finally {
       this.cancelHandle = null;
     }
@@ -82347,21 +81406,28 @@ var RenderEngine = class _RenderEngine {
     return QUALITY_PRESETS[quality];
   }
   /**
+   * 获取统一入口文件路径
+   *
+   * 始终返回 packages/video/src/Root.tsx 的绝对路径
+   */
+  getEntryPoint() {
+    return (0, import_path5.resolve)(__dirname, "../../Root.tsx");
+  }
+  /**
    * 构建 Remotion bundle
    *
-   * @param projectPath 项目路径
+   * 使用 packages/video/src/Root.tsx 作为统一入口
+   *
    * @param onProgress 进度回调
    * @returns bundle 位置
-   *
-   * @requirements 5.1 - 使用 @remotion/bundler 构建项目
    */
-  async bundleProject(projectPath, onProgress) {
+  async bundleProject(onProgress) {
     const { bundle } = await import("@remotion/bundler");
     this.reportProgress(onProgress, {
       status: "bundling",
       progress: 10
     });
-    const entryPoint = this.findEntryPoint(projectPath);
+    const entryPoint = this.getEntryPoint();
     console.error(`[RenderEngine] Using entry point: ${entryPoint}`);
     const bundleLocation = await bundle({
       entryPoint,
@@ -82375,35 +81441,6 @@ var RenderEngine = class _RenderEngine {
     });
     console.error(`[RenderEngine] Bundle created at: ${bundleLocation}`);
     return bundleLocation;
-  }
-  /**
-   * 查找 Remotion 入口文件
-   *
-   * @param projectPath 项目路径
-   * @returns 入口文件路径
-   */
-  findEntryPoint(projectPath) {
-    const possibleEntryPoints = [
-      (0, import_path4.join)(projectPath, "src", "Root.tsx"),
-      (0, import_path4.join)(projectPath, "src", "index.tsx"),
-      (0, import_path4.join)(projectPath, "Root.tsx"),
-      (0, import_path4.join)(projectPath, "index.tsx")
-    ];
-    for (const entryPoint of possibleEntryPoints) {
-      if ((0, import_fs4.existsSync)(entryPoint)) {
-        return entryPoint;
-      }
-    }
-    try {
-      const videoPackageRoot = require.resolve("@creator-flow/video");
-      const videoPackageDir = (0, import_path4.dirname)(videoPackageRoot);
-      const defaultEntryPoint = (0, import_path4.join)(videoPackageDir, "Root.tsx");
-      if ((0, import_fs4.existsSync)(defaultEntryPoint)) {
-        return defaultEntryPoint;
-      }
-    } catch {
-    }
-    return projectPath;
   }
   /**
    * 根据输出格式获取编解码器
@@ -82427,23 +81464,6 @@ var RenderEngine = class _RenderEngine {
     }
   }
   /**
-   * 生成输出文件路径
-   *
-   * @param projectPath 项目路径
-   * @param compositionId 组合 ID
-   * @param format 输出格式
-   * @returns 输出文件路径
-   */
-  generateOutputPath(projectPath, compositionId, format2) {
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const fileName = `${compositionId}_${timestamp}.${format2}`;
-    const outputDir = (0, import_path4.join)(projectPath, "\u8F93\u51FA");
-    if ((0, import_fs4.existsSync)(outputDir) || (0, import_fs4.existsSync)((0, import_path4.dirname)(outputDir))) {
-      return (0, import_path4.join)(outputDir, fileName);
-    }
-    return (0, import_path4.join)(projectPath, "output", fileName);
-  }
-  /**
    * 获取文件大小
    *
    * @param filePath 文件路径
@@ -82451,7 +81471,7 @@ var RenderEngine = class _RenderEngine {
    */
   getFileSize(filePath) {
     try {
-      const stats = (0, import_fs4.statSync)(filePath);
+      const stats = (0, import_fs5.statSync)(filePath);
       return stats.size;
     } catch {
       return 0;
@@ -82467,7 +81487,9 @@ var RenderEngine = class _RenderEngine {
     if (callback) {
       callback(progress);
     }
-    console.error(`[RenderEngine] Progress: ${progress.status} - ${progress.progress}%`);
+    console.error(
+      `[RenderEngine] Progress: ${progress.status} - ${progress.progress}%`
+    );
   }
   /**
    * 创建取消错误
@@ -82547,11 +81569,10 @@ var RenderEngine = class _RenderEngine {
 var renderEngine = RenderEngine.create();
 
 // packages/video/src/mcp-server/tools/render.ts
-var import_path5 = require("path");
+var import_path6 = require("path");
 var RenderInputSchema = external_exports3.object({
   workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
   projectId: external_exports3.string().describe("\u9879\u76EEID"),
-  compositionId: external_exports3.string().describe("\u7EC4\u5408ID"),
   outputFormat: external_exports3.enum(["mp4", "webm", "gif"]).optional().default("mp4").describe("\u8F93\u51FA\u683C\u5F0F"),
   quality: external_exports3.enum(["draft", "standard", "high"]).optional().default("standard").describe("\u8D28\u91CF\u9884\u8BBE"),
   outputPath: external_exports3.string().optional().describe("\u8F93\u51FA\u6587\u4EF6\u8DEF\u5F84\uFF08\u53EF\u9009\uFF0C\u9ED8\u8BA4\u81EA\u52A8\u751F\u6210\uFF09")
@@ -82563,20 +81584,25 @@ async function handleRender(input) {
     if (!project) {
       throw createProjectNotFoundError(input.projectId);
     }
-    const projectPath = store.getProjectPath(project.name);
     let outputPath = input.outputPath;
     if (!outputPath) {
       const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const fileName = `${input.compositionId}_${timestamp}.${input.outputFormat}`;
-      outputPath = (0, import_path5.join)(getOutputPath(input.workspacePath, project.name), fileName);
+      const fileName = `SceneComposer_${timestamp}.${input.outputFormat}`;
+      outputPath = (0, import_path6.join)(
+        getOutputPath(input.workspacePath, project.name),
+        fileName
+      );
     }
     const renderEngine2 = RenderEngine.create();
+    const inputProps = {
+      scenes: project.scenes,
+      transitions: project.transitions
+    };
     const result = await renderEngine2.render(
       {
-        projectPath,
-        compositionId: input.compositionId,
         outputFormat: input.outputFormat,
         quality: input.quality,
+        inputProps,
         outputPath
       },
       (progress) => {
@@ -82593,7 +81619,7 @@ async function handleRender(input) {
 function registerRenderTools(mcp) {
   mcp.addTool({
     name: "video_render",
-    description: `\u6E32\u67D3\u89C6\u9891\u5230\u6587\u4EF6\u3002
+    description: `\u6E32\u67D3\u89C6\u9891\u5230\u6587\u4EF6\u3002\u81EA\u52A8\u4ECE\u9879\u76EE\u8BFB\u53D6\u573A\u666F\u548C\u8FC7\u6E21\u6548\u679C\uFF0C\u4F7F\u7528 SceneComposer \u7EDF\u4E00\u6E32\u67D3\u3002
 
 \u652F\u6301\u7684\u8F93\u51FA\u683C\u5F0F\uFF1A
 - mp4: H.264 \u7F16\u7801\uFF0C\u6700\u5E7F\u6CDB\u652F\u6301
@@ -82608,445 +81634,6 @@ function registerRenderTools(mcp) {
 \u6E32\u67D3\u5B8C\u6210\u540E\u8FD4\u56DE\u8F93\u51FA\u6587\u4EF6\u8DEF\u5F84\u548C\u7EDF\u8BA1\u4FE1\u606F\uFF08\u8017\u65F6\u3001\u6587\u4EF6\u5927\u5C0F\uFF09\u3002`,
     parameters: RenderInputSchema,
     execute: handleRender
-  });
-}
-
-// packages/video/src/mcp-server/services/preview-server.ts
-var import_child_process = require("child_process");
-var import_fs5 = require("fs");
-var import_net = require("net");
-var import_path6 = require("path");
-var DEFAULT_START_PORT = 3100;
-var MAX_PORT = 65535;
-var SERVER_START_TIMEOUT = 3e4;
-var SERVER_STOP_TIMEOUT = 5e3;
-var PreviewServerManager = class _PreviewServerManager {
-  /** 活跃的预览服务器映射（projectId -> PreviewInstance） */
-  activeServers = /* @__PURE__ */ new Map();
-  constructor() {
-    this.setupCleanup();
-  }
-  // ==========================================================================
-  // 公共方法
-  // ==========================================================================
-  /**
-   * 启动预览服务器
-   *
-   * @param config 预览配置
-   * @returns 预览实例
-   * @throws MCPError 如果启动失败或项目路径无效
-   *
-   * @requirements 6.1 - 启动预览服务器并返回 URL
-   * @requirements 6.5 - 防止同一项目重复启动服务器
-   */
-  async start(config3) {
-    const { projectPath, projectId, compositionId, port } = config3;
-    console.error(`[PreviewServerManager] Starting preview server for project: ${projectId}`);
-    const existingServer = this.activeServers.get(projectId);
-    if (existingServer) {
-      console.error(`[PreviewServerManager] Returning existing server for project: ${projectId}`);
-      return this.toPublicInstance(existingServer);
-    }
-    if (!(0, import_fs5.existsSync)(projectPath)) {
-      throw createProjectNotFoundError(projectId);
-    }
-    const serverPort = port ?? await this.findAvailablePort(DEFAULT_START_PORT);
-    console.error(`[PreviewServerManager] Using port: ${serverPort}`);
-    try {
-      const instance = await this.startRemotionStudio(
-        projectPath,
-        projectId,
-        serverPort,
-        compositionId
-      );
-      this.activeServers.set(projectId, instance);
-      console.error(`[PreviewServerManager] Preview server started: ${instance.url}`);
-      return this.toPublicInstance(instance);
-    } catch (error48) {
-      if (error48 instanceof MCPError) {
-        throw error48;
-      }
-      const message = error48 instanceof Error ? error48.message : String(error48);
-      throw createPreviewFailedError(message, { path: projectPath });
-    }
-  }
-  /**
-   * 停止预览服务器
-   *
-   * @param projectId 项目 ID
-   * @returns 是否成功停止
-   *
-   * @requirements 6.3 - 优雅关闭服务器并释放端口
-   */
-  async stop(projectId) {
-    console.error(`[PreviewServerManager] Stopping preview server for project: ${projectId}`);
-    const instance = this.activeServers.get(projectId);
-    if (!instance) {
-      console.error(`[PreviewServerManager] No active server found for project: ${projectId}`);
-      return false;
-    }
-    try {
-      await this.stopProcess(instance.process);
-      this.activeServers.delete(projectId);
-      console.error(`[PreviewServerManager] Preview server stopped for project: ${projectId}`);
-      return true;
-    } catch (error48) {
-      console.error(`[PreviewServerManager] Error stopping server:`, error48);
-      try {
-        instance.process.kill("SIGKILL");
-      } catch {
-      }
-      this.activeServers.delete(projectId);
-      return true;
-    }
-  }
-  /**
-   * 获取活跃的预览服务器
-   *
-   * @param projectId 项目 ID
-   * @returns 预览实例，如果不存在则返回 null
-   */
-  getActiveServer(projectId) {
-    const instance = this.activeServers.get(projectId);
-    return instance ? this.toPublicInstance(instance) : null;
-  }
-  /**
-   * 列出所有活跃服务器
-   *
-   * @returns 所有活跃的预览实例列表
-   */
-  listActiveServers() {
-    return Array.from(this.activeServers.values()).map(
-      (instance) => this.toPublicInstance(instance)
-    );
-  }
-  /**
-   * 停止所有活跃服务器
-   *
-   * 用于清理资源
-   */
-  async stopAll() {
-    console.error(`[PreviewServerManager] Stopping all preview servers...`);
-    const projectIds = Array.from(this.activeServers.keys());
-    await Promise.all(projectIds.map((id) => this.stop(id)));
-    console.error(`[PreviewServerManager] All preview servers stopped`);
-  }
-  // ==========================================================================
-  // 私有方法
-  // ==========================================================================
-  /**
-   * 查找可用端口
-   *
-   * @param startPort 起始端口
-   * @returns 可用的端口号
-   * @throws MCPError 如果找不到可用端口
-   */
-  async findAvailablePort(startPort) {
-    let port = startPort;
-    while (port <= MAX_PORT) {
-      const isAvailable = await this.isPortAvailable(port);
-      if (isAvailable) {
-        return port;
-      }
-      port++;
-    }
-    throw createPreviewFailedError("\u65E0\u6CD5\u627E\u5230\u53EF\u7528\u7AEF\u53E3");
-  }
-  /**
-   * 检查端口是否可用
-   *
-   * @param port 端口号
-   * @returns 端口是否可用
-   */
-  isPortAvailable(port) {
-    return new Promise((resolve) => {
-      const server = (0, import_net.createServer)();
-      server.once("error", () => {
-        resolve(false);
-      });
-      server.once("listening", () => {
-        server.close(() => {
-          resolve(true);
-        });
-      });
-      server.listen(port, "127.0.0.1");
-    });
-  }
-  /**
-   * 启动 Remotion Studio
-   *
-   * @param projectPath 项目路径
-   * @param projectId 项目 ID
-   * @param port 端口号
-   * @param compositionId 组合 ID（可选）
-   * @returns 内部预览实例
-   */
-  async startRemotionStudio(projectPath, projectId, port, compositionId) {
-    return new Promise((resolve, reject) => {
-      const entryPoint = this.findEntryPoint(projectPath);
-      console.error(`[PreviewServerManager] Using entry point: ${entryPoint}`);
-      const args = [
-        "remotion",
-        "studio",
-        entryPoint,
-        "--port",
-        port.toString(),
-        "--log",
-        "info"
-      ];
-      if (compositionId) {
-        args.push("--props", JSON.stringify({ compositionId }));
-      }
-      console.error(`[PreviewServerManager] Starting: npx ${args.join(" ")}`);
-      const childProcess = (0, import_child_process.spawn)("npx", args, {
-        cwd: projectPath,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          // 确保使用正确的 Node 环境
-          NODE_ENV: "development"
-        },
-        // 在 Windows 上需要 shell
-        shell: process.platform === "win32"
-      });
-      let started = false;
-      let output = "";
-      const timeout = setTimeout(() => {
-        if (!started) {
-          childProcess.kill();
-          reject(createPreviewFailedError("\u670D\u52A1\u5668\u542F\u52A8\u8D85\u65F6"));
-        }
-      }, SERVER_START_TIMEOUT);
-      childProcess.stdout?.on("data", (data) => {
-        const text = data.toString();
-        output += text;
-        console.error(`[Remotion Studio] ${text.trim()}`);
-        if (!started && (text.includes("Server listening") || text.includes("http://localhost:") || text.includes(`http://127.0.0.1:${port}`) || text.includes("Ready"))) {
-          started = true;
-          clearTimeout(timeout);
-          const instance = {
-            projectId,
-            port,
-            url: `http://localhost:${port}`,
-            pid: childProcess.pid ?? 0,
-            process: childProcess
-          };
-          resolve(instance);
-        }
-      });
-      childProcess.stderr?.on("data", (data) => {
-        const text = data.toString();
-        output += text;
-        console.error(`[Remotion Studio Error] ${text.trim()}`);
-      });
-      childProcess.on("exit", (code, signal) => {
-        if (!started) {
-          clearTimeout(timeout);
-          reject(createPreviewFailedError(
-            `\u670D\u52A1\u5668\u8FDB\u7A0B\u610F\u5916\u9000\u51FA (code: ${code}, signal: ${signal})`,
-            { path: projectPath }
-          ));
-        }
-      });
-      childProcess.on("error", (error48) => {
-        if (!started) {
-          clearTimeout(timeout);
-          reject(createPreviewFailedError(error48.message, { path: projectPath }));
-        }
-      });
-      setTimeout(() => {
-        if (!started && childProcess.pid && !childProcess.killed) {
-          started = true;
-          clearTimeout(timeout);
-          const instance = {
-            projectId,
-            port,
-            url: `http://localhost:${port}`,
-            pid: childProcess.pid,
-            process: childProcess
-          };
-          console.error(`[PreviewServerManager] Assuming server started (fallback)`);
-          resolve(instance);
-        }
-      }, 1e4);
-    });
-  }
-  /**
-   * 查找 Remotion 入口文件
-   *
-   * @param projectPath 项目路径
-   * @returns 入口文件路径
-   */
-  findEntryPoint(projectPath) {
-    const possibleEntryPoints = [
-      (0, import_path6.join)(projectPath, "src", "Root.tsx"),
-      (0, import_path6.join)(projectPath, "src", "index.tsx"),
-      (0, import_path6.join)(projectPath, "Root.tsx"),
-      (0, import_path6.join)(projectPath, "index.tsx"),
-      (0, import_path6.join)(projectPath, "remotion", "Root.tsx"),
-      (0, import_path6.join)(projectPath, "remotion", "index.tsx")
-    ];
-    for (const entryPoint of possibleEntryPoints) {
-      if ((0, import_fs5.existsSync)(entryPoint)) {
-        return entryPoint;
-      }
-    }
-    try {
-      const videoPackageRoot = require.resolve("@creator-flow/video");
-      const videoPackageDir = (0, import_path6.dirname)(videoPackageRoot);
-      const defaultEntryPoint = (0, import_path6.join)(videoPackageDir, "Root.tsx");
-      if ((0, import_fs5.existsSync)(defaultEntryPoint)) {
-        return defaultEntryPoint;
-      }
-    } catch {
-    }
-    return projectPath;
-  }
-  /**
-   * 优雅停止进程
-   *
-   * @param process 子进程
-   */
-  async stopProcess(process4) {
-    return new Promise((resolve, reject) => {
-      if (!process4.pid || process4.killed) {
-        resolve();
-        return;
-      }
-      const timeout = setTimeout(() => {
-        try {
-          process4.kill("SIGKILL");
-        } catch {
-        }
-        resolve();
-      }, SERVER_STOP_TIMEOUT);
-      process4.once("exit", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
-      try {
-        process4.kill("SIGTERM");
-      } catch (error48) {
-        clearTimeout(timeout);
-        reject(error48);
-      }
-    });
-  }
-  /**
-   * 转换为公共预览实例（不包含进程引用）
-   *
-   * @param instance 内部预览实例
-   * @returns 公共预览实例
-   */
-  toPublicInstance(instance) {
-    return {
-      projectId: instance.projectId,
-      port: instance.port,
-      url: instance.url,
-      pid: instance.pid
-    };
-  }
-  /**
-   * 设置进程退出时的清理
-   */
-  setupCleanup() {
-    const cleanup = async () => {
-      console.error("[PreviewServerManager] Cleaning up...");
-      await this.stopAll();
-    };
-    process.on("exit", () => {
-      const instances = Array.from(this.activeServers.values());
-      for (const instance of instances) {
-        try {
-          instance.process.kill("SIGKILL");
-        } catch {
-        }
-      }
-    });
-    process.on("SIGINT", async () => {
-      await cleanup();
-      process.exit(0);
-    });
-    process.on("SIGTERM", async () => {
-      await cleanup();
-      process.exit(0);
-    });
-  }
-  // ==========================================================================
-  // 静态工厂方法
-  // ==========================================================================
-  /**
-   * 创建 PreviewServerManager 实例
-   * @returns PreviewServerManager 实例
-   */
-  static create() {
-    return new _PreviewServerManager();
-  }
-};
-var previewServerManager = PreviewServerManager.create();
-
-// packages/video/src/mcp-server/tools/preview.ts
-var PreviewStartInputSchema = external_exports3.object({
-  workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
-  projectId: external_exports3.string().describe("\u9879\u76EEID"),
-  compositionId: external_exports3.string().optional().describe("\u7EC4\u5408ID\uFF08\u53EF\u9009\uFF0C\u6307\u5B9A\u9ED8\u8BA4\u663E\u793A\u7684\u7EC4\u5408\uFF09")
-});
-var PreviewStopInputSchema = external_exports3.object({
-  workspacePath: external_exports3.string().describe("\u5DE5\u4F5C\u533A\u6839\u8DEF\u5F84"),
-  projectId: external_exports3.string().describe("\u9879\u76EEID")
-});
-async function handlePreviewStart(input) {
-  try {
-    const store = ProjectStore.create(input.workspacePath);
-    const project = await store.getProject(input.projectId);
-    if (!project) {
-      throw createProjectNotFoundError(input.projectId);
-    }
-    const projectPath = store.getProjectPath(project.name);
-    const instance = await previewServerManager.start({
-      projectPath,
-      projectId: input.projectId,
-      compositionId: input.compositionId
-    });
-    return JSON.stringify(createSuccessResponse(instance));
-  } catch (error48) {
-    return JSON.stringify(toErrorResponse(error48));
-  }
-}
-async function handlePreviewStop(input) {
-  try {
-    const success2 = await previewServerManager.stop(input.projectId);
-    return JSON.stringify(
-      createSuccessResponse({
-        stopped: success2,
-        projectId: input.projectId
-      })
-    );
-  } catch (error48) {
-    return JSON.stringify(toErrorResponse(error48));
-  }
-}
-function registerPreviewTools(mcp) {
-  mcp.addTool({
-    name: "video_preview_start",
-    description: `\u542F\u52A8\u89C6\u9891\u9884\u89C8\u670D\u52A1\u5668\u3002
-
-\u9884\u89C8\u670D\u52A1\u5668\u57FA\u4E8E Remotion Studio\uFF0C\u63D0\u4F9B\uFF1A
-- \u5B9E\u65F6\u9884\u89C8\u89C6\u9891\u7EC4\u5408
-- \u70ED\u91CD\u8F7D\u652F\u6301\uFF08\u4FEE\u6539\u4EE3\u7801\u540E\u81EA\u52A8\u5237\u65B0\uFF09
-- \u65F6\u95F4\u8F74\u63A7\u5236
-- \u7EC4\u5408\u5207\u6362
-
-\u5982\u679C\u9879\u76EE\u5DF2\u6709\u6D3B\u8DC3\u7684\u9884\u89C8\u670D\u52A1\u5668\uFF0C\u5C06\u8FD4\u56DE\u73B0\u6709\u670D\u52A1\u5668\u7684 URL\u3002
-\u8FD4\u56DE\u9884\u89C8 URL\uFF0C\u53EF\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00\u67E5\u770B\u3002`,
-    parameters: PreviewStartInputSchema,
-    execute: handlePreviewStart
-  });
-  mcp.addTool({
-    name: "video_preview_stop",
-    description: "\u505C\u6B62\u89C6\u9891\u9884\u89C8\u670D\u52A1\u5668\uFF0C\u91CA\u653E\u7AEF\u53E3\u8D44\u6E90\u3002",
-    parameters: PreviewStopInputSchema,
-    execute: handlePreviewStop
   });
 }
 
@@ -83146,9 +81733,14 @@ var ListAvailableAssetsInputSchema = external_exports3.object({
   searchPattern: external_exports3.string().optional().describe('\u641C\u7D22\u6A21\u5F0F\uFF08\u5982 "*.png"\uFF09'),
   maxResults: external_exports3.number().optional().default(100).describe("\u6700\u5927\u8FD4\u56DE\u6570\u91CF")
 });
-async function handleListAvailableAssets(input) {
+async function handleListAvailableAssets(rawInput) {
   try {
-    const { workspacePath, assetType, searchPattern, maxResults } = input;
+    const {
+      workspacePath,
+      assetType,
+      searchPattern,
+      maxResults = 100
+    } = rawInput;
     if (!(0, import_fs7.existsSync)(workspacePath)) {
       throw new Error(`\u5DE5\u4F5C\u533A\u4E0D\u5B58\u5728: ${workspacePath}`);
     }
@@ -83162,7 +81754,14 @@ async function handleListAvailableAssets(input) {
     ];
     for (const dir of searchDirs) {
       if ((0, import_fs7.existsSync)(dir)) {
-        scanDirectory(dir, assets, assetType, searchPattern, maxResults, seenPaths);
+        scanDirectory(
+          dir,
+          assets,
+          assetType,
+          searchPattern,
+          maxResults,
+          seenPaths
+        );
       }
     }
     const limitedAssets = assets.slice(0, maxResults);
@@ -83194,7 +81793,14 @@ function scanDirectory(dir, assets, assetType, searchPattern, maxResults, seenPa
       if (entry.isDirectory()) {
         const depth = fullPath.split("/").length - dir.split("/").length;
         if (depth < 3) {
-          scanDirectory(fullPath, assets, assetType, searchPattern, maxResults, seenPaths);
+          scanDirectory(
+            fullPath,
+            assets,
+            assetType,
+            searchPattern,
+            maxResults,
+            seenPaths
+          );
         }
       } else if (entry.isFile()) {
         const assetInfo = getAssetInfo(fullPath);
@@ -83372,7 +81978,9 @@ function validateRemotionUsage(code, result) {
       severity: "error"
     });
   }
-  if (code.includes("useCurrentFrame") && !/import\s*\{[^}]*useCurrentFrame[^}]*\}\s*from\s+['"]remotion['"]/s.test(code)) {
+  if (code.includes("useCurrentFrame") && !/import\s*\{[^}]*useCurrentFrame[^}]*\}\s*from\s+['"]remotion['"]/s.test(
+    code
+  )) {
     result.errors.push({
       line: 0,
       column: 0,
@@ -83380,7 +81988,9 @@ function validateRemotionUsage(code, result) {
       severity: "error"
     });
   }
-  if (code.includes("useVideoConfig") && !/import\s*\{[^}]*useVideoConfig[^}]*\}\s*from\s+['"]remotion['"]/s.test(code)) {
+  if (code.includes("useVideoConfig") && !/import\s*\{[^}]*useVideoConfig[^}]*\}\s*from\s+['"]remotion['"]/s.test(
+    code
+  )) {
     result.errors.push({
       line: 0,
       column: 0,
@@ -83432,7 +82042,9 @@ function validateCommonMistakes(code, result) {
     });
   }
   if (code.includes("useCurrentFrame") && !code.includes("interpolate") && !code.includes("spring")) {
-    result.suggestions.push("\u4F7F\u7528\u4E86 useCurrentFrame \u4F46\u6CA1\u6709\u7528\u4E8E\u52A8\u753B\uFF0C\u8003\u8651\u4F7F\u7528 interpolate \u6216 spring");
+    result.suggestions.push(
+      "\u4F7F\u7528\u4E86 useCurrentFrame \u4F46\u6CA1\u6709\u7528\u4E8E\u52A8\u753B\uFF0C\u8003\u8651\u4F7F\u7528 interpolate \u6216 spring"
+    );
   }
   if (code.includes("style={{") && code.includes("backgroundColor")) {
     if (!code.includes("#") && !code.includes("rgb")) {
@@ -83503,15 +82115,15 @@ async function handleGetRenderStatus(input) {
         if (result.status === "rendering" && result.progress > 0) {
           const elapsed = Date.now() - new Date(result.startTime).getTime();
           const totalEstimated = elapsed / result.progress;
-          result.estimatedTimeRemaining = Math.round((totalEstimated - elapsed) / 1e3);
+          result.estimatedTimeRemaining = Math.round(
+            (totalEstimated - elapsed) / 1e3
+          );
         }
       }
     } else {
-      const outputPath = getOutputPath(workspacePath, projectName);
-      const hasOutput = (0, import_fs8.existsSync)(outputPath);
       result = {
-        status: hasOutput ? "completed" : "idle",
-        progress: hasOutput ? 1 : 0
+        status: "idle",
+        progress: 0
       };
     }
     return JSON.stringify(createSuccessResponse(result));
@@ -83535,12 +82147,14 @@ function registerAllTools(mcp) {
   console.error("[MCP Video Server] - Project tools registered");
   registerAssetTools(mcp);
   console.error("[MCP Video Server] - Asset tools registered");
-  registerCompositionTools(mcp);
-  console.error("[MCP Video Server] - Composition tools registered");
+  registerSceneTools(mcp);
+  console.error("[MCP Video Server] - Scene tools registered");
+  registerTransitionTools(mcp);
+  console.error("[MCP Video Server] - Transition tools registered");
+  registerCompositionListTools(mcp);
+  console.error("[MCP Video Server] - Composition list tools registered");
   registerRenderTools(mcp);
   console.error("[MCP Video Server] - Render tools registered");
-  registerPreviewTools(mcp);
-  console.error("[MCP Video Server] - Preview tools registered");
   registerTemplateTools(mcp);
   console.error("[MCP Video Server] - Template tools registered");
   registerAssetDiscoveryTools(mcp);
@@ -83562,23 +82176,25 @@ var TOOL_LIST = [
   { name: "video_add_asset", category: "asset", description: "\u6DFB\u52A0\u7D20\u6750\u5230\u89C6\u9891\u9879\u76EE" },
   { name: "video_remove_asset", category: "asset", description: "\u4ECE\u89C6\u9891\u9879\u76EE\u79FB\u9664\u7D20\u6750" },
   { name: "video_list_assets", category: "asset", description: "\u5217\u51FA\u9879\u76EE\u4E2D\u7684\u6240\u6709\u7D20\u6750" },
-  // 组合管理
-  { name: "video_add_composition", category: "composition", description: "\u6DFB\u52A0\u7EC4\u5408\u5230\u89C6\u9891\u9879\u76EE" },
-  { name: "video_update_composition", category: "composition", description: "\u66F4\u65B0\u89C6\u9891\u7EC4\u5408" },
-  { name: "video_remove_composition", category: "composition", description: "\u4ECE\u89C6\u9891\u9879\u76EE\u79FB\u9664\u7EC4\u5408" },
+  // 场景管理
+  { name: "video_add_scene", category: "scene", description: "\u5411\u9879\u76EE\u6DFB\u52A0\u573A\u666F\u7247\u6BB5" },
+  { name: "video_update_scene", category: "scene", description: "\u66F4\u65B0\u573A\u666F\u53C2\u6570" },
+  { name: "video_remove_scene", category: "scene", description: "\u79FB\u9664\u573A\u666F\u7247\u6BB5" },
+  { name: "video_reorder_scenes", category: "scene", description: "\u91CD\u6392\u573A\u666F\u987A\u5E8F" },
+  // 过渡效果
+  { name: "video_set_transitions", category: "transition", description: "\u8BBE\u7F6E\u573A\u666F\u95F4\u8FC7\u6E21\u6548\u679C" },
+  // 组合列表
+  { name: "video_list_available_compositions", category: "composition", description: "\u5217\u51FA\u6240\u6709\u53EF\u7528\u7684\u5185\u7F6E\u7EC4\u5408\u53CA\u5176\u53C2\u6570" },
   // 渲染
   { name: "video_render", category: "render", description: "\u6E32\u67D3\u89C6\u9891\u5230\u6587\u4EF6" },
-  // 预览
-  { name: "video_preview_start", category: "preview", description: "\u542F\u52A8\u89C6\u9891\u9884\u89C8\u670D\u52A1\u5668" },
-  { name: "video_preview_stop", category: "preview", description: "\u505C\u6B62\u89C6\u9891\u9884\u89C8\u670D\u52A1\u5668" },
   // 模板
   { name: "video_list_templates", category: "template", description: "\u5217\u51FA\u6240\u6709\u53EF\u7528\u7684\u89C6\u9891\u6A21\u677F" },
   { name: "video_get_template", category: "template", description: "\u83B7\u53D6\u89C6\u9891\u6A21\u677F\u8BE6\u60C5" },
-  // 素材发现（新增）
+  // 素材发现
   { name: "video_list_available_assets", category: "asset-discovery", description: "\u5217\u51FA\u5DE5\u4F5C\u533A\u4E2D\u53EF\u7528\u7684\u7D20\u6750\u6587\u4EF6" },
-  // 代码验证（新增）
+  // 代码验证
   { name: "video_validate_composition", category: "code-validation", description: "\u9A8C\u8BC1 Remotion \u7EC4\u5408\u4EE3\u7801\u7684\u8BED\u6CD5\u548C\u6B63\u786E\u6027" },
-  // 渲染状态（新增）
+  // 渲染状态
   { name: "video_get_render_status", category: "render-status", description: "\u83B7\u53D6\u89C6\u9891\u6E32\u67D3\u7684\u5F53\u524D\u72B6\u6001\u548C\u8FDB\u5EA6" }
 ];
 
@@ -83590,11 +82206,11 @@ var DEFAULT_CONFIG = {
   endpoint: "/mcp"
 };
 var SERVER_VERSION = "0.1.0";
-function createServer2() {
+function createServer() {
   const mcp = new FastMCP({
-    name: "creator-flow-video",
+    name: "sprouty-ai-video",
     version: SERVER_VERSION,
-    instructions: "CreatorFlow Video MCP Server - \u63D0\u4F9B\u89C6\u9891\u521B\u4F5C\u80FD\u529B\uFF0C\u5305\u62EC\u9879\u76EE\u7BA1\u7406\u3001\u7D20\u6750\u7BA1\u7406\u3001\u89C6\u9891\u6E32\u67D3\u548C\u5B9E\u65F6\u9884\u89C8\u3002"
+    instructions: "Sprouty AI Video MCP Server - \u63D0\u4F9B\u89C6\u9891\u521B\u4F5C\u80FD\u529B\uFF0C\u5305\u62EC\u9879\u76EE\u7BA1\u7406\u3001\u7D20\u6750\u7BA1\u7406\u3001\u89C6\u9891\u6E32\u67D3\u548C\u5B9E\u65F6\u9884\u89C8\u3002"
   });
   registerAllTools(mcp);
   return mcp;
@@ -83606,7 +82222,7 @@ function printStartupInfo(config3) {
   const log = console.error.bind(console);
   log("");
   log("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557");
-  log("\u2551           CreatorFlow Video MCP Server                         \u2551");
+  log("\u2551           Sprouty AI Video MCP Server                          \u2551");
   log("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D");
   log("");
   log("\u{1F4E1} Transport Configuration:");
@@ -83649,7 +82265,7 @@ function printStartupInfo(config3) {
 }
 async function runServer(config3 = DEFAULT_CONFIG) {
   printStartupInfo(config3);
-  const mcp = createServer2();
+  const mcp = createServer();
   if (config3.transport === "stdio") {
     if (process.env.MCP_SILENT !== "true") {
       console.error("[MCP Video Server] Starting in stdio mode...");
@@ -83787,7 +82403,7 @@ var DualProtocolReadBuffer = class {
 applyStdioCompatPatch();
 function showHelp() {
   console.log(`
-CreatorFlow Video MCP Server
+Sprouty AI Video MCP Server
 
 Usage:
   bun run src/index.ts [options]
@@ -83812,9 +82428,9 @@ Examples:
 Configuration for Claude Desktop (claude_desktop_config.json):
   {
     "mcpServers": {
-      "creator-flow-video": {
+      "sprouty-ai-video": {
         "command": "bun",
-        "args": ["run", "/path/to/CreatorFlow/apps/mcp-video/src/index.ts"]
+        "args": ["run", "/path/to/SproutyAI/apps/mcp-video/src/index.ts"]
       }
     }
   }

@@ -10,19 +10,19 @@
  * @requirements 9.5
  */
 
-import * as React from 'react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Film, Trash2, MoreVertical, Calendar, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import * as React from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Film, Trash2, MoreVertical, Calendar, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useT } from '@/context/LocaleContext';
-import type { VideoProject } from '@sprouty-ai/video';
+} from "@/components/ui/dropdown-menu";
+import { useT } from "@/context/LocaleContext";
+import type { VideoProject } from "@sprouty-ai/video";
 
 export interface VideoProjectListProps {
   /** Workspace ID to list projects from */
@@ -43,8 +43,8 @@ export interface VideoProjectListProps {
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
+    month: "short",
+    day: "numeric",
   });
 }
 
@@ -56,7 +56,7 @@ function formatDuration(frames: number, fps: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   }
   return `${seconds}s`;
 }
@@ -80,17 +80,17 @@ function ProjectItem({
   return (
     <div
       className={cn(
-        'group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors',
-        'hover:bg-muted/50',
-        isSelected && 'bg-primary/10 hover:bg-primary/15'
+        "group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+        "hover:bg-muted/50",
+        isSelected && "bg-primary/10 hover:bg-primary/15",
       )}
       onClick={onSelect}
     >
       {/* Icon */}
       <div
         className={cn(
-          'shrink-0 w-10 h-10 rounded-md flex items-center justify-center',
-          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
+          "shrink-0 w-10 h-10 rounded-md flex items-center justify-center",
+          isSelected ? "bg-primary text-primary-foreground" : "bg-muted",
         )}
       >
         <Film className="h-5 w-5" />
@@ -106,7 +106,10 @@ function ProjectItem({
           </span>
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {formatDuration(project.config.durationInFrames, project.config.fps)}
+            {formatDuration(
+              project.config.durationInFrames,
+              project.config.fps,
+            )}
           </span>
         </div>
         {project.description && (
@@ -137,7 +140,7 @@ function ProjectItem({
             }}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            {t('删除')}
+            {t("删除")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -169,7 +172,8 @@ export function VideoProjectList({
       }
     }
     return merged.sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
   }, [remoteProjects, extraProjects]);
 
@@ -185,8 +189,9 @@ export function VideoProjectList({
       const list = await window.electronAPI.video.listProjects(workspaceId);
       setRemoteProjects(list);
     } catch (err) {
-      console.error('Failed to load projects:', err);
-      setError(err instanceof Error ? err.message : String(err));
+      console.error("Failed to load projects:", err);
+      // Don't set error state — fall through to show extraProjects if any
+      setRemoteProjects([]);
     } finally {
       setIsLoading(false);
     }
@@ -198,33 +203,35 @@ export function VideoProjectList({
   }, [loadProjects]);
 
   // Handle delete
-  const handleDelete = useCallback(
-    async (projectId: string) => {
-      try {
-        if (!window.electronAPI?.video?.deleteProject) return;
-        await window.electronAPI.video.deleteProject(projectId);
-        setRemoteProjects((prev) => prev.filter((p) => p.id !== projectId));
-      } catch (err) {
-        console.error('Failed to delete project:', err);
-      }
-    },
-    []
-  );
+  const handleDelete = useCallback(async (projectId: string) => {
+    try {
+      if (!window.electronAPI?.video?.deleteProject) return;
+      await window.electronAPI.video.deleteProject(projectId);
+      setRemoteProjects((prev) => prev.filter((p) => p.id !== projectId));
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+    }
+  }, []);
 
   if (isLoading) {
     return (
-      <div className={cn('p-4 text-center text-muted-foreground text-sm', className)}>
-        {t('加载中...')}
+      <div
+        className={cn(
+          "p-4 text-center text-muted-foreground text-sm",
+          className,
+        )}
+      >
+        {t("加载中...")}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={cn('p-4 text-center', className)}>
+      <div className={cn("p-4 text-center", className)}>
         <p className="text-sm text-destructive mb-2">{error}</p>
         <Button variant="link" size="sm" onClick={loadProjects}>
-          {t('重试')}
+          {t("重试")}
         </Button>
       </div>
     );
@@ -232,16 +239,16 @@ export function VideoProjectList({
 
   if (projects.length === 0) {
     return (
-      <div className={cn('p-4 text-center text-muted-foreground', className)}>
+      <div className={cn("p-4 text-center text-muted-foreground", className)}>
         <Film className="h-12 w-12 mx-auto mb-2 opacity-30" />
-        <p className="text-sm">{t('暂无视频项目')}</p>
-        <p className="text-xs mt-1">{t('点击 + 创建新项目')}</p>
+        <p className="text-sm">{t("暂无视频项目")}</p>
+        <p className="text-xs mt-1">{t("点击 + 创建新项目")}</p>
       </div>
     );
   }
 
   return (
-    <div className={cn('p-2 space-y-1', className)}>
+    <div className={cn("p-2 space-y-1", className)}>
       {projects.map((project) => (
         <ProjectItem
           key={project.id}

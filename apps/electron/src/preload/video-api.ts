@@ -11,7 +11,7 @@
  * @requirements 5.1, 15.1, 15.2, 15.3, 15.4
  */
 
-import { ipcRenderer } from 'electron';
+import { ipcRenderer } from "electron";
 import type {
   VideoProject,
   Asset,
@@ -19,7 +19,7 @@ import type {
   RenderProgress,
   OutputFormat,
   QualityPreset,
-} from '@sprouty-ai/video';
+} from "@sprouty-ai/video";
 
 // ============================================================================
 // IPC Channel Definitions (must match main process)
@@ -32,34 +32,35 @@ import type {
 const VIDEO_IPC_CHANNELS = {
   // Service management
   // @requirements 5.1
-  START_VIDEO_SERVICE: 'video:start-service',
-  STOP_VIDEO_SERVICE: 'video:stop-service',
-  GET_SERVICE_STATUS: 'video:get-status',
-  SERVICE_STATUS_CHANGED: 'video:status-changed',
+  START_VIDEO_SERVICE: "video:start-service",
+  STOP_VIDEO_SERVICE: "video:stop-service",
+  GET_SERVICE_STATUS: "video:get-status",
+  SERVICE_STATUS_CHANGED: "video:status-changed",
 
   // Project management
-  CREATE_PROJECT: 'video:create-project',
-  LIST_PROJECTS: 'video:list-projects',
-  GET_PROJECT: 'video:get-project',
-  UPDATE_PROJECT: 'video:update-project',
-  DELETE_PROJECT: 'video:delete-project',
+  CREATE_PROJECT: "video:create-project",
+  LIST_PROJECTS: "video:list-projects",
+  GET_PROJECT: "video:get-project",
+  UPDATE_PROJECT: "video:update-project",
+  DELETE_PROJECT: "video:delete-project",
 
   // Asset management
-  ADD_ASSET: 'video:add-asset',
-  REMOVE_ASSET: 'video:remove-asset',
+  SELECT_ASSET_FILES: "video:select-asset-files",
+  ADD_ASSET: "video:add-asset",
+  REMOVE_ASSET: "video:remove-asset",
 
   // Rendering
-  RENDER: 'video:render',
-  CANCEL_RENDER: 'video:cancel-render',
-  RENDER_PROGRESS: 'video:render-progress',
-  RENDER_COMPLETED: 'video:render-completed',
-  RENDER_FAILED: 'video:render-failed',
+  RENDER: "video:render",
+  CANCEL_RENDER: "video:cancel-render",
+  RENDER_PROGRESS: "video:render-progress",
+  RENDER_COMPLETED: "video:render-completed",
+  RENDER_FAILED: "video:render-failed",
 
   // Preview
-  START_PREVIEW: 'video:start-preview',
-  STOP_PREVIEW: 'video:stop-preview',
-  PREVIEW_STARTED: 'video:preview-started',
-  PREVIEW_STOPPED: 'video:preview-stopped',
+  START_PREVIEW: "video:start-preview",
+  STOP_PREVIEW: "video:stop-preview",
+  PREVIEW_STARTED: "video:preview-started",
+  PREVIEW_STOPPED: "video:preview-stopped",
 } as const;
 
 // ============================================================================
@@ -130,12 +131,13 @@ export interface CreateProjectOptions {
 
 /**
  * Options for rendering a video
+ * compositionId 已废弃，固定使用 SceneComposer
  */
 export interface RenderOptions {
   /** Project ID to render */
   projectId: string;
-  /** Composition ID to render */
-  compositionId: string;
+  /** Composition ID to render (已废弃，保留向后兼容) */
+  compositionId?: string;
   /** Output format (default: 'mp4') */
   outputFormat?: OutputFormat;
   /** Quality preset (default: 'standard') */
@@ -210,21 +212,27 @@ export interface VideoServiceAPI {
    * @param callback - Callback function for status updates
    * @returns Cleanup function to unsubscribe
    */
-  onStatusChanged(callback: (status: ServiceStatusResponse) => void): () => void;
+  onStatusChanged(
+    callback: (status: ServiceStatusResponse) => void,
+  ): () => void;
 
   /**
    * Subscribe to render progress events
    * @param callback - Callback function for progress updates
    * @returns Cleanup function to unsubscribe
    */
-  onRenderProgress(callback: (progress: RenderProgressEvent) => void): () => void;
+  onRenderProgress(
+    callback: (progress: RenderProgressEvent) => void,
+  ): () => void;
 
   /**
    * Subscribe to render completed events
    * @param callback - Callback function for completion
    * @returns Cleanup function to unsubscribe
    */
-  onRenderCompleted(callback: (event: RenderCompletedEvent) => void): () => void;
+  onRenderCompleted(
+    callback: (event: RenderCompletedEvent) => void,
+  ): () => void;
 
   /**
    * Subscribe to render failed events
@@ -276,7 +284,7 @@ export interface VideoAPI {
    */
   updateProject(
     projectId: string,
-    updates: Partial<VideoProject>
+    updates: Partial<VideoProject>,
   ): Promise<VideoProject>;
 
   /**
@@ -291,6 +299,15 @@ export interface VideoAPI {
   // ============================================================================
 
   /**
+   * Open file dialog to select asset files
+   * @param filterType - Optional filter by asset type
+   * @returns Array of selected files with detected asset types
+   */
+  selectAssetFiles(
+    filterType?: AssetType,
+  ): Promise<{ filePath: string; assetType: AssetType }[]>;
+
+  /**
    * Add an asset to a video project
    * @param projectId - Project ID to add asset to
    * @param assetPath - Path to the asset file
@@ -300,7 +317,7 @@ export interface VideoAPI {
   addAsset(
     projectId: string,
     assetPath: string,
-    assetType: AssetType
+    assetType: AssetType,
   ): Promise<Asset>;
 
   /**
@@ -334,7 +351,9 @@ export interface VideoAPI {
    * @returns Cleanup function to unsubscribe
    * @requirements 15.4
    */
-  onRenderProgress(callback: (progress: RenderProgressEvent) => void): () => void;
+  onRenderProgress(
+    callback: (progress: RenderProgressEvent) => void,
+  ): () => void;
 
   // ============================================================================
   // Preview
@@ -383,12 +402,12 @@ export function createVideoAPI(): VideoAPI {
 
     updateProject: (
       projectId: string,
-      updates: Partial<VideoProject>
+      updates: Partial<VideoProject>,
     ): Promise<VideoProject> => {
       return ipcRenderer.invoke(
         VIDEO_IPC_CHANNELS.UPDATE_PROJECT,
         projectId,
-        updates
+        updates,
       );
     },
 
@@ -400,10 +419,19 @@ export function createVideoAPI(): VideoAPI {
     // Asset Management
     // ============================================================================
 
+    selectAssetFiles: (
+      filterType?: AssetType,
+    ): Promise<{ filePath: string; assetType: AssetType }[]> => {
+      return ipcRenderer.invoke(
+        VIDEO_IPC_CHANNELS.SELECT_ASSET_FILES,
+        filterType,
+      );
+    },
+
     addAsset: (
       projectId: string,
       assetPath: string,
-      assetType: AssetType
+      assetType: AssetType,
     ): Promise<Asset> => {
       return ipcRenderer.invoke(VIDEO_IPC_CHANNELS.ADD_ASSET, {
         projectId,
@@ -416,7 +444,7 @@ export function createVideoAPI(): VideoAPI {
       return ipcRenderer.invoke(
         VIDEO_IPC_CHANNELS.REMOVE_ASSET,
         projectId,
-        assetId
+        assetId,
       );
     },
 
@@ -437,11 +465,11 @@ export function createVideoAPI(): VideoAPI {
      * @requirements 15.4
      */
     onRenderProgress: (
-      callback: (progress: RenderProgressEvent) => void
+      callback: (progress: RenderProgressEvent) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        progress: RenderProgressEvent
+        progress: RenderProgressEvent,
       ) => {
         callback(progress);
       };
@@ -459,7 +487,7 @@ export function createVideoAPI(): VideoAPI {
     // ============================================================================
 
     startPreview: (
-      projectId: string
+      projectId: string,
     ): Promise<{ url: string; port: number }> => {
       return ipcRenderer.invoke(VIDEO_IPC_CHANNELS.START_PREVIEW, projectId);
     },
@@ -507,7 +535,7 @@ export function createVideoServiceAPI(): VideoServiceAPI {
     // ============================================================================
 
     startPreview: (
-      projectId: string
+      projectId: string,
     ): Promise<{ url: string; port: number }> => {
       return ipcRenderer.invoke(VIDEO_IPC_CHANNELS.START_PREVIEW, projectId);
     },
@@ -533,11 +561,11 @@ export function createVideoServiceAPI(): VideoServiceAPI {
     // ============================================================================
 
     onStatusChanged: (
-      callback: (status: ServiceStatusResponse) => void
+      callback: (status: ServiceStatusResponse) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        status: ServiceStatusResponse
+        status: ServiceStatusResponse,
       ) => {
         callback(status);
       };
@@ -548,17 +576,17 @@ export function createVideoServiceAPI(): VideoServiceAPI {
       return () => {
         ipcRenderer.removeListener(
           VIDEO_IPC_CHANNELS.SERVICE_STATUS_CHANGED,
-          handler
+          handler,
         );
       };
     },
 
     onRenderProgress: (
-      callback: (progress: RenderProgressEvent) => void
+      callback: (progress: RenderProgressEvent) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        progress: RenderProgressEvent
+        progress: RenderProgressEvent,
       ) => {
         callback(progress);
       };
@@ -572,11 +600,11 @@ export function createVideoServiceAPI(): VideoServiceAPI {
     },
 
     onRenderCompleted: (
-      callback: (event: RenderCompletedEvent) => void
+      callback: (event: RenderCompletedEvent) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        completedEvent: RenderCompletedEvent
+        completedEvent: RenderCompletedEvent,
       ) => {
         callback(completedEvent);
       };
@@ -587,17 +615,17 @@ export function createVideoServiceAPI(): VideoServiceAPI {
       return () => {
         ipcRenderer.removeListener(
           VIDEO_IPC_CHANNELS.RENDER_COMPLETED,
-          handler
+          handler,
         );
       };
     },
 
     onRenderFailed: (
-      callback: (event: RenderFailedEvent) => void
+      callback: (event: RenderFailedEvent) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        failedEvent: RenderFailedEvent
+        failedEvent: RenderFailedEvent,
       ) => {
         callback(failedEvent);
       };

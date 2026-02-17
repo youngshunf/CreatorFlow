@@ -6,45 +6,45 @@
  *
  * @requirements 4.2, 4.5
  */
-import React from 'react';
+import React from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
   useVideoConfig,
   interpolate,
   spring,
-} from 'remotion';
+} from "remotion";
 
 /**
- * Transition type options
+ * Transition effect type options for the Transition component
  */
-export type TransitionType =
-  | 'fade'
-  | 'wipeLeft'
-  | 'wipeRight'
-  | 'wipeUp'
-  | 'wipeDown'
-  | 'slideLeft'
-  | 'slideRight'
-  | 'slideUp'
-  | 'slideDown'
-  | 'zoom'
-  | 'dissolve'
-  | 'iris'
-  | 'clock';
+export type TransitionEffectType =
+  | "fade"
+  | "wipeLeft"
+  | "wipeRight"
+  | "wipeUp"
+  | "wipeDown"
+  | "slideLeft"
+  | "slideRight"
+  | "slideUp"
+  | "slideDown"
+  | "zoom"
+  | "dissolve"
+  | "iris"
+  | "clock";
 
 /**
  * Props for Transition component
  */
 export interface TransitionProps {
   /** Type of transition effect */
-  type?: TransitionType;
+  type?: TransitionEffectType;
   /** Duration of the transition in frames */
   duration?: number;
   /** Frame at which the transition starts */
   startFrame?: number;
   /** Direction of the transition: 'in' (appearing) or 'out' (disappearing) */
-  direction?: 'in' | 'out';
+  direction?: "in" | "out";
   /** Color for fade/wipe transitions */
   color?: string;
   /** Children to wrap with transition effect */
@@ -82,11 +82,11 @@ const DEFAULT_SPRING_CONFIG = {
  * ```
  */
 export const Transition: React.FC<TransitionProps> = ({
-  type = 'fade',
+  type = "fade",
   duration = 30,
   startFrame = 0,
-  direction = 'in',
-  color = '#000000',
+  direction = "in",
+  color = "#000000",
   children,
   springConfig = DEFAULT_SPRING_CONFIG,
   easing,
@@ -100,24 +100,24 @@ export const Transition: React.FC<TransitionProps> = ({
     [startFrame, startFrame + duration],
     [0, 1],
     {
-      extrapolateLeft: 'clamp',
-      extrapolateRight: 'clamp',
-    }
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
   );
 
   // Apply easing if provided
   const progress = easing ? easing(rawProgress) : rawProgress;
 
   // Reverse progress for 'out' direction
-  const effectiveProgress = direction === 'out' ? 1 - progress : progress;
+  const effectiveProgress = direction === "out" ? 1 - progress : progress;
 
   /**
    * Get opacity for fade-based transitions
    */
   const getOpacity = (): number => {
     switch (type) {
-      case 'fade':
-      case 'dissolve':
+      case "fade":
+      case "dissolve":
         return effectiveProgress;
       default:
         return 1;
@@ -129,19 +129,19 @@ export const Transition: React.FC<TransitionProps> = ({
    */
   const getTransform = (): string => {
     switch (type) {
-      case 'slideLeft':
+      case "slideLeft":
         return `translateX(${interpolate(effectiveProgress, [0, 1], [100, 0])}%)`;
-      case 'slideRight':
+      case "slideRight":
         return `translateX(${interpolate(effectiveProgress, [0, 1], [-100, 0])}%)`;
-      case 'slideUp':
+      case "slideUp":
         return `translateY(${interpolate(effectiveProgress, [0, 1], [100, 0])}%)`;
-      case 'slideDown':
+      case "slideDown":
         return `translateY(${interpolate(effectiveProgress, [0, 1], [-100, 0])}%)`;
-      case 'zoom':
+      case "zoom":
         const scale = interpolate(effectiveProgress, [0, 1], [0.5, 1]);
         return `scale(${scale})`;
       default:
-        return 'none';
+        return "none";
     }
   };
 
@@ -150,19 +150,19 @@ export const Transition: React.FC<TransitionProps> = ({
    */
   const getClipPath = (): string | undefined => {
     switch (type) {
-      case 'wipeLeft':
+      case "wipeLeft":
         return `inset(0 ${interpolate(effectiveProgress, [0, 1], [100, 0])}% 0 0)`;
-      case 'wipeRight':
+      case "wipeRight":
         return `inset(0 0 0 ${interpolate(effectiveProgress, [0, 1], [100, 0])}%)`;
-      case 'wipeUp':
+      case "wipeUp":
         return `inset(${interpolate(effectiveProgress, [0, 1], [100, 0])}% 0 0 0)`;
-      case 'wipeDown':
+      case "wipeDown":
         return `inset(0 0 ${interpolate(effectiveProgress, [0, 1], [100, 0])}% 0)`;
-      case 'iris': {
+      case "iris": {
         const radius = interpolate(effectiveProgress, [0, 1], [0, 150]);
         return `circle(${radius}% at 50% 50%)`;
       }
-      case 'clock': {
+      case "clock": {
         // Clock wipe using conic gradient simulation
         const angle = interpolate(effectiveProgress, [0, 1], [0, 360]);
         // Use polygon approximation for clock wipe
@@ -178,7 +178,7 @@ export const Transition: React.FC<TransitionProps> = ({
    * Get filter for dissolve effect
    */
   const getFilter = (): string | undefined => {
-    if (type === 'dissolve') {
+    if (type === "dissolve") {
       const blur = interpolate(effectiveProgress, [0, 0.5, 1], [10, 5, 0]);
       return `blur(${blur}px)`;
     }
@@ -197,7 +197,7 @@ export const Transition: React.FC<TransitionProps> = ({
         transform,
         clipPath,
         filter,
-        willChange: 'opacity, transform, clip-path, filter',
+        willChange: "opacity, transform, clip-path, filter",
       }}
     >
       {children}
@@ -209,15 +209,16 @@ export const Transition: React.FC<TransitionProps> = ({
  * Generate polygon points for clock wipe effect
  */
 function generateClockWipePoints(angle: number): string {
-  if (angle <= 0) return '50% 50%, 50% 50%, 50% 50%';
-  if (angle >= 360) return '50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%';
+  if (angle <= 0) return "50% 50%, 50% 50%, 50% 50%";
+  if (angle >= 360)
+    return "50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%";
 
-  const points: string[] = ['50% 50%', '50% 0%'];
+  const points: string[] = ["50% 50%", "50% 0%"];
   const corners = [
-    { angle: 45, point: '100% 0%' },
-    { angle: 135, point: '100% 100%' },
-    { angle: 225, point: '0% 100%' },
-    { angle: 315, point: '0% 0%' },
+    { angle: 45, point: "100% 0%" },
+    { angle: 135, point: "100% 100%" },
+    { angle: 225, point: "0% 100%" },
+    { angle: 315, point: "0% 0%" },
   ];
 
   for (const corner of corners) {
@@ -231,7 +232,7 @@ function generateClockWipePoints(angle: number): string {
   const edgePoint = getEdgePoint(radians);
   points.push(edgePoint);
 
-  return points.join(', ');
+  return points.join(", ");
 }
 
 /**
@@ -269,23 +270,23 @@ function getEdgePoint(radians: number): string {
  */
 export interface TransitionOverlayProps {
   /** Type of transition effect */
-  type?: 'fade' | 'wipe' | 'iris';
+  type?: "fade" | "wipe" | "iris";
   /** Duration of the transition in frames */
   duration?: number;
   /** Frame at which the transition starts */
   startFrame?: number;
   /** Direction: 'in' fades from color, 'out' fades to color */
-  direction?: 'in' | 'out';
+  direction?: "in" | "out";
   /** Overlay color */
   color?: string;
 }
 
 export const TransitionOverlay: React.FC<TransitionOverlayProps> = ({
-  type = 'fade',
+  type = "fade",
   duration = 30,
   startFrame = 0,
-  direction = 'in',
-  color = '#000000',
+  direction = "in",
+  color = "#000000",
 }) => {
   const frame = useCurrentFrame();
 
@@ -294,26 +295,27 @@ export const TransitionOverlay: React.FC<TransitionOverlayProps> = ({
     [startFrame, startFrame + duration],
     [0, 1],
     {
-      extrapolateLeft: 'clamp',
-      extrapolateRight: 'clamp',
-    }
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
   );
 
   // For 'in' direction: overlay fades out (content appears)
   // For 'out' direction: overlay fades in (content disappears)
-  const opacity = direction === 'in' ? 1 - progress : progress;
+  const opacity = direction === "in" ? 1 - progress : progress;
 
   if (opacity <= 0) return null;
 
   const getClipPath = (): string | undefined => {
-    if (type === 'iris') {
-      const radius = direction === 'in'
-        ? interpolate(progress, [0, 1], [150, 0])
-        : interpolate(progress, [0, 1], [0, 150]);
+    if (type === "iris") {
+      const radius =
+        direction === "in"
+          ? interpolate(progress, [0, 1], [150, 0])
+          : interpolate(progress, [0, 1], [0, 150]);
       return `circle(${radius}% at 50% 50%)`;
     }
-    if (type === 'wipe') {
-      const wipeProgress = direction === 'in' ? progress : 1 - progress;
+    if (type === "wipe") {
+      const wipeProgress = direction === "in" ? progress : 1 - progress;
       return `inset(0 ${wipeProgress * 100}% 0 0)`;
     }
     return undefined;
@@ -323,7 +325,7 @@ export const TransitionOverlay: React.FC<TransitionOverlayProps> = ({
     <AbsoluteFill
       style={{
         backgroundColor: color,
-        opacity: type === 'fade' ? opacity : 1,
+        opacity: type === "fade" ? opacity : 1,
         clipPath: getClipPath(),
         zIndex: 1000,
       }}

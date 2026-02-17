@@ -20,27 +20,38 @@
  *             └── {renderName}.mp4
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, statSync, copyFileSync, unlinkSync } from 'fs';
-import { join, basename } from 'path';
-import { randomUUID } from 'crypto';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  statSync,
+  copyFileSync,
+  unlinkSync,
+} from "fs";
+import { join, basename } from "path";
+import { randomUUID } from "crypto";
 import {
   type VideoProject,
   type VideoConfig,
-  type Composition,
+  type Scene,
+  type Transition,
   type Asset,
   type AssetType,
   type CreateProjectInput,
   type UpdateProjectInput,
   type ProjectSummary,
   VideoProjectSchema,
-} from '../types';
+} from "../types";
 import {
   createProjectNotFoundError,
   createAssetNotFoundError,
-  createCompositionNotFoundError,
+  createSceneNotFoundError,
   createValidationError,
   MCPError,
-} from '../types/errors';
+} from "../types/errors";
 import {
   getVideoProjectsDir,
   getProjectPath,
@@ -50,14 +61,15 @@ import {
   getCompositionsPath,
   getOutputPath,
   getAssetRelativePath,
+  resolveVideoProjectPath,
   ASSET_SUBDIRS,
-} from '../utils/paths';
+} from "../utils/paths";
 import {
   assertValidProjectName,
   assertValidWorkspacePath,
   validateAssetFile,
   validateAssetType,
-} from '../utils/validators';
+} from "../utils/validators";
 
 // ============================================================================
 // 类型定义
@@ -94,27 +106,33 @@ export interface AssetsByType {
 }
 
 /**
- * 添加组合输入
+ * 添加场景输入
  */
-export interface AddCompositionInput {
-  /** 组合名称 */
+export interface AddSceneInput {
+  /** 场景名称 */
   name: string;
-  /** 组合代码（React 组件代码或文件路径） */
-  code: string;
-  /** 组合属性（可选） */
+  /** 内置组合 ID */
+  compositionId: string;
+  /** 时长（帧数） */
+  durationInFrames: number;
+  /** 组合参数 */
   props?: Record<string, any>;
+  /** 插入位置（默认末尾） */
+  insertAt?: number;
 }
 
 /**
- * 更新组合输入
+ * 更新场景输入
  */
-export interface UpdateCompositionInput {
-  /** 组合名称（可选） */
-  name?: string;
-  /** 组合代码（可选） */
-  code?: string;
-  /** 组合属性（可选） */
+export interface UpdateSceneInput {
+  /** 组合参数 */
   props?: Record<string, any>;
+  /** 时长（帧数） */
+  durationInFrames?: number;
+  /** 更换组合类型 */
+  compositionId?: string;
+  /** 场景名称 */
+  name?: string;
 }
 
 // ============================================================================
@@ -154,14 +172,14 @@ export class ProjectStore {
     // 验证项目名称
     assertValidProjectName(input.name);
 
-    // 检查项目是否已存在
-    const projectPath = getProjectPath(this.workspacePath, input.name);
+    // 解析项目路径（根据 creator.db 是否存在选择路径模式）
+    const projectPath = resolveVideoProjectPath(this.workspacePath, input.name);
     if (existsSync(projectPath)) {
       throw createValidationError(
         `项目已存在: ${input.name}`,
-        'name',
-        '不存在的项目名称',
-        input.name
+        "name",
+        "不存在的项目名称",
+        input.name,
       );
     }
 
@@ -189,7 +207,8 @@ export class ProjectStore {
       createdAt: now,
       updatedAt: now,
       config,
-      compositions: [],
+      scenes: [],
+      transitions: [],
       assets: [],
       renders: [],
     };
@@ -219,8 +238,8 @@ export class ProjectStore {
     }
 
     const projectDirs = readdirSync(projectsDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
 
     for (const projectName of projectDirs) {
       const project = this.loadProject(projectName);
@@ -258,8 +277,8 @@ export class ProjectStore {
     }
 
     const projectDirs = readdirSync(projectsDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
 
     const summaries: ProjectSummary[] = [];
 
@@ -272,7 +291,7 @@ export class ProjectStore {
           description: project.description,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,
-          compositionCount: project.compositions.length,
+          sceneCount: project.scenes.length,
           assetCount: project.assets.length,
         });
       }
@@ -293,7 +312,10 @@ export class ProjectStore {
    * @returns 更新后的项目
    * @throws MCPError 如果项目不存在
    */
-  async updateProject(projectId: string, updates: UpdateProjectInput): Promise<VideoProject> {
+  async updateProject(
+    projectId: string,
+    updates: UpdateProjectInput,
+  ): Promise<VideoProject> {
     // 验证工作区路径
     assertValidWorkspacePath(this.workspacePath);
 
@@ -315,9 +337,9 @@ export class ProjectStore {
       if (existsSync(newProjectPath)) {
         throw createValidationError(
           `项目名称已存在: ${updates.name}`,
-          'name',
-          '不存在的项目名称',
-          updates.name
+          "name",
+          "不存在的项目名称",
+          updates.name,
         );
       }
 
@@ -328,7 +350,10 @@ export class ProjectStore {
     const updatedProject: VideoProject = {
       ...project,
       name: updates.name ?? project.name,
-      description: updates.description !== undefined ? updates.description : project.description,
+      description:
+        updates.description !== undefined
+          ? updates.description
+          : project.description,
       config: updates.config
         ? {
             ...project.config,
@@ -344,7 +369,7 @@ export class ProjectStore {
       const newPath = getProjectPath(this.workspacePath, updates.name);
 
       // 使用 fs.renameSync 重命名目录
-      const { renameSync } = await import('fs');
+      const { renameSync } = await import("fs");
       renameSync(oldPath, newPath);
     }
 
@@ -420,10 +445,18 @@ export class ProjectStore {
     const fileName = basename(input.sourcePath);
 
     // 生成唯一的目标文件名（避免冲突）
-    const targetFileName = this.generateUniqueFileName(project.name, input.assetType, fileName);
+    const targetFileName = this.generateUniqueFileName(
+      project.name,
+      input.assetType,
+      fileName,
+    );
 
     // 获取目标路径
-    const targetDir = getAssetTypePath(this.workspacePath, project.name, input.assetType);
+    const targetDir = getAssetTypePath(
+      this.workspacePath,
+      project.name,
+      input.assetType,
+    );
     const targetPath = join(targetDir, targetFileName);
 
     // 确保目标目录存在
@@ -466,7 +499,11 @@ export class ProjectStore {
    * @returns 是否移除成功
    * @throws MCPError 如果项目或素材不存在
    */
-  async removeAsset(projectId: string, assetId: string, deleteFile: boolean = false): Promise<boolean> {
+  async removeAsset(
+    projectId: string,
+    assetId: string,
+    deleteFile: boolean = false,
+  ): Promise<boolean> {
     // 验证工作区路径
     assertValidWorkspacePath(this.workspacePath);
 
@@ -477,7 +514,7 @@ export class ProjectStore {
     }
 
     // 查找素材
-    const assetIndex = project.assets.findIndex(a => a.id === assetId);
+    const assetIndex = project.assets.findIndex((a) => a.id === assetId);
     if (assetIndex === -1) {
       throw createAssetNotFoundError(assetId);
     }
@@ -564,241 +601,243 @@ export class ProjectStore {
     }
 
     // 查找素材
-    const asset = project.assets.find(a => a.id === assetId);
+    const asset = project.assets.find((a) => a.id === assetId);
     return asset ?? null;
   }
 
   // ==========================================================================
-  // 组合管理操作
+  // 场景管理操作
   // ==========================================================================
 
   /**
-   * 添加组合到项目
-   *
-   * 创建新的组合并注册到项目配置中
-   *
-   * @param projectId 项目 ID
-   * @param input 添加组合输入
-   * @returns 添加的组合对象
-   * @throws MCPError 如果项目不存在或组合名称无效
+   * 添加场景到项目
    */
-  async addComposition(projectId: string, input: AddCompositionInput): Promise<Composition> {
-    // 验证工作区路径
+  async addScene(projectId: string, input: AddSceneInput): Promise<Scene> {
     assertValidWorkspacePath(this.workspacePath);
 
-    // 获取项目
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
 
-    // 验证组合名称
     if (!input.name || input.name.trim().length === 0) {
       throw createValidationError(
-        '组合名称不能为空',
-        'name',
-        '非空字符串',
-        input.name ?? ''
+        "场景名称不能为空",
+        "name",
+        "非空字符串",
+        input.name ?? "",
       );
     }
-
-    // 验证组合代码
-    if (!input.code || input.code.trim().length === 0) {
+    if (!input.compositionId || input.compositionId.trim().length === 0) {
       throw createValidationError(
-        '组合代码不能为空',
-        'code',
-        '非空字符串',
-        input.code ?? ''
+        "组合 ID 不能为空",
+        "compositionId",
+        "非空字符串",
+        input.compositionId ?? "",
+      );
+    }
+    if (!input.durationInFrames || input.durationInFrames <= 0) {
+      throw createValidationError(
+        "时长必须大于 0",
+        "durationInFrames",
+        "正整数",
+        String(input.durationInFrames),
       );
     }
 
-    // 生成组合 ID
-    const compositionId = randomUUID();
-
-    // 创建组合对象
-    const composition: Composition = {
-      id: compositionId,
+    const scene: Scene = {
+      id: randomUUID(),
       name: input.name.trim(),
-      code: input.code,
+      compositionId: input.compositionId,
+      durationInFrames: input.durationInFrames,
       props: input.props ?? {},
     };
 
-    // 更新项目配置
+    const updatedScenes = [...project.scenes];
+    if (
+      input.insertAt !== undefined &&
+      input.insertAt >= 0 &&
+      input.insertAt <= updatedScenes.length
+    ) {
+      updatedScenes.splice(input.insertAt, 0, scene);
+    } else {
+      updatedScenes.push(scene);
+    }
+
     const updatedProject: VideoProject = {
       ...project,
-      compositions: [...project.compositions, composition],
+      scenes: updatedScenes,
       updatedAt: new Date().toISOString(),
     };
 
-    // 保存项目
     this.saveProject(updatedProject);
-
-    return composition;
+    return scene;
   }
 
   /**
-   * 更新组合
-   *
-   * 更新组合的名称、代码或属性
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @param updates 更新内容
-   * @returns 更新后的组合对象
-   * @throws MCPError 如果项目或组合不存在
+   * 更新场景参数
    */
-  async updateComposition(
+  async updateScene(
     projectId: string,
-    compositionId: string,
-    updates: UpdateCompositionInput
-  ): Promise<Composition> {
-    // 验证工作区路径
+    sceneId: string,
+    updates: UpdateSceneInput,
+  ): Promise<Scene> {
     assertValidWorkspacePath(this.workspacePath);
 
-    // 获取项目
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
 
-    // 查找组合
-    const compositionIndex = project.compositions.findIndex(c => c.id === compositionId);
-    if (compositionIndex === -1) {
-      throw createCompositionNotFoundError(compositionId);
+    const sceneIndex = project.scenes.findIndex((s) => s.id === sceneId);
+    if (sceneIndex === -1) {
+      throw createSceneNotFoundError(sceneId);
     }
 
-    const existingComposition = project.compositions[compositionIndex];
-    if (!existingComposition) {
-      throw createCompositionNotFoundError(compositionId);
-    }
-
-    // 验证更新的名称（如果提供）
-    if (updates.name !== undefined && updates.name.trim().length === 0) {
-      throw createValidationError(
-        '组合名称不能为空',
-        'name',
-        '非空字符串',
-        updates.name
-      );
-    }
-
-    // 验证更新的代码（如果提供）
-    if (updates.code !== undefined && updates.code.trim().length === 0) {
-      throw createValidationError(
-        '组合代码不能为空',
-        'code',
-        '非空字符串',
-        updates.code
-      );
-    }
-
-    // 创建更新后的组合
-    const updatedComposition: Composition = {
-      ...existingComposition,
+    const existing = project.scenes[sceneIndex]!;
+    const updatedScene: Scene = {
+      ...existing,
       ...(updates.name !== undefined && { name: updates.name.trim() }),
-      ...(updates.code !== undefined && { code: updates.code }),
+      ...(updates.compositionId !== undefined && {
+        compositionId: updates.compositionId,
+      }),
+      ...(updates.durationInFrames !== undefined && {
+        durationInFrames: updates.durationInFrames,
+      }),
       ...(updates.props !== undefined && { props: updates.props }),
     };
 
-    // 更新项目中的组合列表
-    const updatedCompositions = [...project.compositions];
-    updatedCompositions[compositionIndex] = updatedComposition;
+    const updatedScenes = [...project.scenes];
+    updatedScenes[sceneIndex] = updatedScene;
 
     const updatedProject: VideoProject = {
       ...project,
-      compositions: updatedCompositions,
+      scenes: updatedScenes,
       updatedAt: new Date().toISOString(),
     };
 
-    // 保存项目
     this.saveProject(updatedProject);
-
-    return updatedComposition;
+    return updatedScene;
   }
 
   /**
-   * 从项目移除组合
-   *
-   * 从项目配置中移除组合注册
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @returns 是否移除成功
-   * @throws MCPError 如果项目或组合不存在
+   * 移除场景
    */
-  async removeComposition(projectId: string, compositionId: string): Promise<boolean> {
-    // 验证工作区路径
+  async removeScene(projectId: string, sceneId: string): Promise<boolean> {
     assertValidWorkspacePath(this.workspacePath);
 
-    // 获取项目
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
 
-    // 查找组合
-    const compositionIndex = project.compositions.findIndex(c => c.id === compositionId);
-    if (compositionIndex === -1) {
-      throw createCompositionNotFoundError(compositionId);
+    const sceneIndex = project.scenes.findIndex((s) => s.id === sceneId);
+    if (sceneIndex === -1) {
+      throw createSceneNotFoundError(sceneId);
     }
 
-    // 从项目中移除组合
-    const updatedCompositions = [...project.compositions];
-    updatedCompositions.splice(compositionIndex, 1);
+    const updatedScenes = [...project.scenes];
+    updatedScenes.splice(sceneIndex, 1);
+
+    // 同步调整 transitions（长度 = scenes.length - 1）
+    const updatedTransitions = [...project.transitions];
+    if (updatedTransitions.length > 0) {
+      if (sceneIndex === 0) {
+        updatedTransitions.splice(0, 1);
+      } else if (sceneIndex >= updatedScenes.length) {
+        updatedTransitions.splice(updatedTransitions.length - 1, 1);
+      } else {
+        updatedTransitions.splice(sceneIndex - 1, 1);
+      }
+    }
 
     const updatedProject: VideoProject = {
       ...project,
-      compositions: updatedCompositions,
+      scenes: updatedScenes,
+      transitions: updatedTransitions,
       updatedAt: new Date().toISOString(),
     };
 
-    // 保存项目
     this.saveProject(updatedProject);
-
     return true;
   }
 
   /**
-   * 列出项目中的所有组合
-   *
-   * @param projectId 项目 ID
-   * @returns 组合列表
-   * @throws MCPError 如果项目不存在
+   * 重排场景顺序
    */
-  async listCompositions(projectId: string): Promise<Composition[]> {
-    // 验证工作区路径
+  async reorderScenes(
+    projectId: string,
+    sceneIds: string[],
+  ): Promise<VideoProject> {
     assertValidWorkspacePath(this.workspacePath);
 
-    // 获取项目
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
 
-    return project.compositions;
+    if (sceneIds.length !== project.scenes.length) {
+      throw createValidationError(
+        `场景 ID 数量不匹配: 期望 ${project.scenes.length}，收到 ${sceneIds.length}`,
+        "sceneIds",
+        `${project.scenes.length} 个场景 ID`,
+        `${sceneIds.length} 个场景 ID`,
+      );
+    }
+
+    const sceneMap = new Map(project.scenes.map((s) => [s.id, s]));
+    const reorderedScenes: Scene[] = [];
+
+    for (const id of sceneIds) {
+      const scene = sceneMap.get(id);
+      if (!scene) {
+        throw createSceneNotFoundError(id);
+      }
+      reorderedScenes.push(scene);
+    }
+
+    const updatedProject: VideoProject = {
+      ...project,
+      scenes: reorderedScenes,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.saveProject(updatedProject);
+    return updatedProject;
   }
 
   /**
-   * 获取单个组合详情
-   *
-   * @param projectId 项目 ID
-   * @param compositionId 组合 ID
-   * @returns 组合对象，如果不存在则返回 null
-   * @throws MCPError 如果项目不存在
+   * 设置场景间过渡效果
    */
-  async getComposition(projectId: string, compositionId: string): Promise<Composition | null> {
-    // 验证工作区路径
+  async setTransitions(
+    projectId: string,
+    transitions: Transition[],
+  ): Promise<VideoProject> {
     assertValidWorkspacePath(this.workspacePath);
 
-    // 获取项目
     const project = await this.getProject(projectId);
     if (!project) {
       throw createProjectNotFoundError(projectId);
     }
 
-    // 查找组合
-    const composition = project.compositions.find(c => c.id === compositionId);
-    return composition ?? null;
+    const expectedLength = Math.max(0, project.scenes.length - 1);
+    if (transitions.length !== expectedLength) {
+      throw createValidationError(
+        `过渡效果数量不匹配: 期望 ${expectedLength}（场景数 - 1），收到 ${transitions.length}`,
+        "transitions",
+        `${expectedLength} 个过渡效果`,
+        `${transitions.length} 个过渡效果`,
+      );
+    }
+
+    const updatedProject: VideoProject = {
+      ...project,
+      transitions,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.saveProject(updatedProject);
+    return updatedProject;
   }
 
   // ==========================================================================
@@ -858,9 +897,13 @@ export class ProjectStore {
   private generateUniqueFileName(
     projectName: string,
     assetType: AssetType,
-    originalFileName: string
+    originalFileName: string,
   ): string {
-    const targetDir = getAssetTypePath(this.workspacePath, projectName, assetType);
+    const targetDir = getAssetTypePath(
+      this.workspacePath,
+      projectName,
+      assetType,
+    );
 
     // 如果目标目录不存在，直接返回原始文件名
     if (!existsSync(targetDir)) {
@@ -874,9 +917,12 @@ export class ProjectStore {
     }
 
     // 分离文件名和扩展名
-    const lastDotIndex = originalFileName.lastIndexOf('.');
-    const nameWithoutExt = lastDotIndex > 0 ? originalFileName.slice(0, lastDotIndex) : originalFileName;
-    const ext = lastDotIndex > 0 ? originalFileName.slice(lastDotIndex) : '';
+    const lastDotIndex = originalFileName.lastIndexOf(".");
+    const nameWithoutExt =
+      lastDotIndex > 0
+        ? originalFileName.slice(0, lastDotIndex)
+        : originalFileName;
+    const ext = lastDotIndex > 0 ? originalFileName.slice(lastDotIndex) : "";
 
     // 添加数字后缀直到找到唯一的文件名
     let counter = 1;
@@ -916,7 +962,10 @@ export class ProjectStore {
     }
 
     // 创建组合目录
-    const compositionsPath = getCompositionsPath(this.workspacePath, projectName);
+    const compositionsPath = getCompositionsPath(
+      this.workspacePath,
+      projectName,
+    );
     mkdirSync(compositionsPath, { recursive: true });
 
     // 创建输出目录
@@ -937,19 +986,25 @@ export class ProjectStore {
     }
 
     try {
-      const content = readFileSync(configPath, 'utf-8');
+      const content = readFileSync(configPath, "utf-8");
       const data = JSON.parse(content);
 
       // 使用 Zod schema 验证数据
       const result = VideoProjectSchema.safeParse(data);
       if (!result.success) {
-        console.error(`[ProjectStore] Invalid project data in ${configPath}:`, result.error);
+        console.error(
+          `[ProjectStore] Invalid project data in ${configPath}:`,
+          result.error,
+        );
         return null;
       }
 
       return result.data;
     } catch (error) {
-      console.error(`[ProjectStore] Failed to load project ${projectName}:`, error);
+      console.error(
+        `[ProjectStore] Failed to load project ${projectName}:`,
+        error,
+      );
       return null;
     }
   }
@@ -964,7 +1019,7 @@ export class ProjectStore {
     // 序列化为 JSON（格式化以便用户阅读）
     const content = JSON.stringify(project, null, 2);
 
-    writeFileSync(configPath, content, 'utf-8');
+    writeFileSync(configPath, content, "utf-8");
   }
 
   // ==========================================================================
@@ -1004,12 +1059,12 @@ export function deserializeProject(json: string): VideoProject | null {
     const data = JSON.parse(json);
     const result = VideoProjectSchema.safeParse(data);
     if (!result.success) {
-      console.error('[ProjectStore] Invalid project JSON:', result.error);
+      console.error("[ProjectStore] Invalid project JSON:", result.error);
       return null;
     }
     return result.data;
   } catch (error) {
-    console.error('[ProjectStore] Failed to parse project JSON:', error);
+    console.error("[ProjectStore] Failed to parse project JSON:", error);
     return null;
   }
 }

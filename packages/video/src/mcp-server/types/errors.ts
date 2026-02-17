@@ -5,7 +5,7 @@
  * 提供结构化的错误处理，确保所有错误都有一致的格式
  */
 
-import type { ErrorCode, ErrorDetails, ErrorResponse } from './index';
+import type { ErrorCode, ErrorDetails, ErrorResponse } from "./index";
 
 // ============================================================================
 // MCPError 类
@@ -23,7 +23,7 @@ export class MCPError extends Error {
 
   constructor(code: ErrorCode, message: string, details?: ErrorDetails) {
     super(message);
-    this.name = 'MCPError';
+    this.name = "MCPError";
     this.code = code;
     this.details = details;
 
@@ -52,7 +52,7 @@ export class MCPError extends Error {
     return new MCPError(
       response.error.code,
       response.error.message,
-      response.error.details
+      response.error.details,
     );
   }
 }
@@ -66,11 +66,10 @@ export class MCPError extends Error {
  * @param projectId 项目 ID
  */
 export function createProjectNotFoundError(projectId: string): MCPError {
-  return new MCPError(
-    'PROJECT_NOT_FOUND',
-    `项目不存在: ${projectId}`,
-    { field: 'projectId', received: projectId }
-  );
+  return new MCPError("PROJECT_NOT_FOUND", `项目不存在: ${projectId}`, {
+    field: "projectId",
+    received: projectId,
+  });
 }
 
 /**
@@ -78,23 +77,34 @@ export function createProjectNotFoundError(projectId: string): MCPError {
  * @param assetId 素材 ID
  */
 export function createAssetNotFoundError(assetId: string): MCPError {
-  return new MCPError(
-    'ASSET_NOT_FOUND',
-    `素材不存在: ${assetId}`,
-    { field: 'assetId', received: assetId }
-  );
+  return new MCPError("ASSET_NOT_FOUND", `素材不存在: ${assetId}`, {
+    field: "assetId",
+    received: assetId,
+  });
 }
 
 /**
  * 创建组合未找到错误
  * @param compositionId 组合 ID
  */
-export function createCompositionNotFoundError(compositionId: string): MCPError {
-  return new MCPError(
-    'COMPOSITION_NOT_FOUND',
-    `组合不存在: ${compositionId}`,
-    { field: 'compositionId', received: compositionId }
-  );
+export function createCompositionNotFoundError(
+  compositionId: string,
+): MCPError {
+  return new MCPError("COMPOSITION_NOT_FOUND", `组合不存在: ${compositionId}`, {
+    field: "compositionId",
+    received: compositionId,
+  });
+}
+
+/**
+ * 创建场景未找到错误
+ * @param sceneId 场景 ID
+ */
+export function createSceneNotFoundError(sceneId: string): MCPError {
+  return new MCPError("COMPOSITION_NOT_FOUND", `场景不存在: ${sceneId}`, {
+    field: "sceneId",
+    received: sceneId,
+  });
 }
 
 /**
@@ -108,9 +118,9 @@ export function createValidationError(
   message: string,
   field?: string,
   expected?: string,
-  received?: string
+  received?: string,
 ): MCPError {
-  return new MCPError('INVALID_INPUT', message, {
+  return new MCPError("INVALID_INPUT", message, {
     ...(field && { field }),
     ...(expected && { expected }),
     ...(received && { received }),
@@ -122,11 +132,9 @@ export function createValidationError(
  * @param filePath 文件路径
  */
 export function createFileNotFoundError(filePath: string): MCPError {
-  return new MCPError(
-    'FILE_NOT_FOUND',
-    `文件不存在: ${filePath}`,
-    { path: filePath }
-  );
+  return new MCPError("FILE_NOT_FOUND", `文件不存在: ${filePath}`, {
+    path: filePath,
+  });
 }
 
 /**
@@ -136,16 +144,12 @@ export function createFileNotFoundError(filePath: string): MCPError {
  */
 export function createUnsupportedFormatError(
   format: string,
-  supportedFormats: string[]
+  supportedFormats: string[],
 ): MCPError {
-  return new MCPError(
-    'UNSUPPORTED_FORMAT',
-    `不支持的格式: ${format}`,
-    {
-      received: format,
-      expected: supportedFormats.join(', '),
-    }
-  );
+  return new MCPError("UNSUPPORTED_FORMAT", `不支持的格式: ${format}`, {
+    received: format,
+    expected: supportedFormats.join(", "),
+  });
 }
 
 /**
@@ -155,9 +159,9 @@ export function createUnsupportedFormatError(
  */
 export function createRenderFailedError(
   message: string,
-  details?: ErrorDetails
+  details?: ErrorDetails,
 ): MCPError {
-  return new MCPError('RENDER_FAILED', `渲染失败: ${message}`, details);
+  return new MCPError("RENDER_FAILED", `渲染失败: ${message}`, details);
 }
 
 /**
@@ -167,9 +171,13 @@ export function createRenderFailedError(
  */
 export function createPreviewFailedError(
   message: string,
-  details?: ErrorDetails
+  details?: ErrorDetails,
 ): MCPError {
-  return new MCPError('PREVIEW_FAILED', `预览服务器启动失败: ${message}`, details);
+  return new MCPError(
+    "PREVIEW_FAILED",
+    `预览服务器启动失败: ${message}`,
+    details,
+  );
 }
 
 /**
@@ -180,13 +188,10 @@ export function createPreviewFailedError(
 export function createInternalError(originalError?: unknown): MCPError {
   // 记录原始错误用于调试（在生产环境中应该记录到日志系统）
   if (originalError) {
-    console.error('[MCP Video Server] Internal error:', originalError);
+    console.error("[MCP Video Server] Internal error:", originalError);
   }
 
-  return new MCPError(
-    'INTERNAL_ERROR',
-    '服务器内部错误，请稍后重试'
-  );
+  return new MCPError("INTERNAL_ERROR", "服务器内部错误，请稍后重试");
 }
 
 // ============================================================================
@@ -226,7 +231,7 @@ export function toErrorResponse(error: unknown): ErrorResponse {
  * @param fn 要执行的函数
  */
 export async function safeExecute<T>(
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<{ success: true; data: T } | ErrorResponse> {
   try {
     const data = await fn();
@@ -241,7 +246,7 @@ export async function safeExecute<T>(
  * @param fn 要执行的函数
  */
 export function safeExecuteSync<T>(
-  fn: () => T
+  fn: () => T,
 ): { success: true; data: T } | ErrorResponse {
   try {
     const data = fn();

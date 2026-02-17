@@ -5,7 +5,7 @@
  * 复用 @sprouty-ai/video 的类型，并添加 MCP 特定类型
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // 从 @sprouty-ai/video 重新导出核心类型
@@ -14,7 +14,10 @@ import { z } from 'zod';
 export {
   // Schemas
   VideoConfigSchema,
-  CompositionSchema,
+  SceneSchema,
+  TransitionSchema,
+  TransitionTypeEnum,
+  TransitionDirectionEnum,
   AssetSchema,
   AssetTypeEnum,
   RenderHistorySchema,
@@ -27,7 +30,10 @@ export {
   RenderProgressSchema,
   // Types
   type VideoConfig,
-  type Composition,
+  type Scene,
+  type Transition,
+  type TransitionType,
+  type TransitionDirection,
   type Asset,
   type AssetType,
   type RenderHistory,
@@ -42,7 +48,7 @@ export {
   // Constants
   QUALITY_PRESETS,
   SUPPORTED_ASSET_EXTENSIONS,
-} from '../../types';
+} from "../../types";
 
 // ============================================================================
 // MCP 错误代码枚举
@@ -53,15 +59,15 @@ export {
  * 用于标识不同类型的错误
  */
 export const ErrorCodeEnum = z.enum([
-  'PROJECT_NOT_FOUND',
-  'ASSET_NOT_FOUND',
-  'COMPOSITION_NOT_FOUND',
-  'INVALID_INPUT',
-  'FILE_NOT_FOUND',
-  'UNSUPPORTED_FORMAT',
-  'RENDER_FAILED',
-  'PREVIEW_FAILED',
-  'INTERNAL_ERROR',
+  "PROJECT_NOT_FOUND",
+  "ASSET_NOT_FOUND",
+  "COMPOSITION_NOT_FOUND",
+  "INVALID_INPUT",
+  "FILE_NOT_FOUND",
+  "UNSUPPORTED_FORMAT",
+  "RENDER_FAILED",
+  "PREVIEW_FAILED",
+  "INTERNAL_ERROR",
 ]);
 
 export type ErrorCode = z.infer<typeof ErrorCodeEnum>;
@@ -150,8 +156,8 @@ export const ProjectSummarySchema = z.object({
   createdAt: z.string(),
   /** 更新时间 */
   updatedAt: z.string(),
-  /** 组合数量 */
-  compositionCount: z.number().int().nonnegative(),
+  /** 场景数量 */
+  sceneCount: z.number().int().nonnegative(),
   /** 素材数量 */
   assetCount: z.number().int().nonnegative(),
 });
@@ -167,7 +173,7 @@ export type ProjectSummary = z.infer<typeof ProjectSummarySchema>;
  */
 export const CreateProjectInputSchema = z.object({
   /** 项目名称 */
-  name: z.string().min(1, '项目名称不能为空'),
+  name: z.string().min(1, "项目名称不能为空"),
   /** 模板 ID（可选） */
   template: z.string().optional(),
   /** 视频宽度（可选，默认 1920） */
@@ -269,7 +275,7 @@ export function createSuccessResponse<T>(data: T): SuccessResponse<T> {
 export function createErrorResponse(
   code: ErrorCode,
   message: string,
-  details?: ErrorDetails
+  details?: ErrorDetails,
 ): ErrorResponse {
   return {
     success: false,

@@ -49,7 +49,7 @@ export interface TemplateProps {
   /** Font family override */
   fontFamily?: string;
   /** Animation style */
-  animationStyle?: 'fade' | 'slide' | 'scale' | 'spring' | 'zoom';
+  animationStyle?: "fade" | "slide" | "scale" | "spring" | "zoom";
 }
 
 /**
@@ -70,7 +70,7 @@ export interface VideoTemplateConfig {
  * Video template definition
  *
  * Defines a complete video template including metadata,
- * default configuration, and composition code.
+ * default configuration, and composition reference.
  */
 export interface VideoTemplate {
   /** Unique template identifier */
@@ -80,13 +80,13 @@ export interface VideoTemplate {
   /** Template description */
   description: string;
   /** Template category */
-  category: 'social-media' | 'marketing' | 'tutorial';
+  category: "social-media" | "marketing" | "tutorial";
   /** Default video configuration */
   defaultConfig: VideoTemplateConfig;
   /** Default props for the template */
   defaultProps: TemplateProps;
-  /** Composition component code or reference */
-  compositionCode: string;
+  /** Reference to built-in composition ID (e.g., "SocialMediaVertical") */
+  compositionId: string;
   /** Preview thumbnail URL (optional) */
   thumbnail?: string;
   /** Tags for searchability */
@@ -100,53 +100,53 @@ export interface VideoTemplate {
 /**
  * Template category type
  */
-export type TemplateCategory = VideoTemplate['category'];
+export type TemplateCategory = VideoTemplate["category"];
 
 /**
  * Default color schemes for templates
  */
 export const DEFAULT_COLOR_SCHEMES = {
   modern: {
-    primary: '#6366f1',
-    secondary: '#8b5cf6',
-    background: '#1a1a2e',
-    text: '#ffffff',
+    primary: "#6366f1",
+    secondary: "#8b5cf6",
+    background: "#1a1a2e",
+    text: "#ffffff",
   },
   minimal: {
-    primary: '#000000',
-    secondary: '#666666',
-    background: '#ffffff',
-    text: '#000000',
+    primary: "#000000",
+    secondary: "#666666",
+    background: "#ffffff",
+    text: "#000000",
   },
   playful: {
-    primary: '#f43f5e',
-    secondary: '#fb923c',
-    background: '#fef3c7',
-    text: '#1f2937',
+    primary: "#f43f5e",
+    secondary: "#fb923c",
+    background: "#fef3c7",
+    text: "#1f2937",
   },
   corporate: {
-    primary: '#0ea5e9',
-    secondary: '#0284c7',
-    background: '#0f172a',
-    text: '#f8fafc',
+    primary: "#0ea5e9",
+    secondary: "#0284c7",
+    background: "#0f172a",
+    text: "#f8fafc",
   },
   cinematic: {
-    primary: '#fbbf24',
-    secondary: '#f59e0b',
-    background: '#000000',
-    text: '#ffffff',
+    primary: "#fbbf24",
+    secondary: "#f59e0b",
+    background: "#000000",
+    text: "#ffffff",
   },
   vibrant: {
-    primary: '#ec4899',
-    secondary: '#8b5cf6',
-    background: '#0f0f23',
-    text: '#ffffff',
+    primary: "#ec4899",
+    secondary: "#8b5cf6",
+    background: "#0f0f23",
+    text: "#ffffff",
   },
   nature: {
-    primary: '#10b981',
-    secondary: '#059669',
-    background: '#064e3b',
-    text: '#ecfdf5',
+    primary: "#10b981",
+    secondary: "#059669",
+    background: "#064e3b",
+    text: "#ecfdf5",
   },
 } as const;
 
@@ -167,13 +167,13 @@ export function getColorScheme(name: ColorScheme): ColorSchemeConfig {
  */
 export const ASPECT_RATIOS = {
   /** 9:16 vertical (TikTok, Instagram Reels, YouTube Shorts) */
-  VERTICAL: { width: 1080, height: 1920, label: '9:16' },
+  VERTICAL: { width: 1080, height: 1920, label: "9:16" },
   /** 1:1 square (Instagram Feed, Facebook) */
-  SQUARE: { width: 1080, height: 1080, label: '1:1' },
+  SQUARE: { width: 1080, height: 1080, label: "1:1" },
   /** 16:9 horizontal (YouTube, presentations) */
-  HORIZONTAL: { width: 1920, height: 1080, label: '16:9' },
+  HORIZONTAL: { width: 1920, height: 1080, label: "16:9" },
   /** 4:5 portrait (Instagram Feed optimal) */
-  PORTRAIT: { width: 1080, height: 1350, label: '4:5' },
+  PORTRAIT: { width: 1080, height: 1350, label: "4:5" },
 } as const;
 
 /**

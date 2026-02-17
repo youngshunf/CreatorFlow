@@ -189,6 +189,7 @@
     "@remotion/web-renderer": "4.0.417",
     "@remotion/webcodecs": "4.0.417",
     "@remotion/media-parser": "4.0.417",
-    "@remotion/compositor-darwin-arm64": "4.0.417"
+    "@remotion/compositor-darwin-arm64": "4.0.417",
+    "@remotion/transitions": "4.0.417"
   }
 }

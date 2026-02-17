@@ -10,15 +10,24 @@ import { join } from "path";
 const ROOT_DIR = join(import.meta.dir, "..");
 const DIST_DIR = join(ROOT_DIR, "apps/electron/dist");
 const OUTPUT_FILE = join(DIST_DIR, "main.cjs");
-const COPILOT_INTERCEPTOR_SOURCE = join(ROOT_DIR, "packages/shared/src/copilot-network-interceptor.ts");
+const COPILOT_INTERCEPTOR_SOURCE = join(
+  ROOT_DIR,
+  "packages/shared/src/copilot-network-interceptor.ts",
+);
 const COPILOT_INTERCEPTOR_OUTPUT = join(DIST_DIR, "copilot-interceptor.cjs");
 const BRIDGE_SERVER_DIR = join(ROOT_DIR, "packages/bridge-mcp-server");
 const BRIDGE_SERVER_OUTPUT = join(BRIDGE_SERVER_DIR, "dist/index.js");
 const SESSION_TOOLS_CORE_DIR = join(ROOT_DIR, "packages/session-tools-core");
 const SESSION_SERVER_DIR = join(ROOT_DIR, "packages/session-mcp-server");
 const SESSION_SERVER_OUTPUT = join(SESSION_SERVER_DIR, "dist/index.js");
-const VIDEO_MCP_ENTRY = join(ROOT_DIR, "packages/video/src/mcp-server/index.ts");
-const VIDEO_MCP_OUTPUT = join(ROOT_DIR, "apps/electron/resources/video-mcp-server/index.cjs");
+const VIDEO_MCP_ENTRY = join(
+  ROOT_DIR,
+  "packages/video/src/mcp-server/index.ts",
+);
+const VIDEO_MCP_OUTPUT = join(
+  ROOT_DIR,
+  "apps/electron/resources/video-mcp-server/index.cjs",
+);
 
 // Load .env file if it exists
 function loadEnvFile(): void {
@@ -32,8 +41,10 @@ function loadEnvFile(): void {
         if (eqIndex > 0) {
           const key = trimmed.slice(0, eqIndex).trim();
           let value = trimmed.slice(eqIndex + 1).trim();
-          if ((value.startsWith('"') && value.endsWith('"')) ||
-              (value.startsWith("'") && value.endsWith("'"))) {
+          if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+          ) {
             value = value.slice(1, -1);
           }
           process.env[key] = value;
@@ -72,7 +83,10 @@ function getBuildDefines(): string[] {
 }
 
 // Wait for file to stabilize (no size changes)
-async function waitForFileStable(filePath: string, timeoutMs = 10000): Promise<boolean> {
+async function waitForFileStable(
+  filePath: string,
+  timeoutMs = 10000,
+): Promise<boolean> {
   const startTime = Date.now();
   let lastSize = -1;
   let stableCount = 0;
@@ -101,7 +115,9 @@ async function waitForFileStable(filePath: string, timeoutMs = 10000): Promise<b
 }
 
 // Verify a JavaScript file is syntactically valid
-async function verifyJsFile(filePath: string): Promise<{ valid: boolean; error?: string }> {
+async function verifyJsFile(
+  filePath: string,
+): Promise<{ valid: boolean; error?: string }> {
   if (!existsSync(filePath)) {
     return { valid: false, error: "File does not exist" };
   }
@@ -148,7 +164,9 @@ async function buildCopilotInterceptor(): Promise<void> {
 
   const proc = spawn({
     cmd: [
-      "bun", "run", "esbuild",
+      "bun",
+      "run",
+      "esbuild",
       COPILOT_INTERCEPTOR_SOURCE,
       "--bundle",
       "--platform=node",
@@ -163,12 +181,18 @@ async function buildCopilotInterceptor(): Promise<void> {
   const exitCode = await proc.exited;
 
   if (exitCode !== 0) {
-    console.error("❌ Copilot interceptor build failed with exit code", exitCode);
+    console.error(
+      "❌ Copilot interceptor build failed with exit code",
+      exitCode,
+    );
     process.exit(exitCode);
   }
 
   if (!existsSync(COPILOT_INTERCEPTOR_OUTPUT)) {
-    console.error("❌ Copilot interceptor output not found at", COPILOT_INTERCEPTOR_OUTPUT);
+    console.error(
+      "❌ Copilot interceptor output not found at",
+      COPILOT_INTERCEPTOR_OUTPUT,
+    );
     process.exit(1);
   }
 
@@ -187,11 +211,15 @@ async function buildBridgeServer(): Promise<void> {
 
   const proc = spawn({
     cmd: [
-      "bun", "build",
+      "bun",
+      "build",
       join(BRIDGE_SERVER_DIR, "src/index.ts"),
-      "--outfile", BRIDGE_SERVER_OUTPUT,
-      "--target", "node",
-      "--format", "cjs",
+      "--outfile",
+      BRIDGE_SERVER_OUTPUT,
+      "--target",
+      "node",
+      "--format",
+      "cjs",
     ],
     cwd: ROOT_DIR,
     stdout: "inherit",
@@ -226,11 +254,15 @@ async function buildSessionServer(): Promise<void> {
 
   const proc = spawn({
     cmd: [
-      "bun", "build",
+      "bun",
+      "build",
       join(SESSION_SERVER_DIR, "src/index.ts"),
-      "--outfile", SESSION_SERVER_OUTPUT,
-      "--target", "node",
-      "--format", "cjs",
+      "--outfile",
+      SESSION_SERVER_OUTPUT,
+      "--target",
+      "node",
+      "--format",
+      "cjs",
     ],
     cwd: ROOT_DIR,
     stdout: "inherit",
@@ -246,7 +278,10 @@ async function buildSessionServer(): Promise<void> {
 
   // Verify output exists
   if (!existsSync(SESSION_SERVER_OUTPUT)) {
-    console.error("❌ Session server output not found at", SESSION_SERVER_OUTPUT);
+    console.error(
+      "❌ Session server output not found at",
+      SESSION_SERVER_OUTPUT,
+    );
     process.exit(1);
   }
 
@@ -265,7 +300,9 @@ async function buildVideoMcpServer(): Promise<void> {
 
   const proc = spawn({
     cmd: [
-      "bun", "run", "esbuild",
+      "bun",
+      "run",
+      "esbuild",
       VIDEO_MCP_ENTRY,
       "--bundle",
       "--platform=node",
@@ -278,6 +315,8 @@ async function buildVideoMcpServer(): Promise<void> {
       "--external:remotion",
       "--external:react",
       "--external:react-dom",
+      // Native module for SQLite database access
+      "--external:better-sqlite3",
       // Optional peer deps of fastmcp's xsschema
       "--external:@valibot/to-json-schema",
       "--external:effect",
@@ -336,7 +375,9 @@ async function main(): Promise<void> {
 
   const proc = spawn({
     cmd: [
-      "bun", "run", "esbuild",
+      "bun",
+      "run",
+      "esbuild",
       "apps/electron/src/main/index.ts",
       "--bundle",
       "--platform=node",
