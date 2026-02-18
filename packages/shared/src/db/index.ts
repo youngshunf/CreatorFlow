@@ -86,6 +86,18 @@ export type {
   MediaFileType,
   MediaFile,
   CreateMediaFile,
+  VideoProject,
+  VideoProjectFull,
+  CreateVideoProject,
+  UpdateVideoProject,
+  VideoScene,
+  CreateVideoScene,
+  UpdateVideoScene,
+  VideoAsset,
+  CreateVideoAsset,
+  TransitionType,
+  TransitionDirection,
+  AssetType,
 } from './types.ts';
 
 export { QueuePriority } from './types.ts';

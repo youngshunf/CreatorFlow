@@ -1,33 +1,44 @@
 /**
  * Video IPC Handlers
  *
- * Registers IPC handlers for video service management, project management,
- * asset management, rendering, and preview operations.
- *
- * @requirements 5.1, 5.2, 8.2, 8.3, 8.4, 8.5, 8.6
+ * 视频相关 IPC 通道注册 — 直接使用 VideoRepository 操作 SQLite，
+ * 不再依赖 MCP Server / ProjectManager。
  */
 
 import { ipcMain, dialog, BrowserWindow } from "electron";
-import { extname, join } from "path";
-import { app } from "electron";
+import { extname, basename } from "path";
+import { statSync } from "fs";
 import type {
-  VideoProject,
   RenderProgress,
   AssetType,
-  Asset,
   OutputFormat,
   QualityPreset,
 } from "@sprouty-ai/video";
 import { SUPPORTED_ASSET_EXTENSIONS } from "@sprouty-ai/video";
-import type { IProjectManager, CreateProjectOptions } from "./project-manager";
+import { COMPOSITION_IDS } from "@sprouty-ai/video/compositions";
+import {
+  ALL_TEMPLATES,
+  getTemplateById,
+  getTemplatesByCategory,
+} from "@sprouty-ai/video/templates";
+import type { VideoTemplate, TemplateCategory } from "@sprouty-ai/video/templates";
 import type { IRenderWorker } from "./render-worker";
-import type { IPreviewServer, PreviewServerResult } from "./preview-server";
-import type { VideoServiceManager, ServiceStatus } from "./service-manager";
-import { createVideoServiceManager } from "./service-manager";
-import { createPreviewServer } from "./preview-server";
 import { RenderWorker } from "./render-worker";
-import { ProjectManager } from "./project-manager";
 import { createBunPathResolver } from "../bun-path";
+import { getCreatorMediaDB } from "../creator-media-db";
+import { getWorkspaceByNameOrId } from "@sprouty-ai/shared/config";
+import * as videoRepo from "@sprouty-ai/shared/db/repositories/video";
+import type {
+  VideoProject,
+  VideoProjectFull,
+  VideoScene,
+  VideoAsset,
+  CreateVideoProject,
+  CreateVideoScene,
+  UpdateVideoScene,
+  UpdateVideoProject,
+  CreateVideoAsset,
+} from "@sprouty-ai/shared/db/types";
 import log from "../logger";
 
 const ipcLog = log.scope("video:ipc");
@@ -36,188 +47,122 @@ const ipcLog = log.scope("video:ipc");
 // IPC Channel Definitions
 // ============================================================================
 
-/**
- * Video IPC channel names
- * @requirements 5.1, 5.2, 8.2, 8.3, 8.4
- */
 export const VIDEO_IPC_CHANNELS = {
-  // Service management
-  // @requirements 5.1, 5.2
-  START_VIDEO_SERVICE: "video:start-service",
-  STOP_VIDEO_SERVICE: "video:stop-service",
-  GET_SERVICE_STATUS: "video:get-status",
-  SERVICE_STATUS_CHANGED: "video:status-changed",
-
-  // Project management
+  // 项目管理
   CREATE_PROJECT: "video:create-project",
   LIST_PROJECTS: "video:list-projects",
   GET_PROJECT: "video:get-project",
   UPDATE_PROJECT: "video:update-project",
   DELETE_PROJECT: "video:delete-project",
 
-  // Asset management
+  // 场景管理
+  ADD_SCENE: "video:add-scene",
+  UPDATE_SCENE: "video:update-scene",
+  REMOVE_SCENE: "video:remove-scene",
+  REORDER_SCENES: "video:reorder-scenes",
+  GET_SCENES: "video:get-scenes",
+
+  // 素材管理
   SELECT_ASSET_FILES: "video:select-asset-files",
   ADD_ASSET: "video:add-asset",
   REMOVE_ASSET: "video:remove-asset",
+  LIST_ASSETS: "video:list-assets",
 
-  // Rendering
+  // 组合和模板
+  LIST_COMPOSITIONS: "video:list-compositions",
+  LIST_TEMPLATES: "video:list-templates",
+  GET_TEMPLATE: "video:get-template",
+  CREATE_FROM_TEMPLATE: "video:create-from-template",
+
+  // 渲染
   RENDER: "video:render",
   CANCEL_RENDER: "video:cancel-render",
   RENDER_PROGRESS: "video:render-progress",
   RENDER_COMPLETED: "video:render-completed",
   RENDER_FAILED: "video:render-failed",
-
-  // Preview
-  START_PREVIEW: "video:start-preview",
-  STOP_PREVIEW: "video:stop-preview",
-  PREVIEW_STARTED: "video:preview-started",
-  PREVIEW_STOPPED: "video:preview-stopped",
 } as const;
 
 // ============================================================================
-// IPC Request/Response Types
+// IPC Request Types
 // ============================================================================
 
-/**
- * Service status response for IPC
- */
-export interface ServiceStatusResponse {
-  running: boolean;
-  pid?: number;
-  startedAt?: number;
-  restartCount: number;
-  lastError?: string;
-}
-
-/**
- * Create project request
- */
 export interface CreateProjectRequest {
-  name: string;
   workspaceId: string;
-  template?: string;
-  config?: {
-    width?: number;
-    height?: number;
-    fps?: number;
-    durationInFrames?: number;
-  };
+  contentId: string;
+  name: string;
   description?: string;
+  width?: number;
+  height?: number;
+  fps?: number;
 }
 
-/**
- * Render request
- * compositionId 已废弃，固定使用 SceneComposer
- */
+export interface AddSceneRequest {
+  workspaceId: string;
+  projectId: string;
+  compositionId: string;
+  name?: string;
+  durationInFrames?: number;
+  props?: string;
+  transitionType?: string;
+  transitionDuration?: number;
+  transitionDirection?: string;
+  insertAt?: number;
+}
+
+export interface UpdateSceneRequest {
+  workspaceId: string;
+  sceneId: string;
+  updates: UpdateVideoScene;
+}
+
+export interface AddAssetRequest {
+  workspaceId: string;
+  projectId: string;
+  filePath: string;
+  type: AssetType;
+  name?: string;
+}
+
 export interface RenderRequest {
   projectId: string;
-  compositionId?: string;
+  workspaceId: string;
   outputFormat?: OutputFormat;
   quality?: QualityPreset;
 }
 
-/**
- * Add asset request
- */
-export interface AddAssetRequest {
-  projectId: string;
-  assetPath: string;
-  assetType: AssetType;
+export interface CreateFromTemplateRequest {
+  workspaceId: string;
+  contentId: string;
+  templateId: string;
+  name: string;
+  description?: string;
+}
+
+export interface CompositionInfo {
+  id: string;
+  name: string;
 }
 
 // ============================================================================
-// Global Service Instances
+// Helper
 // ============================================================================
 
-/** Global video service manager instance */
-let videoServiceManager: VideoServiceManager | null = null;
+function getDB(workspaceId: string) {
+  const ws = getWorkspaceByNameOrId(workspaceId);
+  if (!ws) throw new Error(`Workspace not found: ${workspaceId}`);
+  return getCreatorMediaDB(ws.rootPath);
+}
 
-/** Global preview server instance */
-let previewServer: IPreviewServer | null = null;
+function generateId(): string {
+  return crypto.randomUUID();
+}
 
-/** Global render worker instance */
+// ============================================================================
+// Global Instances
+// ============================================================================
+
 let renderWorker: IRenderWorker | null = null;
 
-/** Global project manager instance */
-let projectManager: IProjectManager | null = null;
-
-/** Track registered windows for broadcasting events */
-const registeredWindows = new Set<BrowserWindow>();
-
-/**
- * Get or create the video service manager
- */
-function getVideoServiceManager(): VideoServiceManager {
-  if (!videoServiceManager) {
-    const bunResolver = createBunPathResolver();
-    const mcpServerEntry = app.isPackaged
-      ? join(
-          process.resourcesPath,
-          "app",
-          "packages",
-          "video",
-          "src",
-          "mcp-server",
-          "index.ts",
-        )
-      : join(
-          __dirname,
-          "..",
-          "..",
-          "..",
-          "..",
-          "packages",
-          "video",
-          "src",
-          "mcp-server",
-          "index.ts",
-        );
-
-    videoServiceManager = createVideoServiceManager(bunResolver, {
-      mcpServerEntry,
-      maxRetries: 3,
-      retryInterval: 2000,
-      startupTimeout: 30000,
-      stopTimeout: 5000,
-    });
-
-    // Set up event handlers for broadcasting status changes
-    videoServiceManager.on("status-changed", (status: ServiceStatus) => {
-      broadcastToAllWindows(VIDEO_IPC_CHANNELS.SERVICE_STATUS_CHANGED, status);
-    });
-
-    videoServiceManager.on("error", (error: Error) => {
-      ipcLog.error("Video service error:", error);
-    });
-
-    videoServiceManager.on(
-      "log",
-      (level: "info" | "error", message: string) => {
-        if (level === "error") {
-          ipcLog.error(message);
-        } else {
-          ipcLog.info(message);
-        }
-      },
-    );
-  }
-  return videoServiceManager;
-}
-
-/**
- * Get or create the preview server
- */
-function getPreviewServer(): IPreviewServer {
-  if (!previewServer) {
-    const bunResolver = createBunPathResolver();
-    previewServer = createPreviewServer(bunResolver);
-  }
-  return previewServer;
-}
-
-/**
- * Get or create the render worker
- */
 function getRenderWorker(): IRenderWorker {
   if (!renderWorker) {
     const bunResolver = createBunPathResolver();
@@ -226,251 +171,155 @@ function getRenderWorker(): IRenderWorker {
   return renderWorker;
 }
 
-/**
- * Get or create the project manager
- */
-function getProjectManager(): IProjectManager {
-  if (!projectManager) {
-    projectManager = new ProjectManager();
-  }
-  return projectManager;
-}
-
-/**
- * Broadcast a message to all registered windows
- */
-function broadcastToAllWindows(channel: string, data: unknown): void {
-  registeredWindows.forEach((window) => {
-    if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
-      window.webContents.send(channel, data);
-    }
-  });
-}
-
 // ============================================================================
 // IPC Handler Registration
 // ============================================================================
 
-/**
- * Register all video-related IPC handlers
- *
- * This function registers handlers for:
- * - Service management (start/stop/status)
- * - Project management (CRUD operations)
- * - Asset management (add/remove)
- * - Rendering (render/cancel/progress)
- * - Preview (start/stop)
- *
- * @requirements 5.1, 5.2, 8.2, 8.3, 8.4, 8.5, 8.6
- */
 export function registerVideoIpcHandlers(): void {
-  ipcLog.info("Registering video IPC handlers");
+  ipcLog.info("注册视频 IPC handlers");
 
   // ============================================================================
-  // Service Management IPC Handlers
-  // @requirements 5.1, 5.2
+  // 项目管理
   // ============================================================================
 
-  /**
-   * Start the video service (MCP Video Server)
-   * @requirements 5.1 - 使用内置 Bun 启动 MCP Video Server 作为子进程
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.START_VIDEO_SERVICE,
-    async (event): Promise<ServiceStatusResponse> => {
-      ipcLog.info("Starting video service");
-
-      try {
-        // Register the window for broadcasts
-        const browserWindow = BrowserWindow.fromWebContents(event.sender);
-        if (browserWindow) {
-          registeredWindows.add(browserWindow);
-          browserWindow.on("closed", () => {
-            registeredWindows.delete(browserWindow);
-          });
-        }
-
-        const manager = getVideoServiceManager();
-        await manager.startMcpServer();
-        const status = manager.getStatus();
-        ipcLog.info(`Video service started: PID=${status.pid}`);
-        return status;
-      } catch (error) {
-        ipcLog.error("Failed to start video service:", error);
-        throw error;
-      }
-    },
-  );
-
-  /**
-   * Stop the video service
-   * @requirements 5.1 - 管理 MCP Video Server 生命周期
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.STOP_VIDEO_SERVICE,
-    async (): Promise<ServiceStatusResponse> => {
-      ipcLog.info("Stopping video service");
-
-      try {
-        const manager = getVideoServiceManager();
-        await manager.stopMcpServer();
-        const status = manager.getStatus();
-        ipcLog.info("Video service stopped");
-        return status;
-      } catch (error) {
-        ipcLog.error("Failed to stop video service:", error);
-        throw error;
-      }
-    },
-  );
-
-  /**
-   * Get the current video service status
-   * @requirements 5.2 - 通过 stdio 传输模式与 Electron 主进程通信
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.GET_SERVICE_STATUS,
-    async (): Promise<ServiceStatusResponse> => {
-      ipcLog.debug("Getting video service status");
-
-      try {
-        const manager = getVideoServiceManager();
-        return manager.getStatus();
-      } catch (error) {
-        ipcLog.error("Failed to get video service status:", error);
-        throw error;
-      }
-    },
-  );
-
-  // ============================================================================
-  // Project Management IPC Handlers
-  // @requirements 8.2
-  // ============================================================================
-
-  /**
-   * Create a new video project
-   */
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.CREATE_PROJECT,
-    async (_event, request: CreateProjectRequest): Promise<VideoProject> => {
-      ipcLog.info(`Creating video project: ${request.name}`);
-
-      try {
-        const pm = getProjectManager();
-        const options: CreateProjectOptions = {
-          name: request.name,
-          workspaceId: request.workspaceId,
-          template: request.template,
-          config: request.config,
-          description: request.description,
-        };
-
-        const project = await pm.createProject(options);
-        ipcLog.info(`Video project created: ${project.id}`);
-        return project;
-      } catch (error) {
-        ipcLog.error("Failed to create video project:", error);
-        throw error;
-      }
+    async (_event, request: CreateProjectRequest): Promise<VideoProjectFull> => {
+      ipcLog.info(`创建视频项目: ${request.name}`);
+      const db = getDB(request.workspaceId);
+      const data: CreateVideoProject = {
+        id: generateId(),
+        content_id: request.contentId,
+        name: request.name,
+        description: request.description,
+        width: request.width ?? 1080,
+        height: request.height ?? 1920,
+        fps: request.fps ?? 30,
+        metadata: undefined,
+      };
+      const project = videoRepo.createVideoProject(db, data);
+      return { ...project, scenes: [], assets: [] };
     },
   );
 
-  /**
-   * List all video projects in a workspace
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.LIST_PROJECTS,
-    async (_event, workspaceId: string): Promise<VideoProject[]> => {
-      ipcLog.debug(`Listing video projects for workspace: ${workspaceId}`);
-
-      try {
-        const pm = getProjectManager();
-        const projects = await pm.listProjects(workspaceId);
-        return projects;
-      } catch (error) {
-        ipcLog.error("Failed to list video projects:", error);
-        throw error;
-      }
-    },
-  );
-
-  /**
-   * Get a single video project by ID
-   */
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.GET_PROJECT,
-    async (_event, projectId: string): Promise<VideoProject | null> => {
-      ipcLog.debug(`Getting video project: ${projectId}`);
-
-      try {
-        const pm = getProjectManager();
-        const project = await pm.getProject(projectId);
-        return project;
-      } catch (error) {
-        ipcLog.error("Failed to get video project:", error);
-        throw error;
-      }
+    async (_event, workspaceId: string, projectId: string): Promise<VideoProjectFull | null> => {
+      const db = getDB(workspaceId);
+      return videoRepo.getVideoProjectFull(db, projectId) ?? null;
     },
   );
 
-  /**
-   * Update a video project
-   */
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.LIST_PROJECTS,
+    async (_event, workspaceId: string, projectId: string): Promise<VideoProject[]> => {
+      const db = getDB(workspaceId);
+      return videoRepo.listVideoProjects(db, projectId);
+    },
+  );
+
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.UPDATE_PROJECT,
-    async (
-      _event,
-      projectId: string,
-      updates: Partial<VideoProject>,
-    ): Promise<VideoProject> => {
-      ipcLog.info(`Updating video project: ${projectId}`);
-
-      try {
-        const pm = getProjectManager();
-        const project = await pm.updateProject(projectId, updates);
-        ipcLog.info(`Video project updated: ${projectId}`);
-        return project;
-      } catch (error) {
-        ipcLog.error("Failed to update video project:", error);
-        throw error;
-      }
+    async (_event, workspaceId: string, projectId: string, updates: UpdateVideoProject): Promise<VideoProject | null> => {
+      ipcLog.info(`更新视频项目: ${projectId}`);
+      const db = getDB(workspaceId);
+      return videoRepo.updateVideoProject(db, projectId, updates) ?? null;
     },
   );
 
-  /**
-   * Delete a video project
-   */
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.DELETE_PROJECT,
-    async (_event, projectId: string): Promise<boolean> => {
-      ipcLog.info(`Deleting video project: ${projectId}`);
-
-      try {
-        const pm = getProjectManager();
-        const success = await pm.deleteProject(projectId);
-        if (success) {
-          ipcLog.info(`Video project deleted: ${projectId}`);
-        } else {
-          ipcLog.warn(`Video project not found: ${projectId}`);
-        }
-        return success;
-      } catch (error) {
-        ipcLog.error("Failed to delete video project:", error);
-        throw error;
-      }
+    async (_event, workspaceId: string, projectId: string): Promise<boolean> => {
+      ipcLog.info(`删除视频项目: ${projectId}`);
+      const db = getDB(workspaceId);
+      return videoRepo.deleteVideoProject(db, projectId);
     },
   );
 
   // ============================================================================
-  // Asset Management IPC Handlers
-  // @requirements 8.3, 13.3
+  // 场景管理
   // ============================================================================
 
-  /**
-   * 打开文件选择对话框，选择素材文件
-   * 返回 { filePaths, assetType } 数组
-   */
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.ADD_SCENE,
+    async (_event, request: AddSceneRequest): Promise<{ sceneId: string }> => {
+      ipcLog.info(`添加场景到项目: ${request.projectId}`);
+      const db = getDB(request.workspaceId);
+
+      // 计算 sort_order
+      let sortOrder: number;
+      if (request.insertAt !== undefined) {
+        // 插入到指定位置，先把后面的场景 sort_order +1
+        const scenes = videoRepo.listVideoScenes(db, request.projectId);
+        db.transaction(() => {
+          for (const s of scenes) {
+            if (s.sort_order >= request.insertAt!) {
+              videoRepo.updateVideoScene(db, s.id, { sort_order: s.sort_order + 1 });
+            }
+          }
+        });
+        sortOrder = request.insertAt;
+      } else {
+        sortOrder = videoRepo.getNextSortOrder(db, request.projectId);
+      }
+
+      const data: CreateVideoScene = {
+        id: generateId(),
+        project_id: request.projectId,
+        composition_id: request.compositionId,
+        name: request.name,
+        sort_order: sortOrder,
+        duration_in_frames: request.durationInFrames ?? 90,
+        props: request.props ?? "{}",
+        transition_type: (request.transitionType as CreateVideoScene["transition_type"]) ?? "none",
+        transition_duration: request.transitionDuration ?? 0,
+        transition_direction: request.transitionDirection as CreateVideoScene["transition_direction"],
+      };
+
+      const scene = videoRepo.addVideoScene(db, data);
+      return { sceneId: scene.id };
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.UPDATE_SCENE,
+    async (_event, request: UpdateSceneRequest): Promise<VideoScene | null> => {
+      ipcLog.info(`更新场景: ${request.sceneId}`);
+      const db = getDB(request.workspaceId);
+      return videoRepo.updateVideoScene(db, request.sceneId, request.updates) ?? null;
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.REMOVE_SCENE,
+    async (_event, workspaceId: string, projectId: string, sceneId: string): Promise<boolean> => {
+      ipcLog.info(`删除场景: ${sceneId}`);
+      const db = getDB(workspaceId);
+      return videoRepo.removeVideoScene(db, sceneId);
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.REORDER_SCENES,
+    async (_event, workspaceId: string, projectId: string, sceneIds: string[]): Promise<void> => {
+      ipcLog.info(`重排场景: ${projectId}`);
+      const db = getDB(workspaceId);
+      videoRepo.reorderVideoScenes(db, projectId, sceneIds);
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.GET_SCENES,
+    async (_event, workspaceId: string, projectId: string): Promise<VideoScene[]> => {
+      const db = getDB(workspaceId);
+      return videoRepo.listVideoScenes(db, projectId);
+    },
+  );
+
+  // ============================================================================
+  // 素材管理
+  // ============================================================================
+
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.SELECT_ASSET_FILES,
     async (
@@ -516,7 +365,6 @@ export function registerVideoIpcHandlers(): void {
 
       if (result.canceled || result.filePaths.length === 0) return [];
 
-      // 自动检测素材类型
       return result.filePaths.map((filePath) => {
         const ext = extname(filePath).toLowerCase();
         let detectedType: AssetType = "image";
@@ -532,101 +380,152 @@ export function registerVideoIpcHandlers(): void {
     },
   );
 
-  /**
-   * Add an asset to a video project
-   * Validates asset file existence and format before adding
-   */
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.ADD_ASSET,
-    async (_event, request: AddAssetRequest): Promise<Asset> => {
-      const { projectId, assetPath, assetType } = request;
-      ipcLog.info(
-        `Adding ${assetType} asset to project ${projectId}: ${assetPath}`,
-      );
+    async (_event, request: AddAssetRequest): Promise<VideoAsset> => {
+      ipcLog.info(`添加素材到项目 ${request.projectId}: ${request.filePath}`);
+      const db = getDB(request.workspaceId);
 
-      try {
-        const pm = getProjectManager();
-        // Validate asset type and extension
-        const ext = extname(assetPath).toLowerCase();
-        const supportedExts = SUPPORTED_ASSET_EXTENSIONS[assetType];
-
-        if (!supportedExts.includes(ext as any)) {
-          const errorMsg = `不支持的 ${assetType} 格式: ${ext}。支持的格式: ${supportedExts.join(", ")}`;
-          ipcLog.error(errorMsg);
-          throw new Error(errorMsg);
-        }
-
-        const asset = await pm.addAsset(projectId, assetPath, assetType);
-        ipcLog.info(`Asset added: ${asset.id}`);
-        return asset;
-      } catch (error) {
-        ipcLog.error("Failed to add asset:", error);
-        throw error;
+      // 验证素材类型
+      const ext = extname(request.filePath).toLowerCase();
+      const supportedExts = SUPPORTED_ASSET_EXTENSIONS[request.type];
+      if (!supportedExts.includes(ext as any)) {
+        throw new Error(
+          `不支持的 ${request.type} 格式: ${ext}。支持的格式: ${supportedExts.join(", ")}`,
+        );
       }
+
+      let fileSize: number | undefined;
+      try {
+        fileSize = statSync(request.filePath).size;
+      } catch {
+        // 忽略
+      }
+
+      const data: CreateVideoAsset = {
+        id: generateId(),
+        project_id: request.projectId,
+        type: request.type,
+        name: request.name ?? basename(request.filePath),
+        file_path: request.filePath,
+        file_size: fileSize,
+        metadata: undefined,
+      };
+
+      return videoRepo.addVideoAsset(db, data);
     },
   );
 
-  /**
-   * Remove an asset from a video project
-   */
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.REMOVE_ASSET,
-    async (_event, projectId: string, assetId: string): Promise<boolean> => {
-      ipcLog.info(`Removing asset ${assetId} from project ${projectId}`);
+    async (_event, workspaceId: string, projectId: string, assetId: string): Promise<boolean> => {
+      ipcLog.info(`删除素材: ${assetId}`);
+      const db = getDB(workspaceId);
+      return videoRepo.removeVideoAsset(db, assetId);
+    },
+  );
 
-      try {
-        const pm = getProjectManager();
-        const success = await pm.removeAsset(projectId, assetId);
-        if (success) {
-          ipcLog.info(`Asset removed: ${assetId}`);
-        } else {
-          ipcLog.warn(`Asset not found: ${assetId}`);
-        }
-        return success;
-      } catch (error) {
-        ipcLog.error("Failed to remove asset:", error);
-        throw error;
-      }
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.LIST_ASSETS,
+    async (_event, workspaceId: string, projectId: string): Promise<VideoAsset[]> => {
+      const db = getDB(workspaceId);
+      return videoRepo.listVideoAssets(db, projectId);
     },
   );
 
   // ============================================================================
-  // Render IPC Handlers
-  // @requirements 8.4, 8.5, 8.6
+  // 组合和模板
   // ============================================================================
 
-  /**
-   * Render a video composition
-   * Shows save dialog for output path selection
-   * Pushes progress events via video:render-progress channel
-   */
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.LIST_COMPOSITIONS,
+    async (): Promise<CompositionInfo[]> => {
+      return COMPOSITION_IDS.map((id) => ({ id, name: id }));
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.LIST_TEMPLATES,
+    async (_event, category?: string): Promise<VideoTemplate[]> => {
+      if (category) {
+        return [...getTemplatesByCategory(category as TemplateCategory)];
+      }
+      return [...ALL_TEMPLATES];
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.GET_TEMPLATE,
+    async (_event, templateId: string): Promise<VideoTemplate | null> => {
+      return getTemplateById(templateId) ?? null;
+    },
+  );
+
+  ipcMain.handle(
+    VIDEO_IPC_CHANNELS.CREATE_FROM_TEMPLATE,
+    async (_event, request: CreateFromTemplateRequest): Promise<VideoProjectFull> => {
+      ipcLog.info(`从模板创建项目: ${request.templateId}`);
+      const template = getTemplateById(request.templateId);
+      if (!template) throw new Error(`模板不存在: ${request.templateId}`);
+
+      const db = getDB(request.workspaceId);
+
+      // 创建项目
+      const projectData: CreateVideoProject = {
+        id: generateId(),
+        content_id: request.contentId,
+        name: request.name,
+        description: request.description ?? template.description,
+        width: template.defaultConfig.width,
+        height: template.defaultConfig.height,
+        fps: template.defaultConfig.fps,
+        metadata: JSON.stringify({ templateId: template.id }),
+      };
+      const project = videoRepo.createVideoProject(db, projectData);
+
+      // 创建默认场景
+      const sceneData: CreateVideoScene = {
+        id: generateId(),
+        project_id: project.id,
+        composition_id: template.compositionId,
+        name: template.name,
+        sort_order: 0,
+        duration_in_frames: template.defaultConfig.durationInFrames,
+        props: JSON.stringify(template.defaultProps),
+        transition_type: "none",
+        transition_duration: 0,
+        transition_direction: undefined,
+      };
+      videoRepo.addVideoScene(db, sceneData);
+
+      return videoRepo.getVideoProjectFull(db, project.id)!;
+    },
+  );
+
+  // ============================================================================
+  // 渲染（保留现有逻辑）
+  // ============================================================================
+
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.RENDER,
     async (event, request: RenderRequest): Promise<string | null> => {
-      const { projectId, outputFormat = "mp4", quality = "standard" } = request;
+      const { projectId, workspaceId, outputFormat = "mp4", quality = "standard" } = request;
       ipcLog.info(
-        `Starting render: project=${projectId}, format=${outputFormat}, quality=${quality}`,
+        `开始渲染: project=${projectId}, format=${outputFormat}, quality=${quality}`,
       );
 
       try {
-        const pm = getProjectManager();
+        const db = getDB(workspaceId);
         const rw = getRenderWorker();
 
-        // 获取项目并验证
-        const project = await pm.getProject(projectId);
-        if (!project) {
-          throw new Error(`项目不存在: ${projectId}`);
-        }
-
-        // 验证项目有场景
+        const project = videoRepo.getVideoProjectFull(db, projectId);
+        if (!project) throw new Error(`项目不存在: ${projectId}`);
         if (!project.scenes || project.scenes.length === 0) {
           throw new Error("项目没有场景，无法渲染");
         }
 
-        // 获取浏览器窗口用于对话框
         const browserWindow = BrowserWindow.fromWebContents(event.sender);
 
-        // 显示保存对话框
         const fileExtension = outputFormat;
         const defaultFileName = `${project.name}.${fileExtension}`;
 
@@ -642,14 +541,12 @@ export function registerVideoIpcHandlers(): void {
         });
 
         if (dialogResult.canceled || !dialogResult.filePath) {
-          ipcLog.info("Render cancelled by user (save dialog)");
+          ipcLog.info("用户取消保存");
           return null;
         }
 
         const outputPath = dialogResult.filePath;
-        ipcLog.info(`Output path selected: ${outputPath}`);
 
-        // 创建进度回调
         const onProgress = (progress: RenderProgress) => {
           event.sender.send(VIDEO_IPC_CHANNELS.RENDER_PROGRESS, {
             projectId,
@@ -657,28 +554,38 @@ export function registerVideoIpcHandlers(): void {
           });
         };
 
-        // 使用 SceneComposer 渲染，传入 scenes + transitions
+        // 将 DB 场景转换为渲染所需格式
+        const scenes = project.scenes.map((s) => ({
+          compositionId: s.composition_id,
+          durationInFrames: s.duration_in_frames,
+          props: JSON.parse(s.props),
+        }));
+
+        const transitions = project.scenes
+          .filter((s) => s.transition_type && s.transition_type !== "none")
+          .map((s) => ({
+            type: s.transition_type!,
+            durationInFrames: s.transition_duration ?? 0,
+            direction: s.transition_direction,
+          }));
+
         const result = await rw.render({
           outputPath,
           quality,
           outputFormat,
-          inputProps: {
-            scenes: project.scenes,
-            transitions: project.transitions,
-          },
+          inputProps: { scenes, transitions } as any,
           onProgress,
         });
 
-        // 发送完成事件
         event.sender.send(VIDEO_IPC_CHANNELS.RENDER_COMPLETED, {
           projectId,
           outputPath: result,
         });
 
-        ipcLog.info(`Render completed: ${result}`);
+        ipcLog.info(`渲染完成: ${result}`);
         return result;
       } catch (error) {
-        ipcLog.error("Render failed:", error);
+        ipcLog.error("渲染失败:", error);
         event.sender.send(VIDEO_IPC_CHANNELS.RENDER_FAILED, {
           projectId,
           error: error instanceof Error ? error.message : String(error),
@@ -688,102 +595,19 @@ export function registerVideoIpcHandlers(): void {
     },
   );
 
-  /**
-   * Cancel the current render operation
-   */
   ipcMain.handle(VIDEO_IPC_CHANNELS.CANCEL_RENDER, async (): Promise<void> => {
-    ipcLog.info("Cancelling render");
-
-    try {
-      const rw = getRenderWorker();
-      rw.cancel();
-      ipcLog.info("Render cancelled");
-    } catch (error) {
-      ipcLog.error("Failed to cancel render:", error);
-      throw error;
-    }
+    ipcLog.info("取消渲染");
+    const rw = getRenderWorker();
+    rw.cancel();
   });
 
-  // ============================================================================
-  // Preview IPC Handlers
-  // @requirements 8.4
-  // ============================================================================
-
-  /**
-   * Start preview server for a video project
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.START_PREVIEW,
-    async (event, projectId: string): Promise<PreviewServerResult> => {
-      ipcLog.info(`Starting preview for project: ${projectId}`);
-
-      try {
-        const pm = getProjectManager();
-        const ps = getPreviewServer();
-
-        // Get project path
-        const projectPath = pm.getProjectPath(projectId);
-
-        // Start preview server
-        const result = await ps.start(projectPath);
-        ipcLog.info(`Preview started at: ${result.url}`);
-
-        // Send preview started event
-        event.sender.send(VIDEO_IPC_CHANNELS.PREVIEW_STARTED, {
-          projectId,
-          url: result.url,
-          port: result.port,
-          pid: result.pid,
-        });
-
-        return result;
-      } catch (error) {
-        ipcLog.error("Failed to start preview:", error);
-        throw error;
-      }
-    },
-  );
-
-  /**
-   * Stop preview server for a video project
-   */
-  ipcMain.handle(
-    VIDEO_IPC_CHANNELS.STOP_PREVIEW,
-    async (event, projectId: string): Promise<void> => {
-      ipcLog.info(`Stopping preview for project: ${projectId}`);
-
-      try {
-        const pm = getProjectManager();
-        const ps = getPreviewServer();
-
-        // Get project path
-        const projectPath = pm.getProjectPath(projectId);
-
-        // Stop preview server
-        await ps.stop(projectPath);
-        ipcLog.info("Preview stopped");
-
-        // Send preview stopped event
-        event.sender.send(VIDEO_IPC_CHANNELS.PREVIEW_STOPPED, {
-          projectId,
-        });
-      } catch (error) {
-        ipcLog.error("Failed to stop preview:", error);
-        throw error;
-      }
-    },
-  );
-
-  ipcLog.info("Video IPC handlers registered successfully");
+  ipcLog.info("视频 IPC handlers 注册完成");
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-/**
- * Get display name for output format
- */
 function getFormatDisplayName(format: OutputFormat): string {
   switch (format) {
     case "mp4":
@@ -798,71 +622,29 @@ function getFormatDisplayName(format: OutputFormat): string {
 }
 
 /**
- * Unregister all video IPC handlers
- * Call this when cleaning up the video service
+ * 注销所有视频 IPC handlers
  */
 export function unregisterVideoIpcHandlers(): void {
-  ipcLog.info("Unregistering video IPC handlers");
-
+  ipcLog.info("注销视频 IPC handlers");
   Object.values(VIDEO_IPC_CHANNELS).forEach((channel) => {
-    // Skip event channels (they don't have handlers)
     if (
       channel === VIDEO_IPC_CHANNELS.RENDER_PROGRESS ||
       channel === VIDEO_IPC_CHANNELS.RENDER_COMPLETED ||
-      channel === VIDEO_IPC_CHANNELS.RENDER_FAILED ||
-      channel === VIDEO_IPC_CHANNELS.SERVICE_STATUS_CHANGED ||
-      channel === VIDEO_IPC_CHANNELS.PREVIEW_STARTED ||
-      channel === VIDEO_IPC_CHANNELS.PREVIEW_STOPPED
+      channel === VIDEO_IPC_CHANNELS.RENDER_FAILED
     ) {
       return;
     }
     ipcMain.removeHandler(channel);
   });
-
-  ipcLog.info("Video IPC handlers unregistered");
 }
 
 /**
- * Cleanup all video services
- * Call this when the application is shutting down
+ * 清理视频服务
  */
 export async function cleanupVideoServices(): Promise<void> {
-  ipcLog.info("Cleaning up video services");
-
-  try {
-    // Stop video service manager
-    if (videoServiceManager) {
-      await videoServiceManager.stopAll();
-      videoServiceManager = null;
-    }
-
-    // Stop all preview servers
-    if (previewServer) {
-      await previewServer.stopAll();
-      previewServer = null;
-    }
-
-    // Cancel any ongoing renders
-    if (renderWorker) {
-      renderWorker.cancel();
-      renderWorker = null;
-    }
-
-    // Clear project manager
-    projectManager = null;
-
-    // Clear registered windows
-    registeredWindows.clear();
-
-    ipcLog.info("Video services cleaned up");
-  } catch (error) {
-    ipcLog.error("Error cleaning up video services:", error);
+  ipcLog.info("清理视频服务");
+  if (renderWorker) {
+    renderWorker.cancel();
+    renderWorker = null;
   }
-}
-
-/**
- * Get the video service manager instance (for external use)
- */
-export function getVideoServiceManagerInstance(): VideoServiceManager | null {
-  return videoServiceManager;
 }

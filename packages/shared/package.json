@@ -85,7 +85,8 @@
     "./services/hot-topic-service": "./src/services/hot-topic-service.ts",
     "./services/topic-recommend-service": "./src/services/topic-recommend-service.ts",
     "./db/repositories/hot-topics": "./src/db/repositories/hot-topics.ts",
-    "./db/repositories/recommended-topics": "./src/db/repositories/recommended-topics.ts"
+    "./db/repositories/recommended-topics": "./src/db/repositories/recommended-topics.ts",
+    "./db/repositories/video": "./src/db/repositories/video.ts"
   },
   "dependencies": {
     "@isaacs/ttlcache": "^2.1.4",
