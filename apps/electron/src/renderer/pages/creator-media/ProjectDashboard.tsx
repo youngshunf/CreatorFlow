@@ -1,22 +1,24 @@
-import { useState, useMemo, useCallback } from 'react'
-import { useT } from '@/context/LocaleContext'
-import { useCreatorMedia } from './hooks/useCreatorMedia'
-import { StatCards } from './components/StatCard'
-import { ContentTable } from './components/ContentTable'
-import { ProjectSwitcher } from './components/ProjectSwitcher'
-import { CreateProjectDialog } from './components/CreateProjectDialog'
-import { ProjectSettingsDialog } from './components/ProjectSettingsDialog'
-import { ProfileEditDialog } from './components/ProfileEditDialog'
-import { CreateContentDialog } from './components/CreateContentDialog'
-import { VersionHistoryDialog } from './components/VersionHistoryDialog'
-import { HotTopicsPanel } from './components/HotTopicsPanel'
-import { TopicRecommendPanel } from './components/TopicRecommendPanel'
-import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
-import { useActiveWorkspace } from '@/context/AppShellContext'
-import { useNavigation, routes } from '@/contexts/NavigationContext'
-import type { Content, ContentStageRecord } from '@sprouty-ai/shared/db/types'
-import { POSTING_FREQUENCY_LIST } from '@sprouty-ai/shared/db/types'
-import { FileText, Video } from 'lucide-react'
+import { useState, useMemo, useCallback } from "react";
+import { useT } from "@/context/LocaleContext";
+import { useCreatorMedia } from "./hooks/useCreatorMedia";
+import { StatCards } from "./components/StatCard";
+import { ContentTable } from "./components/ContentTable";
+import { ProjectSwitcher } from "./components/ProjectSwitcher";
+import { CreateProjectDialog } from "./components/CreateProjectDialog";
+import { ProjectSettingsDialog } from "./components/ProjectSettingsDialog";
+import { ProfileEditDialog } from "./components/ProfileEditDialog";
+import { CreateContentDialog } from "./components/CreateContentDialog";
+import { VersionHistoryDialog } from "./components/VersionHistoryDialog";
+import { HotTopicsPanel } from "./components/HotTopicsPanel";
+import { TopicRecommendPanel } from "./components/TopicRecommendPanel";
+import { EditPopover, getEditConfig } from "@/components/ui/EditPopover";
+import { useActiveWorkspace } from "@/context/AppShellContext";
+import { useNavigation, routes } from "@/contexts/NavigationContext";
+import type { Content, ContentStageRecord } from "@sprouty-ai/shared/db/types";
+import {
+  POSTING_FREQUENCY_LIST,
+  parseContentTracks,
+} from "@sprouty-ai/shared/db/types";
 
 /**
  * 创作面板 — 项目仪表盘视图
@@ -24,176 +26,244 @@ import { FileText, Video } from 'lucide-react'
  */
 // 下一阶段操作映射
 const NEXT_STAGE_ACTION: Record<string, { label: string; skillId: string }> = {
-  'researching': { label: '灵感调研', skillId: 'idea-researcher' },
-  'scripting': { label: '脚本创作', skillId: 'script-create' },
-  'creating': { label: '内容创作', skillId: 'content-creator' },
-  'adapting': { label: '平台适配', skillId: 'platform-adapter' },
-}
+  researching: { label: "灵感调研", skillId: "idea-researcher" },
+  scripting: { label: "脚本创作", skillId: "script-create" },
+  creating: { label: "内容创作", skillId: "content-creator" },
+  adapting: { label: "平台适配", skillId: "platform-adapter" },
+};
 
 export default function ProjectDashboard() {
-  const t = useT()
+  const t = useT();
   const {
-    projects, activeProject, contents, profile, stats, loading,
-    switchProject, createProject, updateProject, deleteProject,
-    upsertProfile, createContent, deleteContent, updateContentStatus,
-    listContentVersions, rollbackContentVersion,
-  } = useCreatorMedia()
+    projects,
+    activeProject,
+    contents,
+    profile,
+    stats,
+    loading,
+    switchProject,
+    createProject,
+    updateProject,
+    deleteProject,
+    upsertProfile,
+    createContent,
+    deleteContent,
+    updateContentStatus,
+    listContentVersions,
+    rollbackContentVersion,
+  } = useCreatorMedia();
 
-  const workspace = useActiveWorkspace()
-  const wsRoot = workspace?.rootPath || ''
-  const { navigate } = useNavigation()
+  const workspace = useActiveWorkspace();
+  const wsRoot = workspace?.rootPath || "";
+  const { navigate } = useNavigation();
 
-  const [showCreateProject, setShowCreateProject] = useState(false)
-  const [showProjectSettings, setShowProjectSettings] = useState(false)
-  const [showProfileEdit, setShowProfileEdit] = useState(false)
-  const [showCreateContent, setShowCreateContent] = useState(false)
-  const [creationType, setCreationType] = useState<'image-text' | 'video'>('image-text')
-  const [versionHistoryContent, setVersionHistoryContent] = useState<Content | null>(null)
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showCreateContent, setShowCreateContent] = useState(false);
+  const [versionHistoryContent, setVersionHistoryContent] =
+    useState<Content | null>(null);
 
   // 处理创建内容
-  const handleCreateContent = useCallback(async (data: any) => {
-    const content = await createContent(data)
+  const handleCreateContent = useCallback(
+    async (data: any) => {
+      const content = await createContent(data);
+      if (!content || !workspace) return;
 
-    // 根据创建类型自动触发对应的脚本创作技能
-    if (creationType === 'image-text') {
-      // 触发图文脚本创作
-      navigate(routes.action.newSession({
-        input: `[skill:${workspace.id}:script-create-image-text] 为内容「${data.title}」创建图文脚本。\n\n内容 ID: ${content.id}`,
-        send: true,
-      }))
-    } else if (creationType === 'video') {
-      // 触发视频脚本创作
-      navigate(routes.action.newSession({
-        input: `[skill:${workspace.id}:video-script-create] 为内容「${data.title}」创建视频脚本。\n\n内容 ID: ${content.id}`,
-        send: true,
-      }))
-    }
-  }, [creationType, workspace, createContent, navigate])
+      // 解析 content_tracks，根据轨道触发对应的脚本创作技能
+      const tracks = parseContentTracks(content.content_tracks);
+
+      if (tracks.includes("article") && tracks.includes("video")) {
+        // 双轨：先导航到图文脚本，视频脚本由用户在 ContentTable 中手动触发
+        navigate(
+          routes.action.newSession({
+            input: `[skill:${workspace.id}:article-script-create] 为内容「${data.title}」创建图文脚本。\n\n内容 ID: ${content.id}`,
+            send: true,
+          }),
+        );
+      } else if (tracks.includes("article")) {
+        navigate(
+          routes.action.newSession({
+            input: `[skill:${workspace.id}:article-script-create] 为内容「${data.title}」创建图文脚本。\n\n内容 ID: ${content.id}`,
+            send: true,
+          }),
+        );
+      } else if (tracks.includes("video")) {
+        navigate(
+          routes.action.newSession({
+            input: `[skill:${workspace.id}:video-script-create] 为内容「${data.title}」创建视频脚本。\n\n内容 ID: ${content.id}`,
+            send: true,
+          }),
+        );
+      }
+    },
+    [workspace, createContent, navigate],
+  );
 
   // 处理下一阶段操作
-  const handleNextStage = useCallback((content: Content, skillId: string) => {
-    if (!workspace || !activeProject) return
+  const handleNextStage = useCallback(
+    (content: Content, skillId: string) => {
+      if (!workspace || !activeProject) return;
 
-    // 获取 skill 的显示名称
-    const skillAction = NEXT_STAGE_ACTION[content.status]
-    const skillLabel = skillAction?.label || '下一步'
+      // 获取 skill 的显示名称
+      const skillAction = NEXT_STAGE_ACTION[content.status];
+      const skillLabel = skillAction?.label || "下一步";
 
-    // 构建提示词
-    let prompt = `为内容「${content.title}」执行${skillLabel}。\n\n`
-    prompt += `内容 ID: ${content.id}\n`
+      // 构建提示词
+      let prompt = `为内容「${content.title}」执行${skillLabel}。\n\n`;
+      prompt += `内容 ID: ${content.id}\n`;
 
-    // 导航到新 session 并激活 skill
-    navigate(routes.action.newSession({
-      input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
-      send: true,
-    }))
-  }, [workspace, activeProject, navigate])
+      // 导航到新 session 并激活 skill
+      navigate(
+        routes.action.newSession({
+          input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
+          send: true,
+        }),
+      );
+    },
+    [workspace, activeProject, navigate],
+  );
 
   // 处理脚本创建操作（图文脚本、视频脚本）
-  const handleScriptAction = useCallback((content: Content, skillId: string) => {
-    if (!workspace || !activeProject) return
+  const handleScriptAction = useCallback(
+    (content: Content, skillId: string) => {
+      if (!workspace || !activeProject) return;
 
-    // 根据 skillId 构建提示词
-    let prompt = ''
-    if (skillId === 'article-script-create') {
-      prompt = `为内容「${content.title}」创建图文脚本。\n\n`
-    } else if (skillId === 'video-script-create') {
-      prompt = `为内容「${content.title}」创建视频脚本。\n\n`
-    }
-    prompt += `内容 ID: ${content.id}\n`
+      // 根据 skillId 构建提示词
+      let prompt = "";
+      if (skillId === "article-script-create") {
+        prompt = `为内容「${content.title}」创建图文脚本。\n\n`;
+      } else if (skillId === "video-script-create") {
+        prompt = `为内容「${content.title}」创建视频脚本。\n\n`;
+      }
+      prompt += `内容 ID: ${content.id}\n`;
 
-    // 导航到新 session 并激活 skill
-    navigate(routes.action.newSession({
-      input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
-      send: true,
-    }))
-  }, [workspace, activeProject, navigate])
+      // 导航到新 session 并激活 skill
+      navigate(
+        routes.action.newSession({
+          input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
+          send: true,
+        }),
+      );
+    },
+    [workspace, activeProject, navigate],
+  );
 
   // 处理 Stage 操作（图文创作、视频创作等）
-  const handleStageAction = useCallback((content: Content, stage: any, skillId: string) => {
-    if (!workspace || !activeProject) return
+  const handleStageAction = useCallback(
+    (content: Content, stage: any, skillId: string) => {
+      if (!workspace || !activeProject) return;
 
-    // 根据 stage 类型构建提示词
-    let prompt = ''
-    if (stage.stage === 'script_article') {
-      // 图文创作：加载选题 + 脚本，注入 content-creator 技能
-      prompt = `为内容「${content.title}」进行图文创作。\n\n`
-      prompt += `内容 ID: ${content.id}\n`
-      prompt += `脚本路径: ${stage.file_path}\n`
-    } else if (stage.stage === 'script_video') {
-      // 视频创作：加载选题 + 视频脚本，注入 video-creator 技能
-      prompt = `为内容「${content.title}」进行视频创作。\n\n`
-      prompt += `内容 ID: ${content.id}\n`
-      prompt += `脚本路径: ${stage.file_path}\n`
-    } else {
-      // 其他操作
-      prompt = `为内容「${content.title}」执行操作。\n\n`
-      prompt += `内容 ID: ${content.id}\n`
-      prompt += `Stage: ${stage.stage}\n`
-    }
+      // 根据 stage 类型构建提示词
+      let prompt = "";
+      if (stage.stage === "script_article") {
+        // 图文创作：加载选题 + 脚本，注入 content-creator 技能
+        prompt = `为内容「${content.title}」进行图文创作。\n\n`;
+        prompt += `内容 ID: ${content.id}\n`;
+        prompt += `脚本路径: ${stage.file_path}\n`;
+      } else if (stage.stage === "script_video") {
+        // 视频创作：加载选题 + 视频脚本，注入 video-creator 技能
+        prompt = `为内容「${content.title}」进行视频创作。\n\n`;
+        prompt += `内容 ID: ${content.id}\n`;
+        prompt += `脚本路径: ${stage.file_path}\n`;
+      } else {
+        // 其他操作
+        prompt = `为内容「${content.title}」执行操作。\n\n`;
+        prompt += `内容 ID: ${content.id}\n`;
+        prompt += `Stage: ${stage.stage}\n`;
+      }
 
-    // 导航到新 session 并激活 skill
-    navigate(routes.action.newSession({
-      input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
-      send: true,
-    }))
-  }, [workspace, activeProject, navigate])
+      // 导航到新 session 并激活 skill
+      navigate(
+        routes.action.newSession({
+          input: `[skill:${workspace.id}:${skillId}] ${prompt}`,
+          send: true,
+        }),
+      );
+    },
+    [workspace, activeProject, navigate],
+  );
 
   // 打开视频工作台
-  const handleOpenVideoStudio = useCallback((content: Content) => {
-    navigate(routes.view.appView('creator-media', 'video-studio', {
-      contentId: content.id
-    }))
-  }, [navigate])
+  const handleOpenVideoStudio = useCallback(
+    (content: Content) => {
+      navigate(
+        routes.view.appView("creator-media", "video-studio", {
+          contentId: content.id,
+        }),
+      );
+    },
+    [navigate],
+  );
 
   // 视频相关统计（通过 metadata 判断）
   const videoStats = useMemo(() => {
-    const videoContents = contents.filter(c => {
-      if (!c.metadata) return false
+    const videoContents = contents.filter((c) => {
+      if (!c.metadata) return false;
       try {
-        const meta = JSON.parse(c.metadata)
-        return !!meta.video_project_id
+        const meta = JSON.parse(c.metadata);
+        return !!meta.video_project_id;
       } catch {
-        return false
+        return false;
       }
-    })
-    const creating = videoContents.filter(c => c.status === 'creating').length
-    let completed = 0
+    });
+    const creating = videoContents.filter(
+      (c) => c.status === "creating",
+    ).length;
+    let completed = 0;
     for (const c of videoContents) {
       if (c.metadata) {
         try {
-          const meta = JSON.parse(c.metadata)
-          if (meta.video_render_status === 'completed') completed++
-        } catch { /* ignore */ }
+          const meta = JSON.parse(c.metadata);
+          if (meta.video_render_status === "completed") completed++;
+        } catch {
+          /* ignore */
+        }
       }
     }
-    return { creating, completed }
-  }, [contents])
+    return { creating, completed };
+  }, [contents]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-sm text-muted-foreground">{t('加载中...')}</p>
+        <p className="text-sm text-muted-foreground">{t("加载中...")}</p>
       </div>
-    )
+    );
   }
 
   // 无项目时显示引导创建界面
   if (projects.length === 0) {
-    const editConfig = workspace ? getEditConfig('creator-media-create-project', workspace.rootPath) : null
+    const editConfig = workspace
+      ? getEditConfig("creator-media-create-project", workspace.rootPath)
+      : null;
 
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4 max-w-sm">
             <div className="mx-auto w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center">
-              <svg className="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              <svg
+                className="w-6 h-6 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4.5v15m7.5-7.5h-15"
+                />
               </svg>
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">{t('开始你的创作之旅')}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t('创建第一个项目，开始管理你的自媒体内容')}</p>
+              <h2 className="text-base font-semibold text-foreground">
+                {t("开始你的创作之旅")}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("创建第一个项目，开始管理你的自媒体内容")}
+              </p>
             </div>
             {editConfig ? (
               <EditPopover
@@ -207,10 +277,20 @@ export default function ProjectDashboard() {
                     type="button"
                     className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
                     </svg>
-                    {t('新建项目')}
+                    {t("新建项目")}
                   </button>
                 }
               />
@@ -220,10 +300,20 @@ export default function ProjectDashboard() {
                 onClick={() => setShowCreateProject(true)}
                 className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
                 </svg>
-                {t('新建项目')}
+                {t("新建项目")}
               </button>
             )}
           </div>
@@ -238,7 +328,7 @@ export default function ProjectDashboard() {
           />
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -246,9 +336,11 @@ export default function ProjectDashboard() {
       {/* 头部 — relative z-panel 确保在 titlebar 拖拽区域之上 */}
       <div className="relative z-panel flex items-center justify-between px-6 py-4 border-b border-border/40">
         <div>
-          <h1 className="text-base font-semibold text-foreground">{t('创作面板')}</h1>
+          <h1 className="text-base font-semibold text-foreground">
+            {t("创作面板")}
+          </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {activeProject ? activeProject.name : t('项目概览与内容管理')}
+            {activeProject ? activeProject.name : t("项目概览与内容管理")}
           </p>
         </div>
         <div className="titlebar-no-drag flex items-center gap-2">
@@ -258,35 +350,73 @@ export default function ProjectDashboard() {
                 type="button"
                 className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground hover:bg-muted/40 transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z"
+                  />
                 </svg>
-                {t('AI 新建')}
+                {t("AI 新建")}
               </button>
             }
-            {...getEditConfig('creator-media-create-project', wsRoot)}
+            {...getEditConfig("creator-media-create-project", wsRoot)}
           />
           <button
             type="button"
             onClick={() => setShowCreateProject(true)}
             className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground hover:bg-muted/40 transition-colors"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
             </svg>
-            {t('新建项目')}
+            {t("新建项目")}
           </button>
-          <ProjectSwitcher projects={projects} activeProject={activeProject} onSwitch={switchProject} />
+          <ProjectSwitcher
+            projects={projects}
+            activeProject={activeProject}
+            onSwitch={switchProject}
+          />
           {activeProject && (
             <button
               type="button"
               onClick={() => setShowProjectSettings(true)}
               className="inline-flex items-center justify-center rounded-md w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-              title={t('项目设置')}
+              title={t("项目设置")}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
               </svg>
             </button>
           )}
@@ -296,12 +426,18 @@ export default function ProjectDashboard() {
       {/* 内容区 */}
       <div className="flex-1 overflow-auto px-6 py-6 space-y-6">
         {/* 统计卡片 */}
-        <StatCards stats={stats} videoCreating={videoStats.creating} videoCompleted={videoStats.completed} />
+        <StatCards
+          stats={stats}
+          videoCreating={videoStats.creating}
+          videoCompleted={videoStats.completed}
+        />
 
         {/* 账号画像 */}
         <div className="min-w-0">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-foreground">{t('账号画像')}</h2>
+            <h2 className="text-sm font-medium text-foreground">
+              {t("账号画像")}
+            </h2>
             {activeProject && (
               <div className="flex items-center gap-2">
                 <EditPopover
@@ -310,161 +446,235 @@ export default function ProjectDashboard() {
                       type="button"
                       className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z"
+                        />
                       </svg>
-                      {t('AI 编辑')}
+                      {t("AI 编辑")}
                     </button>
                   }
-                  {...getEditConfig('creator-media-edit-profile', wsRoot)}
+                  {...getEditConfig("creator-media-edit-profile", wsRoot)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowProfileEdit(true)}
                   className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z"
+                    />
                   </svg>
-                  {t('编辑画像')}
+                  {t("编辑画像")}
                 </button>
               </div>
             )}
           </div>
           {profile ? (
             <div className="rounded-lg border border-border/60 bg-background/40 px-4 py-3 space-y-3">
-                {/* 核心字段 */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  {profile.niche && (
-                    <div>
-                      <span className="text-muted-foreground">{t('领域')}</span>
-                      <p className="text-foreground mt-0.5">{profile.niche}</p>
-                    </div>
-                  )}
-                  {profile.sub_niche && (
-                    <div>
-                      <span className="text-muted-foreground">{t('细分领域')}</span>
-                      <p className="text-foreground mt-0.5">{profile.sub_niche}</p>
-                    </div>
-                  )}
-                  {profile.persona && (
-                    <div>
-                      <span className="text-muted-foreground">{t('人设')}</span>
-                      <p className="text-foreground mt-0.5">{profile.persona}</p>
-                    </div>
-                  )}
-                  {profile.target_audience && (
-                    <div>
-                      <span className="text-muted-foreground">{t('目标受众')}</span>
-                      <p className="text-foreground mt-0.5">{profile.target_audience}</p>
-                    </div>
-                  )}
-                  {profile.tone && (
-                    <div>
-                      <span className="text-muted-foreground">{t('调性')}</span>
-                      <p className="text-foreground mt-0.5">{profile.tone}</p>
-                    </div>
-                  )}
-                  {profile.posting_frequency && (
-                    <div>
-                      <span className="text-muted-foreground">{t('发布频率')}</span>
-                      <p className="text-foreground mt-0.5">{t(POSTING_FREQUENCY_LIST.find(f => f.id === profile.posting_frequency)?.label ?? profile.posting_frequency)}</p>
-                    </div>
-                  )}
-                  {profile.best_posting_time && (
-                    <div>
-                      <span className="text-muted-foreground">{t('最佳发布时间')}</span>
-                      <p className="text-foreground mt-0.5">{profile.best_posting_time}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 简介 */}
-                {profile.bio && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">{t('简介')}</span>
-                    <p className="text-foreground mt-0.5 leading-relaxed">{profile.bio}</p>
+              {/* 核心字段 */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                {profile.niche && (
+                  <div>
+                    <span className="text-muted-foreground">{t("领域")}</span>
+                    <p className="text-foreground mt-0.5">{profile.niche}</p>
                   </div>
                 )}
+                {profile.sub_niche && (
+                  <div>
+                    <span className="text-muted-foreground">
+                      {t("细分领域")}
+                    </span>
+                    <p className="text-foreground mt-0.5">
+                      {profile.sub_niche}
+                    </p>
+                  </div>
+                )}
+                {profile.persona && (
+                  <div>
+                    <span className="text-muted-foreground">{t("人设")}</span>
+                    <p className="text-foreground mt-0.5">{profile.persona}</p>
+                  </div>
+                )}
+                {profile.target_audience && (
+                  <div>
+                    <span className="text-muted-foreground">
+                      {t("目标受众")}
+                    </span>
+                    <p className="text-foreground mt-0.5">
+                      {profile.target_audience}
+                    </p>
+                  </div>
+                )}
+                {profile.tone && (
+                  <div>
+                    <span className="text-muted-foreground">{t("调性")}</span>
+                    <p className="text-foreground mt-0.5">{profile.tone}</p>
+                  </div>
+                )}
+                {profile.posting_frequency && (
+                  <div>
+                    <span className="text-muted-foreground">
+                      {t("发布频率")}
+                    </span>
+                    <p className="text-foreground mt-0.5">
+                      {t(
+                        POSTING_FREQUENCY_LIST.find(
+                          (f) => f.id === profile.posting_frequency,
+                        )?.label ?? profile.posting_frequency,
+                      )}
+                    </p>
+                  </div>
+                )}
+                {profile.best_posting_time && (
+                  <div>
+                    <span className="text-muted-foreground">
+                      {t("最佳发布时间")}
+                    </span>
+                    <p className="text-foreground mt-0.5">
+                      {profile.best_posting_time}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-                {/* 关键词 */}
-                {profile.keywords && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">{t('关键词')}</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {profile.keywords.split(',').map((kw: string, i: number) => (
-                        <span key={i} className="inline-flex rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+              {/* 简介 */}
+              {profile.bio && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">{t("简介")}</span>
+                  <p className="text-foreground mt-0.5 leading-relaxed">
+                    {profile.bio}
+                  </p>
+                </div>
+              )}
+
+              {/* 关键词 */}
+              {profile.keywords && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">{t("关键词")}</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {profile.keywords
+                      .split(",")
+                      .map((kw: string, i: number) => (
+                        <span
+                          key={i}
+                          className="inline-flex rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                        >
                           {kw.trim()}
                         </span>
                       ))}
-                    </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* 内容支柱 */}
-                {profile.content_pillars && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">{t('内容支柱')}</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {profile.content_pillars.split(',').map((p: string, i: number) => {
-                        let weight: string | null = null
+              {/* 内容支柱 */}
+              {profile.content_pillars && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">{t("内容支柱")}</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {profile.content_pillars
+                      .split(",")
+                      .map((p: string, i: number) => {
+                        let weight: string | null = null;
                         if (profile.pillar_weights) {
                           try {
-                            const weights = JSON.parse(profile.pillar_weights)
-                            const w = weights[p.trim()]
-                            if (w != null) weight = `${Math.round(w * 100)}%`
-                          } catch { /* ignore */ }
+                            const weights = JSON.parse(profile.pillar_weights);
+                            const w = weights[p.trim()];
+                            if (w != null) weight = `${Math.round(w * 100)}%`;
+                          } catch {
+                            /* ignore */
+                          }
                         }
                         return (
-                          <span key={i} className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent-foreground">
+                          <span
+                            key={i}
+                            className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent-foreground"
+                          >
                             {p.trim()}
-                            {weight && <span className="ml-1 opacity-60">{weight}</span>}
+                            {weight && (
+                              <span className="ml-1 opacity-60">{weight}</span>
+                            )}
                           </span>
-                        )
+                        );
                       })}
-                    </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* 风格参考 */}
-                {profile.style_references && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">{t('风格参考')}</span>
-                    <p className="text-foreground mt-0.5">{profile.style_references}</p>
-                  </div>
-                )}
+              {/* 风格参考 */}
+              {profile.style_references && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">{t("风格参考")}</span>
+                  <p className="text-foreground mt-0.5">
+                    {profile.style_references}
+                  </p>
+                </div>
+              )}
 
-                {/* 禁忌话题 */}
-                {profile.taboo_topics && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">{t('禁忌话题')}</span>
-                    <p className="text-foreground mt-0.5">{profile.taboo_topics}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center">
-                <p className="text-sm text-muted-foreground">{t('尚未设置账号画像')}</p>
-                {activeProject && (
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileEdit(true)}
-                    className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              {/* 禁忌话题 */}
+              {profile.taboo_topics && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">{t("禁忌话题")}</span>
+                  <p className="text-foreground mt-0.5">
+                    {profile.taboo_topics}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t("尚未设置账号画像")}
+              </p>
+              {activeProject && (
+                <button
+                  type="button"
+                  onClick={() => setShowProfileEdit(true)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    {t('设置画像')}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                  {t("设置画像")}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 最近内容 */}
         <div className="min-w-0">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-foreground">{t('最近内容')}</h2>
+            <h2 className="text-sm font-medium text-foreground">
+              {t("最近内容")}
+            </h2>
             <div className="flex items-center gap-2">
               <EditPopover
                 trigger={
@@ -472,10 +682,20 @@ export default function ProjectDashboard() {
                     type="button"
                     className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z"
+                      />
                     </svg>
-                    {t('灵感调研')}
+                    {t("灵感调研")}
                   </button>
                 }
                 editConfigKey="creator-media-idea-research"
@@ -484,25 +704,23 @@ export default function ProjectDashboard() {
               />
               <button
                 type="button"
-                onClick={() => {
-                  setCreationType('image-text')
-                  setShowCreateContent(true)
-                }}
+                onClick={() => setShowCreateContent(true)}
                 className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <FileText className="w-3.5 h-3.5" />
-                {t('图文创作')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreationType('video')
-                  setShowCreateContent(true)
-                }}
-                className="inline-flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Video className="w-3.5 h-3.5" />
-                {t('视频创作')}
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+                {t("新建内容")}
               </button>
             </div>
           </div>
@@ -520,9 +738,7 @@ export default function ProjectDashboard() {
         </div>
 
         {/* 选题推荐 */}
-        {activeProject && (
-          <TopicRecommendPanel projectId={activeProject.id} />
-        )}
+        {activeProject && <TopicRecommendPanel projectId={activeProject.id} />}
       </div>
 
       {/* 对话框 */}
@@ -560,15 +776,22 @@ export default function ProjectDashboard() {
 
           <VersionHistoryDialog
             open={versionHistoryContent !== null}
-            onOpenChange={(open) => { if (!open) setVersionHistoryContent(null) }}
-            contentId={versionHistoryContent?.id || ''}
+            onOpenChange={(open) => {
+              if (!open) setVersionHistoryContent(null);
+            }}
+            contentId={versionHistoryContent?.id || ""}
             contentTitle={versionHistoryContent?.title || null}
-            onRollback={() => updateContentStatus(versionHistoryContent!.id, versionHistoryContent!.status)}
+            onRollback={() =>
+              updateContentStatus(
+                versionHistoryContent!.id,
+                versionHistoryContent!.status,
+              )
+            }
             listContentVersions={listContentVersions}
             rollbackContentVersion={rollbackContentVersion}
           />
         </>
       )}
     </div>
-  )
+  );
 }

@@ -5,7 +5,7 @@
  */
 
 /** 当前 Schema 版本 */
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 14;
 
 /** 完整建表 SQL */
 export const SCHEMA_SQL = `
@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS contents (
   content_dir_path  TEXT,
   viral_pattern_id  TEXT,
   metadata          TEXT,
+  content_tracks    TEXT DEFAULT 'article,video',
   created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -406,6 +407,53 @@ CREATE TABLE IF NOT EXISTS scheduled_task_executions (
 
 CREATE INDEX IF NOT EXISTS idx_execution_task ON scheduled_task_executions(task_id, trigger_time DESC);
 CREATE INDEX IF NOT EXISTS idx_execution_status ON scheduled_task_executions(status);
+
+-- 视频项目表
+CREATE TABLE IF NOT EXISTS video_projects (
+  id TEXT PRIMARY KEY,
+  content_id TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  width INTEGER NOT NULL DEFAULT 1080,
+  height INTEGER NOT NULL DEFAULT 1920,
+  fps INTEGER NOT NULL DEFAULT 30,
+  metadata TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_video_projects_content_id ON video_projects(content_id);
+
+-- 视频场景表
+CREATE TABLE IF NOT EXISTS video_scenes (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+  composition_id TEXT NOT NULL,
+  name TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  duration_in_frames INTEGER NOT NULL DEFAULT 90,
+  props TEXT NOT NULL DEFAULT '{}',
+  transition_type TEXT DEFAULT 'none' CHECK(transition_type IN ('none','fade','slide','wipe','flip','clock-wipe')),
+  transition_duration INTEGER DEFAULT 0,
+  transition_direction TEXT CHECK(transition_direction IN ('from-left','from-right','from-top','from-bottom') OR transition_direction IS NULL),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_video_scenes_project_id ON video_scenes(project_id);
+CREATE INDEX IF NOT EXISTS idx_video_scenes_sort_order ON video_scenes(project_id, sort_order);
+
+-- 视频素材表
+CREATE TABLE IF NOT EXISTS video_assets (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK(type IN ('image','video','audio','font')),
+  name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size INTEGER,
+  metadata TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_video_assets_project_id ON video_assets(project_id);
+CREATE INDEX IF NOT EXISTS idx_video_assets_type ON video_assets(project_id, type);
 `;
 
 /** 初始版本记录 SQL */
@@ -416,4 +464,5 @@ INSERT OR IGNORE INTO schema_version (version, description) VALUES (9, '选题�
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (10, '新增定时任务执行记录表');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (11, '内容工作流重构：精简 contents 表，新增 content_stages 表');
 INSERT OR IGNORE INTO schema_version (version, description) VALUES (12, '删除 contents.content_type 字段，类型信息由 content_stages 管理');
+INSERT OR IGNORE INTO schema_version (version, description) VALUES (14, '新增视频项目、场景、素材表');
 `;

@@ -4,9 +4,13 @@
  * 版本检测 + Schema 初始化 + 增量迁移
  */
 
-import type { CreatorMediaDB } from './connection.ts';
-import { SCHEMA_SQL, INITIAL_VERSION_SQL, CURRENT_SCHEMA_VERSION } from './schema.ts';
-import { getSeedSQL } from './seed.ts';
+import type { CreatorMediaDB } from "./connection.ts";
+import {
+  SCHEMA_SQL,
+  INITIAL_VERSION_SQL,
+  CURRENT_SCHEMA_VERSION,
+} from "./schema.ts";
+import { getSeedSQL } from "./seed.ts";
 
 /** 迁移定义 */
 interface Migration {
@@ -19,29 +23,36 @@ interface Migration {
 const MIGRATIONS: Migration[] = [
   {
     version: 2,
-    description: '添加反馈闭环字段：支柱权重、历史评分、选题锁定、复盘摘要、采集调度',
+    description:
+      "添加反馈闭环字段：支柱权重、历史评分、选题锁定、复盘摘要、采集调度",
     up: (db) => {
       // account_profiles: 内容支柱动态权重
-      db.exec('ALTER TABLE account_profiles ADD COLUMN pillar_weights TEXT');
-      db.exec('ALTER TABLE account_profiles ADD COLUMN pillar_weights_updated_at DATETIME');
+      db.exec("ALTER TABLE account_profiles ADD COLUMN pillar_weights TEXT");
+      db.exec(
+        "ALTER TABLE account_profiles ADD COLUMN pillar_weights_updated_at DATETIME",
+      );
 
       // topic_cache: 历史成功率 + 并行冲突控制
-      db.exec('ALTER TABLE topic_cache ADD COLUMN historical_score REAL');
-      db.exec('ALTER TABLE topic_cache ADD COLUMN locked_by_content_id TEXT');
+      db.exec("ALTER TABLE topic_cache ADD COLUMN historical_score REAL");
+      db.exec("ALTER TABLE topic_cache ADD COLUMN locked_by_content_id TEXT");
 
       // contents: 复盘摘要
-      db.exec('ALTER TABLE contents ADD COLUMN review_summary TEXT');
+      db.exec("ALTER TABLE contents ADD COLUMN review_summary TEXT");
 
       // publish_records: 采集调度 + 反馈回写
-      db.exec('ALTER TABLE publish_records ADD COLUMN next_review_at DATETIME');
-      db.exec('ALTER TABLE publish_records ADD COLUMN review_count INTEGER DEFAULT 0');
-      db.exec('ALTER TABLE publish_records ADD COLUMN review_schedule TEXT');
-      db.exec('ALTER TABLE publish_records ADD COLUMN feedback_processed BOOLEAN DEFAULT 0');
+      db.exec("ALTER TABLE publish_records ADD COLUMN next_review_at DATETIME");
+      db.exec(
+        "ALTER TABLE publish_records ADD COLUMN review_count INTEGER DEFAULT 0",
+      );
+      db.exec("ALTER TABLE publish_records ADD COLUMN review_schedule TEXT");
+      db.exec(
+        "ALTER TABLE publish_records ADD COLUMN feedback_processed BOOLEAN DEFAULT 0",
+      );
     },
   },
   {
     version: 3,
-    description: '创建采集调度任务表 review_tasks',
+    description: "创建采集调度任务表 review_tasks",
     up: (db) => {
       db.exec(`
         CREATE TABLE IF NOT EXISTS review_tasks (
@@ -58,13 +69,17 @@ const MIGRATIONS: Migration[] = [
           updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_review_scheduled ON review_tasks(scheduled_at) WHERE status = \'pending\'');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_review_publish ON review_tasks(publish_record_id)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_review_scheduled ON review_tasks(scheduled_at) WHERE status = 'pending'",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_review_publish ON review_tasks(publish_record_id)",
+      );
     },
   },
   {
     version: 4,
-    description: '创建内容版本管理表 content_versions',
+    description: "创建内容版本管理表 content_versions",
     up: (db) => {
       db.exec(`
         CREATE TABLE IF NOT EXISTS content_versions (
@@ -81,18 +96,25 @@ const MIGRATIONS: Migration[] = [
           created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_version_content ON content_versions(content_id)');
-      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_version_number ON content_versions(content_id, version_number)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_version_content ON content_versions(content_id)",
+      );
+      db.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_version_number ON content_versions(content_id, version_number)",
+      );
     },
   },
   {
     version: 5,
-    description: '平台账号添加浏览器 Profile 字段 + 创建发布队列表 publish_queue',
+    description:
+      "平台账号添加浏览器 Profile 字段 + 创建发布队列表 publish_queue",
     up: (db) => {
       // platform_accounts: 浏览器 Profile 相关字段
-      db.exec('ALTER TABLE platform_accounts ADD COLUMN profile_path TEXT');
-      db.exec('ALTER TABLE platform_accounts ADD COLUMN fingerprint_id TEXT');
-      db.exec('ALTER TABLE platform_accounts ADD COLUMN login_check_interval INTEGER DEFAULT 3600');
+      db.exec("ALTER TABLE platform_accounts ADD COLUMN profile_path TEXT");
+      db.exec("ALTER TABLE platform_accounts ADD COLUMN fingerprint_id TEXT");
+      db.exec(
+        "ALTER TABLE platform_accounts ADD COLUMN login_check_interval INTEGER DEFAULT 3600",
+      );
 
       // 发布队列表
       db.exec(`
@@ -112,13 +134,17 @@ const MIGRATIONS: Migration[] = [
           updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_queue_status ON publish_queue(status, priority DESC, scheduled_at)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_queue_platform ON publish_queue(platform_account_id, status)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_queue_status ON publish_queue(status, priority DESC, scheduled_at)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_queue_platform ON publish_queue(platform_account_id, status)",
+      );
     },
   },
   {
     version: 6,
-    description: '新增草稿表 drafts + 素材库表 media_files',
+    description: "新增草稿表 drafts + 素材库表 media_files",
     up: (db) => {
       db.exec(`
         CREATE TABLE IF NOT EXISTS drafts (
@@ -135,7 +161,9 @@ const MIGRATIONS: Migration[] = [
           updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_draft_project ON drafts(project_id)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_draft_project ON drafts(project_id)",
+      );
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS media_files (
@@ -154,20 +182,22 @@ const MIGRATIONS: Migration[] = [
           created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_media_project ON media_files(project_id)",
+      );
+      db.exec("CREATE INDEX IF NOT EXISTS idx_media_type ON media_files(type)");
     },
   },
   {
     version: 9,
-    description: '选题推荐表新增 md_file_path 字段',
+    description: "选题推荐表新增 md_file_path 字段",
     up: (db) => {
-      db.exec('ALTER TABLE recommended_topics ADD COLUMN md_file_path TEXT');
+      db.exec("ALTER TABLE recommended_topics ADD COLUMN md_file_path TEXT");
     },
   },
   {
     version: 11,
-    description: '内容工作流重构：精简 contents 表，新增 content_stages 表',
+    description: "内容工作流重构：精简 contents 表，新增 content_stages 表",
     up: (db) => {
       // 1. 创建新的 contents 表
       db.exec(`
@@ -195,12 +225,16 @@ const MIGRATIONS: Migration[] = [
       `);
 
       // 3. 删除旧表，重命名新表
-      db.exec('DROP TABLE contents');
-      db.exec('ALTER TABLE contents_new RENAME TO contents');
+      db.exec("DROP TABLE contents");
+      db.exec("ALTER TABLE contents_new RENAME TO contents");
 
       // 4. 重建索引
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)",
+      );
 
       // 5. 创建 content_stages 表
       db.exec(`
@@ -217,16 +251,21 @@ const MIGRATIONS: Migration[] = [
           updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_stages_content_id ON content_stages(content_id)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_stages_stage ON content_stages(stage)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_stages_content_id ON content_stages(content_id)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_stages_stage ON content_stages(stage)",
+      );
 
       // 6. 删除 content_versions 表（已废弃）
-      db.exec('DROP TABLE IF EXISTS content_versions');
+      db.exec("DROP TABLE IF EXISTS content_versions");
     },
   },
   {
     version: 12,
-    description: '删除 contents.content_type 字段，类型信息由 content_stages 管理',
+    description:
+      "删除 contents.content_type 字段，类型信息由 content_stages 管理",
     up: (db) => {
       // SQLite 不支持 DROP COLUMN，需要重建表
       // 1. 创建新表（无 content_type 字段）
@@ -254,12 +293,93 @@ const MIGRATIONS: Migration[] = [
       `);
 
       // 3. 删除旧表，重命名新表
-      db.exec('DROP TABLE contents');
-      db.exec('ALTER TABLE contents_new RENAME TO contents');
+      db.exec("DROP TABLE contents");
+      db.exec("ALTER TABLE contents_new RENAME TO contents");
 
       // 4. 重建索引
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)');
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_project ON contents(project_id)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_content_status ON contents(status)",
+      );
+    },
+  },
+  {
+    version: 13,
+    description: "内容表新增 content_tracks 字段，支持双轨并行创作",
+    up: (db) => {
+      db.exec(
+        "ALTER TABLE contents ADD COLUMN content_tracks TEXT DEFAULT 'article,video'",
+      );
+    },
+  },
+  {
+    version: 14,
+    description: "新增视频项目、场景、素材表",
+    up: (db) => {
+      // 视频项目表
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS video_projects (
+          id TEXT PRIMARY KEY,
+          content_id TEXT NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          description TEXT,
+          width INTEGER NOT NULL DEFAULT 1080,
+          height INTEGER NOT NULL DEFAULT 1920,
+          fps INTEGER NOT NULL DEFAULT 30,
+          metadata TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_video_projects_content_id ON video_projects(content_id)",
+      );
+
+      // 视频场景表
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS video_scenes (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+          composition_id TEXT NOT NULL,
+          name TEXT,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          duration_in_frames INTEGER NOT NULL DEFAULT 90,
+          props TEXT NOT NULL DEFAULT '{}',
+          transition_type TEXT DEFAULT 'none' CHECK(transition_type IN ('none','fade','slide','wipe','flip','clock-wipe')),
+          transition_duration INTEGER DEFAULT 0,
+          transition_direction TEXT CHECK(transition_direction IN ('from-left','from-right','from-top','from-bottom') OR transition_direction IS NULL),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_video_scenes_project_id ON video_scenes(project_id)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_video_scenes_sort_order ON video_scenes(project_id, sort_order)",
+      );
+
+      // 视频素材表
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS video_assets (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+          type TEXT NOT NULL CHECK(type IN ('image','video','audio','font')),
+          name TEXT NOT NULL,
+          file_path TEXT NOT NULL,
+          file_size INTEGER,
+          metadata TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_video_assets_project_id ON video_assets(project_id)",
+      );
+      db.exec(
+        "CREATE INDEX IF NOT EXISTS idx_video_assets_type ON video_assets(project_id, type)",
+      );
     },
   },
 ];
@@ -270,9 +390,11 @@ const MIGRATIONS: Migration[] = [
  */
 export function getCurrentVersion(db: CreatorMediaDB): number {
   try {
-    const row = db.prepare<{ version: number }>(
-      'SELECT MAX(version) as version FROM schema_version'
-    ).get();
+    const row = db
+      .prepare<{
+        version: number;
+      }>("SELECT MAX(version) as version FROM schema_version")
+      .get();
     return row?.version ?? 0;
   } catch {
     // 表不存在
@@ -294,7 +416,11 @@ export function initializeSchema(db: CreatorMediaDB): void {
  * 执行增量迁移
  * 从当前版本迁移到最新版本
  */
-export function migrate(db: CreatorMediaDB): { from: number; to: number; applied: number } {
+export function migrate(db: CreatorMediaDB): {
+  from: number;
+  to: number;
+  applied: number;
+} {
   const currentVersion = getCurrentVersion(db);
 
   if (currentVersion === 0) {
@@ -304,8 +430,9 @@ export function migrate(db: CreatorMediaDB): { from: number; to: number; applied
   }
 
   // 筛选需要执行的迁移
-  const pendingMigrations = MIGRATIONS.filter(m => m.version > currentVersion)
-    .sort((a, b) => a.version - b.version);
+  const pendingMigrations = MIGRATIONS.filter(
+    (m) => m.version > currentVersion,
+  ).sort((a, b) => a.version - b.version);
 
   if (pendingMigrations.length === 0) {
     return { from: currentVersion, to: currentVersion, applied: 0 };
@@ -316,11 +443,15 @@ export function migrate(db: CreatorMediaDB): { from: number; to: number; applied
     for (const migration of pendingMigrations) {
       migration.up(db);
       db.prepare(
-        'INSERT INTO schema_version (version, description) VALUES (?, ?)'
+        "INSERT INTO schema_version (version, description) VALUES (?, ?)",
       ).run(migration.version, migration.description);
     }
   });
 
   const newVersion = pendingMigrations[pendingMigrations.length - 1]!.version;
-  return { from: currentVersion, to: newVersion, applied: pendingMigrations.length };
+  return {
+    from: currentVersion,
+    to: newVersion,
+    applied: pendingMigrations.length,
+  };
 }

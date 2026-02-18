@@ -10,117 +10,220 @@
 
 /** 主平台 */
 export type Platform =
-  | 'xiaohongshu'
-  | 'douyin'
-  | 'wechat'
-  | 'bilibili'
-  | 'zhihu'
-  | 'weibo'
-  | 'x'
-  | 'toutiao'
-  | 'sina'
-  | 'sohu';
+  | "xiaohongshu"
+  | "douyin"
+  | "wechat"
+  | "bilibili"
+  | "zhihu"
+  | "weibo"
+  | "x"
+  | "toutiao"
+  | "sina"
+  | "sohu";
 
 /** 平台元数据 */
 export interface PlatformMeta {
-  id: Platform
-  label: string
-  shortLabel: string
-  color: string
-  desc: string
+  id: Platform;
+  label: string;
+  shortLabel: string;
+  color: string;
+  desc: string;
 }
 
 /** 所有平台配置（单一数据源） */
 export const PLATFORM_LIST: PlatformMeta[] = [
-  { id: 'xiaohongshu', label: '小红书', shortLabel: '小红书', color: 'text-red-500 border-red-200 dark:border-red-800', desc: '图文/短视频种草' },
-  { id: 'douyin', label: '抖音', shortLabel: '抖音', color: 'text-pink-500 border-pink-200 dark:border-pink-800', desc: '短视频/直播' },
-  { id: 'bilibili', label: 'B站', shortLabel: 'B站', color: 'text-blue-400 border-blue-200 dark:border-blue-800', desc: '中长视频/专栏' },
-  { id: 'wechat', label: '微信公众号', shortLabel: '微信', color: 'text-green-500 border-green-200 dark:border-green-800', desc: '公众号文章' },
-  { id: 'zhihu', label: '知乎', shortLabel: '知乎', color: 'text-blue-600 border-blue-200 dark:border-blue-800', desc: '问答/专栏文章' },
-  { id: 'weibo', label: '微博', shortLabel: '微博', color: 'text-orange-500 border-orange-200 dark:border-orange-800', desc: '图文/短视频' },
-  { id: 'x', label: 'X (Twitter)', shortLabel: 'X', color: 'text-foreground border-border', desc: '推文/长文' },
-  { id: 'toutiao', label: '今日头条', shortLabel: '头条', color: 'text-red-600 border-red-200 dark:border-red-800', desc: '图文/短视频/微头条' },
-  { id: 'sina', label: '新浪', shortLabel: '新浪', color: 'text-orange-600 border-orange-200 dark:border-orange-800', desc: '新闻/博客' },
-  { id: 'sohu', label: '搜狐', shortLabel: '搜狐', color: 'text-yellow-600 border-yellow-200 dark:border-yellow-800', desc: '图文/视频号' },
-]
+  {
+    id: "xiaohongshu",
+    label: "小红书",
+    shortLabel: "小红书",
+    color: "text-red-500 border-red-200 dark:border-red-800",
+    desc: "图文/短视频种草",
+  },
+  {
+    id: "douyin",
+    label: "抖音",
+    shortLabel: "抖音",
+    color: "text-pink-500 border-pink-200 dark:border-pink-800",
+    desc: "短视频/直播",
+  },
+  {
+    id: "bilibili",
+    label: "B站",
+    shortLabel: "B站",
+    color: "text-blue-400 border-blue-200 dark:border-blue-800",
+    desc: "中长视频/专栏",
+  },
+  {
+    id: "wechat",
+    label: "微信公众号",
+    shortLabel: "微信",
+    color: "text-green-500 border-green-200 dark:border-green-800",
+    desc: "公众号文章",
+  },
+  {
+    id: "zhihu",
+    label: "知乎",
+    shortLabel: "知乎",
+    color: "text-blue-600 border-blue-200 dark:border-blue-800",
+    desc: "问答/专栏文章",
+  },
+  {
+    id: "weibo",
+    label: "微博",
+    shortLabel: "微博",
+    color: "text-orange-500 border-orange-200 dark:border-orange-800",
+    desc: "图文/短视频",
+  },
+  {
+    id: "x",
+    label: "X (Twitter)",
+    shortLabel: "X",
+    color: "text-foreground border-border",
+    desc: "推文/长文",
+  },
+  {
+    id: "toutiao",
+    label: "今日头条",
+    shortLabel: "头条",
+    color: "text-red-600 border-red-200 dark:border-red-800",
+    desc: "图文/短视频/微头条",
+  },
+  {
+    id: "sina",
+    label: "新浪",
+    shortLabel: "新浪",
+    color: "text-orange-600 border-orange-200 dark:border-orange-800",
+    desc: "新闻/博客",
+  },
+  {
+    id: "sohu",
+    label: "搜狐",
+    shortLabel: "搜狐",
+    color: "text-yellow-600 border-yellow-200 dark:border-yellow-800",
+    desc: "图文/视频号",
+  },
+];
 
 /** 平台 id → 元数据 快速查找 */
 export const PLATFORM_MAP: Record<Platform, PlatformMeta> =
-  PLATFORM_LIST.reduce((m, p) => { m[p.id] = p; return m }, {} as Record<Platform, PlatformMeta>)
+  PLATFORM_LIST.reduce(
+    (m, p) => {
+      m[p.id] = p;
+      return m;
+    },
+    {} as Record<Platform, PlatformMeta>,
+  );
 
 /** 所有平台 id 列表（用于 prompt 等场景） */
-export const PLATFORM_IDS: string = PLATFORM_LIST.map(p => p.id).join(' / ')
+export const PLATFORM_IDS: string = PLATFORM_LIST.map((p) => p.id).join(" / ");
 
 /** 内容状态流转 */
 export type ContentStatus =
-  | 'researching'
-  | 'scripting'
-  | 'creating'
-  | 'adapting'
-  | 'scheduled'
-  | 'published'
-  | 'archived';
+  | "researching"
+  | "scripting"
+  | "creating"
+  | "adapting"
+  | "scheduled"
+  | "published"
+  | "archived";
 
 /** 内容类型 */
 export type ContentType =
-  | 'video'
-  | 'image-text'
-  | 'article'
-  | 'short-video'
-  | 'live';
+  | "video"
+  | "image-text"
+  | "article"
+  | "short-video"
+  | "live";
 
 /** 流水线模式 */
-export type PipelineMode = 'auto' | 'semi-auto' | 'manual';
+export type PipelineMode = "auto" | "semi-auto" | "manual";
+
+/** 创作轨道 */
+export type ContentTrack = "article" | "video";
+
+/** 解析 content_tracks 字符串为数组 */
+export function parseContentTracks(
+  raw: string | null | undefined,
+): ContentTrack[] {
+  if (!raw) return ["article", "video"]; // 默认双轨
+  return raw
+    .split(",")
+    .filter((t): t is ContentTrack => t === "article" || t === "video");
+}
+
+/** 将轨道数组序列化为存储字符串 */
+export function serializeContentTracks(tracks: ContentTrack[]): string {
+  return tracks.join(",");
+}
 
 /** 选题来源 */
-export type TopicSource = 'hot_topic' | 'competitor' | 'manual' | 'evergreen';
+export type TopicSource = "hot_topic" | "competitor" | "manual" | "evergreen";
 
 /** 发布记录状态 */
-export type PublishStatus = 'pending' | 'publishing' | 'success' | 'failed' | 'deleted';
+export type PublishStatus =
+  | "pending"
+  | "publishing"
+  | "success"
+  | "failed"
+  | "deleted";
 
 /** 发布方式 */
-export type PublishMethod = 'api' | 'browser-agent' | 'manual';
+export type PublishMethod = "api" | "browser-agent" | "manual";
 
 /** 爆款模式分类 */
 export type ViralPatternCategory =
-  | 'hook'
-  | 'structure'
-  | 'title'
-  | 'cta'
-  | 'visual'
-  | 'rhythm';
+  | "hook"
+  | "structure"
+  | "title"
+  | "cta"
+  | "visual"
+  | "rhythm";
 
 /** 爆款模式来源 */
-export type ViralPatternSource = 'competitor_analysis' | 'manual' | 'ai_discovered';
+export type ViralPatternSource =
+  | "competitor_analysis"
+  | "manual"
+  | "ai_discovered";
 
 /** 热点缓存状态 */
-export type TopicCacheStatus = 'new' | 'selected' | 'dismissed' | 'expired';
+export type TopicCacheStatus = "new" | "selected" | "dismissed" | "expired";
 
 /** 热点缓存来源 */
-export type TopicCacheSource = 'newsnow' | 'trendradar';
+export type TopicCacheSource = "newsnow" | "trendradar";
 
 /** 平台账号登录状态 */
-export type AuthStatus = 'not_logged_in' | 'logged_in' | 'expired' | 'error';
+export type AuthStatus = "not_logged_in" | "logged_in" | "expired" | "error";
 
 /** 平台账号登录方式 */
-export type AuthMethod = 'cookie' | 'oauth' | 'api_key' | 'browser_profile';
+export type AuthMethod = "cookie" | "oauth" | "api_key" | "browser_profile";
 
 /** 发布频率 */
-export type PostingFrequency = 'daily' | '3_per_week' | 'weekly' | 'biweekly' | 'monthly';
+export type PostingFrequency =
+  | "daily"
+  | "3_per_week"
+  | "weekly"
+  | "biweekly"
+  | "monthly";
 
-export const POSTING_FREQUENCY_LIST: { id: PostingFrequency; label: string }[] = [
-  { id: 'daily', label: '每天' },
-  { id: '3_per_week', label: '每周3次' },
-  { id: 'weekly', label: '每周1次' },
-  { id: 'biweekly', label: '每两周1次' },
-  { id: 'monthly', label: '每月1次' },
-];
+export const POSTING_FREQUENCY_LIST: { id: PostingFrequency; label: string }[] =
+  [
+    { id: "daily", label: "每天" },
+    { id: "3_per_week", label: "每周3次" },
+    { id: "weekly", label: "每周1次" },
+    { id: "biweekly", label: "每两周1次" },
+    { id: "monthly", label: "每月1次" },
+  ];
 
 /** 采集任务状态 */
-export type ReviewTaskStatus = 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
+export type ReviewTaskStatus =
+  | "pending"
+  | "executing"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /** 采集时间点类型 */
-export type ReviewType = '1h' | '6h' | '24h' | '72h' | '168h';
+export type ReviewType = "1h" | "6h" | "24h" | "72h" | "168h";
 
 // ============================================================
 // 表接口
@@ -139,9 +242,9 @@ export interface Project {
   name: string;
   description: string | null;
   platform: Platform;
-  platforms: string | null;       // JSON: string[]
+  platforms: string | null; // JSON: string[]
   avatar_path: string | null;
-  is_active: number;              // SQLite boolean: 0 | 1
+  is_active: number; // SQLite boolean: 0 | 1
   created_at: string;
   updated_at: string;
 }
@@ -155,14 +258,14 @@ export interface AccountProfile {
   persona: string | null;
   target_audience: string | null;
   tone: string | null;
-  keywords: string | null;        // JSON: string[]
+  keywords: string | null; // JSON: string[]
   bio: string | null;
   content_pillars: string | null; // JSON: string[]
   posting_frequency: string | null;
   best_posting_time: string | null; // JSON: Record<string, string>
-  style_references: string | null;  // JSON: string[]
-  taboo_topics: string | null;     // JSON: string[]
-  pillar_weights: string | null;   // JSON: Record<string, number> 内容支柱动态权重
+  style_references: string | null; // JSON: string[]
+  taboo_topics: string | null; // JSON: string[]
+  pillar_weights: string | null; // JSON: Record<string, number> 内容支柱动态权重
   pillar_weights_updated_at: string | null;
   created_at: string;
   updated_at: string;
@@ -184,19 +287,19 @@ export interface PlatformAccount {
   total_favorites: number;
   total_comments: number;
   total_posts: number;
-  metrics_json: string | null;     // JSON: 平台特有指标
+  metrics_json: string | null; // JSON: 平台特有指标
   metrics_updated_at: string | null;
   auth_status: AuthStatus;
   auth_method: string | null;
-  auth_data: string | null;        // 加密存储
+  auth_data: string | null; // 加密存储
   auth_expires_at: string | null;
   last_login_at: string | null;
   last_login_check: string | null;
-  is_primary: number;              // SQLite boolean: 0 | 1
+  is_primary: number; // SQLite boolean: 0 | 1
   notes: string | null;
-  profile_path: string | null;     // 浏览器 Profile 目录路径
-  fingerprint_id: string | null;   // 关联的指纹配置 ID
-  login_check_interval: number;    // 登录检查间隔秒数，默认 3600
+  profile_path: string | null; // 浏览器 Profile 目录路径
+  fingerprint_id: string | null; // 关联的指纹配置 ID
+  login_check_interval: number; // 登录检查间隔秒数，默认 3600
   created_at: string;
   updated_at: string;
 }
@@ -213,7 +316,7 @@ export interface Competitor {
   content_style: string | null;
   strengths: string | null;
   notes: string | null;
-  tags: string | null;             // JSON: string[]
+  tags: string | null; // JSON: string[]
   last_analyzed: string | null;
   created_at: string;
   updated_at: string;
@@ -225,11 +328,12 @@ export interface Content {
   project_id: string;
   title: string | null;
   status: ContentStatus;
-  target_platforms: string | null;  // JSON: string[]
+  target_platforms: string | null; // JSON: string[]
   pipeline_mode: PipelineMode;
-  content_dir_path: string | null;  // 内容文件夹相对路径
+  content_dir_path: string | null; // 内容文件夹相对路径
   viral_pattern_id: string | null;
-  metadata: string | null;          // JSON: 扩展元数据
+  metadata: string | null; // JSON: 扩展元数据
+  content_tracks: string | null; // 'article' | 'video' | 'article,video'，默认 'article,video'
   created_at: string;
   updated_at: string;
 }
@@ -250,12 +354,12 @@ export interface PublishRecord {
   comments: number;
   shares: number;
   favorites: number;
-  metrics_json: string | null;      // JSON: 完整指标快照
+  metrics_json: string | null; // JSON: 完整指标快照
   metrics_updated_at: string | null;
-  next_review_at: string | null;     // 下次采集时间
-  review_count: number;              // 已完成采集次数
-  review_schedule: string | null;    // JSON: 采集计划
-  feedback_processed: number;        // SQLite boolean: 0 | 1，反馈是否已回写
+  next_review_at: string | null; // 下次采集时间
+  review_count: number; // 已完成采集次数
+  review_schedule: string | null; // JSON: 采集计划
+  feedback_processed: number; // SQLite boolean: 0 | 1，反馈是否已回写
   created_at: string;
   updated_at: string;
 }
@@ -263,17 +367,17 @@ export interface PublishRecord {
 /** viral_patterns — 爆款模式库 */
 export interface ViralPattern {
   id: string;
-  project_id: string | null;       // NULL = 全局模式
-  platform: Platform | null;       // NULL = 全平台
+  project_id: string | null; // NULL = 全局模式
+  platform: Platform | null; // NULL = 全平台
   category: ViralPatternCategory;
   name: string;
   description: string | null;
   template: string | null;
-  examples: string | null;          // JSON: Array<{title, url, metrics}>
+  examples: string | null; // JSON: Array<{title, url, metrics}>
   source: ViralPatternSource | null;
   usage_count: number;
   success_rate: number | null;
-  tags: string | null;              // JSON: string[]
+  tags: string | null; // JSON: string[]
   created_at: string;
   updated_at: string;
 }
@@ -288,9 +392,9 @@ export interface TopicCache {
   heat_score: number | null;
   relevance_score: number | null;
   category: string | null;
-  keywords: string | null;          // JSON: string[]
+  keywords: string | null; // JSON: string[]
   status: TopicCacheStatus;
-  historical_score: number | null;   // 同类选题历史成功率
+  historical_score: number | null; // 同类选题历史成功率
   locked_by_content_id: string | null; // 并行冲突控制，锁定选题
   fetched_at: string;
   expires_at: string | null;
@@ -305,7 +409,7 @@ export interface ReviewTask {
   executed_at: string | null;
   status: ReviewTaskStatus;
   review_type: ReviewType;
-  result_snapshot: string | null;  // JSON: 采集结果快照
+  result_snapshot: string | null; // JSON: 采集结果快照
   error_message: string | null;
   retry_count: number;
   created_at: string;
@@ -316,31 +420,59 @@ export interface ReviewTask {
 // 创建/更新输入类型（省略自动生成字段）
 // ============================================================
 
-export type CreateProject = Omit<Project, 'created_at' | 'updated_at'>;
-export type UpdateProject = Partial<Omit<Project, 'id' | 'created_at'>> & { updated_at?: string };
+export type CreateProject = Omit<Project, "created_at" | "updated_at">;
+export type UpdateProject = Partial<Omit<Project, "id" | "created_at">> & {
+  updated_at?: string;
+};
 
-export type CreateAccountProfile = Omit<AccountProfile, 'created_at' | 'updated_at'>;
-export type UpdateAccountProfile = Partial<Omit<AccountProfile, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreateAccountProfile = Omit<
+  AccountProfile,
+  "created_at" | "updated_at"
+>;
+export type UpdateAccountProfile = Partial<
+  Omit<AccountProfile, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
-export type CreatePlatformAccount = Omit<PlatformAccount, 'created_at' | 'updated_at'>;
-export type UpdatePlatformAccount = Partial<Omit<PlatformAccount, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreatePlatformAccount = Omit<
+  PlatformAccount,
+  "created_at" | "updated_at"
+>;
+export type UpdatePlatformAccount = Partial<
+  Omit<PlatformAccount, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
-export type CreateCompetitor = Omit<Competitor, 'created_at' | 'updated_at'>;
-export type UpdateCompetitor = Partial<Omit<Competitor, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreateCompetitor = Omit<Competitor, "created_at" | "updated_at">;
+export type UpdateCompetitor = Partial<
+  Omit<Competitor, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
-export type CreateContent = Omit<Content, 'created_at' | 'updated_at'>;
-export type UpdateContent = Partial<Omit<Content, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreateContent = Omit<Content, "created_at" | "updated_at">;
+export type UpdateContent = Partial<
+  Omit<Content, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
-export type CreatePublishRecord = Omit<PublishRecord, 'created_at' | 'updated_at'>;
-export type UpdatePublishRecord = Partial<Omit<PublishRecord, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
+export type CreatePublishRecord = Omit<
+  PublishRecord,
+  "created_at" | "updated_at"
+>;
+export type UpdatePublishRecord = Partial<
+  Omit<PublishRecord, "id" | "content_id" | "created_at">
+> & { updated_at?: string };
 
-export type CreateViralPattern = Omit<ViralPattern, 'created_at' | 'updated_at'>;
-export type UpdateViralPattern = Partial<Omit<ViralPattern, 'id' | 'created_at'>> & { updated_at?: string };
+export type CreateViralPattern = Omit<
+  ViralPattern,
+  "created_at" | "updated_at"
+>;
+export type UpdateViralPattern = Partial<
+  Omit<ViralPattern, "id" | "created_at">
+> & { updated_at?: string };
 
-export type CreateTopicCache = Omit<TopicCache, 'created_at'>;
+export type CreateTopicCache = Omit<TopicCache, "created_at">;
 
-export type CreateReviewTask = Omit<ReviewTask, 'created_at' | 'updated_at'>;
-export type UpdateReviewTask = Partial<Omit<ReviewTask, 'id' | 'publish_record_id' | 'created_at'>> & { updated_at?: string };
+export type CreateReviewTask = Omit<ReviewTask, "created_at" | "updated_at">;
+export type UpdateReviewTask = Partial<
+  Omit<ReviewTask, "id" | "publish_record_id" | "created_at">
+> & { updated_at?: string };
 
 // ============================================================
 // 内容阶段产出
@@ -348,47 +480,52 @@ export type UpdateReviewTask = Partial<Omit<ReviewTask, 'id' | 'publish_record_i
 
 /** 内容阶段类型 */
 export type ContentStage =
-  | 'topic_recommend'
-  | 'research'
-  | 'script_article'
-  | 'script_video'
-  | 'draft_article'
-  | 'draft_video'
-  | 'platform_adapt_article'
-  | 'platform_adapt_video';
+  | "topic_recommend"
+  | "research"
+  | "script_article"
+  | "script_video"
+  | "draft_article"
+  | "draft_video"
+  | "platform_adapt_article"
+  | "platform_adapt_video";
 
 /** 阶段产出状态 */
-export type ContentStageStatus = 'draft' | 'completed' | 'revised';
+export type ContentStageStatus = "draft" | "completed" | "revised";
 
 /** 阶段产出来源 */
-export type ContentStageSourceType = 'auto' | 'user_edit' | 'agent';
+export type ContentStageSourceType = "auto" | "user_edit" | "agent";
 
 /** content_stages — 内容阶段产出表 */
 export interface ContentStageRecord {
   id: string;
   content_id: string;
   stage: ContentStage;
-  file_path: string;                    // 产出文件相对路径
+  file_path: string; // 产出文件相对路径
   status: ContentStageStatus;
-  version: number;                      // 同阶段多版本
+  version: number; // 同阶段多版本
   source_type: ContentStageSourceType | null;
-  metadata: string | null;              // JSON: 阶段特有元数据
+  metadata: string | null; // JSON: 阶段特有元数据
   created_at: string;
   updated_at: string;
 }
 
-export type CreateContentStage = Omit<ContentStageRecord, 'created_at' | 'updated_at'>;
-export type UpdateContentStage = Partial<Omit<ContentStageRecord, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
+export type CreateContentStage = Omit<
+  ContentStageRecord,
+  "created_at" | "updated_at"
+>;
+export type UpdateContentStage = Partial<
+  Omit<ContentStageRecord, "id" | "content_id" | "created_at">
+> & { updated_at?: string };
 
 // ============================================================
 // 内容版本管理
 // ============================================================
 
 /** 版本阶段 */
-export type VersionStage = 'script' | 'content' | 'adapted';
+export type VersionStage = "script" | "content" | "adapted";
 
 /** 变更来源 */
-export type ChangeSource = 'auto' | 'user_edit' | 'rollback';
+export type ChangeSource = "auto" | "user_edit" | "rollback";
 
 /** content_versions — 内容版本管理表 */
 export interface ContentVersion {
@@ -397,22 +534,27 @@ export interface ContentVersion {
   version_number: number;
   stage: VersionStage;
   title: string | null;
-  content_snapshot: string;          // JSON: 内容快照
-  files_snapshot: string | null;     // JSON: 文件列表快照
+  content_snapshot: string; // JSON: 内容快照
+  files_snapshot: string | null; // JSON: 文件列表快照
   change_source: ChangeSource | null;
   change_description: string | null;
   created_by: string;
   created_at: string;
 }
 
-export type CreateContentVersionInput = Omit<ContentVersion, 'created_at'>;
+export type CreateContentVersionInput = Omit<ContentVersion, "created_at">;
 
 // ============================================================
 // 发布队列
 // ============================================================
 
 /** 发布队列状态 */
-export type PublishQueueStatus = 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+export type PublishQueueStatus =
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /** 队列优先级常量 */
 export const QueuePriority = {
@@ -441,8 +583,13 @@ export interface PublishQueueItem {
   updated_at: string;
 }
 
-export type CreatePublishQueueInput = Omit<PublishQueueItem, 'created_at' | 'updated_at'>;
-export type UpdatePublishQueueInput = Partial<Omit<PublishQueueItem, 'id' | 'content_id' | 'created_at'>> & { updated_at?: string };
+export type CreatePublishQueueInput = Omit<
+  PublishQueueItem,
+  "created_at" | "updated_at"
+>;
+export type UpdatePublishQueueInput = Partial<
+  Omit<PublishQueueItem, "id" | "content_id" | "created_at">
+> & { updated_at?: string };
 
 // ============================================================
 // 草稿
@@ -454,23 +601,25 @@ export interface Draft {
   project_id: string;
   title: string | null;
   content: string;
-  media: string;                    // JSON: string[]
-  tags: string | null;              // JSON: string[]
-  target_platforms: string | null;  // JSON: Platform[]
-  metadata: string | null;          // JSON: 扩展元数据
+  media: string; // JSON: string[]
+  tags: string | null; // JSON: string[]
+  target_platforms: string | null; // JSON: Platform[]
+  metadata: string | null; // JSON: 扩展元数据
   created_at: string;
   updated_at: string;
 }
 
-export type CreateDraft = Omit<Draft, 'created_at' | 'updated_at'>;
-export type UpdateDraft = Partial<Omit<Draft, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreateDraft = Omit<Draft, "created_at" | "updated_at">;
+export type UpdateDraft = Partial<
+  Omit<Draft, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
 // ============================================================
 // 素材库
 // ============================================================
 
 /** 素材文件类型 */
-export type MediaFileType = 'image' | 'video';
+export type MediaFileType = "image" | "video";
 
 /** media_files — 素材库 */
 export interface MediaFile {
@@ -482,21 +631,21 @@ export interface MediaFile {
   size: number;
   width: number | null;
   height: number | null;
-  duration: number | null;          // 视频时长（秒）
+  duration: number | null; // 视频时长（秒）
   thumbnail: string | null;
-  tags: string | null;              // JSON: string[]
+  tags: string | null; // JSON: string[]
   description: string | null;
   created_at: string;
 }
 
-export type CreateMediaFile = Omit<MediaFile, 'created_at'>;
+export type CreateMediaFile = Omit<MediaFile, "created_at">;
 
 // ============================================================
 // 热榜快照
 // ============================================================
 
 /** 热榜数据来源 */
-export type HotTopicFetchSource = 'newsnow' | 'self-hosted' | 'ai-scout';
+export type HotTopicFetchSource = "newsnow" | "self-hosted" | "ai-scout";
 
 /** hot_topics — 热榜快照表 */
 export interface HotTopic {
@@ -513,7 +662,7 @@ export interface HotTopic {
   created_at: string;
 }
 
-export type CreateHotTopic = Omit<HotTopic, 'created_at'>;
+export type CreateHotTopic = Omit<HotTopic, "created_at">;
 
 // ============================================================
 // 选题推荐
@@ -527,27 +676,36 @@ export interface RecommendedTopic {
   id: string;
   project_id: string;
   title: string;
-  reason: string | null;             // 推荐理由
+  reason: string | null; // 推荐理由
   potential_score: number;
   heat_index: number;
   status: TopicRecommendStatus;
   content_id: string | null;
-  md_file_path: string | null;      // Markdown 文件相对路径
+  md_file_path: string | null; // Markdown 文件相对路径
   source_uid: string | null;
   batch_date: string | null;
   created_at: string;
   updated_at: string | null;
 }
 
-export type CreateRecommendedTopic = Omit<RecommendedTopic, 'created_at' | 'updated_at'>;
-export type UpdateRecommendedTopic = Partial<Omit<RecommendedTopic, 'id' | 'project_id' | 'created_at'>> & { updated_at?: string };
+export type CreateRecommendedTopic = Omit<
+  RecommendedTopic,
+  "created_at" | "updated_at"
+>;
+export type UpdateRecommendedTopic = Partial<
+  Omit<RecommendedTopic, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
 
 // ============================================================
 // 视频内容元数据（存储在 contents.metadata JSON 字段）
 // ============================================================
 
 /** 视频渲染状态 */
-export type VideoRenderStatus = 'not_started' | 'rendering' | 'completed' | 'failed';
+export type VideoRenderStatus =
+  | "not_started"
+  | "rendering"
+  | "completed"
+  | "failed";
 
 /** 视频内容元数据 — 存储在 contents.metadata JSON 字段 */
 export interface ContentVideoMetadata {
@@ -567,8 +725,80 @@ export interface ContentVideoMetadata {
   video_resolution?: { width: number; height: number };
 }
 
+// ============================================================
+// 视频项目
+// ============================================================
+
+/** video_projects — 视频项目表 */
+export interface VideoProject {
+  id: string;
+  content_id: string;
+  name: string;
+  description: string | null;
+  width: number;
+  height: number;
+  fps: number;
+  metadata: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateVideoProject = Omit<VideoProject, "created_at" | "updated_at">;
+export type UpdateVideoProject = Partial<
+  Omit<VideoProject, "id" | "content_id" | "created_at">
+> & { updated_at?: string };
+
+/** 带关联数据的完整项目 */
+export interface VideoProjectFull extends VideoProject {
+  scenes: VideoScene[];
+  assets: VideoAsset[];
+}
+
+/** video_scenes — 视频场景表 */
+export interface VideoScene {
+  id: string;
+  project_id: string;
+  composition_id: string;
+  name: string | null;
+  sort_order: number;
+  duration_in_frames: number;
+  props: string; // JSON string
+  transition_type: "none" | "fade" | "slide" | "wipe" | "flip" | "clock-wipe";
+  transition_duration: number;
+  transition_direction: "from-left" | "from-right" | "from-top" | "from-bottom" | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type TransitionType = VideoScene["transition_type"];
+export type TransitionDirection = NonNullable<VideoScene["transition_direction"]>;
+
+export type CreateVideoScene = Omit<VideoScene, "created_at" | "updated_at">;
+export type UpdateVideoScene = Partial<
+  Omit<VideoScene, "id" | "project_id" | "created_at">
+> & { updated_at?: string };
+
+/** video_assets — 视频素材表 */
+export interface VideoAsset {
+  id: string;
+  project_id: string;
+  type: "image" | "video" | "audio" | "font";
+  name: string;
+  file_path: string;
+  file_size: number | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+export type AssetType = VideoAsset["type"];
+export type CreateVideoAsset = Omit<VideoAsset, "created_at">;
+
+// ============================================================
+// 定时任务
+// ============================================================
+
 /** 定时任务执行状态 */
-export type TaskExecutionStatus = 'pending' | 'running' | 'success' | 'failed';
+export type TaskExecutionStatus = "pending" | "running" | "success" | "failed";
 
 /** 定时任务执行记录 */
 export interface ScheduledTaskExecution {
@@ -586,4 +816,3 @@ export interface ScheduledTaskExecution {
   duration_ms: number | null;
   created_at: string;
 }
-

@@ -2,9 +2,15 @@
  * 内容创作 Repository — CRUD 操作
  */
 
-import type { CreatorMediaDB } from '../connection.ts';
-import type { Content, CreateContent, UpdateContent, ContentStatus, ContentVideoMetadata } from '../types.ts';
-import * as projectsRepo from './projects.ts';
+import type { CreatorMediaDB } from "../connection.ts";
+import type {
+  Content,
+  CreateContent,
+  UpdateContent,
+  ContentStatus,
+  ContentVideoMetadata,
+} from "../types.ts";
+import * as projectsRepo from "./projects.ts";
 
 /** 内容列表过滤条件 */
 export interface ContentFilters {
@@ -13,63 +19,81 @@ export interface ContentFilters {
 }
 
 /** 创建内容 */
-export function createContent(db: CreatorMediaDB, data: CreateContent): Content {
+export function createContent(
+  db: CreatorMediaDB,
+  data: CreateContent,
+): Content {
   // 如果未指定 target_platforms，从项目继承
   let targetPlatforms = data.target_platforms;
   if (!targetPlatforms && data.project_id) {
-    targetPlatforms = projectsRepo.getProjectTargetPlatforms(db, data.project_id);
+    targetPlatforms = projectsRepo.getProjectTargetPlatforms(
+      db,
+      data.project_id,
+    );
   }
 
   const stmt = db.prepare(`
-    INSERT INTO contents (id, project_id, title, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO contents (id, project_id, title, status, target_platforms, pipeline_mode, content_dir_path, viral_pattern_id, metadata, content_tracks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     data.id,
     data.project_id,
     data.title,
-    data.status ?? 'researching',
+    data.status ?? "researching",
     targetPlatforms,
-    data.pipeline_mode ?? 'semi-auto',
+    data.pipeline_mode ?? "semi-auto",
     data.content_dir_path,
     data.viral_pattern_id,
     data.metadata,
+    data.content_tracks ?? "article,video",
   );
   return getContent(db, data.id)!;
 }
 
 /** 获取单个内容 */
-export function getContent(db: CreatorMediaDB, id: string): Content | undefined {
-  return db.prepare<Content>('SELECT * FROM contents WHERE id = ?').get(id);
+export function getContent(
+  db: CreatorMediaDB,
+  id: string,
+): Content | undefined {
+  return db.prepare<Content>("SELECT * FROM contents WHERE id = ?").get(id);
 }
 
 /** 列出项目的内容（支持过滤） */
-export function listByProject(db: CreatorMediaDB, projectId: string, filters?: ContentFilters): Content[] {
-  let sql = 'SELECT * FROM contents WHERE project_id = ?';
+export function listByProject(
+  db: CreatorMediaDB,
+  projectId: string,
+  filters?: ContentFilters,
+): Content[] {
+  let sql = "SELECT * FROM contents WHERE project_id = ?";
   const params: unknown[] = [projectId];
 
   if (filters?.status) {
     if (Array.isArray(filters.status)) {
-      const placeholders = filters.status.map(() => '?').join(', ');
+      const placeholders = filters.status.map(() => "?").join(", ");
       sql += ` AND status IN (${placeholders})`;
       params.push(...filters.status);
     } else {
-      sql += ' AND status = ?';
+      sql += " AND status = ?";
       params.push(filters.status);
     }
   }
 
   if (filters?.pipeline_mode) {
-    sql += ' AND pipeline_mode = ?';
+    sql += " AND pipeline_mode = ?";
     params.push(filters.pipeline_mode);
   }
 
-  sql += ' ORDER BY updated_at DESC';
+  sql += " ORDER BY updated_at DESC";
   return db.prepare<Content>(sql).all(...params);
 }
 
 /** 更新内容 */
-export function updateContent(db: CreatorMediaDB, id: string, data: UpdateContent): Content | undefined {
+export function updateContent(
+  db: CreatorMediaDB,
+  id: string,
+  data: UpdateContent,
+): Content | undefined {
   const fields: string[] = [];
   const values: unknown[] = [];
 
@@ -83,23 +107,31 @@ export function updateContent(db: CreatorMediaDB, id: string, data: UpdateConten
   if (fields.length === 0) return getContent(db, id);
 
   if (!data.updated_at) {
-    fields.push('updated_at = CURRENT_TIMESTAMP');
+    fields.push("updated_at = CURRENT_TIMESTAMP");
   }
 
   values.push(id);
-  db.prepare(`UPDATE contents SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  db.prepare(`UPDATE contents SET ${fields.join(", ")} WHERE id = ?`).run(
+    ...values,
+  );
   return getContent(db, id);
 }
 
 /** 更新内容状态（快捷方法） */
-export function updateContentStatus(db: CreatorMediaDB, id: string, status: ContentStatus): Content | undefined {
-  db.prepare('UPDATE contents SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+export function updateContentStatus(
+  db: CreatorMediaDB,
+  id: string,
+  status: ContentStatus,
+): Content | undefined {
+  db.prepare(
+    "UPDATE contents SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+  ).run(status, id);
   return getContent(db, id);
 }
 
 /** 删除内容 */
 export function deleteContent(db: CreatorMediaDB, id: string): boolean {
-  const result = db.prepare('DELETE FROM contents WHERE id = ?').run(id);
+  const result = db.prepare("DELETE FROM contents WHERE id = ?").run(id);
   return result.changes > 0;
 }
 
@@ -108,7 +140,9 @@ export function deleteContent(db: CreatorMediaDB, id: string): boolean {
 // ============================================================
 
 /** 解析内容的 metadata JSON */
-export function parseContentMetadata(content: Content): Record<string, unknown> | null {
+export function parseContentMetadata(
+  content: Content,
+): Record<string, unknown> | null {
   if (!content.metadata) return null;
   try {
     return JSON.parse(content.metadata) as Record<string, unknown>;
@@ -118,17 +152,21 @@ export function parseContentMetadata(content: Content): Record<string, unknown> 
 }
 
 /** 获取内容的视频元数据 */
-export function getContentVideoMetadata(content: Content): ContentVideoMetadata | null {
+export function getContentVideoMetadata(
+  content: Content,
+): ContentVideoMetadata | null {
   const metadata = parseContentMetadata(content);
   if (!metadata) return null;
   return {
     video_project_id: metadata.video_project_id as string | undefined,
     video_project_name: metadata.video_project_name as string | undefined,
     video_template_id: metadata.video_template_id as string | undefined,
-    video_render_status: metadata.video_render_status as ContentVideoMetadata['video_render_status'],
+    video_render_status:
+      metadata.video_render_status as ContentVideoMetadata["video_render_status"],
     video_output_path: metadata.video_output_path as string | undefined,
     video_duration: metadata.video_duration as number | undefined,
-    video_resolution: metadata.video_resolution as ContentVideoMetadata['video_resolution'],
+    video_resolution:
+      metadata.video_resolution as ContentVideoMetadata["video_resolution"],
   };
 }
 
@@ -136,7 +174,7 @@ export function getContentVideoMetadata(content: Content): ContentVideoMetadata 
 export function updateContentVideoMetadata(
   db: CreatorMediaDB,
   contentId: string,
-  videoMeta: Partial<ContentVideoMetadata>
+  videoMeta: Partial<ContentVideoMetadata>,
 ): Content | undefined {
   const content = getContent(db, contentId);
   if (!content) return undefined;
@@ -145,12 +183,14 @@ export function updateContentVideoMetadata(
   const mergedMeta = { ...existingMeta, ...videoMeta };
   const metadataJson = JSON.stringify(mergedMeta);
 
-  db.prepare('UPDATE contents SET metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(metadataJson, contentId);
+  db.prepare(
+    "UPDATE contents SET metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+  ).run(metadataJson, contentId);
   return getContent(db, contentId);
 }
 
 /** 判断是否为视频类型内容（通过 metadata 判断） */
 export function isVideoContent(content: Content): boolean {
   const metadata = parseContentMetadata(content);
-  return !!(metadata?.video_project_id);
+  return !!metadata?.video_project_id;
 }
