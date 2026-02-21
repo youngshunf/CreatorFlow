@@ -112,7 +112,6 @@ export interface IRenderWorker {
  */
 const EXIT_CODE_TO_ERROR_TYPE: Record<number, RenderErrorType> = {
   1: RenderErrorType.INVALID_PROJECT, // INVALID_ARGS
-  2: RenderErrorType.INVALID_PROJECT, // PROJECT_NOT_FOUND
   3: RenderErrorType.COMPOSITION_NOT_FOUND,
   4: RenderErrorType.BUNDLE_FAILED,
   5: RenderErrorType.RENDER_FAILED,
@@ -157,7 +156,7 @@ export class RenderWorker implements IRenderWorker {
 
   /**
    * 检测渲染脚本路径
-   * 渲染脚本位于 packages/video/src/mcp-server/services/render-script.ts
+   * 渲染脚本位于 packages/video/src/render/render-script.ts
    */
   private detectRenderScriptPath(): string {
     if (app.isPackaged) {
@@ -168,8 +167,7 @@ export class RenderWorker implements IRenderWorker {
           "packages",
           "video",
           "src",
-          "mcp-server",
-          "services",
+          "render",
           "render-script.ts",
         ),
         join(
@@ -177,8 +175,7 @@ export class RenderWorker implements IRenderWorker {
           "packages",
           "video",
           "src",
-          "mcp-server",
-          "services",
+          "render",
           "render-script.ts",
         ),
         join(
@@ -187,8 +184,7 @@ export class RenderWorker implements IRenderWorker {
           "packages",
           "video",
           "src",
-          "mcp-server",
-          "services",
+          "render",
           "render-script.ts",
         ),
       ];
@@ -204,8 +200,7 @@ export class RenderWorker implements IRenderWorker {
         "packages",
         "video",
         "src",
-        "mcp-server",
-        "services",
+        "render",
         "render-script.ts",
       );
     }
@@ -222,8 +217,7 @@ export class RenderWorker implements IRenderWorker {
       "packages",
       "video",
       "src",
-      "mcp-server",
-      "services",
+      "render",
       "render-script.ts",
     );
     if (existsSync(devPath)) {
@@ -238,8 +232,7 @@ export class RenderWorker implements IRenderWorker {
       "packages",
       "video",
       "src",
-      "mcp-server",
-      "services",
+      "render",
       "render-script.ts",
     );
   }
@@ -341,7 +334,8 @@ export class RenderWorker implements IRenderWorker {
     );
 
     // 获取 packages/video 目录作为 cwd（确保 Remotion 能找到依赖）
-    const videoPackageDir = dirname(dirname(this.renderScriptPath));
+    // render-script.ts 在 packages/video/src/render/ 下，需要向上两级
+    const videoPackageDir = dirname(dirname(dirname(this.renderScriptPath)));
 
     return new Promise<string>((resolve, reject) => {
       const childProcess = spawn(bunPath, args, {

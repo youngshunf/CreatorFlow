@@ -58,6 +58,7 @@
     "./skills/types": "./src/skills/types.ts",
     "./marketplace": "./src/marketplace/index.ts",
     "./utils/workspace": "./src/utils/workspace.ts",
+    "./utils/content-paths": "./src/utils/content-paths.ts",
     "./tools": "./src/tools/index.ts",
     "./codex": "./src/codex/index.ts",
     "./mentions": "./src/mentions/index.ts",

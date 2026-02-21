@@ -136,6 +136,21 @@ export function deleteContent(db: CreatorMediaDB, id: string): boolean {
 }
 
 // ============================================================
+// 序号查询
+// ============================================================
+
+/** 获取项目下一个内容序号（当前数量 + 1） */
+export function getNextContentNumber(
+  db: CreatorMediaDB,
+  projectId: string,
+): number {
+  const row = db
+    .prepare<{ cnt: number }>("SELECT COUNT(*) as cnt FROM contents WHERE project_id = ?")
+    .get(projectId);
+  return (row?.cnt ?? 0) + 1;
+}
+
+// ============================================================
 // 视频内容辅助函数
 // ============================================================
 

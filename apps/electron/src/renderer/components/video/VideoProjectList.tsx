@@ -1,18 +1,13 @@
 /**
- * VideoProjectList - Project list component
+ * VideoProjectList - 项目列表组件
  *
- * Features:
- * - List all video projects in workspace
- * - Project selection
- * - Project deletion
- * - Project metadata display
- *
- * @requirements 9.5
+ * Phase 5 适配：从 DB 类型 VideoProject (snake_case) 读取，
+ * 通过适配层转为旧 VideoProject 传给 onSelect 回调。
  */
 
 import * as React from "react";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Film, Trash2, MoreVertical, Calendar, Clock } from "lucide-react";
+import { Film, Trash2, MoreVertical, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,24 +17,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useT } from "@/context/LocaleContext";
+import type { VideoProject as DbVideoProject } from "@sprouty-ai/shared/db/types";
 import type { VideoProject } from "@sprouty-ai/video";
 
 export interface VideoProjectListProps {
-  /** Workspace ID to list projects from */
+  /** 工作区 ID */
   workspaceId: string;
-  /** Currently selected project ID */
+  /** 当前选中的项目 ID */
   selected?: string;
-  /** Callback when project is selected */
+  /** 选中项目回调（传旧类型，调用方通过 ID 重新加载完整数据） */
   onSelect: (project: VideoProject) => void;
-  /** Extra projects created locally (e.g. from templates) */
-  extraProjects?: VideoProject[];
-  /** Optional class name */
+  /** 可选 class name */
   className?: string;
 }
 
-/**
- * Format date for display
- */
+/** 格式化日期 */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
@@ -48,29 +40,35 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Format duration for display
- */
-function formatDuration(frames: number, fps: number): string {
-  const seconds = Math.floor(frames / fps);
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  }
-  return `${seconds}s`;
+/** DB VideoProject → 旧 VideoProject（轻量转换，仅用于列表展示和 onSelect） */
+function dbToLegacy(p: DbVideoProject): VideoProject {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description ?? undefined,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+    config: {
+      width: p.width,
+      height: p.height,
+      fps: p.fps,
+      durationInFrames: 0, // 列表不需要精确值，实际编辑时会从 Full 重新计算
+    },
+    scenes: [],
+    transitions: [],
+    assets: [],
+    renders: [],
+  };
 }
 
-/**
- * Project item component
- */
+/** 项目列表项 */
 function ProjectItem({
   project,
   isSelected,
   onSelect,
   onDelete,
 }: {
-  project: VideoProject;
+  project: DbVideoProject;
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
@@ -86,7 +84,7 @@ function ProjectItem({
       )}
       onClick={onSelect}
     >
-      {/* Icon */}
+      {/* 图标 */}
       <div
         className={cn(
           "shrink-0 w-10 h-10 rounded-md flex items-center justify-center",
@@ -96,20 +94,16 @@ function ProjectItem({
         <Film className="h-5 w-5" />
       </div>
 
-      {/* Info */}
+      {/* 信息 */}
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm truncate">{project.name}</div>
         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {formatDate(project.updatedAt)}
+            {formatDate(project.updated_at)}
           </span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {formatDuration(
-              project.config.durationInFrames,
-              project.config.fps,
-            )}
+          <span className="text-[10px]">
+            {project.width}x{project.height} · {project.fps}fps
           </span>
         </div>
         {project.description && (
@@ -119,7 +113,7 @@ function ProjectItem({
         )}
       </div>
 
-      {/* Actions */}
+      {/* 操作 */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -149,69 +143,66 @@ function ProjectItem({
 }
 
 /**
- * VideoProjectList component
+ * VideoProjectList 组件
  */
 export function VideoProjectList({
   workspaceId,
   selected,
   onSelect,
-  extraProjects = [],
   className,
 }: VideoProjectListProps) {
   const t = useT();
-  const [remoteProjects, setRemoteProjects] = useState<VideoProject[]>([]);
+  const [projects, setProjects] = useState<DbVideoProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Merge remote projects with extra (locally created) projects, sorted by updatedAt
-  const projects = useMemo(() => {
-    const merged = [...remoteProjects];
-    for (const ep of extraProjects) {
-      if (!merged.some((p) => p.id === ep.id)) {
-        merged.push(ep);
-      }
-    }
-    return merged.sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    );
-  }, [remoteProjects, extraProjects]);
+  // 按 updated_at 排序
+  const sortedProjects = useMemo(
+    () =>
+      [...projects].sort(
+        (a, b) =>
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+      ),
+    [projects],
+  );
 
-  // Load projects from backend
+  // 加载项目列表
   const loadProjects = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       if (!window.electronAPI?.video?.listProjects) {
-        setRemoteProjects([]);
+        setProjects([]);
         return;
       }
-      const list = await window.electronAPI.video.listProjects(workspaceId);
-      setRemoteProjects(list);
+      const list = await window.electronAPI.video.listProjects(workspaceId, "");
+      setProjects(list);
     } catch (err) {
-      console.error("Failed to load projects:", err);
-      // Don't set error state — fall through to show extraProjects if any
-      setRemoteProjects([]);
+      console.error("加载项目列表失败:", err);
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
   }, [workspaceId]);
 
-  // Initial load
+  // 初始加载
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
 
-  // Handle delete
-  const handleDelete = useCallback(async (projectId: string) => {
-    try {
-      if (!window.electronAPI?.video?.deleteProject) return;
-      await window.electronAPI.video.deleteProject(projectId);
-      setRemoteProjects((prev) => prev.filter((p) => p.id !== projectId));
-    } catch (err) {
-      console.error("Failed to delete project:", err);
-    }
-  }, []);
+  // 删除项目
+  const handleDelete = useCallback(
+    async (projectId: string) => {
+      try {
+        if (!window.electronAPI?.video?.deleteProject) return;
+        await window.electronAPI.video.deleteProject(workspaceId, projectId);
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      } catch (err) {
+        console.error("删除项目失败:", err);
+      }
+    },
+    [workspaceId],
+  );
 
   if (isLoading) {
     return (
@@ -237,7 +228,7 @@ export function VideoProjectList({
     );
   }
 
-  if (projects.length === 0) {
+  if (sortedProjects.length === 0) {
     return (
       <div className={cn("p-4 text-center text-muted-foreground", className)}>
         <Film className="h-12 w-12 mx-auto mb-2 opacity-30" />
@@ -249,12 +240,12 @@ export function VideoProjectList({
 
   return (
     <div className={cn("p-2 space-y-1", className)}>
-      {projects.map((project) => (
+      {sortedProjects.map((project) => (
         <ProjectItem
           key={project.id}
           project={project}
           isSelected={project.id === selected}
-          onSelect={() => onSelect(project)}
+          onSelect={() => onSelect(dbToLegacy(project))}
           onDelete={() => handleDelete(project.id)}
         />
       ))}

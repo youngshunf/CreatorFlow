@@ -6,11 +6,11 @@
  * - 中央面板：SceneComposer 视频预览 + 时间轴
  * - 右侧面板：属性编辑 + 导出
  *
- * @requirements 9.1
+ * Phase 5 适配：状态使用 VideoProjectFull (DB)，通过适配层转为旧 VideoProject 传给子组件。
  */
 
 import * as React from "react";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   Plus,
   Film,
@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useT } from "@/context/LocaleContext";
+import type { VideoProjectFull } from "@sprouty-ai/shared/db/types";
 import type {
   VideoProject,
   VideoTemplate,
@@ -34,7 +35,13 @@ import type {
   Transition,
   Asset,
 } from "@sprouty-ai/video";
-import { VideoPreview, calculateTotalDuration } from "./VideoPreview";
+import {
+  toLegacyProject,
+  toDbProjectUpdate,
+  toDbSceneUpdate,
+  toDbTransitionUpdate,
+} from "@/lib/video-adapter";
+import { VideoPreview } from "./VideoPreview";
 import { VideoTimeline } from "./VideoTimeline";
 import { VideoProperties } from "./VideoProperties";
 import { VideoProjectList } from "./VideoProjectList";
@@ -42,9 +49,12 @@ import { VideoTemplates } from "./VideoTemplates";
 import { VideoExport } from "./VideoExport";
 import { CreateVideoProjectDialog } from "./CreateVideoProjectDialog";
 import { TransitionIndicator } from "./TransitionEditor";
+import { useCreatorMedia } from "@/pages/creator-media/hooks/useCreatorMedia";
 
-/** 防抖保存延迟（毫秒） */
-const SAVE_DEBOUNCE_MS = 300;
+/** 检测是否是临时预览项目（不持久化到数据库） */
+function isTemporaryProject(project: VideoProjectFull | null): boolean {
+  return project?.id.startsWith('temp-') ?? false
+}
 
 export interface VideoEditorProps {
   /** 工作区 ID */
@@ -54,42 +64,16 @@ export interface VideoEditorProps {
 }
 
 /**
- * 生成唯一 ID
- */
-function generateId(): string {
-  return `scene-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * 从模板创建默认场景列表
- */
-function createScenesFromTemplate(template: VideoTemplate): Scene[] {
-  return [
-    {
-      id: generateId(),
-      name: template.name,
-      compositionId: template.compositionId,
-      durationInFrames: template.defaultConfig.durationInFrames,
-      props: template.defaultProps || {},
-    },
-  ];
-}
-
-/**
  * VideoEditor 组件
  */
 export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
   const t = useT();
   const playerRef = useRef<PlayerRef>(null);
+  const { activeProject } = useCreatorMedia();
 
-  // 防抖保存定时器
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // 状态
-  const [currentProject, setCurrentProject] = useState<VideoProject | null>(
-    null,
-  );
-  const [localProjects, setLocalProjects] = useState<VideoProject[]>([]);
+  // 状态 — 使用 DB 类型
+  const [currentProjectFull, setCurrentProjectFull] =
+    useState<VideoProjectFull | null>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
@@ -109,61 +93,117 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     null,
   );
 
-  // 清理防抖定时器
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, []);
+  // 派生旧类型 — 子组件零改动
+  const legacyProject = useMemo(
+    () => (currentProjectFull ? toLegacyProject(currentProjectFull) : null),
+    [currentProjectFull],
+  );
 
-  /**
-   * 防抖保存项目到磁盘（通过 IPC）
-   * 如果 electronAPI 不可用则静默跳过
-   */
-  const debouncedSave = useCallback((project: VideoProject) => {
-    if (!window.electronAPI?.video?.updateProject) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      window.electronAPI.video
-        .updateProject(project.id, project)
-        .catch((err: unknown) => {
-          console.warn("自动保存失败:", err);
-        });
-    }, SAVE_DEBOUNCE_MS);
-  }, []);
+  // 当前选中的场景（从旧类型派生）
+  const selectedScene =
+    legacyProject?.scenes.find((s) => s.id === selectedSceneId) ?? null;
 
-  // 选择项目时切换到场景面板
-  const handleProjectSelect = useCallback((project: VideoProject) => {
-    setCurrentProject(project);
-    setCurrentFrame(0);
-    setIsPlaying(false);
-    setSelectedSceneId(project.scenes[0]?.id ?? null);
-    setLeftTab("scenes");
-  }, []);
+  // 当前选中的过渡
+  const selectedTransition =
+    selectedTransitionIdx !== null
+      ? (legacyProject?.transitions[selectedTransitionIdx] ?? null)
+      : null;
 
-  // 模板预览
-  const handleTemplateSelect = useCallback((template: VideoTemplate) => {
-    const now = new Date().toISOString();
-    const project: VideoProject = {
-      id: `proj-${Date.now()}`,
-      name: `${template.name} - ${new Date().toLocaleDateString()}`,
-      createdAt: now,
-      updatedAt: now,
-      config: {
+  // 排序后的 DB 场景（用于 transition 索引映射）
+  const sortedDbScenes = useMemo(
+    () =>
+      currentProjectFull
+        ? [...currentProjectFull.scenes].sort(
+            (a, b) => a.sort_order - b.sort_order,
+          )
+        : [],
+    [currentProjectFull],
+  );
+
+  /** 从 IPC 刷新项目数据 */
+  const refetchProject = useCallback(
+    async (projectId: string) => {
+      if (!window.electronAPI?.video?.getProject) return;
+      try {
+        const full = await window.electronAPI.video.getProject(
+          workspaceId,
+          projectId,
+        );
+        if (full) setCurrentProjectFull(full);
+      } catch (err) {
+        console.warn("刷新项目失败:", err);
+      }
+    },
+    [workspaceId],
+  );
+
+  // 选择项目（从 VideoProjectList，接收旧类型但通过 IPC 加载完整数据）
+  const handleProjectSelect = useCallback(
+    async (project: VideoProject) => {
+      if (window.electronAPI?.video?.getProject) {
+        try {
+          const full = await window.electronAPI.video.getProject(
+            workspaceId,
+            project.id,
+          );
+          if (full) {
+            setCurrentProjectFull(full);
+            setCurrentFrame(0);
+            setIsPlaying(false);
+            const firstScene = [...full.scenes].sort(
+              (a, b) => a.sort_order - b.sort_order,
+            )[0];
+            setSelectedSceneId(firstScene?.id ?? null);
+            setLeftTab("scenes");
+            return;
+          }
+        } catch {
+          // 降级处理
+        }
+      }
+    },
+    [workspaceId],
+  );
+
+  // 模板预览（纯前端内存构建，不持久化）
+  const handleTemplateSelect = useCallback(
+    (template: VideoTemplate) => {
+      // 构建临时的 VideoProjectFull 对象（不调用 IPC，不持久化到数据库）
+      const tempProject: VideoProjectFull = {
+        id: `temp-${Date.now()}`, // 临时 ID
+        content_id: '', // 临时项目无 content_id
+        name: `${template.name} - ${t('预览')}`,
+        description: template.description,
         width: template.defaultConfig.width,
         height: template.defaultConfig.height,
         fps: template.defaultConfig.fps,
-        durationInFrames: template.defaultConfig.durationInFrames,
-      },
-      scenes: createScenesFromTemplate(template),
-      transitions: [],
-      assets: [],
-      renders: [],
-    };
-    setCurrentProject(project);
-    setSelectedSceneId(project.scenes[0]?.id ?? null);
-    setLeftTab("scenes");
-  }, []);
+        metadata: JSON.stringify({ templateId: template.id, isPreview: true }),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        scenes: [
+          {
+            id: `temp-scene-${Date.now()}`,
+            project_id: `temp-${Date.now()}`,
+            composition_id: template.compositionId,
+            name: template.name,
+            sort_order: 0,
+            duration_in_frames: template.defaultConfig.durationInFrames,
+            props: JSON.stringify(template.defaultProps),
+            transition_type: 'none',
+            transition_duration: 0,
+            transition_direction: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        assets: [],
+      };
+      setCurrentProjectFull(tempProject);
+      setSelectedSceneId(tempProject.scenes[0]?.id ?? null);
+      setLeftTab("scenes");
+    },
+    [t],
+  );
 
   // 从模板创建项目
   const handleTemplateCreate = useCallback((template: VideoTemplate) => {
@@ -171,81 +211,64 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     setCreateDialogOpen(true);
   }, []);
 
-  // 确认创建项目（通过 IPC 持久化 + 本地状态）
+  // 确认创建项目（通过 IPC 持久化）
   const handleCreateFromTemplate = useCallback(
     async (data: { name: string; description: string }) => {
       if (!pendingTemplate) return;
-      const now = new Date().toISOString();
-      const scenes = createScenesFromTemplate(pendingTemplate);
-      const project: VideoProject = {
-        id: `proj-${Date.now()}`,
-        name: data.name,
-        description: data.description || undefined,
-        createdAt: now,
-        updatedAt: now,
-        config: {
-          width: pendingTemplate.defaultConfig.width,
-          height: pendingTemplate.defaultConfig.height,
-          fps: pendingTemplate.defaultConfig.fps,
-          durationInFrames: pendingTemplate.defaultConfig.durationInFrames,
-        },
-        scenes,
-        transitions: [],
-        assets: [],
-        renders: [],
-      };
+      if (!window.electronAPI?.video?.createFromTemplate) return;
 
-      // 尝试通过 IPC 创建持久化项目
-      if (window.electronAPI?.video?.createProject) {
-        try {
-          const created = await window.electronAPI.video.createProject({
-            name: data.name,
-            workspaceId,
-            template: pendingTemplate.id,
-            config: pendingTemplate.defaultConfig,
-            description: data.description || undefined,
-          });
-          setLocalProjects((prev) => [...prev, created]);
-          setCurrentProject(created);
-          setSelectedSceneId(created.scenes[0]?.id ?? null);
-        } catch (err) {
-          console.warn("IPC 创建项目失败，使用本地模式:", err);
-          setLocalProjects((prev) => [...prev, project]);
-          setCurrentProject(project);
-          setSelectedSceneId(scenes[0]?.id ?? null);
-        }
-      } else {
-        setLocalProjects((prev) => [...prev, project]);
-        setCurrentProject(project);
-        setSelectedSceneId(scenes[0]?.id ?? null);
+      try {
+        const created = await window.electronAPI.video.createFromTemplate({
+          workspaceId,
+          projectId: activeProject?.id || '',
+          contentId: '',
+          templateId: pendingTemplate.id,
+          name: data.name,
+          description: data.description || undefined,
+        });
+        setCurrentProjectFull(created);
+        const firstScene = [...created.scenes].sort(
+          (a, b) => a.sort_order - b.sort_order,
+        )[0];
+        setSelectedSceneId(firstScene?.id ?? null);
+        setLeftTab("scenes");
+        setPendingTemplate(null);
+      } catch (err) {
+        console.error("从模板创建项目失败:", err);
+        toast.error(t("创建项目失败"));
       }
-
-      setLeftTab("scenes");
-      setPendingTemplate(null);
     },
-    [pendingTemplate, workspaceId],
+    [pendingTemplate, workspaceId, t],
   );
 
-  // 更新项目（乐观更新 UI + 防抖持久化）
+  // 更新项目属性（通过 IPC + refetch）
   const handleProjectUpdate = useCallback(
-    (updates: Partial<VideoProject>) => {
-      if (!currentProject) return;
-      const updated = {
-        ...currentProject,
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      };
-      // 同步 config.durationInFrames 为实际总帧数
-      if (updates.scenes || updates.transitions) {
-        updated.config = {
-          ...updated.config,
-          durationInFrames: calculateTotalDuration(updated),
-        };
+    async (updates: Partial<VideoProject>) => {
+      if (!currentProjectFull) return;
+
+      // 临时预览项目不持久化，只在内存中更新
+      if (isTemporaryProject(currentProjectFull)) {
+        setCurrentProjectFull(prev => prev ? { ...prev, ...updates } : null);
+        return;
       }
-      setCurrentProject(updated);
-      debouncedSave(updated);
+
+      const dbUpdates = toDbProjectUpdate(updates);
+      if (Object.keys(dbUpdates).length === 0) return;
+
+      try {
+        if (window.electronAPI?.video?.updateProject) {
+          await window.electronAPI.video.updateProject(
+            workspaceId,
+            currentProjectFull.id,
+            dbUpdates,
+          );
+          await refetchProject(currentProjectFull.id);
+        }
+      } catch (err) {
+        console.warn("更新项目失败:", err);
+      }
     },
-    [currentProject, debouncedSave],
+    [currentProjectFull, workspaceId, refetchProject],
   );
 
   // 帧变化
@@ -268,21 +291,22 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
     }
   }, [isPlaying]);
 
-  // 导出渲染（不再需要 compositionId，固定使用 SceneComposer）
+  // 导出渲染
   const handleRender = useCallback(
     async (options: {
       compositionId: string;
       outputFormat: "mp4" | "webm" | "gif";
       quality: "draft" | "standard" | "high";
     }) => {
-      if (!currentProject) return;
+      if (!currentProjectFull) return;
       try {
         if (!window.electronAPI?.video?.render) {
           toast.info(t("视频导出功能需要完整的 Electron 环境"));
           return;
         }
         const outputPath = await window.electronAPI.video.render({
-          projectId: currentProject.id,
+          projectId: currentProjectFull.id,
+          workspaceId,
           outputFormat: options.outputFormat,
           quality: options.quality,
         });
@@ -295,257 +319,310 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
         });
       }
     },
-    [currentProject, t],
+    [currentProjectFull, workspaceId, t],
   );
 
-  // 新建空项目（通过 IPC 持久化 + 降级到本地模式）
+  // 新建空项目（通过 IPC）
   const handleCreateProject = useCallback(async () => {
-    const now = new Date().toISOString();
-    const defaultScene: Scene = {
-      id: generateId(),
-      name: t("标题动画"),
-      compositionId: "TitleAnimation",
-      durationInFrames: 150,
-      props: {
-        title: t("欢迎"),
-        subtitle: t("在此输入副标题"),
-        colors: {
-          primary: "#6366f1",
-          secondary: "#8b5cf6",
-          background: "#1a1a2e",
-          text: "#ffffff",
-        },
-        animationStyle: "spring",
-      },
-    };
-    const localProject: VideoProject = {
-      id: `proj-${Date.now()}`,
-      name: t("新视频项目"),
-      createdAt: now,
-      updatedAt: now,
-      config: {
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        durationInFrames: 150,
-      },
-      scenes: [defaultScene],
-      transitions: [],
-      assets: [],
-      renders: [],
-    };
-
-    // 尝试通过 IPC 创建持久化项目
-    if (window.electronAPI?.video?.createProject) {
-      try {
-        const created = await window.electronAPI.video.createProject({
-          name: t("新视频项目"),
-          workspaceId,
-        });
-        // IPC 创建的项目可能没有默认场景，补充一个
-        if (created.scenes.length === 0) {
-          const updated = {
-            ...created,
-            scenes: [defaultScene],
-            updatedAt: new Date().toISOString(),
-          };
-          setCurrentProject(updated);
-          debouncedSave(updated);
-        } else {
-          setCurrentProject(created);
-        }
-        setSelectedSceneId(created.scenes[0]?.id ?? defaultScene.id);
-      } catch (err) {
-        console.warn("IPC 创建项目失败，使用本地模式:", err);
-        setCurrentProject(localProject);
-        setSelectedSceneId(defaultScene.id);
-      }
-    } else {
-      setCurrentProject(localProject);
-      setSelectedSceneId(defaultScene.id);
+    if (!window.electronAPI?.video?.createProject) return;
+    try {
+      const created = await window.electronAPI.video.createProject({
+        name: t("新视频项目"),
+        workspaceId,
+        projectId: activeProject?.id || '',
+        contentId: '',
+      });
+      setCurrentProjectFull(created);
+      const firstScene = [...created.scenes].sort(
+        (a, b) => a.sort_order - b.sort_order,
+      )[0];
+      setSelectedSceneId(firstScene?.id ?? null);
+      setLeftTab("scenes");
+    } catch (err) {
+      console.error("创建项目失败:", err);
+      toast.error(t("创建项目失败"));
     }
-
-    setLeftTab("scenes");
-  }, [t, workspaceId, debouncedSave]);
+  }, [t, workspaceId]);
 
   // ========== 场景属性编辑 ==========
 
-  // 更新单个场景属性
+  // 更新单个场景属性（通过 IPC）
   const handleSceneUpdate = useCallback(
-    (updates: Partial<Scene>) => {
-      if (!currentProject || !selectedSceneId) return;
-      const newScenes = currentProject.scenes.map((s) =>
-        s.id === selectedSceneId ? { ...s, ...updates } : s,
-      );
-      handleProjectUpdate({ scenes: newScenes });
+    async (updates: Partial<Scene>) => {
+      if (!currentProjectFull || !selectedSceneId) return;
+      if (!window.electronAPI?.video?.updateScene) return;
+
+      // 临时预览项目不持久化，只在内存中更新
+      if (isTemporaryProject(currentProjectFull)) {
+        setCurrentProjectFull(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            scenes: prev.scenes.map(s =>
+              s.id === selectedSceneId
+                ? { ...s, ...toDbSceneUpdate(updates) }
+                : s
+            ),
+          };
+        });
+        return;
+      }
+
+      const dbUpdates = toDbSceneUpdate(updates);
+      try {
+        await window.electronAPI.video.updateScene({
+          workspaceId,
+          sceneId: selectedSceneId,
+          updates: dbUpdates,
+        });
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("更新场景失败:", err);
+      }
     },
-    [currentProject, selectedSceneId, handleProjectUpdate],
+    [currentProjectFull, selectedSceneId, workspaceId, refetchProject],
   );
 
-  // 更新过渡效果
+  // 更新过渡效果（通过 IPC 更新对应场景的 transition 字段）
   const handleTransitionUpdate = useCallback(
-    (index: number, updates: Partial<Transition>) => {
-      if (!currentProject) return;
-      const newTransitions = currentProject.transitions.map((t, i) =>
-        i === index ? { ...t, ...updates } : t,
-      );
-      handleProjectUpdate({ transitions: newTransitions });
+    async (index: number, updates: Partial<Transition>) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.updateScene) return;
+
+      // transitions[i] 对应 sortedDbScenes[i+1]
+      const targetScene = sortedDbScenes[index + 1];
+      if (!targetScene) return;
+
+      // 临时预览项目不持久化，只在内存中更新
+      if (isTemporaryProject(currentProjectFull)) {
+        setCurrentProjectFull(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            scenes: prev.scenes.map(s =>
+              s.id === targetScene.id
+                ? { ...s, ...toDbTransitionUpdate(updates) }
+                : s
+            ),
+          };
+        });
+        return;
+      }
+
+      const dbUpdates = toDbTransitionUpdate(updates);
+      try {
+        await window.electronAPI.video.updateScene({
+          workspaceId,
+          sceneId: targetScene.id,
+          updates: dbUpdates,
+        });
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("更新过渡失败:", err);
+      }
     },
-    [currentProject, handleProjectUpdate],
+    [currentProjectFull, sortedDbScenes, workspaceId, refetchProject],
   );
 
   // ========== 素材管理 ==========
 
-  // 添加素材（乐观更新 UI）
+  // 添加素材（通过 IPC）
   const handleAddAsset = useCallback(
-    (asset: Asset) => {
-      if (!currentProject) return;
-      handleProjectUpdate({
-        assets: [...currentProject.assets, asset],
-      });
-    },
-    [currentProject, handleProjectUpdate],
-  );
+    async (asset: Asset) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.addAsset) return;
 
-  // 删除素材
-  const handleRemoveAsset = useCallback(
-    async (assetId: string) => {
-      if (!currentProject) return;
-      // 乐观更新 UI
-      handleProjectUpdate({
-        assets: currentProject.assets.filter((a) => a.id !== assetId),
-      });
-      // 异步删除文件
-      if (window.electronAPI?.video?.removeAsset) {
-        try {
-          await window.electronAPI.video.removeAsset(
-            currentProject.id,
-            assetId,
-          );
-        } catch (err) {
-          console.warn("删除素材文件失败:", err);
-        }
+      // 临时预览项目不支持编辑，提示用户先保存
+      if (isTemporaryProject(currentProjectFull)) {
+        toast.info(t("请先保存项目后再编辑"));
+        return;
+      }
+
+      try {
+        await window.electronAPI.video.addAsset({
+          workspaceId,
+          projectId: currentProjectFull.id,
+          filePath: asset.path,
+          type: asset.type,
+          name: asset.name,
+        });
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("添加素材失败:", err);
       }
     },
-    [currentProject, handleProjectUpdate],
+    [currentProjectFull, workspaceId, refetchProject, t],
   );
 
-  // 当前选中的场景
-  const selectedScene =
-    currentProject?.scenes.find((s) => s.id === selectedSceneId) ?? null;
+  // 删除素材（通过 IPC）
+  const handleRemoveAsset = useCallback(
+    async (assetId: string) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.removeAsset) return;
 
-  // 当前选中的过渡
-  const selectedTransition =
-    selectedTransitionIdx !== null
-      ? (currentProject?.transitions[selectedTransitionIdx] ?? null)
-      : null;
+      // 临时预览项目不支持编辑，提示用户先保存
+      if (isTemporaryProject(currentProjectFull)) {
+        toast.info(t("请先保存项目后再编辑"));
+        return;
+      }
+
+      try {
+        await window.electronAPI.video.removeAsset(
+          workspaceId,
+          currentProjectFull.id,
+          assetId,
+        );
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("删除素材失败:", err);
+      }
+    },
+    [currentProjectFull, workspaceId, refetchProject, t],
+  );
 
   // ========== 场景操作 ==========
 
-  // 添加场景
-  const handleAddScene = useCallback(() => {
-    if (!currentProject) return;
-    const newScene: Scene = {
-      id: generateId(),
-      name: t("新场景"),
-      compositionId: "TitleAnimation",
-      durationInFrames: 90,
-      props: {
-        title: t("新场景"),
-        subtitle: "",
-        colors: {
-          primary: "#6366f1",
-          secondary: "#8b5cf6",
-          background: "#1a1a2e",
-          text: "#ffffff",
-        },
-        animationStyle: "fade",
-      },
-    };
-    const newScenes = [...currentProject.scenes, newScene];
-    // 如果已有场景，添加默认过渡
-    const newTransitions =
-      currentProject.scenes.length > 0
-        ? [
-            ...currentProject.transitions,
-            { type: "fade" as const, durationInFrames: 15 },
-          ]
-        : [...currentProject.transitions];
-    handleProjectUpdate({ scenes: newScenes, transitions: newTransitions });
-    setSelectedSceneId(newScene.id);
-  }, [currentProject, handleProjectUpdate, t]);
+  // 添加场景（通过 IPC）
+  const handleAddScene = useCallback(async () => {
+    if (!currentProjectFull) return;
+    if (!window.electronAPI?.video?.addScene) return;
 
-  // 删除场景
+    // 临时预览项目不支持编辑，提示用户先保存
+    if (isTemporaryProject(currentProjectFull)) {
+      toast.info(t("请先保存项目后再编辑"));
+      return;
+    }
+
+    try {
+      const { sceneId } = await window.electronAPI.video.addScene({
+        workspaceId,
+        projectId: currentProjectFull.id,
+        compositionId: "TitleAnimation",
+        name: t("新场景"),
+        durationInFrames: 90,
+        props: JSON.stringify({
+          title: t("新场景"),
+          subtitle: "",
+          colors: {
+            primary: "#6366f1",
+            secondary: "#8b5cf6",
+            background: "#1a1a2e",
+            text: "#ffffff",
+          },
+          animationStyle: "fade",
+        }),
+        transitionType: currentProjectFull.scenes.length > 0 ? "fade" : "none",
+        transitionDuration: 15,
+      });
+      await refetchProject(currentProjectFull.id);
+      setSelectedSceneId(sceneId);
+    } catch (err) {
+      console.warn("添加场景失败:", err);
+      toast.error(t("添加场景失败"));
+    }
+  }, [currentProjectFull, workspaceId, refetchProject, t]);
+
+  // 删除场景（通过 IPC）
   const handleDeleteScene = useCallback(
-    (sceneId: string) => {
-      if (!currentProject) return;
-      const idx = currentProject.scenes.findIndex((s) => s.id === sceneId);
-      if (idx === -1) return;
-      const newScenes = currentProject.scenes.filter((s) => s.id !== sceneId);
-      // 删除对应的过渡：如果删除的不是最后一个场景，删除该场景后面的过渡；
-      // 如果是最后一个，删除前面的过渡
-      const newTransitions = [...currentProject.transitions];
-      if (newTransitions.length > 0) {
-        const transIdx =
-          idx < newTransitions.length ? idx : newTransitions.length - 1;
-        newTransitions.splice(transIdx, 1);
+    async (sceneId: string) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.removeScene) return;
+
+      // 临时预览项目不支持编辑，提示用户先保存
+      if (isTemporaryProject(currentProjectFull)) {
+        toast.info(t("请先保存项目后再编辑"));
+        return;
       }
-      handleProjectUpdate({ scenes: newScenes, transitions: newTransitions });
-      // 选中相邻场景
-      if (selectedSceneId === sceneId) {
-        const nextScene = newScenes[Math.min(idx, newScenes.length - 1)];
-        setSelectedSceneId(nextScene?.id ?? null);
+
+      try {
+        await window.electronAPI.video.removeScene(
+          workspaceId,
+          currentProjectFull.id,
+          sceneId,
+        );
+        await refetchProject(currentProjectFull.id);
+
+        // 选中相邻场景
+        if (selectedSceneId === sceneId) {
+          const remaining = sortedDbScenes.filter((s) => s.id !== sceneId);
+          setSelectedSceneId(remaining[0]?.id ?? null);
+        }
+      } catch (err) {
+        console.warn("删除场景失败:", err);
       }
     },
-    [currentProject, handleProjectUpdate, selectedSceneId],
+    [
+      currentProjectFull,
+      workspaceId,
+      refetchProject,
+      selectedSceneId,
+      sortedDbScenes,
+      t,
+    ],
   );
 
   // 场景上移
   const handleMoveSceneUp = useCallback(
-    (sceneId: string) => {
-      if (!currentProject) return;
-      const idx = currentProject.scenes.findIndex((s) => s.id === sceneId);
-      if (idx <= 0) return;
-      const newScenes = [...currentProject.scenes];
-      [newScenes[idx - 1], newScenes[idx]] = [
-        newScenes[idx],
-        newScenes[idx - 1],
-      ];
-      // 同步交换过渡
-      const newTransitions = [...currentProject.transitions];
-      if (idx - 1 < newTransitions.length && idx < newTransitions.length) {
-        [newTransitions[idx - 1], newTransitions[idx]] = [
-          newTransitions[idx],
-          newTransitions[idx - 1],
-        ];
+    async (sceneId: string) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.reorderScenes) return;
+
+      // 临时预览项目不支持编辑，提示用户先保存
+      if (isTemporaryProject(currentProjectFull)) {
+        toast.info(t("请先保存项目后再编辑"));
+        return;
       }
-      handleProjectUpdate({ scenes: newScenes, transitions: newTransitions });
+
+      const idx = sortedDbScenes.findIndex((s) => s.id === sceneId);
+      if (idx <= 0) return;
+
+      const newOrder = sortedDbScenes.map((s) => s.id);
+      [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+
+      try {
+        await window.electronAPI.video.reorderScenes(
+          workspaceId,
+          currentProjectFull.id,
+          newOrder,
+        );
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("重排场景失败:", err);
+      }
     },
-    [currentProject, handleProjectUpdate],
+    [currentProjectFull, sortedDbScenes, workspaceId, refetchProject, t],
   );
 
   // 场景下移
   const handleMoveSceneDown = useCallback(
-    (sceneId: string) => {
-      if (!currentProject) return;
-      const idx = currentProject.scenes.findIndex((s) => s.id === sceneId);
-      if (idx === -1 || idx >= currentProject.scenes.length - 1) return;
-      const newScenes = [...currentProject.scenes];
-      [newScenes[idx], newScenes[idx + 1]] = [
-        newScenes[idx + 1],
-        newScenes[idx],
-      ];
-      // 同步交换过渡
-      const newTransitions = [...currentProject.transitions];
-      if (idx < newTransitions.length && idx + 1 < newTransitions.length) {
-        [newTransitions[idx], newTransitions[idx + 1]] = [
-          newTransitions[idx + 1],
-          newTransitions[idx],
-        ];
+    async (sceneId: string) => {
+      if (!currentProjectFull) return;
+      if (!window.electronAPI?.video?.reorderScenes) return;
+
+      // 临时预览项目不支持编辑，提示用户先保存
+      if (isTemporaryProject(currentProjectFull)) {
+        toast.info(t("请先保存项目后再编辑"));
+        return;
       }
-      handleProjectUpdate({ scenes: newScenes, transitions: newTransitions });
+
+      const idx = sortedDbScenes.findIndex((s) => s.id === sceneId);
+      if (idx === -1 || idx >= sortedDbScenes.length - 1) return;
+
+      const newOrder = sortedDbScenes.map((s) => s.id);
+      [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+
+      try {
+        await window.electronAPI.video.reorderScenes(
+          workspaceId,
+          currentProjectFull.id,
+          newOrder,
+        );
+        await refetchProject(currentProjectFull.id);
+      } catch (err) {
+        console.warn("重排场景失败:", err);
+      }
     },
-    [currentProject, handleProjectUpdate],
+    [currentProjectFull, sortedDbScenes, workspaceId, refetchProject, t],
   );
 
   // 同步播放器状态
@@ -561,12 +638,12 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
 
     player.addEventListener("play", handlePlay);
     player.addEventListener("pause", handlePause);
-    player.addEventListener("seeked", handleSeek as EventListener);
+    player.addEventListener("seeked", handleSeek);
 
     return () => {
       player.removeEventListener("play", handlePlay);
       player.removeEventListener("pause", handlePause);
-      player.removeEventListener("seeked", handleSeek as EventListener);
+      player.removeEventListener("seeked", handleSeek);
     };
   }, []);
 
@@ -609,14 +686,13 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
           {leftTab === "projects" ? (
             <VideoProjectList
               workspaceId={workspaceId}
-              selected={currentProject?.id}
+              selected={currentProjectFull?.id}
               onSelect={handleProjectSelect}
-              extraProjects={localProjects}
             />
           ) : leftTab === "scenes" ? (
             <SceneList
-              scenes={currentProject?.scenes ?? []}
-              transitions={currentProject?.transitions ?? []}
+              scenes={legacyProject?.scenes ?? []}
+              transitions={legacyProject?.transitions ?? []}
               selectedId={selectedSceneId}
               selectedTransitionIdx={selectedTransitionIdx}
               onSelect={(id) => {
@@ -630,7 +706,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
               onDelete={handleDeleteScene}
               onMoveUp={handleMoveSceneUp}
               onMoveDown={handleMoveSceneDown}
-              fps={currentProject?.config.fps ?? 30}
+              fps={legacyProject?.config.fps ?? 30}
             />
           ) : (
             <VideoTemplates
@@ -646,7 +722,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
         {/* 预览 */}
         <div className="flex-1 min-h-0">
           <VideoPreview
-            project={currentProject}
+            project={legacyProject}
             playerRef={playerRef}
             onFrameChange={handleFrameChange}
           />
@@ -655,7 +731,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
         {/* 时间轴 */}
         <div className="h-32 border-t shrink-0">
           <VideoTimeline
-            project={currentProject}
+            project={legacyProject}
             currentFrame={currentFrame}
             onFrameChange={handleFrameChange}
             isPlaying={isPlaying}
@@ -687,7 +763,7 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
         <ScrollArea className="flex-1">
           {rightTab === "properties" ? (
             <VideoProperties
-              project={currentProject}
+              project={legacyProject}
               onUpdate={handleProjectUpdate}
               onRender={() => setRightTab("export")}
               selectedScene={selectedScene}
@@ -698,9 +774,9 @@ export function VideoEditor({ workspaceId, className }: VideoEditorProps) {
               onAddAsset={handleAddAsset}
               onRemoveAsset={handleRemoveAsset}
             />
-          ) : currentProject ? (
+          ) : legacyProject ? (
             <VideoExport
-              project={currentProject}
+              project={legacyProject}
               onExport={handleRender}
               onCancel={() => setRightTab("properties")}
             />

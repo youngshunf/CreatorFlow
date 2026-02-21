@@ -49,6 +49,7 @@ export default function ProjectDashboard() {
     createContent,
     deleteContent,
     updateContentStatus,
+    updateContentTracks,
     listContentVersions,
     rollbackContentVersion,
   } = useCreatorMedia();
@@ -733,6 +734,7 @@ export default function ProjectDashboard() {
             onNextStage={handleNextStage}
             onScriptAction={handleScriptAction}
             onStageAction={handleStageAction}
+            onUpdateTracks={updateContentTracks}
             onOpenVideoStudio={handleOpenVideoStudio}
           />
         </div>

@@ -6,41 +6,32 @@
  * - 中心面板：视频预览 + 时间线
  * - 右面板：属性编辑 + 导出 + 完成制作
  *
- * 复用 VideoEditor 子组件（VideoPreview, VideoTimeline, VideoProperties, VideoExport, VideoTemplates）
+ * Phase 5 适配：状态使用 VideoProjectFull (DB)，通过适配层转为旧 VideoProject 传给子组件。
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Clapperboard, Film, Settings, Download, Plus, CheckCircle } from 'lucide-react'
+import { Clapperboard, Settings, Download, CheckCircle, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import type { PlayerRef } from '@remotion/player'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useT } from '@/context/LocaleContext'
 import { useActiveWorkspace } from '@/context/AppShellContext'
 import { useNavigation, routes } from '@/contexts/NavigationContext'
-import type { VideoProject, VideoTemplate } from '@sprouty-ai/video'
+import type { VideoProjectFull } from '@sprouty-ai/shared/db/types'
+import type { VideoTemplate } from '@sprouty-ai/video'
 import { VideoPreview } from '@/components/video/VideoPreview'
 import { VideoTimeline } from '@/components/video/VideoTimeline'
 import { VideoProperties } from '@/components/video/VideoProperties'
 import { VideoTemplates } from '@/components/video/VideoTemplates'
 import { VideoExport } from '@/components/video/VideoExport'
 import { CreateVideoProjectDialog } from '@/components/video/CreateVideoProjectDialog'
+import { toLegacyProject, toDbProjectUpdate } from '@/lib/video-adapter'
+import { EditPopover, getEditConfig } from '@/components/ui/EditPopover'
 import { useCreatorMedia } from './hooks/useCreatorMedia'
 import { VideoContentList } from './components/VideoContentList'
 import type { Content, ContentVideoMetadata } from '@sprouty-ai/shared/db/types'
-
-/** 模板 ID → Composition 组件 ID 映射 */
-const TEMPLATE_COMPOSITION_MAP: Record<string, string> = {
-  'social-media-vertical': 'TitleAnimation',
-  'social-media-square': 'TitleAnimation',
-  'marketing-product': 'ProductShowcase',
-  'marketing-promo': 'TitleAnimation',
-  'tutorial-steps': 'Slideshow',
-  'tutorial-explainer': 'ProductShowcase',
-  'tutorial-tips': 'Slideshow',
-}
 
 /** 解析 content.metadata JSON */
 function parseVideoMetadata(content: Content): ContentVideoMetadata | null {
@@ -52,6 +43,11 @@ function parseVideoMetadata(content: Content): ContentVideoMetadata | null {
   }
 }
 
+/** 检测是否是临时预览项目（不持久化到数据库） */
+function isTemporaryProject(project: VideoProjectFull | null): boolean {
+  return project?.id.startsWith('temp-') ?? false
+}
+
 export default function VideoStudio() {
   const t = useT()
   const activeWorkspace = useActiveWorkspace()
@@ -61,10 +57,10 @@ export default function VideoStudio() {
 
   const {
     contents, loading, activeProject,
-    updateContentStatus, createContent,
+    updateContentStatus, createContent, refreshContents,
   } = useCreatorMedia()
 
-  // 筛选视频类型内容（通过 metadata 判断）
+  // 筛选视频类型内容
   const videoContents = useMemo(
     () => contents.filter(c => {
       if (!c.metadata) return false
@@ -82,10 +78,9 @@ export default function VideoStudio() {
   const searchParams = new URLSearchParams(window.location.search)
   const urlContentId = searchParams.get('contentId')
 
-  // 状态
+  // 状态 — 使用 DB 类型
   const [activeContentId, setActiveContentId] = useState<string | null>(null)
-  const [currentProject, setCurrentProject] = useState<VideoProject | null>(null)
-  const [localProjects, setLocalProjects] = useState<VideoProject[]>([])
+  const [currentProjectFull, setCurrentProjectFull] = useState<VideoProjectFull | null>(null)
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [leftTab, setLeftTab] = useState<'contents' | 'templates'>('contents')
@@ -95,104 +90,94 @@ export default function VideoStudio() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [pendingTemplate, setPendingTemplate] = useState<VideoTemplate | null>(null)
 
+  // 派生旧类型 — 子组件零改动
+  const legacyProject = useMemo(
+    () => currentProjectFull ? toLegacyProject(currentProjectFull) : null,
+    [currentProjectFull],
+  )
+
+  /** 从 IPC 刷新项目数据 */
+  const refetchProject = useCallback(async (projectId: string) => {
+    if (!window.electronAPI?.video?.getProject) return
+    try {
+      const full = await window.electronAPI.video.getProject(workspaceId, projectId)
+      if (full) setCurrentProjectFull(full)
+    } catch (err) {
+      console.warn('刷新项目失败:', err)
+    }
+  }, [workspaceId])
+
   /** 从视频内容加载/创建 VideoProject */
-  const handleContentSelect = useCallback((content: Content) => {
+  const handleContentSelect = useCallback(async (content: Content) => {
     setActiveContentId(content.id)
     const meta = parseVideoMetadata(content)
 
-    if (meta?.video_project_id) {
-      // 已有关联项目 — 尝试从 IPC 加载
-      if (window.electronAPI?.video?.getProject) {
-        window.electronAPI.video.getProject(meta.video_project_id).then((proj: VideoProject | null) => {
-          if (proj) {
-            setCurrentProject(proj)
-          } else {
-            // 项目不存在，创建新的
-            createProjectFromContent(content, meta)
-          }
-        }).catch(() => {
-          createProjectFromContent(content, meta)
-        })
-      } else {
-        createProjectFromContent(content, meta)
+    if (meta?.video_project_id && window.electronAPI?.video?.getProject) {
+      try {
+        const proj = await window.electronAPI.video.getProject(workspaceId, meta.video_project_id)
+        if (proj) {
+          setCurrentProjectFull(proj)
+          return
+        }
+      } catch {
+        // 加载失败，走创建流程
       }
-    } else {
-      // 没有关联项目 — 自动创建
-      createProjectFromContent(content, meta)
-    }
-  }, [])
-
-  /** 基于内容创建 VideoProject */
-  const createProjectFromContent = useCallback((content: Content, meta: ContentVideoMetadata | null) => {
-    const now = new Date().toISOString()
-    const templateId = meta?.video_template_id || 'social-media-vertical'
-    const compositionId = TEMPLATE_COMPOSITION_MAP[templateId] || 'TitleAnimation'
-    const resolution = meta?.video_resolution || { width: 1080, height: 1920 }
-
-    const project: VideoProject = {
-      id: `proj-${Date.now()}`,
-      name: content.title || t('视频项目'),
-      createdAt: now,
-      updatedAt: now,
-      config: {
-        width: resolution.width,
-        height: resolution.height,
-        fps: 30,
-        durationInFrames: 300,
-      },
-      compositions: [
-        {
-          id: compositionId,
-          name: content.title || t('视频组合'),
-          code: '',
-          props: {
-            title: content.title || '',
-            subtitle: content.topic || '',
-            colors: {
-              primary: '#6366f1',
-              secondary: '#8b5cf6',
-              background: '#1a1a2e',
-              text: '#ffffff',
-            },
-            animationStyle: 'spring',
-          },
-        },
-      ],
-      assets: [],
-      renders: [],
     }
 
-    setCurrentProject(project)
-    setLocalProjects(prev => [...prev, project])
-  }, [t])
+    // 没有关联项目或加载失败 — 通过 IPC 创建
+    if (window.electronAPI?.video?.createProject) {
+      try {
+        const resolution = meta?.video_resolution || { width: 1080, height: 1920 }
+        const created = await window.electronAPI.video.createProject({
+          workspaceId,
+          projectId: activeProject?.id || '',
+          contentId: content.id,
+          name: content.title || t('视频项目'),
+          width: resolution.width,
+          height: resolution.height,
+          fps: 30,
+        })
+        setCurrentProjectFull(created)
+      } catch (err) {
+        console.error('创建视频项目失败:', err)
+        toast.error(t('创建视频项目失败'))
+      }
+    }
+  }, [workspaceId, t])
 
-  /** 模板预览 */
+  /** 模板预览（纯前端内存构建，不持久化） */
   const handleTemplateSelect = useCallback((template: VideoTemplate) => {
-    const now = new Date().toISOString()
-    const compositionId = TEMPLATE_COMPOSITION_MAP[template.id] || 'TitleAnimation'
-    const project: VideoProject = {
-      id: `preview-${Date.now()}`,
+    // 构建临时的 VideoProjectFull 对象（不调用 IPC，不持久化到数据库）
+    const tempProject: VideoProjectFull = {
+      id: `temp-${Date.now()}`, // 临时 ID
+      content_id: '', // 临时项目无 content_id
       name: `${template.name} - ${t('预览')}`,
-      createdAt: now,
-      updatedAt: now,
-      config: {
-        width: template.defaultConfig.width,
-        height: template.defaultConfig.height,
-        fps: template.defaultConfig.fps,
-        durationInFrames: template.defaultConfig.durationInFrames,
-      },
-      compositions: [
+      description: template.description,
+      width: template.defaultConfig.width,
+      height: template.defaultConfig.height,
+      fps: template.defaultConfig.fps,
+      metadata: JSON.stringify({ templateId: template.id, isPreview: true }),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      scenes: [
         {
-          id: compositionId,
+          id: `temp-scene-${Date.now()}`,
+          project_id: `temp-${Date.now()}`,
+          composition_id: template.compositionId,
           name: template.name,
-          code: template.compositionCode || '',
-          props: template.defaultProps || {},
+          sort_order: 0,
+          duration_in_frames: template.defaultConfig.durationInFrames,
+          props: JSON.stringify(template.defaultProps),
+          transition_type: 'none',
+          transition_duration: 0,
+          transition_direction: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ],
       assets: [],
-      renders: [],
     }
-    setCurrentProject(project)
+    setCurrentProjectFull(tempProject)
     setActiveContentId(null)
   }, [t])
 
@@ -203,49 +188,52 @@ export default function VideoStudio() {
   }, [])
 
   /** 确认从模板创建 */
-  const handleCreateFromTemplate = useCallback((data: { name: string; description: string }) => {
+  const handleCreateFromTemplate = useCallback(async (data: { name: string; description: string }) => {
     if (!pendingTemplate) return
-    const now = new Date().toISOString()
-    const compositionId = TEMPLATE_COMPOSITION_MAP[pendingTemplate.id] || 'TitleAnimation'
-    const project: VideoProject = {
-      id: `proj-${Date.now()}`,
-      name: data.name,
-      description: data.description || undefined,
-      createdAt: now,
-      updatedAt: now,
-      config: {
-        width: pendingTemplate.defaultConfig.width,
-        height: pendingTemplate.defaultConfig.height,
-        fps: pendingTemplate.defaultConfig.fps,
-        durationInFrames: pendingTemplate.defaultConfig.durationInFrames,
-      },
-      compositions: [
-        {
-          id: compositionId,
-          name: pendingTemplate.name,
-          code: pendingTemplate.compositionCode || '',
-          props: pendingTemplate.defaultProps || {},
-        },
-      ],
-      assets: [],
-      renders: [],
-    }
-    setLocalProjects(prev => [...prev, project])
-    setCurrentProject(project)
-    setLeftTab('contents')
-    setPendingTemplate(null)
-    setActiveContentId(null)
-  }, [pendingTemplate])
+    if (!window.electronAPI?.video?.createFromTemplate) return
 
-  /** 更新项目属性 */
-  const handleProjectUpdate = useCallback((updates: Partial<VideoProject>) => {
-    if (!currentProject) return
-    setCurrentProject({
-      ...currentProject,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    })
-  }, [currentProject])
+    try {
+      const created = await window.electronAPI.video.createFromTemplate({
+        workspaceId,
+        projectId: activeProject?.id || '',  // 空字符串时后端会自动获取活跃项目
+        contentId: activeContentId || '',    // 空字符串时后端会自动创建 content
+        templateId: pendingTemplate.id,
+        name: data.name,
+        description: data.description || undefined,
+      })
+      setCurrentProjectFull(created)
+      setLeftTab('contents')
+      setPendingTemplate(null)
+      // 刷新内容列表以显示新创建的视频项目
+      await refreshContents()
+    } catch (err) {
+      console.error('从模板创建项目失败:', err)
+      toast.error(t('创建项目失败'))
+    }
+  }, [pendingTemplate, workspaceId, activeContentId, activeProject, t, refreshContents])
+
+  /** 更新项目属性（通过 IPC 持久化 + refetch） */
+  const handleProjectUpdate = useCallback(async (updates: Partial<import('@sprouty-ai/video').VideoProject>) => {
+    if (!currentProjectFull) return
+
+    // 临时预览项目不持久化，只在内存中更新
+    if (isTemporaryProject(currentProjectFull)) {
+      setCurrentProjectFull(prev => prev ? { ...prev, ...updates } : null)
+      return
+    }
+
+    const dbUpdates = toDbProjectUpdate(updates)
+    if (Object.keys(dbUpdates).length === 0) return
+
+    try {
+      if (window.electronAPI?.video?.updateProject) {
+        await window.electronAPI.video.updateProject(workspaceId, currentProjectFull.id, dbUpdates)
+        await refetchProject(currentProjectFull.id)
+      }
+    } catch (err) {
+      console.warn('更新项目失败:', err)
+    }
+  }, [currentProjectFull, workspaceId, refetchProject])
 
   /** 帧变化 */
   const handleFrameChange = useCallback((frame: number) => {
@@ -273,15 +261,15 @@ export default function VideoStudio() {
     outputFormat: 'mp4' | 'webm' | 'gif'
     quality: 'draft' | 'standard' | 'high'
   }) => {
-    if (!currentProject) return
+    if (!currentProjectFull) return
     try {
       if (!window.electronAPI?.video?.render) {
         toast.info(t('视频导出功能需要完整的 Electron 环境'))
         return
       }
       const outputPath = await window.electronAPI.video.render({
-        projectId: currentProject.id,
-        compositionId: options.compositionId,
+        projectId: currentProjectFull.id,
+        workspaceId,
         outputFormat: options.outputFormat,
         quality: options.quality,
       })
@@ -293,7 +281,7 @@ export default function VideoStudio() {
         description: error instanceof Error ? error.message : String(error),
       })
     }
-  }, [currentProject, t])
+  }, [currentProjectFull, workspaceId, t])
 
   /** 完成制作 — 将关联的 content 状态推进到 adapting */
   const handleFinishCreation = useCallback(async () => {
@@ -333,12 +321,12 @@ export default function VideoStudio() {
 
     player.addEventListener('play', handlePlay)
     player.addEventListener('pause', handlePause)
-    player.addEventListener('seeked', handleSeek as EventListener)
+    player.addEventListener('seeked', handleSeek)
 
     return () => {
       player.removeEventListener('play', handlePlay)
       player.removeEventListener('pause', handlePause)
-      player.removeEventListener('seeked', handleSeek as EventListener)
+      player.removeEventListener('seeked', handleSeek)
     }
   }, [])
 
@@ -366,6 +354,14 @@ export default function VideoStudio() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <EditPopover
+            trigger={
+              <button className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Sparkles className="h-3.5 w-3.5" />
+              </button>
+            }
+            {...getEditConfig('creator-media-create-video-project', activeWorkspace?.rootPath || '')}
+          />
         </div>
 
         <ScrollArea className="flex-1">
@@ -385,14 +381,14 @@ export default function VideoStudio() {
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 min-h-0">
           <VideoPreview
-            project={currentProject}
+            project={legacyProject}
             playerRef={playerRef}
             onFrameChange={handleFrameChange}
           />
         </div>
         <div className="h-32 border-t shrink-0">
           <VideoTimeline
-            project={currentProject}
+            project={legacyProject}
             currentFrame={currentFrame}
             onFrameChange={handleFrameChange}
             isPlaying={isPlaying}
@@ -421,14 +417,14 @@ export default function VideoStudio() {
         <ScrollArea className="flex-1">
           {rightTab === 'properties' ? (
             <VideoProperties
-              project={currentProject}
+              project={legacyProject}
               onUpdate={handleProjectUpdate}
               onRender={() => setRightTab('export')}
             />
-          ) : currentProject ? (
+          ) : legacyProject ? (
             <div className="flex flex-col">
               <VideoExport
-                project={currentProject}
+                project={legacyProject}
                 onExport={handleRender}
                 onCancel={() => setRightTab('properties')}
               />

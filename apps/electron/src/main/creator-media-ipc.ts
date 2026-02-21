@@ -12,6 +12,10 @@ import type { WindowManager } from './window-manager';
 import { getCreatorMediaDB } from './creator-media-db';
 import { IPC_CHANNELS } from '../shared/types';
 import { getWorkspaceByNameOrId, type Workspace } from '@sprouty-ai/shared/config';
+import {
+  generateContentDirPath,
+  ensureContentDirs,
+} from '@sprouty-ai/shared/utils/content-paths';
 import { ipcLog } from './logger';
 
 // Repository 导入
@@ -180,7 +184,29 @@ export function registerCreatorMediaIpc(_windowManager: WindowManager): void {
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_CREATE, async (_event, workspaceId: string, data: unknown) => {
     const ws = getWorkspaceOrThrow(workspaceId);
     const db = getCreatorMediaDB(ws.rootPath);
-    return contentsRepo.createContent(db, data as any);
+    const contentData = data as any;
+
+    // 如果 content_dir_path 为空，自动生成
+    if (!contentData.content_dir_path && contentData.project_id) {
+      const project = projectsRepo.getProject(db, contentData.project_id);
+      if (project) {
+        const nextNumber = contentsRepo.getNextContentNumber(db, contentData.project_id);
+        contentData.content_dir_path = generateContentDirPath(
+          project.name,
+          nextNumber,
+          contentData.title || 'untitled',
+        );
+      }
+    }
+
+    const created = contentsRepo.createContent(db, contentData);
+
+    // 创建文件系统目录
+    if (created.content_dir_path) {
+      ensureContentDirs(ws.rootPath, created.content_dir_path, created.content_tracks);
+    }
+
+    return created;
   });
 
   ipcMain.handle(IPC_CHANNELS.CREATOR_MEDIA_CONTENTS_UPDATE, async (_event, workspaceId: string, contentId: string, data: unknown) => {

@@ -27,7 +27,13 @@ import { RenderWorker } from "./render-worker";
 import { createBunPathResolver } from "../bun-path";
 import { getCreatorMediaDB } from "../creator-media-db";
 import { getWorkspaceByNameOrId } from "@sprouty-ai/shared/config";
+import {
+  generateContentDirPath,
+  ensureContentDirs,
+} from "@sprouty-ai/shared/utils/content-paths";
 import * as videoRepo from "@sprouty-ai/shared/db/repositories/video";
+import * as contentsRepo from "@sprouty-ai/shared/db/repositories/contents";
+import * as projectsRepo from "@sprouty-ai/shared/db/repositories/projects";
 import type {
   VideoProject,
   VideoProjectFull,
@@ -38,6 +44,7 @@ import type {
   UpdateVideoScene,
   UpdateVideoProject,
   CreateVideoAsset,
+  CreateContent,
 } from "@sprouty-ai/shared/db/types";
 import log from "../logger";
 
@@ -88,7 +95,8 @@ export const VIDEO_IPC_CHANNELS = {
 
 export interface CreateProjectRequest {
   workspaceId: string;
-  contentId: string;
+  projectId: string;   // projects 表的 ID，用于自动创建 content
+  contentId?: string;  // 已有的 content ID，为空时自动创建
   name: string;
   description?: string;
   width?: number;
@@ -132,7 +140,8 @@ export interface RenderRequest {
 
 export interface CreateFromTemplateRequest {
   workspaceId: string;
-  contentId: string;
+  projectId: string;   // projects 表的 ID
+  contentId?: string;  // 已有的 content ID，为空时自动创建
   templateId: string;
   name: string;
   description?: string;
@@ -150,11 +159,61 @@ export interface CompositionInfo {
 function getDB(workspaceId: string) {
   const ws = getWorkspaceByNameOrId(workspaceId);
   if (!ws) throw new Error(`Workspace not found: ${workspaceId}`);
-  return getCreatorMediaDB(ws.rootPath);
+  return { db: getCreatorMediaDB(ws.rootPath), rootPath: ws.rootPath };
 }
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+/**
+ * 确保视频项目有关联的 content 记录。
+ * 如果 contentId 已提供则直接返回；否则自动创建一个 content 记录并生成目录结构。
+ */
+function ensureContentId(
+  db: ReturnType<typeof getDB>["db"],
+  opts: { contentId?: string; projectId?: string; name: string; workspaceRoot: string },
+): string {
+  if (opts.contentId && opts.contentId.trim() !== '') return opts.contentId;
+
+  // 如果没有提供 projectId，从数据库获取活跃项目
+  let projectId = opts.projectId;
+  let projectName = opts.name;
+  if (!projectId || projectId.trim() === '') {
+    const activeProject = projectsRepo.getActiveProject(db);
+    if (!activeProject) {
+      throw new Error('No active project found. Please select or create a project first.');
+    }
+    projectId = activeProject.id;
+    projectName = activeProject.name;
+  } else {
+    const project = projectsRepo.getProject(db, projectId);
+    if (project) projectName = project.name;
+  }
+
+  // 获取下一个序号
+  const nextNumber = contentsRepo.getNextContentNumber(db, projectId);
+  const contentDirPath = generateContentDirPath(projectName, nextNumber, opts.name);
+
+  const contentId = generateId();
+  const data: CreateContent = {
+    id: contentId,
+    project_id: projectId,
+    title: opts.name,
+    status: "creating",
+    pipeline_mode: "manual",
+    content_dir_path: contentDirPath,
+    viral_pattern_id: null,
+    target_platforms: null,
+    metadata: JSON.stringify({ video_project_id: null }), // 创建后回填
+    content_tracks: "video",
+  };
+  contentsRepo.createContent(db, data);
+
+  // 创建文件系统目录
+  ensureContentDirs(opts.workspaceRoot, contentDirPath, "video");
+
+  return contentId;
 }
 
 // ============================================================================
@@ -186,18 +245,31 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.CREATE_PROJECT,
     async (_event, request: CreateProjectRequest): Promise<VideoProjectFull> => {
       ipcLog.info(`创建视频项目: ${request.name}`);
-      const db = getDB(request.workspaceId);
-      const data: CreateVideoProject = {
-        id: generateId(),
-        content_id: request.contentId,
+      const { db, rootPath } = getDB(request.workspaceId);
+      const videoProjectId = generateId();
+      const contentId = ensureContentId(db, {
+        contentId: request.contentId,
+        projectId: request.projectId,
         name: request.name,
-        description: request.description,
+        workspaceRoot: rootPath,
+      });
+      const data: CreateVideoProject = {
+        id: videoProjectId,
+        content_id: contentId,
+        name: request.name,
+        description: request.description ?? null,
         width: request.width ?? 1080,
         height: request.height ?? 1920,
         fps: request.fps ?? 30,
-        metadata: undefined,
+        metadata: null,
       };
       const project = videoRepo.createVideoProject(db, data);
+      // 回填 content metadata 中的 video_project_id
+      if (!request.contentId) {
+        contentsRepo.updateContent(db, contentId, {
+          metadata: JSON.stringify({ video_project_id: project.id }),
+        });
+      }
       return { ...project, scenes: [], assets: [] };
     },
   );
@@ -205,7 +277,7 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.GET_PROJECT,
     async (_event, workspaceId: string, projectId: string): Promise<VideoProjectFull | null> => {
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.getVideoProjectFull(db, projectId) ?? null;
     },
   );
@@ -213,7 +285,7 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.LIST_PROJECTS,
     async (_event, workspaceId: string, projectId: string): Promise<VideoProject[]> => {
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.listVideoProjects(db, projectId);
     },
   );
@@ -222,7 +294,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.UPDATE_PROJECT,
     async (_event, workspaceId: string, projectId: string, updates: UpdateVideoProject): Promise<VideoProject | null> => {
       ipcLog.info(`更新视频项目: ${projectId}`);
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.updateVideoProject(db, projectId, updates) ?? null;
     },
   );
@@ -231,7 +303,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.DELETE_PROJECT,
     async (_event, workspaceId: string, projectId: string): Promise<boolean> => {
       ipcLog.info(`删除视频项目: ${projectId}`);
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.deleteVideoProject(db, projectId);
     },
   );
@@ -244,7 +316,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.ADD_SCENE,
     async (_event, request: AddSceneRequest): Promise<{ sceneId: string }> => {
       ipcLog.info(`添加场景到项目: ${request.projectId}`);
-      const db = getDB(request.workspaceId);
+      const { db } = getDB(request.workspaceId);
 
       // 计算 sort_order
       let sortOrder: number;
@@ -267,13 +339,13 @@ export function registerVideoIpcHandlers(): void {
         id: generateId(),
         project_id: request.projectId,
         composition_id: request.compositionId,
-        name: request.name,
+        name: request.name ?? null,
         sort_order: sortOrder,
         duration_in_frames: request.durationInFrames ?? 90,
         props: request.props ?? "{}",
         transition_type: (request.transitionType as CreateVideoScene["transition_type"]) ?? "none",
         transition_duration: request.transitionDuration ?? 0,
-        transition_direction: request.transitionDirection as CreateVideoScene["transition_direction"],
+        transition_direction: (request.transitionDirection as CreateVideoScene["transition_direction"]) ?? null,
       };
 
       const scene = videoRepo.addVideoScene(db, data);
@@ -285,7 +357,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.UPDATE_SCENE,
     async (_event, request: UpdateSceneRequest): Promise<VideoScene | null> => {
       ipcLog.info(`更新场景: ${request.sceneId}`);
-      const db = getDB(request.workspaceId);
+      const { db } = getDB(request.workspaceId);
       return videoRepo.updateVideoScene(db, request.sceneId, request.updates) ?? null;
     },
   );
@@ -294,7 +366,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.REMOVE_SCENE,
     async (_event, workspaceId: string, projectId: string, sceneId: string): Promise<boolean> => {
       ipcLog.info(`删除场景: ${sceneId}`);
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.removeVideoScene(db, sceneId);
     },
   );
@@ -303,7 +375,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.REORDER_SCENES,
     async (_event, workspaceId: string, projectId: string, sceneIds: string[]): Promise<void> => {
       ipcLog.info(`重排场景: ${projectId}`);
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       videoRepo.reorderVideoScenes(db, projectId, sceneIds);
     },
   );
@@ -311,7 +383,7 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.GET_SCENES,
     async (_event, workspaceId: string, projectId: string): Promise<VideoScene[]> => {
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.listVideoScenes(db, projectId);
     },
   );
@@ -384,7 +456,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.ADD_ASSET,
     async (_event, request: AddAssetRequest): Promise<VideoAsset> => {
       ipcLog.info(`添加素材到项目 ${request.projectId}: ${request.filePath}`);
-      const db = getDB(request.workspaceId);
+      const { db } = getDB(request.workspaceId);
 
       // 验证素材类型
       const ext = extname(request.filePath).toLowerCase();
@@ -408,8 +480,8 @@ export function registerVideoIpcHandlers(): void {
         type: request.type,
         name: request.name ?? basename(request.filePath),
         file_path: request.filePath,
-        file_size: fileSize,
-        metadata: undefined,
+        file_size: fileSize ?? null,
+        metadata: null,
       };
 
       return videoRepo.addVideoAsset(db, data);
@@ -420,7 +492,7 @@ export function registerVideoIpcHandlers(): void {
     VIDEO_IPC_CHANNELS.REMOVE_ASSET,
     async (_event, workspaceId: string, projectId: string, assetId: string): Promise<boolean> => {
       ipcLog.info(`删除素材: ${assetId}`);
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.removeVideoAsset(db, assetId);
     },
   );
@@ -428,7 +500,7 @@ export function registerVideoIpcHandlers(): void {
   ipcMain.handle(
     VIDEO_IPC_CHANNELS.LIST_ASSETS,
     async (_event, workspaceId: string, projectId: string): Promise<VideoAsset[]> => {
-      const db = getDB(workspaceId);
+      const { db } = getDB(workspaceId);
       return videoRepo.listVideoAssets(db, projectId);
     },
   );
@@ -468,12 +540,19 @@ export function registerVideoIpcHandlers(): void {
       const template = getTemplateById(request.templateId);
       if (!template) throw new Error(`模板不存在: ${request.templateId}`);
 
-      const db = getDB(request.workspaceId);
+      const { db, rootPath } = getDB(request.workspaceId);
+      const videoProjectId = generateId();
+      const contentId = ensureContentId(db, {
+        contentId: request.contentId,
+        projectId: request.projectId,
+        name: request.name,
+        workspaceRoot: rootPath,
+      });
 
       // 创建项目
       const projectData: CreateVideoProject = {
-        id: generateId(),
-        content_id: request.contentId,
+        id: videoProjectId,
+        content_id: contentId,
         name: request.name,
         description: request.description ?? template.description,
         width: template.defaultConfig.width,
@@ -482,6 +561,13 @@ export function registerVideoIpcHandlers(): void {
         metadata: JSON.stringify({ templateId: template.id }),
       };
       const project = videoRepo.createVideoProject(db, projectData);
+
+      // 回填 content metadata 中的 video_project_id
+      if (!request.contentId) {
+        contentsRepo.updateContent(db, contentId, {
+          metadata: JSON.stringify({ video_project_id: project.id }),
+        });
+      }
 
       // 创建默认场景
       const sceneData: CreateVideoScene = {
@@ -494,7 +580,7 @@ export function registerVideoIpcHandlers(): void {
         props: JSON.stringify(template.defaultProps),
         transition_type: "none",
         transition_duration: 0,
-        transition_direction: undefined,
+        transition_direction: null,
       };
       videoRepo.addVideoScene(db, sceneData);
 
@@ -515,7 +601,7 @@ export function registerVideoIpcHandlers(): void {
       );
 
       try {
-        const db = getDB(workspaceId);
+        const { db } = getDB(workspaceId);
         const rw = getRenderWorker();
 
         const project = videoRepo.getVideoProjectFull(db, projectId);

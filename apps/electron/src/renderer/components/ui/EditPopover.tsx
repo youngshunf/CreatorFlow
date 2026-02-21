@@ -83,6 +83,7 @@ export type EditContextKey =
   | 'creator-media-create-content'
   | 'creator-media-idea-research'
   | 'creator-media-edit-scheduled-task'
+  | 'creator-media-create-video-project'
 
 /**
  * Full edit configuration including context for agent and example for UI.
@@ -614,6 +615,38 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
     example: '创建一个每天早上9点检查热榜的定时任务',
     overridePlaceholder: '描述你想创建或修改的 Hook',
     model: 'haiku',
+    systemPromptPreset: 'default',
+    inlineExecution: true,
+  }),
+
+  'creator-media-create-video-project': (location) => ({
+    context: {
+      label: '创建视频项目',
+      filePath: `${location}/.sprouty-ai/db/creator.db`,
+      context:
+        '用户想要通过 AI 智能创建一个视频项目。请根据用户描述的视频需求，分析并创建完整的视频项目。\n\n' +
+        '操作步骤：\n' +
+        '1. 读取当前活跃项目：sqlite3 .sprouty-ai/db/creator.db "SELECT id, name FROM projects WHERE is_active = 1;"\n' +
+        '2. 获取当前内容数量（用于序号）：sqlite3 .sprouty-ai/db/creator.db "SELECT COUNT(*) FROM contents WHERE project_id = \'<PROJECT_ID>\';"\n' +
+        '3. 生成 UUID：CONTENT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\') && VIDEO_PROJECT_ID=$(uuidgen | tr \'[:upper:]\' \'[:lower:]\')\n' +
+        '4. 创建 content 记录（content_tracks=\'video\', status=\'creating\', pipeline_mode=\'manual\'）\n' +
+        '5. 创建 video_projects 记录（关联 content_id）\n' +
+        '6. 创建 video_scenes 记录（至少一个场景）\n' +
+        '7. 创建文件目录结构：mkdir -p "<项目名称>/<序号>_<内容标题>/视频/脚本" "<项目名称>/<序号>_<内容标题>/视频/素材" "<项目名称>/<序号>_<内容标题>/视频/作品"\n' +
+        '8. 更新 content 的 content_dir_path 和 metadata\n\n' +
+        '数据库路径：.sprouty-ai/db/creator.db\n\n' +
+        'video_projects 表字段：id, content_id, name, description, width, height, fps, metadata\n' +
+        'video_scenes 表字段：id, project_id, composition_id, name, sort_order, duration_in_frames, props, transition_type, transition_duration\n\n' +
+        '根据用户描述智能决定：\n' +
+        '- 视频分辨率（竖屏 1080x1920 / 横屏 1920x1080 / 方形 1080x1080）\n' +
+        '- 帧率（通常 30fps）\n' +
+        '- 场景数量和内容\n' +
+        '- composition_id 使用 "blank"（空白场景）\n\n' +
+        '重要：必须使用 sqlite3 命令操作数据库',
+    },
+    example: '做一个 15 秒的竖屏产品展示视频，3 个场景',
+    overridePlaceholder: '描述你想创建的视频项目',
+    model: 'sonnet',
     systemPromptPreset: 'default',
     inlineExecution: true,
   }),

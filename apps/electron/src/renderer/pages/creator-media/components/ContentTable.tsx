@@ -5,8 +5,8 @@ import type {
   ContentTrack,
 } from "@sprouty-ai/shared/db/types";
 import { PLATFORM_MAP, parseContentTracks } from "@sprouty-ai/shared/db/types";
-import { Video, FileText, ChevronDown, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Video, FileText, ChevronDown, ChevronRight, X } from "lucide-react";
+import { useState, useEffect, Fragment } from "react";
 import { useActiveWorkspace } from "@/context/AppShellContext";
 
 /** Stage 类型标签映射 */
@@ -180,6 +180,7 @@ interface ContentTableProps {
     stage: ContentStageRecord,
     skillId: string,
   ) => void;
+  onUpdateTracks?: (contentId: string, tracks: string) => void;
 }
 
 export function ContentTable({
@@ -193,6 +194,7 @@ export function ContentTable({
   onNextStage,
   onScriptAction,
   onStageAction,
+  onUpdateTracks,
 }: ContentTableProps) {
   const t = useT();
   const workspace = useActiveWorkspace();
@@ -291,10 +293,9 @@ export function ContentTable({
               const tracks = parseContentTracks(item.content_tracks);
 
               return (
-                <>
+                <Fragment key={item.id}>
                   {/* 主行：Content */}
                   <tr
-                    key={item.id}
                     className={`border-b border-border/20 hover:bg-muted/20 transition-colors ${hasStages ? "cursor-pointer" : ""}`}
                     onClick={() => hasStages && toggleRow(item.id)}
                   >
@@ -321,7 +322,11 @@ export function ContentTable({
                         <span className="block truncate">
                           {item.title || t("无标题")}
                         </span>
-                        {tracks.length === 1 && (
+                        {tracks.length === 2 ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[10px] font-medium whitespace-nowrap bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            {t("双轨")}
+                          </span>
+                        ) : tracks.length === 1 ? (
                           <span
                             className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[10px] font-medium whitespace-nowrap ${
                               tracks[0] === "article"
@@ -331,7 +336,7 @@ export function ContentTable({
                           >
                             {tracks[0] === "article" ? t("图文") : t("视频")}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-3 py-3">
@@ -426,84 +431,179 @@ export function ContentTable({
                     )}
                   </tr>
 
-                  {/* 子行：ContentStages */}
-                  {isExpanded &&
-                    stages.map((stage) => {
-                      const Icon = STAGE_TYPE_ICONS[stage.stage];
-                      const stageAction = STAGE_ACTIONS[stage.stage];
+                  {/* 子行：双轨进度展示 */}
+                  {isExpanded && tracks.length > 0 && (
+                    <tr
+                      key={`${item.id}-tracks`}
+                      className="border-b border-border/10 bg-muted/10"
+                    >
+                      <td colSpan={6} className="px-3 py-3">
+                        <div className="pl-6 space-y-3">
+                          {tracks.map((track) => {
+                            const isArticle = track === "article";
+                            const trackLabel = isArticle
+                              ? "图文轨道"
+                              : "视频轨道";
+                            const trackColor = isArticle
+                              ? "border-blue-200 dark:border-blue-800"
+                              : "border-violet-200 dark:border-violet-800";
+                            const trackBg = isArticle
+                              ? "bg-blue-50/50 dark:bg-blue-950/20"
+                              : "bg-violet-50/50 dark:bg-violet-950/20";
+                            const trackStages = stages.filter((s) =>
+                              isArticle
+                                ? s.stage.includes("article")
+                                : s.stage.includes("video"),
+                            );
+                            const scriptStage = isArticle
+                              ? "script_article"
+                              : "script_video";
+                            const draftStage = isArticle
+                              ? "draft_article"
+                              : "draft_video";
+                            const adaptStage = isArticle
+                              ? "platform_adapt_article"
+                              : "platform_adapt_video";
+                            const hasScript = trackStages.some(
+                              (s) => s.stage === scriptStage,
+                            );
+                            const hasDraft = trackStages.some(
+                              (s) => s.stage === draftStage,
+                            );
+                            const hasAdapt = trackStages.some(
+                              (s) => s.stage === adaptStage,
+                            );
 
-                      return (
-                        <tr
-                          key={stage.id}
-                          className="border-b border-border/10 bg-muted/10 hover:bg-muted/20 transition-colors"
-                        >
-                          <td className="px-3 py-2"></td>
-                          <td className="px-3 py-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2 pl-4">
-                              {Icon && <Icon className="h-3.5 w-3.5" />}
-                              <span>
-                                {t(
-                                  STAGE_TYPE_LABELS[stage.stage] || stage.stage,
-                                )}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground"></td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground">
-                            {stage.file_path ? (
-                              <span
-                                className="block truncate"
-                                title={stage.file_path}
+                            const pipelineSteps = [
+                              {
+                                label: isArticle ? "图文脚本" : "视频脚本",
+                                done: hasScript,
+                                stage: scriptStage,
+                              },
+                              {
+                                label: isArticle ? "图文内容" : "视频内容",
+                                done: hasDraft,
+                                stage: draftStage,
+                              },
+                              {
+                                label: "平台适配",
+                                done: hasAdapt,
+                                stage: adaptStage,
+                              },
+                            ];
+
+                            return (
+                              <div
+                                key={track}
+                                className={`rounded-lg border ${trackColor} ${trackBg} p-3`}
                               >
-                                {stage.file_path.split("/").pop()}
-                              </span>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                            {stage.updated_at
-                              ? new Date(stage.updated_at).toLocaleDateString(
-                                  "zh-CN",
-                                )
-                              : "-"}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {/* Stage 操作按钮 */}
-                              {onStageAction && stageAction && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    onStageAction(
-                                      item,
-                                      stage,
-                                      stageAction.skill,
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors whitespace-nowrap"
-                                >
-                                  <span>{t(stageAction.label)}</span>
-                                </button>
-                              )}
-                              {/* 视频工作台按钮 */}
-                              {onOpenVideoStudio &&
-                                stage.stage === "draft_video" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onOpenVideoStudio(item)}
-                                    className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors whitespace-nowrap"
-                                  >
-                                    <Video className="h-3 w-3" />
-                                    <span>{t("视频工作台")}</span>
-                                  </button>
-                                )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    {isArticle ? (
+                                      <FileText className="h-3.5 w-3.5 text-blue-500" />
+                                    ) : (
+                                      <Video className="h-3.5 w-3.5 text-violet-500" />
+                                    )}
+                                    <span className="text-xs font-medium">
+                                      {t(trackLabel)}
+                                    </span>
+                                  </div>
+                                  {onUpdateTracks && tracks.length === 2 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const remaining = tracks
+                                          .filter((t) => t !== track)
+                                          .join(",");
+                                        onUpdateTracks(item.id, remaining);
+                                      }}
+                                      className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                      title={t("关闭此轨道")}
+                                    >
+                                      <X className="h-3 w-3" />
+                                      {t("关闭")}
+                                    </button>
+                                  )}
+                                </div>
+                                {/* 进度管线 */}
+                                <div className="flex items-center gap-1">
+                                  {pipelineSteps.map((step, idx) => {
+                                    const matchedStage = trackStages.find(
+                                      (s) => s.stage === step.stage,
+                                    );
+                                    const stageAction =
+                                      STAGE_ACTIONS[step.stage];
+                                    return (
+                                      <div
+                                        key={step.stage}
+                                        className="flex items-center gap-1"
+                                      >
+                                        {idx > 0 && (
+                                          <span className="text-muted-foreground/40 text-xs">
+                                            →
+                                          </span>
+                                        )}
+                                        <span
+                                          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                            step.done
+                                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                              : "bg-gray-100 text-gray-400 dark:bg-gray-800/30 dark:text-gray-500"
+                                          }`}
+                                        >
+                                          {step.done ? "✓" : "○"}{" "}
+                                          {t(step.label)}
+                                        </span>
+                                        {/* 已完成阶段的下一步操作按钮 */}
+                                        {step.done &&
+                                          stageAction &&
+                                          onStageAction &&
+                                          matchedStage && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onStageAction(
+                                                  item,
+                                                  matchedStage,
+                                                  stageAction.skill,
+                                                );
+                                              }}
+                                              className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium text-white bg-green-500 hover:bg-green-600 transition-colors whitespace-nowrap"
+                                            >
+                                              {t(stageAction.label)}
+                                            </button>
+                                          )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {/* 视频工作台入口 */}
+                                {!isArticle &&
+                                  hasDraft &&
+                                  onOpenVideoStudio && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onOpenVideoStudio(item);
+                                        }}
+                                        className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                                      >
+                                        <Video className="h-3 w-3" />
+                                        <span>{t("视频工作台")}</span>
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>

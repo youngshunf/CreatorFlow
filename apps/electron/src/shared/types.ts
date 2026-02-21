@@ -1660,10 +1660,6 @@ export interface ElectronAPI {
   // Video API (Remotion video creation)
   video: import('../preload/video-api').VideoAPI
 
-  // Video Service API (service lifecycle management)
-  // @requirements 5.1
-  videoService: import('../preload/video-api').VideoServiceAPI
-
   // LLM Connections (provider configurations)
   listLlmConnections(): Promise<LlmConnection[]>
   listLlmConnectionsWithStatus(): Promise<LlmConnectionWithStatus[]>

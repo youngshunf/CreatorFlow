@@ -2,7 +2,7 @@
 import '@sentry/electron/preload'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, type SessionEvent, type ElectronAPI, type FileAttachment, type AuthType, type LlmConnectionSetup, type FMDirectoryChangeEvent } from '../shared/types'
-import { videoAPI, videoServiceAPI } from './video-api'
+import { videoAPI } from './video-api'
 
 const api: ElectronAPI = {
   // Session management
@@ -790,10 +790,6 @@ const api: ElectronAPI = {
 
   // Video API (Remotion video creation)
   video: videoAPI,
-
-  // Video Service API (service lifecycle management)
-  // @requirements 5.1
-  videoService: videoServiceAPI,
 
   // LLM Connections (provider configurations)
   listLlmConnections: () => ipcRenderer.invoke(IPC_CHANNELS.LLM_CONNECTION_LIST),

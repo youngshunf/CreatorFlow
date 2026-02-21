@@ -77,6 +77,7 @@ import { buildAuthorizationHeader } from '../sources/api-tools.ts';
 import { DOC_REFS } from '../docs/index.ts';
 import { renderMermaid } from '@sprouty-ai/mermaid';
 import { createLLMTool } from './llm-tool.ts';
+import { createVideoTools } from './session-video-tools.ts';
 
 // ============================================================
 // Session-Scoped Tool Callbacks
@@ -2467,6 +2468,8 @@ export function getSessionScopedTools(sessionId: string, workspaceRootPath: stri
         createTransformDataTool(sessionId, workspaceRootPath),
         // LLM tool - invoke secondary Claude calls for subtasks
         createLLMTool({ sessionId }),
+        // Video creation tools - 视频创作工具（直接操作 SQLite）
+        ...createVideoTools(workspaceRootPath),
       ],
     });
     sessionScopedToolsCache.set(cacheKey, cached);
